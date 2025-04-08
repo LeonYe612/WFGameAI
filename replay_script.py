@@ -24,7 +24,7 @@ os.makedirs(output_dir, exist_ok=True)
 log_path = os.path.join(output_dir, f"replay_log_{datetime.now().strftime('%Y-%m-%d_%H%M%S')}.txt")
 special_buttons = ["system-protocol-box"]
 screenshot_queue = queue.Queue()
-action_queue = queue.Queue()  # 用于同步显示回放动作
+action_queue = queue.Queue()
 
 # 日志函数
 def log(message):
@@ -47,7 +47,6 @@ def get_device_name(device):
 def detect_buttons(frame, button_class, special_region=None):
     frame_for_detection = cv2.resize(frame, (640, 640))
     results = model.predict(source=frame_for_detection, device="mps", imgsz=640, conf=0.3, verbose=False)
-
     orig_h, orig_w = frame.shape[:2]
     scale_x, scale_y = orig_w / 640, orig_h / 640
 
@@ -70,16 +69,9 @@ def detect_buttons(frame, button_class, special_region=None):
             return True, (x, y)
     return False, None
 
-# 设备屏幕捕获线程
-def capture_device(device, screenshot_queue):
-    while True:
-        screenshot = device.screenshot()
-        frame = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
-        screenshot_queue.put((device.serial, frame))
-        time.sleep(0.1)
-
 # 单设备回放任务
 def replay_device(device, script, screenshot_queue, click_queue, result_queue, stop_event, device_name):
+    serial = device.serial
     log(f"设备 {device_name} 开始回放")
     for step in script["steps"]:
         if stop_event.is_set():
@@ -97,15 +89,15 @@ def replay_device(device, script, screenshot_queue, click_queue, result_queue, s
                     break
                 screenshot = device.screenshot()
                 frame = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
-                screenshot_queue.put((device.serial, step_num, frame, button_class))
+                screenshot_queue.put((serial, step_num, frame, button_class, None))
                 success, coords = click_queue.get()
 
                 if success:
                     x, y = coords
                     device.shell(f"input tap {x} {y}")
                     log(f"设备 {device_name}: 检测到 {button_class} 并点击: ({x:.1f}, {y:.1f})")
-                    action_queue.put((device.serial, step_num, button_class, x, y))  # 同步显示
-                    result_queue.put((device.serial, step_num, "click", True))
+                    action_queue.put((serial, step_num, button_class, x, y, time.time()))
+                    result_queue.put((serial, step_num, "click", True))
 
                     time.sleep(1)
                     screenshot = device.screenshot()
@@ -113,30 +105,30 @@ def replay_device(device, script, screenshot_queue, click_queue, result_queue, s
 
                     if button_class in special_buttons:
                         special_region = (max(0, x - 50), x, max(0, y - 50), y + 50)
-                        screenshot_queue.put((device.serial, step_num, frame, button_class, special_region))
+                        screenshot_queue.put((serial, step_num, frame, button_class, special_region))
                         v_success, _ = click_queue.get()
                         if v_success:
                             log(f"设备 {device_name}: {button_class} 前方单选框已勾选")
-                            result_queue.put((device.serial, step_num, "verify", True))
+                            result_queue.put((serial, step_num, "verify", True))
                         else:
                             log(f"设备 {device_name}: {button_class} 前方单选框未勾选")
-                            result_queue.put((device.serial, step_num, "verify", False))
+                            result_queue.put((serial, step_num, "verify", False))
                             stop_event.set()
                     else:
-                        screenshot_queue.put((device.serial, step_num, frame, button_class))
+                        screenshot_queue.put((serial, step_num, frame, button_class, None))
                         v_success, _ = click_queue.get()
                         if not v_success:
                             log(f"设备 {device_name}: 按钮 {button_class} 已消失")
-                            result_queue.put((device.serial, step_num, "verify", True))
+                            result_queue.put((serial, step_num, "verify", True))
                         else:
                             log(f"设备 {device_name}: 按钮 {button_class} 未消失")
-                            result_queue.put((device.serial, step_num, "verify", False))
+                            result_queue.put((serial, step_num, "verify", False))
                             stop_event.set()
                     break
                 log(f"设备 {device_name}: 尝试 {attempt + 1}/{max_attempts} 未检测到 {button_class}")
                 time.sleep(1)
             else:
-                result_queue.put((device.serial, step_num, "click", False))
+                result_queue.put((serial, step_num, "click", False))
                 stop_event.set()
         else:
             screenshot = device.screenshot()
@@ -145,31 +137,34 @@ def replay_device(device, script, screenshot_queue, click_queue, result_queue, s
             x, y = step["relative_x"] * w, step["relative_y"] * h
             device.shell(f"input tap {x} {y}")
             log(f"设备 {device_name}: 未识别按钮点击: ({x:.1f}, {y:.1f})")
-            action_queue.put((device.serial, step_num, button_class, x, y))  # 同步显示
-            result_queue.put((device.serial, step_num, "click", True))
+            action_queue.put((serial, step_num, button_class, x, y, time.time()))
+            result_queue.put((serial, step_num, "click", True))
             time.sleep(3)
+
     log(f"设备 {device_name} 回放完成")
-    for step in script["steps"]:
-        result_queue.put((device.serial, step["step"], "click", True))
-        if step["class"] != "unknown":
-            result_queue.put((device.serial, step["step"], "verify", True))
+    if not stop_event.is_set():
+        for step in script["steps"]:
+            result_queue.put((serial, step["step"], "click", True))
+            if step["class"] != "unknown":
+                result_queue.put((serial, step["step"], "verify", True))
 
 # 主线程检测服务
-def detection_service(screenshot_queue, click_queue):
-    while True:
+def detection_service(screenshot_queue, click_queue, stop_event):
+    while not stop_event.is_set():
         try:
             item = screenshot_queue.get(timeout=60)
-            if len(item) == 5:
-                serial, step_num, frame, button_class, special_region = item
-                success, coords = detect_buttons(frame, button_class, special_region)
-            else:
-                serial, step_num, frame, button_class = item
-                success, coords = detect_buttons(frame, button_class)
+            if len(item) != 5:
+                log(f"跳过无效数据: {item}")
+                continue
+            serial, step_num, frame, button_class, special_region = item
+            success, coords = detect_buttons(frame, button_class, special_region)
             click_queue.put((success, coords))
         except queue.Empty:
-            break
+            continue
+        except Exception as e:
+            log(f"检测服务错误: {e}")
 
-# 回放步骤
+# 回放步骤（主线程负责显示）
 def replay_steps(script_path, show_screens=False):
     global model, devices
     with open(script_path, "r", encoding="utf-8") as f:
@@ -186,130 +181,126 @@ def replay_steps(script_path, show_screens=False):
     stop_event = Event()
     threads = []
 
-    # 显示设备画面并同步回放
+    # 显示相关变量
+    frame_buffers = {d.serial: None for d in devices}
+    action_buffers = {d.serial: None for d in devices}
+    action_timestamps = {d.serial: 0 for d in devices}
+    windows = {d.serial: f"Device {device_names[d.serial]}" for d in devices}
+    window_created = {d.serial: False for d in devices}
+
+    # 如果启用显示，初始化窗口
     if show_screens:
-        display_threads = []
-        frame_buffers = {d.serial: None for d in devices}
-        action_buffers = {d.serial: None for d in devices}  # 存储当前动作
-        for device in devices:
-            t = Thread(target=capture_device, args=(device, screenshot_queue))
-            t.daemon = True
-            t.start()
-            display_threads.append(t)
-
-        windows = {d.serial: f"Device {device_names[d.serial]}" for d in devices}
-        while not stop_event.is_set():
+        for serial in windows:
             try:
-                # 获取截图
-                serial, frame = screenshot_queue.get(timeout=1)
-                frame_for_detection = cv2.resize(frame, (640, 640))
-                results = model.predict(source=frame_for_detection, device="mps", imgsz=640, conf=0.3, verbose=False)
+                cv2.namedWindow(windows[serial], cv2.WINDOW_NORMAL)
+                cv2.resizeWindow(windows[serial], 360, 640)
+                log(f"创建窗口: {windows[serial]}")
+                window_created[serial] = True
+            except Exception as e:
+                log(f"创建窗口 {windows[serial]} 失败: {e}")
 
-                # 绘制检测结果
-                annotated_frame = frame.copy()
-                orig_h, orig_w = frame.shape[:2]
-                scale_x, scale_y = orig_w / 640, orig_h / 640
-                for box in results[0].boxes:
-                    x, y, w, h = box.xywh[0].tolist()
-                    x, y, w, h = x * scale_x, y * scale_y, w * scale_x, h * scale_y
-                    cls_id = int(box.cls.item())
-                    conf = box.conf.item()
-                    cv2.rectangle(annotated_frame,
-                                  (int(x - w / 2), int(y - h / 2)),
-                                  (int(x + w / 2), int(y + h / 2)),
-                                  (0, 255, 0), 2)
-                    cv2.putText(annotated_frame, f"{model.names[cls_id]} {conf:.2f}",
-                                (int(x - w / 2), int(y - h / 2 - 10)),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-
-                # 同步回放动作
-                if not action_queue.empty():
-                    action = action_queue.get_nowait()
-                    if action[0] == serial:  # 匹配设备
-                        action_buffers[serial] = action
-                if action_buffers[serial]:
-                    serial, step_num, button_class, x, y = action_buffers[serial]
-                    cv2.circle(annotated_frame, (int(x), int(y)), 10, (0, 0, 255), -1)  # 点击位置红点
-                    cv2.putText(annotated_frame, f"Step {step_num}: {button_class}",
-                                (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-
-                frame_buffers[serial] = annotated_frame
-                cv2.imshow(windows[serial], annotated_frame)
-                if cv2.waitKey(1) & 0xFF == ord('q'):
-                    stop_event.set()
-                    break
-            except queue.Empty:
-                for serial in windows:
-                    if frame_buffers[serial] is not None:
-                        cv2.imshow(windows[serial], frame_buffers[serial])
-                continue
-
-        for t in display_threads:
-            t.join()
-        cv2.destroyAllWindows()
-
-    # 回放逻辑
-    detection_thread = Thread(target=detection_service, args=(screenshot_queue, click_queue))
+    # 启动检测线程
+    detection_thread = Thread(target=detection_service, args=(screenshot_queue, click_queue, stop_event))
+    detection_thread.daemon = True
     detection_thread.start()
+    threads.append(detection_thread)
 
+    # 启动回放线程
     active_devices = set(d.serial for d in devices)
+    step_results = {d.serial: {} for d in devices}
     for device in devices:
         t = Thread(target=replay_device, args=(device, script, screenshot_queue, click_queue, result_queue, stop_event, device_names[device.serial]))
+        t.daemon = True
         t.start()
         threads.append(t)
 
-    for step_num in range(1, len(script["steps"]) + 1):
-        step_results = {}
-        start_time = time.time()
-        while time.time() - start_time < 60 and not stop_event.is_set() and active_devices:
-            if not result_queue.empty():
-                serial, step, action, success = result_queue.get()
-                if step == step_num:
-                    if serial not in step_results:
-                        step_results[serial] = {}
-                    step_results[serial][action] = success
-            all_done = True
-            for serial in active_devices.copy():
-                if serial not in step_results or "click" not in step_results[serial]:
-                    all_done = False
-                    break
-                if script["steps"][step_num - 1]["class"] != "unknown" and "verify" not in step_results[serial]:
-                    all_done = False
-                    break
-            if all_done:
-                break
-            time.sleep(0.1)
+    # 主循环：监控回放并处理显示
+    total_steps = len(script["steps"])
+    last_update_time = time.time()
+    while active_devices and not stop_event.is_set():
+        # 处理结果队列
+        while not result_queue.empty():
+            serial, step, action, success = result_queue.get_nowait()
+            step_results[serial][(step, action)] = success
 
-        for device in devices:
-            serial = device.serial
-            name = device_names[serial]
-            if serial not in active_devices:
-                continue
-            if serial not in step_results or "click" not in step_results[serial]:
-                log(f"设备 {name} 步骤 {step_num} 超时或未完成")
-                stop_event.set()
-                break
-            if not step_results[serial]["click"]:
-                log(f"设备 {name} 步骤 {step_num} 点击失败")
-                stop_event.set()
-                break
-            if script["steps"][step_num - 1]["class"] != "unknown" and not step_results[serial]["verify"]:
-                log(f"设备 {name} 步骤 {step_num} 验证失败")
-                stop_event.set()
+        # 检查回放进度
+        for step_num in range(1, total_steps + 1):
+            for serial in list(active_devices):
+                if (step_num, "click") not in step_results[serial]:
+                    timestamp = script["steps"][step_num - 1].get("timestamp", time.time())
+                    try:
+                        timestamp = float(timestamp)
+                    except (TypeError, ValueError):
+                        timestamp = time.time()
+                    if time.time() - timestamp > 60:
+                        log(f"设备 {device_names[serial]} 步骤 {step_num} 超时或未完成")
+                        stop_event.set()
+                    continue
+                if not step_results[serial][(step_num, "click")]:
+                    log(f"设备 {device_names[serial]} 步骤 {step_num} 点击失败")
+                    stop_event.set()
+                    break
+                if script["steps"][step_num - 1]["class"] != "unknown" and (step_num, "verify") not in step_results[serial]:
+                    continue
+                if script["steps"][step_num - 1]["class"] != "unknown" and not step_results[serial][(step_num, "verify")]:
+                    log(f"设备 {device_names[serial]} 步骤 {step_num} 验证失败")
+                    stop_event.set()
+                    break
+            if stop_event.is_set():
                 break
 
+        # 检查是否所有步骤完成
         for serial in list(active_devices):
-            if serial in step_results and "click" in step_results[serial] and step_num == len(script["steps"]):
-                active_devices.remove(serial)
+            if all((i, "click") in step_results[serial] for i in range(1, total_steps + 1)):
+                if all((i, "verify") in step_results[serial] and step_results[serial][(i, "verify")]
+                       for i in range(1, total_steps + 1) if script["steps"][i - 1]["class"] != "unknown"):
+                    active_devices.remove(serial)
 
+        # 处理显示（每1秒更新一次）
+        if show_screens and (time.time() - last_update_time >= 1.0):
+            # 处理点击动作并更新帧
+            while not action_queue.empty():
+                serial, step_num, button_class, x, y, timestamp = action_queue.get_nowait()
+                screenshot = devices[[d.serial for d in devices].index(serial)].screenshot()
+                frame = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
+                frame_buffers[serial] = frame
+                action_buffers[serial] = (step_num, button_class, x, y)
+                action_timestamps[serial] = timestamp
+                log(f"设备 {serial} 更新点击: 步骤 {step_num} - {button_class} 在 ({x:.1f}, {y:.1f})")
+
+            # 更新并显示所有窗口
+            for serial in windows:
+                if frame_buffers[serial] is not None and window_created[serial]:
+                    annotated_frame = frame_buffers[serial].copy()
+                    if action_buffers[serial] and (time.time() - action_timestamps[serial]) < 1.0:
+                        _, step_num, button_class, x, y = action_buffers[serial]
+                        cv2.circle(annotated_frame, (int(x), int(y)), 20, (0, 0, 255), 3)
+                        cv2.putText(annotated_frame, f"Step {step_num}: {button_class} (Clicked)",
+                                    (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+                    try:
+                        cv2.imshow(windows[serial], annotated_frame)
+                    except Exception as e:
+                        log(f"显示窗口 {windows[serial]} 失败: {e}")
+            last_update_time = time.time()
+
+            # 处理退出事件
+            key = cv2.waitKey(1)
+            if key & 0xFF == ord('q'):
+                log("检测到 'q' 键，停止回放")
+                stop_event.set()
+
+        time.sleep(0.05)
+
+    # 回放结束处理
+    stop_event.set()
     for t in threads:
-        t.join()
-    detection_thread.join()
-    if stop_event.is_set() or active_devices:
+        t.join(timeout=1.0)
+    cv2.destroyAllWindows()
+    if active_devices or stop_event.is_set():
         log("回放失败，部分设备未完成")
         return False
     log("所有设备回放成功")
-    return True
+    sys.exit(0)
 
 # 获取最新的 JSON 文件
 def get_latest_json(directory):
