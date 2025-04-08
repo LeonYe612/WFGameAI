@@ -22,7 +22,6 @@ click_counts = {}
 MAX_CLICKS = 2
 screenshot_queue = queue.Queue()
 
-
 # 优雅退出处理
 def signal_handler(sig, frame):
     print("\n收到 Ctrl+C，退出")
@@ -33,9 +32,18 @@ def signal_handler(sig, frame):
     cv2.destroyAllWindows()
     sys.exit(0)
 
-
 signal.signal(signal.SIGINT, signal_handler)
 
+# 获取设备品牌、型号和分辨率（新增函数，与 replay_script.py 一致）
+def get_device_name(device):
+    try:
+        brand = device.shell("getprop ro.product.brand").strip()
+        model = device.shell("getprop ro.product.model").strip()
+        resolution = device.shell("wm size").strip().replace("Physical size: ", "")
+        return f"{brand}-{model}-{resolution}"
+    except Exception as e:
+        print(f"获取设备 {device.serial} 信息失败: {e}")
+        return device.serial
 
 # 鼠标点击回调
 def on_mouse(event, x, y, flags, param):
@@ -67,8 +75,8 @@ def on_mouse(event, x, y, flags, param):
                             k_class, k_x, k_y = key.split("_")
                             k_x, k_y = float(k_x), float(k_y)
                             if (button_class == k_class and
-                                    abs(box_x - k_x) < 20 and
-                                    abs(box_y - k_y) < 20):
+                                abs(box_x - k_x) < 20 and
+                                abs(box_y - k_y) < 20):
                                 button_key = key
                                 break
                         if not button_key:
@@ -122,7 +130,6 @@ def on_mouse(event, x, y, flags, param):
             device.shell(f"input tap {x} {y}")
             print(f"交互点击: 未识别按钮 at ({x:.1f}, {y:.1f})")
 
-
 # 设备屏幕捕获线程
 def capture_device(device, screenshot_queue):
     while True:
@@ -130,7 +137,6 @@ def capture_device(device, screenshot_queue):
         frame = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
         screenshot_queue.put((device.serial, frame))
         time.sleep(0.1)  # 控制刷新率
-
 
 # 解析命令行参数
 parser = argparse.ArgumentParser(description="Record game operation script")
@@ -143,7 +149,8 @@ try:
     devices = adb.device_list()
     if not devices:
         raise Exception("未检测到 ADB 设备，请检查连接和 USB 调试")
-    print(f"已连接设备: {[d.serial for d in devices]}")
+    device_names = {d.serial: get_device_name(d) for d in devices}  # 获取设备名称
+    print(f"已连接设备: {[device_names[d.serial] for d in devices]}")
 except Exception as e:
     print(f"ADB 初始化失败: {e}")
     sys.exit(1)
@@ -179,8 +186,8 @@ for device in devices:
     threads.append(t)
 
 # 主循环显示所有设备
-windows = {d.serial: f"Device {d.serial}" for d in devices}
-frame_buffers = {d.serial: None for d in devices}  # 缓冲每台设备的最新帧和结果
+windows = {d.serial: f"Device {get_device_name(d)}" for d in devices}  # 修改标题格式
+frame_buffers = {d.serial: None for d in devices}
 results_buffers = {d.serial: None for d in devices}
 
 while True:
