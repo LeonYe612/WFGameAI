@@ -1,0 +1,30 @@
+{
+    "steps": [
+        {
+            "Priority": 1,
+            "class": "system-skip",
+            "remark": ""
+        },
+        {
+            "Priority": 2,
+            "class": "hint-guide",
+            "remark": ""
+        },
+        {
+            "Priority": 3,
+            "class": "operation-back",
+            "remark": ""
+        },
+        {
+            "Priority": 4,
+            "class": "operation-confirm",
+            "remark": ""
+        },
+        {
+            "Priority": 5,
+            "class": "operation-challenge",
+            "remark": ""
+        }
+    ]
+}
+

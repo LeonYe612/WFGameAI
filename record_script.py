@@ -22,19 +22,22 @@ click_counts = {}
 MAX_CLICKS = 2
 screenshot_queue = queue.Queue()
 
+
 # 优雅退出处理
 def signal_handler(sig, frame):
     print("\n收到 Ctrl+C，退出")
-    if args.record and script["steps"]:  # 仅录制模式保存
+    if is_recording and script["steps"]:  # 录制模式保存
         with open(save_path, "w", encoding="utf-8") as f:
             json.dump(script, f, indent=4, ensure_ascii=False)
         print(f"最终脚本保存至: {save_path}")
     cv2.destroyAllWindows()
     sys.exit(0)
 
+
 signal.signal(signal.SIGINT, signal_handler)
 
-# 获取设备品牌、型号和分辨率（新增函数，与 replay_script.py 一致）
+
+# 获取设备品牌、型号和分辨率
 def get_device_name(device):
     try:
         brand = device.shell("getprop ro.product.brand").strip()
@@ -44,6 +47,7 @@ def get_device_name(device):
     except Exception as e:
         print(f"获取设备 {device.serial} 信息失败: {e}")
         return device.serial
+
 
 # 鼠标点击回调
 def on_mouse(event, x, y, flags, param):
@@ -56,6 +60,7 @@ def on_mouse(event, x, y, flags, param):
     if event == cv2.EVENT_LBUTTONDOWN:
         orig_h, orig_w = frame.shape[:2]
         scale_x, scale_y = orig_w / 640, orig_h / 640
+        matched = False
 
         if results and len(results[0].boxes) > 0:
             for box in results[0].boxes:
@@ -67,28 +72,28 @@ def on_mouse(event, x, y, flags, param):
                     cls_id = int(box.cls.item())
                     conf = box.conf.item()
                     button_class = model.names[cls_id]
+                    matched = True
 
-                    # 录制模式逻辑
-                    if args.record:
+                    # 录制模式：--record 或 --record-no-match
+                    if is_recording:
+                        # 匹配按钮的记录逻辑（适用于 --record 和 --record-no-match）
                         button_key = None
                         for key in click_counts:
                             k_class, k_x, k_y = key.split("_")
                             k_x, k_y = float(k_x), float(k_y)
                             if (button_class == k_class and
-                                abs(box_x - k_x) < 20 and
-                                abs(box_y - k_y) < 20):
+                                    abs(box_x - k_x) < 20 and
+                                    abs(box_y - k_y) < 20):
                                 button_key = key
                                 break
                         if not button_key:
                             button_key = f"{button_class}_{box_x:.1f}_{box_y:.1f}"
 
                         click_counts[button_key] = click_counts.get(button_key, 0) + 1
-                        print(f"调试: {button_key} 点击次数 {click_counts[button_key]}")
                         if click_counts[button_key] > MAX_CLICKS:
                             print(f"按钮 {button_class} 已点击 {MAX_CLICKS} 次，忽略")
                             return
 
-                        device.shell(f"input tap {box_x} {box_y}")
                         step = {
                             "step": len(script["steps"]) + 1,
                             "class": button_class,
@@ -102,13 +107,14 @@ def on_mouse(event, x, y, flags, param):
                         print("\n" + "=" * 50)
                         print(f"【按钮动作录入】: {button_class}，步骤 {step['step']} 已保存至 {save_path}")
                         print("=" * 50 + "\n")
+                        device.shell(f"input tap {box_x} {box_y}")
                     else:  # 非录制模式，直接交互
                         device.shell(f"input tap {box_x} {box_y}")
                         print(f"交互点击: {button_class} at ({box_x:.1f}, {box_y:.1f})")
                     return
 
-        # 未识别按钮处理
-        if args.record and args.record_no_match:
+        # 未识别按钮处理（仅适用于 --record-no-match）
+        if is_recording and args.record_no_match:
             rel_x, rel_y = x / orig_w, y / orig_h
             step = {
                 "step": len(script["steps"]) + 1,
@@ -126,9 +132,10 @@ def on_mouse(event, x, y, flags, param):
             print("\n" + "=" * 50)
             print(f"【未识别点击录入】: 比例坐标 ({rel_x:.3f}, {rel_y:.3f})，步骤 {step['step']} 已保存至 {save_path}")
             print("=" * 50 + "\n")
-        else:
+        elif not matched:  # 非录制模式下的未识别点击
             device.shell(f"input tap {x} {y}")
             print(f"交互点击: 未识别按钮 at ({x:.1f}, {y:.1f})")
+
 
 # 设备屏幕捕获线程
 def capture_device(device, screenshot_queue):
@@ -137,6 +144,7 @@ def capture_device(device, screenshot_queue):
         frame = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
         screenshot_queue.put((device.serial, frame))
         time.sleep(0.1)  # 控制刷新率
+
 
 # 解析命令行参数
 parser = argparse.ArgumentParser(description="Record game operation script")
@@ -162,18 +170,23 @@ except Exception as e:
     print(f"模型加载失败: {e}")
     sys.exit(1)
 
+# 判断是否为录制模式
+is_recording = args.record or args.record_no_match  # 任意一个为 True 即进入录制模式
+
 # 录制模式生成保存路径
-if args.record:
+if is_recording:
     output_dir = "/Users/helloppx/PycharmProjects/GameAI/outputs/recordlogs"
     os.makedirs(output_dir, exist_ok=True)
     timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
     save_path = os.path.join(output_dir, f"scene1_{timestamp}.json")
 
+# 修改后的启动提示
 print("启动脚本，按 'q' 退出")
-if args.record:
-    print("已进入录制模式，直接在窗口点击按钮进行记录和设备点击")
+if is_recording:
     if args.record_no_match:
-        print("未识别按钮点击将被记录为比例坐标")
+        print("已进入录制模式，未识别按钮点击将被记录为比例坐标")
+    else:
+        print("已进入录制模式，仅记录匹配的按钮点击")
 else:
     print("已进入交互模式，点击窗口直接操作设备，不生成 JSON")
 
@@ -186,7 +199,7 @@ for device in devices:
     threads.append(t)
 
 # 主循环显示所有设备
-windows = {d.serial: f"Device {get_device_name(d)}" for d in devices}  # 修改标题格式
+windows = {d.serial: f"Device {get_device_name(d)}" for d in devices}
 frame_buffers = {d.serial: None for d in devices}
 results_buffers = {d.serial: None for d in devices}
 
@@ -225,7 +238,6 @@ while True:
             print("退出程序")
             break
     except queue.Empty:
-        # 显示所有设备的最新帧，即使队列暂时为空
         for serial in windows:
             if frame_buffers[serial] is not None:
                 cv2.imshow(windows[serial], frame_buffers[serial])
@@ -234,10 +246,14 @@ while True:
         print(f"主循环异常: {traceback.format_exc()}")
         break
 
-if args.record and script["steps"]:
+# 修改后的结束逻辑
+if is_recording and script["steps"]:  # 录制模式且有记录时保存
     with open(save_path, "w", encoding="utf-8") as f:
         json.dump(script, f, indent=4, ensure_ascii=False)
     print(f"程序结束，最终脚本保存至: {save_path}")
-else:
+elif is_recording:  # 录制模式但没记录
+    print("程序结束，录制模式未记录任何操作，未生成 JSON")
+else:  # 非录制模式
     print("程序结束，非录制模式，未生成 JSON")
+
 cv2.destroyAllWindows()

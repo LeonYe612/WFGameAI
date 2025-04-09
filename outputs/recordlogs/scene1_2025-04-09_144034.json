@@ -1,0 +1,74 @@
+{
+    "steps": [
+        {
+            "step": 1,
+            "class": "operation-confirm",
+            "confidence": 0.9421740174293518,
+            "timestamp": "2025-04-09 14:40:40.052738",
+            "remark": ""
+        },
+        {
+            "step": 2,
+            "class": "hint-guide",
+            "confidence": 0.613810658454895,
+            "timestamp": "2025-04-09 14:40:47.906497",
+            "remark": ""
+        },
+        {
+            "step": 3,
+            "class": "operation-challenge",
+            "confidence": 0.7245256900787354,
+            "timestamp": "2025-04-09 14:40:55.120769",
+            "remark": ""
+        },
+        {
+            "step": 4,
+            "class": "hint-guide",
+            "confidence": 0.8652023077011108,
+            "timestamp": "2025-04-09 14:41:01.040901",
+            "remark": ""
+        },
+        {
+            "step": 5,
+            "class": "hint-guide",
+            "confidence": 0.8542579412460327,
+            "timestamp": "2025-04-09 14:41:08.250133",
+            "remark": ""
+        },
+        {
+            "step": 6,
+            "class": "hint-guide",
+            "confidence": 0.9274434447288513,
+            "timestamp": "2025-04-09 14:41:13.066807",
+            "remark": ""
+        },
+        {
+            "step": 7,
+            "class": "operation-confirm",
+            "confidence": 0.9275567531585693,
+            "timestamp": "2025-04-09 14:41:17.874434",
+            "remark": ""
+        },
+        {
+            "step": 8,
+            "class": "operation-challenge",
+            "confidence": 0.6576196551322937,
+            "timestamp": "2025-04-09 14:41:23.261046",
+            "remark": ""
+        },
+        {
+            "step": 9,
+            "class": "operation-back",
+            "confidence": 0.8617450594902039,
+            "timestamp": "2025-04-09 14:41:29.883471",
+            "remark": ""
+        },
+        {
+            "step": 10,
+            "class": "hint-guide",
+            "confidence": 0.7379639148712158,
+            "timestamp": "2025-04-09 14:41:57.422277",
+            "remark": ""
+        }
+    ]
+}
