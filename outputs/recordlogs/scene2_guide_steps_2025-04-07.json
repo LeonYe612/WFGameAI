@@ -1,5 +1,4 @@
 {
-  "max_duration": 180,
   "steps": [
     {
       "Priority": 1,
@@ -30,8 +29,8 @@
       "Priority": 6,
       "class": "unknown",
       "relative_x": 0.5,
-      "relative_y": 0.5,
-      "remark": "如果以上按钮均不存在，那么点击中心位置来继续完成后续操作。"
+      "relative_y": 0.9,
+      "remark": "如果以上按钮均不存在，那么点击中下位置来继续完成后续操作。"
     }
   ]
 }
