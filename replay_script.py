@@ -6,7 +6,6 @@ import time
 from datetime import datetime
 from adbutils import adb
 import os
-import glob
 from threading import Thread, Event
 import queue
 import sys
@@ -86,7 +85,6 @@ def detect_buttons(frame, all_classes=None, target_class=None, special_region=No
 
 # 验证目标是否消失
 def verify_target_disappeared(device, target_class, max_attempts=5, delay=0.5):
-    """验证目标按钮是否消失，避免重复点击"""
     for attempt in range(max_attempts):
         screenshot = device.screenshot()
         frame = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
@@ -107,7 +105,7 @@ def replay_device(device, scripts, screenshot_queue, click_queue, result_queue, 
 
     for script_idx, script_config in enumerate(scripts):
         script_path = script_config["path"]
-        loop_count = script_config.get("loop_count", 1)
+        loop_count = script_config.get("loop_count", None)
         max_duration = script_config.get("max_duration", float("inf"))
 
         if not os.path.exists(script_path):
@@ -116,116 +114,91 @@ def replay_device(device, scripts, screenshot_queue, click_queue, result_queue, 
         with open(script_path, "r", encoding="utf-8") as f:
             steps = json.load(f)["steps"]
 
-        loop_idx = 0
         start_time = time.time()
         has_max_duration = max_duration != float("inf")
         has_loop_count = loop_count is not None and loop_count > 0
+        loop_idx = 0
+
+        # 构建优先级字典
+        all_classes = {s["class"]: s.get("Priority", float("inf")) for s in steps if s["class"] != "unknown"}
+        step_map = {s["class"]: s for s in steps}  # 用于查找备注等信息
 
         while not stop_event.is_set():
-            if (has_loop_count and loop_idx >= loop_count) or (
-                    has_max_duration and time.time() - start_time > max_duration):
+            if has_max_duration and time.time() - start_time > max_duration:
+                log(f"设备 {device_name} 文件 {script_path} 已达到最大运行时间 {max_duration}s")
+                break
+            if has_loop_count and loop_idx >= loop_count:
                 break
 
-            log(f"设备 {device_name} 开始回放文件: {script_path} (循环次数: {loop_count if has_loop_count else '无限'}, 最长运行时间: {max_duration if has_max_duration else '无限制'}s, 当前第 {loop_idx + 1} 次)")
-            all_classes = {s["class"]: s.get("Priority", float("inf")) for s in steps if s["class"] != "unknown"}
+            log(f"设备 {device_name} 开始回放文件: {script_path} (循环次数: {loop_count if has_loop_count else '无限制'}, 最长运行时间: {max_duration if has_max_duration else '无限制'}s, 当前第 {loop_idx + 1} 次)")
 
-            for idx, step in enumerate(steps, 1):
-                if stop_event.is_set() or (has_max_duration and time.time() - start_time > max_duration):
-                    log(f"设备 {device_name} 文件 {script_path} 因中止信号或超时停止")
-                    break
+            # 动态检测并按优先级执行
+            while not stop_event.is_set() and (not has_max_duration or time.time() - start_time <= max_duration):
+                screenshot = device.screenshot()
+                frame = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
+                screenshot_queue.put((serial, step_counter + 1, frame, None, all_classes))
+                success, result = click_queue.get()
 
-                step_counter += 1
-                step_num = step.get("step", step_counter)
-                button_class = step["class"]
-                remark = step["remark"]
-                relative_x = step.get("relative_x")
-                relative_y = step.get("relative_y")
-                priority = step.get("Priority", float("inf"))
+                if success and result[0] is not None:
+                    x, y, detected_class = result
+                    step = step_map.get(detected_class, {"class": detected_class, "remark": "未定义", "Priority": all_classes[detected_class]})
+                    step_counter += 1
+                    step_num = step_counter
 
-                log(f"设备 {device_name}: 执行步骤 {step_num} - {button_class} (Priority: {priority}, remark: {remark})")
+                    log(f"设备 {device_name}: 执行步骤 {step_num} - {detected_class} (Priority: {all_classes[detected_class]}, remark: {step['remark']})")
+                    device.shell(f"input tap {x} {y}")
+                    log(f"设备 {device_name}: 检测到 {detected_class} (Priority: {all_classes[detected_class]}) 并点击: ({x:.1f}, {y:.1f})")
+                    action_queue.put((serial, step_num, detected_class, x, y, time.time()))
+                    result_queue.put((serial, step_num, "click", True))
 
-                if button_class != "unknown":
-                    max_attempts = 15
-                    for attempt in range(max_attempts):
-                        if stop_event.is_set():
-                            break
-                        screenshot = device.screenshot()
-                        frame = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
-                        screenshot_queue.put((serial, step_num, frame, button_class, None))
-                        success, result = click_queue.get()
-
-                        if success and result[0] is not None:
-                            x, y, detected_class = result
-                        else:
-                            screenshot_queue.put((serial, step_num, frame, None, all_classes))
-                            success, result = click_queue.get()
-                            if not success or result[0] is None:
-                                log(f"设备 {device_name}: 尝试 {attempt + 1}/{max_attempts} 未检测到任何目标按钮")
-                                time.sleep(1)
-                                continue
-                            x, y, detected_class = result
-
-                        device.shell(f"input tap {x} {y}")
-                        log(f"设备 {device_name}: 检测到 {detected_class} (Priority: {all_classes[detected_class]}) 并点击: ({x:.1f}, {y:.1f})")
-                        action_queue.put((serial, step_num, detected_class, x, y, time.time()))
-                        result_queue.put((serial, step_num, "click", True))
-
-                        # 优化问题 1：验证目标消失，避免重复点击
-                        time.sleep(0.5)  # 等待屏幕更新
-                        if verify_target_disappeared(device, detected_class):
-                            log(f"设备 {device_name}: 按钮 {detected_class} 已消失")
-                            result_queue.put((serial, step_num, "verify", True))
-                        else:
-                            log(f"设备 {device_name}: 按钮 {detected_class} 未消失")
-                            result_queue.put((serial, step_num, "verify", False))
-                            continue  # 未消失则重试
-
-                        # 优化问题 2：如果是最后一个步骤且有后续文件，检查是否成功
-                        if idx == len(steps) and script_idx < len(scripts) - 1:
-                            if not verify_target_disappeared(device, detected_class):
-                                log(f"设备 {device_name}: 文件 {script_path} 最后一步 {step_num} 执行失败，停止后续文件")
-                                stop_event.set()
-                                return
-                        break
+                    time.sleep(0.5)
+                    if verify_target_disappeared(device, detected_class):
+                        log(f"设备 {device_name}: 按钮 {detected_class} 已消失")
+                        result_queue.put((serial, step_num, "verify", True))
                     else:
-                        log(f"设备 {device_name}: 未检测到任何目标按钮，跳过步骤 {step_num}")
-                        result_queue.put((serial, step_num, "click", False))
-                        # 优化问题 2：最后一步失败时停止
-                        if idx == len(steps) and script_idx < len(scripts) - 1:
+                        log(f"设备 {device_name}: 按钮 {detected_class} 未消失")
+                        result_queue.put((serial, step_num, "verify", False))
+
+                    # 检查最后一步是否成功
+                    if script_idx < len(scripts) - 1 and loop_idx == (loop_count - 1 if has_loop_count else 0):
+                        if not verify_target_disappeared(device, detected_class):
                             log(f"设备 {device_name}: 文件 {script_path} 最后一步 {step_num} 执行失败，停止后续文件")
                             stop_event.set()
                             return
                 else:
-                    screenshot = device.screenshot()
-                    frame = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
-                    screenshot_queue.put((serial, step_num, frame, None, all_classes))
-                    success, result = click_queue.get()
-
-                    if not success:
+                    # 如果未检测到任何目标，检查是否有 "unknown" 步骤
+                    if "unknown" in step_map:
+                        step = step_map["unknown"]
+                        step_counter += 1
+                        step_num = step_counter
                         h, w = frame.shape[:2]
-                        x, y = relative_x * w, relative_y * h
+                        x, y = step.get("relative_x", 0.5) * w, step.get("relative_y", 0.5) * h
+                        log(f"设备 {device_name}: 执行步骤 {step_num} - unknown (Priority: {step.get('Priority', float('inf'))}, remark: {step['remark']})")
                         device.shell(f"input tap {x} {y}")
-                        log(f"设备 {device_name}: 未识别按钮点击 (所有优先级高于 {priority} 的按钮不存在): ({x:.1f}, {y:.1f})")
-                        action_queue.put((serial, step_num, button_class, x, y, time.time()))
+                        log(f"设备 {device_name}: 未识别按钮点击: ({x:.1f}, {y:.1f})")
+                        action_queue.put((serial, step_num, "unknown", x, y, time.time()))
                         result_queue.put((serial, step_num, "click", True))
+                        time.sleep(3)
                     else:
-                        log(f"设备 {device_name}: 检测到更高优先级按钮，跳过未识别点击")
-                    time.sleep(3)
+                        log(f"设备 {device_name}: 未检测到任何目标按钮，等待下一轮检测")
+                        time.sleep(1)
+                        break  # 退出内层循环，重新检测
+
             loop_idx += 1
 
     log(f"设备 {device_name} 回放完成")
     if not stop_event.is_set():
+        # 确保所有步骤记录完成状态
         step_counter = 0
         for script_config in scripts:
             with open(script_config["path"], "r", encoding="utf-8") as f:
                 steps = json.load(f)["steps"]
             for step in steps:
                 step_counter += 1
-                step_num = step.get("step", step_counter)
-                if (step_num, "click") not in result_queue.queue:
-                    result_queue.put((serial, step_num, "click", True))
-                if step["class"] != "unknown" and (step_num, "verify") not in result_queue.queue:
-                    result_queue.put((serial, step_num, "verify", True))
+                if (step_counter, "click") not in result_queue.queue:
+                    result_queue.put((serial, step_counter, "click", True))
+                if step["class"] != "unknown" and (step_counter, "verify") not in result_queue.queue:
+                    result_queue.put((serial, step_counter, "verify", True))
 
 
 # 主线程检测服务
@@ -297,7 +270,7 @@ def replay_steps(scripts, show_screens=False):
     step_results = {d.serial: {} for d in devices}
     for device in devices:
         t = Thread(target=replay_device, args=(
-        device, loaded_scripts, screenshot_queue, click_queue, result_queue, stop_event, device_names[device.serial]))
+            device, loaded_scripts, screenshot_queue, click_queue, result_queue, stop_event, device_names[device.serial]))
         t.daemon = True
         t.start()
         threads.append(t)
@@ -315,19 +288,18 @@ def replay_steps(scripts, show_screens=False):
                 steps = json.load(f)["steps"]
             for step in steps:
                 step_counter += 1
-                step_num = step.get("step", step_counter)
                 for serial in list(active_devices):
-                    if (step_num, "click") not in step_results[serial]:
+                    if (step_counter, "click") not in step_results[serial]:
                         timestamp = step.get("timestamp", time.time())
                         try:
                             timestamp = float(timestamp)
                         except (TypeError, ValueError):
                             timestamp = time.time()
                         if time.time() - timestamp > 60:
-                            log(f"设备 {device_names[serial]} 步骤 {step_num} 超时或未完成")
+                            log(f"设备 {device_names[serial]} 步骤 {step_counter} 超时或未完成")
                         continue
-                    if not step_results[serial][(step_num, "click")]:
-                        log(f"设备 {device_names[serial]} 步骤 {step_num} 点击失败，继续后续步骤")
+                    if not step_results[serial][(step_counter, "click")]:
+                        log(f"设备 {device_names[serial]} 步骤 {step_counter} 点击失败，继续后续步骤")
 
         for serial in list(active_devices):
             if all((i, "click") in step_results[serial] for i in range(1, total_steps + 1)):
