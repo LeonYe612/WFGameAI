@@ -1,2 +1,0 @@
-Device Name: OnePlus-KB2000-1080x2400
-Script Path: outputs/recordlogs/scene2_guide_steps_2025-04-07.json

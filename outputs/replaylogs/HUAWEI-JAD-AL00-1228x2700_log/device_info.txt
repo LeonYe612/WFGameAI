@@ -1,2 +1,0 @@
-Device Name: HUAWEI-JAD-AL00-1228x2700
-Script Path: outputs/recordlogs/scene2_guide_steps_2025-04-07.json
