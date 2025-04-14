@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/GameAI.iml" filepath="$PROJECT_DIR$/.idea/GameAI.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../honeydou-atp-master-django/.idea/honeydou-atp-master-django.iml" filepath="$PROJECT_DIR$/../honeydou-atp-master-django/.idea/honeydou-atp-master-django.iml" />
     </modules>
   </component>
 </project>
