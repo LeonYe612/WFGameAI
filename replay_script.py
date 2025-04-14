@@ -1,16 +1,18 @@
+from airtest.core.api import touch, exists, snapshot, set_logdir, connect_device, log
+from airtest.report.report import LogToHtml
 import cv2
 import numpy as np
 from ultralytics import YOLO
 import json
 import time
-from datetime import datetime
-from adbutils import adb
 import os
 from threading import Thread, Event
 import queue
 import sys
 import argparse
 import logging
+import shutil
+from adbutils import adb
 
 # 禁用 Ultralytics 的日志输出
 logging.getLogger("ultralytics").setLevel(logging.CRITICAL)
@@ -18,22 +20,46 @@ logging.getLogger("ultralytics").setLevel(logging.CRITICAL)
 # 全局变量
 model = None
 devices = []
-output_dir = "/Users/helloppx/PycharmProjects/GameAI/outputs/replaylogs"
+output_dir = "outputs/replaylogs"
+report_dir = "outputs/replay_reports"
 os.makedirs(output_dir, exist_ok=True)
-log_path = os.path.join(output_dir, f"replay_log_{datetime.now().strftime('%Y-%m-%d_%H%M%S')}.txt")
-special_buttons = ["system-protocol-box"]
+os.makedirs(report_dir, exist_ok=True)
 screenshot_queue = queue.Queue()
 action_queue = queue.Queue()
 
 
+# Airtest 兼容的 JSON 日志格式化器
+class AirtestJsonFormatter(logging.Formatter):
+    def format(self, record):
+        timestamp = record.created
+        log_entry = {
+            "tag": getattr(record, 'tag', 'function'),
+            "depth": getattr(record, 'depth', 0),
+            "time": timestamp,
+            "data": {
+                "name": getattr(record, 'operation_name', 'unknown'),
+                "call_args": getattr(record, 'call_args', {"message": record.getMessage()}),
+                "start_time": timestamp - 0.001,
+                "ret": getattr(record, 'ret', None),
+                "end_time": timestamp
+            }
+        }
+        return json.dumps(log_entry, ensure_ascii=False)
+
+
 # 日志函数
-def log(message):
-    with open(log_path, "a", encoding="utf-8") as f:
-        f.write(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')} - {message}\n")
-    print(message)
+def setup_device_logger(device_name):
+    log_file = os.path.join(output_dir, f"{device_name}_log.txt")
+    logger = logging.getLogger(device_name)
+    logger.setLevel(logging.INFO)
+    handler = logging.FileHandler(log_file, encoding="utf-8")
+    formatter = AirtestJsonFormatter()
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+    return logger
 
 
-# 获取设备品牌、型号和分辨率
+# 获取设备名称
 def get_device_name(device):
     try:
         brand = device.shell("getprop ro.product.brand").strip()
@@ -41,49 +67,28 @@ def get_device_name(device):
         resolution = device.shell("wm size").strip().replace("Physical size: ", "")
         return f"{brand}-{model}-{resolution}"
     except Exception as e:
-        log(f"获取设备 {device.serial} 信息失败: {e}")
+        print(f"获取设备 {device.serial} 信息失败: {e}")
         return device.serial
 
 
-# 主线程检测函数
-def detect_buttons(frame, all_classes=None, target_class=None, special_region=None):
+# 检测按钮
+def detect_buttons(frame, target_class=None):
     frame_for_detection = cv2.resize(frame, (640, 640))
     results = model.predict(source=frame_for_detection, device="mps", imgsz=640, conf=0.3, verbose=False)
     orig_h, orig_w = frame.shape[:2]
     scale_x, scale_y = orig_w / 640, orig_h / 640
 
-    if special_region:
-        x_min, x_max, y_min, y_max = special_region
-        for box in results[0].boxes:
-            cls_id = int(box.cls.item())
-            if "checkbox" in model.names[cls_id]:
-                box_x, box_y = box.xywh[0][:2].tolist()
-                x, y = box_x * scale_x, box_y * scale_y
-                if x_min <= x <= x_max and y_min <= y <= y_max:
-                    return True, (None, None, None)
-        return False, (None, None, None)
-
-    matched_targets = []
     for box in results[0].boxes:
         cls_id = int(box.cls.item())
         detected_class = model.names[cls_id]
-        if target_class and detected_class == target_class:
+        if detected_class == target_class:
             box_x, box_y = box.xywh[0][:2].tolist()
             x, y = box_x * scale_x, box_y * scale_y
             return True, (x, y, detected_class)
-        elif all_classes and detected_class in all_classes:
-            box_x, box_y = box.xywh[0][:2].tolist()
-            x, y = box_x * scale_x, box_y * scale_y
-            priority = all_classes[detected_class]
-            matched_targets.append({"class": detected_class, "x": x, "y": y, "priority": priority})
-
-    if matched_targets:
-        matched_targets.sort(key=lambda x: x["priority"])  # 最低 Priority 值优先
-        return True, (matched_targets[0]["x"], matched_targets[0]["y"], matched_targets[0]["class"])
     return False, (None, None, None)
 
 
-# 验证目标是否消失
+# 验证目标消失
 def verify_target_disappeared(device, target_class, max_attempts=5, delay=0.5):
     for attempt in range(max_attempts):
         screenshot = device.screenshot()
@@ -95,130 +100,226 @@ def verify_target_disappeared(device, target_class, max_attempts=5, delay=0.5):
     return False
 
 
+# 检查设备状态
+def check_device_status(device, device_name):
+    try:
+        device.shell("echo test")
+        device.shell("input keyevent 82")
+        time.sleep(1)
+        device.shell("input swipe 500 1000 500 500")
+        time.sleep(1)
+        display_state = device.shell("dumpsys power | grep 'mHoldingDisplaySuspendBlocker'")
+        if "true" not in display_state.lower():
+            print(f"设备 {device_name} 屏幕未打开，尝试唤醒")
+            device.shell("input keyevent 26")
+            time.sleep(1)
+        print(f"设备 {device_name} 状态检查完成")
+        return True
+    except Exception as e:
+        print(f"设备 {device_name} 状态检查失败: {e}")
+        return False
+
+
 # 单设备回放任务
 def replay_device(device, scripts, screenshot_queue, click_queue, result_queue, stop_event, device_name):
-    serial = device.serial
-    log(f"设备 {device_name} 开始回放")
+    if not check_device_status(device, device_name):
+        print(f"设备 {device_name} 不可用，跳过回放")
+        stop_event.set()
+        result_queue.put((device_name, "completed_steps", 0, 0))
+        return
+
+    log_dir = os.path.join(output_dir, f"{device_name}_log")
+    os.makedirs(log_dir, exist_ok=True)
+    set_logdir(log_dir)
 
     step_counter = 0
-    global_start_time = time.time()
+    completed_steps = 0
+    total_steps = sum(len(json.load(open(s["path"], "r", encoding="utf-8"))["steps"]) for s in scripts)
 
     for script_idx, script_config in enumerate(scripts):
         script_path = script_config["path"]
-        loop_count = script_config.get("loop_count", None)
+        loop_count = script_config.get("loop_count", 1)
         max_duration = script_config.get("max_duration", float("inf"))
 
         if not os.path.exists(script_path):
-            log(f"文件 {script_path} 不存在，跳过")
+            print(f"文件 {script_path} 不存在，跳过")
             continue
+
         with open(script_path, "r", encoding="utf-8") as f:
             steps = json.load(f)["steps"]
 
+        print(
+            f"设备 {device_name} 开始执行脚本: {script_path} (循环次数: {loop_count}, 最长运行时间: {max_duration if max_duration != float('inf') else '无限制'}s)")
+        log({"msg": f"Start script {script_path}", "success": True})
+
         start_time = time.time()
         has_max_duration = max_duration != float("inf")
-        has_loop_count = loop_count is not None and loop_count > 0
-        loop_idx = 0
+        loops_completed = 0
 
-        # 构建优先级字典
         all_classes = {s["class"]: s.get("Priority", float("inf")) for s in steps if s["class"] != "unknown"}
-        step_map = {s["class"]: s for s in steps}  # 用于查找备注等信息
+        step_map = {s["class"]: s for s in steps}
 
-        while not stop_event.is_set():
+        while loops_completed < loop_count and not stop_event.is_set():
             if has_max_duration and time.time() - start_time > max_duration:
-                log(f"设备 {device_name} 文件 {script_path} 已达到最大运行时间 {max_duration}s")
-                break
-            if has_loop_count and loop_idx >= loop_count:
+                print(f"设备 {device_name} 脚本 {script_path} 已达到最大运行时间 {max_duration}s")
+                log({"msg": f"Timeout after {max_duration}s", "success": False})
                 break
 
-            log(f"设备 {device_name} 开始回放文件: {script_path} (循环次数: {loop_count if has_loop_count else '无限制'}, 最长运行时间: {max_duration if has_max_duration else '无限制'}s, 当前第 {loop_idx + 1} 次)")
+            print(f"设备 {device_name} 脚本 {script_path} 开始第 {loops_completed + 1} 次循环")
+            log({"msg": f"Start loop {loops_completed + 1} for script {script_path}", "success": True})
 
-            # 动态检测并按优先级执行
-            while not stop_event.is_set() and (not has_max_duration or time.time() - start_time <= max_duration):
+            for step in steps:
+                if stop_event.is_set():
+                    break
+                if has_max_duration and time.time() - start_time > max_duration:
+                    print(f"设备 {device_name} 脚本 {script_path} 超时退出")
+                    log({"msg": f"Timeout after {max_duration}s", "success": False})
+                    break
+
                 screenshot = device.screenshot()
                 frame = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
-                screenshot_queue.put((serial, step_counter + 1, frame, None, all_classes))
-                success, result = click_queue.get()
+                timestamp = time.time()
 
-                if success and result[0] is not None:
+                step_class = step.get("class", "unknown")
+                step_remark = step.get("remark", "")
+                log({"msg": f"Step {step_counter + 1}: Detecting {step_class} - {step_remark}", "success": True})
+                snapshot(msg=f"Step {step_counter + 1}: Detecting {step_class} - {step_remark}")
+
+                success, result = detect_buttons(frame, target_class=step_class)
+                if success:
                     x, y, detected_class = result
-                    step = step_map.get(detected_class, {"class": detected_class, "remark": "未定义", "Priority": all_classes[detected_class]})
                     step_counter += 1
                     step_num = step_counter
 
-                    log(f"设备 {device_name}: 执行步骤 {step_num} - {detected_class} (Priority: {all_classes[detected_class]}, remark: {step['remark']})")
-                    device.shell(f"input tap {x} {y}")
-                    log(f"设备 {device_name}: 检测到 {detected_class} (Priority: {all_classes[detected_class]}) 并点击: ({x:.1f}, {y:.1f})")
-                    action_queue.put((serial, step_num, detected_class, x, y, time.time()))
-                    result_queue.put((serial, step_num, "click", True))
+                    log({"msg": f"Step {step_num}: Click {detected_class} at ({x:.1f}, {y:.1f}) - {step_remark}",
+                         "success": True})
+                    touch([x, y])
+                    action_queue.put((device_name, step_num, detected_class, x, y, time.time()))
+                    result_queue.put((device_name, step_num, "click", True))
+                    completed_steps += 1
 
                     time.sleep(0.5)
-                    if verify_target_disappeared(device, detected_class):
-                        log(f"设备 {device_name}: 按钮 {detected_class} 已消失")
-                        result_queue.put((serial, step_num, "verify", True))
-                    else:
-                        log(f"设备 {device_name}: 按钮 {detected_class} 未消失")
-                        result_queue.put((serial, step_num, "verify", False))
+                    disappeared = verify_target_disappeared(device, detected_class)
+                    log({
+                            "msg": f"Step {step_num}: After click {detected_class} - {'Disappeared' if disappeared else 'Not Disappeared'}",
+                            "success": disappeared})
+                    snapshot(
+                        msg=f"Step {step_num}: After click {detected_class} - {'Disappeared' if disappeared else 'Not Disappeared'}")
 
-                    # 检查最后一步是否成功
-                    if script_idx < len(scripts) - 1 and loop_idx == (loop_count - 1 if has_loop_count else 0):
-                        if not verify_target_disappeared(device, detected_class):
-                            log(f"设备 {device_name}: 文件 {script_path} 最后一步 {step_num} 执行失败，停止后续文件")
+                    if script_idx < len(scripts) - 1 and step == steps[-1]:
+                        if not disappeared:
+                            print(f"设备 {device_name} 脚本 {script_path} 最后一步 {step_num} 执行失败，停止后续脚本")
+                            log({"msg": f"Step {step_num}: Failed - Target {detected_class} did not disappear",
+                                 "success": False})
                             stop_event.set()
                             return
                 else:
-                    # 如果未检测到任何目标，检查是否有 "unknown" 步骤
-                    if "unknown" in step_map:
-                        step = step_map["unknown"]
+                    if step_class == "unknown":
                         step_counter += 1
                         step_num = step_counter
                         h, w = frame.shape[:2]
                         x, y = step.get("relative_x", 0.5) * w, step.get("relative_y", 0.5) * h
-                        log(f"设备 {device_name}: 执行步骤 {step_num} - unknown (Priority: {step.get('Priority', float('inf'))}, remark: {step['remark']})")
-                        device.shell(f"input tap {x} {y}")
-                        log(f"设备 {device_name}: 未识别按钮点击: ({x:.1f}, {y:.1f})")
-                        action_queue.put((serial, step_num, "unknown", x, y, time.time()))
-                        result_queue.put((serial, step_num, "click", True))
+
+                        log({"msg": f"Step {step_num}: Click unknown at ({x:.1f}, {y:.1f}) - {step_remark}",
+                             "success": True})
+                        touch([x, y])
+                        action_queue.put((device_name, step_num, "unknown", x, y, time.time()))
+                        result_queue.put((device_name, step_num, "click", True))
+                        completed_steps += 1
                         time.sleep(3)
+                        snapshot(msg=f"Step {step_num}: Click unknown at ({x:.1f}, {y:.1f})")
                     else:
-                        log(f"设备 {device_name}: 未检测到任何目标按钮，等待下一轮检测")
+                        print(f"设备 {device_name} 未检测到目标按钮 {step_class}，等待下一轮检测")
+                        log({
+                                "msg": f"Step {step_counter + 1}: No target {step_class} detected, waiting for next detection",
+                                "success": False})
+                        # Save screenshot for debugging
+                        cv2.imwrite(os.path.join(log_dir, f"failed_detection_step_{step_counter + 1}_{timestamp}.jpg"),
+                                    frame)
                         time.sleep(1)
-                        break  # 退出内层循环，重新检测
 
-            loop_idx += 1
+            loops_completed += 1
+            print(f"设备 {device_name} 脚本 {script_path} 完成第 {loops_completed} 次循环")
+            log({"msg": f"End loop {loops_completed} for script {script_path}", "success": True})
 
-    log(f"设备 {device_name} 回放完成")
-    if not stop_event.is_set():
-        # 确保所有步骤记录完成状态
-        step_counter = 0
-        for script_config in scripts:
-            with open(script_config["path"], "r", encoding="utf-8") as f:
-                steps = json.load(f)["steps"]
-            for step in steps:
-                step_counter += 1
-                if (step_counter, "click") not in result_queue.queue:
-                    result_queue.put((serial, step_counter, "click", True))
-                if step["class"] != "unknown" and (step_counter, "verify") not in result_queue.queue:
-                    result_queue.put((serial, step_counter, "verify", True))
+        print(f"设备 {device_name} 脚本 {script_path} 执行完成")
+        log({"msg": f"End script {script_path}", "success": True})
+
+    print(f"设备 {device_name} 回放完成，完成步骤数: {completed_steps}")
+    log({"msg": f"End replay for device {device_name}, completed steps: {completed_steps}", "success": True})
+    stop_event.set()
+    result_queue.put((device_name, "completed_steps", completed_steps, total_steps))
 
 
-# 主线程检测服务
+# 检测服务
 def detection_service(screenshot_queue, click_queue, stop_event):
     while not stop_event.is_set():
         try:
-            item = screenshot_queue.get(timeout=60)
+            item = screenshot_queue.get(timeout=1)
             if len(item) != 5:
-                log(f"跳过无效数据: {item}")
+                print(f"跳过无效数据: {item}")
                 continue
-            serial, step_num, frame, target_class, all_classes_or_special = item
-            success, coords = detect_buttons(frame, all_classes_or_special, target_class)
+            device_name, step_num, frame, target_class, all_classes_or_special = item
+            success, coords = detect_buttons(frame, target_class=target_class)
             click_queue.put((success, coords))
         except queue.Empty:
             continue
         except Exception as e:
-            log(f"检测服务错误: {e}")
+            print(f"检测服务错误: {e}")
 
+def generate_airtest_report(device_name, script_path):
+    log_dir = os.path.join(output_dir, f"{device_name}_log")
+    report_file = os.path.join(report_dir, f"{device_name}_report.html")
 
-# 回放步骤（主线程负责显示）
+    # 创建临时脚本文件
+    temp_script = os.path.join(log_dir, "temp_script.py")
+    with open(temp_script, "w", encoding="utf-8") as f:
+        f.write("# Temporary script for Airtest report generation\n")
+        f.write("from airtest.core.api import *\n")
+        f.write("log({'msg': 'Temporary script executed', 'success': True})\n")
+
+    try:
+        # 调试输出日志目录和文件
+        print(f"Log directory: {log_dir}")
+        print(f"Log files: {os.listdir(log_dir)}")
+
+        # 使用 LogToHtml 生成报告
+        report = LogToHtml(temp_script, log_root=log_dir)
+        # report.report("html_report.html", output_file=report_file)
+        report.report( output_file=report_file)
+        print(f"已为设备 {device_name} 生成 Airtest 报告: {report_file}")
+    except Exception as e:
+        print(f"设备 {device_name} 的报告生成失败: {e}")
+        # 打印详细的异常信息
+        import traceback
+        traceback.print_exc()
+    finally:
+        if os.path.exists(temp_script):
+            os.remove(temp_script)
+
+# 生成报告
+def generate_report(device_info):
+    report = {
+        "device_name": device_info['device_name'],
+        "success": False,  # 默认设置为 False
+        "error_message": None  # 添加错误信息字段
+    }
+    # 模拟报告生成逻辑
+    try:
+        # 生成报告的逻辑
+        # 这里可以添加具体的报告生成逻辑，例如调用其他函数或处理数据
+        report["success"] = True
+    except Exception as e:
+        report["success"] = False
+        report["error_message"] = str(e)  # 记录错误信息
+        print(f"Error generating report: {e}")
+
+    if report["success"]:
+        print("Report generated successfully")
+    else:
+        print(f"Report generation failed: {report['error_message']}")
+
+# 回放步骤
 def replay_steps(scripts, show_screens=False):
     global model, devices
 
@@ -226,18 +327,30 @@ def replay_steps(scripts, show_screens=False):
     for script_config in scripts:
         script_path = script_config["path"]
         if not os.path.exists(script_path):
-            log(f"文件 {script_path} 不存在，跳过")
+            print(f"文件 {script_path} 不存在，跳过")
             continue
         loaded_scripts.append(script_config)
 
     if not loaded_scripts:
-        log("未加载任何有效脚本，回放终止")
+        print("未加载任何有效脚本，回放终止")
         return False
 
-    device_names = {d.serial: get_device_name(d) for d in devices}
-    log(f"加载脚本: {', '.join(s['path'] for s in loaded_scripts)}")
-    log(f"检测到 {len(devices)} 个设备: {[device_names[d.serial] for d in devices]}")
-    log("开始回放")
+    device_names = {}
+    for device in devices:
+        serial = device.serial
+        try:
+            airtest_device = connect_device(f"Android:///{serial}")
+            device_names[serial] = get_device_name(airtest_device)
+            airtest_device.serial = serial
+            print(f"设备 {device_names[serial]} 连接成功")
+        except Exception as e:
+            print(f"设备 {serial} 连接失败: {e}")
+            continue
+
+    print(f"加载脚本: {', '.join(s['path'] for s in loaded_scripts)}")
+    print(f"检测到 {len(devices)} 个设备: {[device_names[d.serial] for d in devices]}")
+    print("开始回放")
+    log({"msg": "Start replay", "success": True})
 
     screenshot_queue = queue.Queue()
     click_queue = queue.Queue()
@@ -256,10 +369,10 @@ def replay_steps(scripts, show_screens=False):
             try:
                 cv2.namedWindow(windows[serial], cv2.WINDOW_NORMAL)
                 cv2.resizeWindow(windows[serial], 360, 640)
-                log(f"创建窗口: {windows[serial]}")
+                print(f"创建窗口: {windows[serial]}")
                 window_created[serial] = True
             except Exception as e:
-                log(f"创建窗口 {windows[serial]} 失败: {e}")
+                print(f"创建窗口 {windows[serial]} 失败: {e}")
 
     detection_thread = Thread(target=detection_service, args=(screenshot_queue, click_queue, stop_event))
     detection_thread.daemon = True
@@ -268,52 +381,41 @@ def replay_steps(scripts, show_screens=False):
 
     active_devices = set(d.serial for d in devices)
     step_results = {d.serial: {} for d in devices}
+    completed_steps_per_device = {d.serial: 0 for d in devices}
+    total_steps_per_device = {d.serial: 0 for d in devices}
+
     for device in devices:
         t = Thread(target=replay_device, args=(
-            device, loaded_scripts, screenshot_queue, click_queue, result_queue, stop_event, device_names[device.serial]))
+            device, loaded_scripts, screenshot_queue, click_queue, result_queue, stop_event,
+            device_names[device.serial]))
         t.daemon = True
         t.start()
         threads.append(t)
 
-    total_steps = sum(len(json.load(open(s["path"], "r", encoding="utf-8"))["steps"]) for s in loaded_scripts)
     last_update_time = time.time()
+
     while active_devices and not stop_event.is_set():
         while not result_queue.empty():
-            serial, step, action, success = result_queue.get_nowait()
-            step_results[serial][(step, action)] = success
-
-        step_counter = 0
-        for script_config in loaded_scripts:
-            with open(script_config["path"], "r", encoding="utf-8") as f:
-                steps = json.load(f)["steps"]
-            for step in steps:
-                step_counter += 1
-                for serial in list(active_devices):
-                    if (step_counter, "click") not in step_results[serial]:
-                        timestamp = step.get("timestamp", time.time())
-                        try:
-                            timestamp = float(timestamp)
-                        except (TypeError, ValueError):
-                            timestamp = time.time()
-                        if time.time() - timestamp > 60:
-                            log(f"设备 {device_names[serial]} 步骤 {step_counter} 超时或未完成")
-                        continue
-                    if not step_results[serial][(step_counter, "click")]:
-                        log(f"设备 {device_names[serial]} 步骤 {step_counter} 点击失败，继续后续步骤")
-
-        for serial in list(active_devices):
-            if all((i, "click") in step_results[serial] for i in range(1, total_steps + 1)):
-                active_devices.remove(serial)
+            device_name, key, value, total_steps = result_queue.get_nowait()
+            serial = [d.serial for d in devices if device_names[d.serial] == device_name][0]
+            if key == "completed_steps":
+                completed_steps_per_device[serial] = value
+                total_steps_per_device[serial] = total_steps
+                active_devices.discard(serial)
+                print(f"设备 {device_names[serial]} 回放完成，完成步骤数: {value}")
+            else:
+                step_results[serial][(key, value)] = True
 
         if show_screens and (time.time() - last_update_time >= 1.0):
             while not action_queue.empty():
-                serial, step_num, button_class, x, y, timestamp = action_queue.get_nowait()
+                device_name, step_num, button_class, x, y, timestamp = action_queue.get_nowait()
+                serial = [d.serial for d in devices if device_names[d.serial] == device_name][0]
                 screenshot = devices[[d.serial for d in devices].index(serial)].screenshot()
                 frame = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
                 frame_buffers[serial] = frame
                 action_buffers[serial] = (step_num, button_class, x, y)
                 action_timestamps[serial] = timestamp
-                log(f"设备 {serial} 更新点击: 步骤 {step_num} - {button_class} 在 ({x:.1f}, {y:.1f})")
+                print(f"设备 {device_name} 更新点击: 步骤 {step_num} - {button_class} 在 ({x:.1f}, {y:.1f})")
 
             for serial in windows:
                 if frame_buffers[serial] is not None and window_created[serial]:
@@ -326,12 +428,12 @@ def replay_steps(scripts, show_screens=False):
                     try:
                         cv2.imshow(windows[serial], annotated_frame)
                     except Exception as e:
-                        log(f"显示窗口 {windows[serial]} 失败: {e}")
+                        print(f"显示窗口 {windows[serial]} 失败: {e}")
             last_update_time = time.time()
 
             key = cv2.waitKey(1)
             if key & 0xFF == ord('q'):
-                log("检测到 'q' 键，停止回放")
+                print("检测到 'q' 键，停止回放")
                 stop_event.set()
 
         time.sleep(0.05)
@@ -340,10 +442,31 @@ def replay_steps(scripts, show_screens=False):
     for t in threads:
         t.join(timeout=1.0)
     cv2.destroyAllWindows()
-    if active_devices:
-        log("回放未全部完成，部分设备仍有未执行步骤")
+
+    # 生成报告
+    report_success = True
+    for device in devices:
+        script_path = loaded_scripts[0]["path"] if loaded_scripts else "dummy_script.py"
+        try:
+            generate_airtest_report(device_names[device.serial], script_path)
+            if not os.path.exists(os.path.join(output_dir, f"{device_names[device.serial]}_log",
+                                               f"{device_names[device.serial]}_report.html")):
+                report_success = False
+        except Exception as e:
+            print(f"设备 {device_names[device.serial]} 的报告生成失败: {e}")
+            report_success = False
+
+    # 检查是否所有步骤都完成
+    all_steps_completed = all(
+        completed_steps_per_device[serial] == total_steps_per_device[serial] for serial in completed_steps_per_device)
+
+    if not all_steps_completed:
+        print("回放未全部完成，部分设备仍有未执行步骤")
         return False
-    log("所有设备回放成功")
+    if not report_success:
+        print("所有设备回放成功，但报告生成失败")
+        return False
+    print("所有设备回放成功，报告生成成功")
     return True
 
 
@@ -351,39 +474,66 @@ def replay_steps(scripts, show_screens=False):
 def main():
     parser = argparse.ArgumentParser(description="设备回放脚本")
     parser.add_argument("--show-screens", action="store_true", help="显示所有设备画面并同步回放")
+    parser.add_argument("--steps", nargs="+", help="指定多个回放步骤文件")
+    parser.add_argument("--loop-count", type=int, action="append", help="指定循环次数，逐脚本应用")
+    parser.add_argument("--max-duration", type=float, action="append", help="指定最大运行时间（秒），逐脚本应用")
 
-    args, remaining = parser.parse_known_args()
+    args = parser.parse_args()
     scripts = []
-    i = 0
-    while i < len(remaining):
-        if remaining[i] == "script":
-            if i + 1 >= len(remaining):
-                parser.error("每个 'script' 后必须指定文件路径")
-            script_config = {"path": remaining[i + 1]}
-            i += 2
-            while i < len(remaining) and remaining[i].startswith("--"):
-                if remaining[i] == "--loop-count" and i + 1 < len(remaining):
-                    script_config["loop_count"] = int(remaining[i + 1])
-                    i += 2
-                elif remaining[i] == "--max-duration" and i + 1 < len(remaining):
-                    script_config["max_duration"] = float(remaining[i + 1])
-                    i += 2
-                else:
-                    break
+
+    if args.steps:
+        script_files = args.steps
+        loop_counts = args.loop_count or []
+        max_durations = args.max_duration or []
+
+        for i, script_path in enumerate(script_files):
+            if script_path.startswith("--"):
+                continue
+            script_config = {"path": script_path}
+            if i < len(loop_counts):
+                script_config["loop-count"] = loop_counts[i]
+            if i < len(max_durations):
+                script_config["max-duration"] = max_durations[i]
             scripts.append(script_config)
-        else:
-            i += 1
 
     if not scripts:
-        parser.error("必须指定至少一个脚本使用 'script' 命令")
+        parser.error("必须使用 --steps 指定至少一个脚本文件")
 
     global devices, model
     devices = adb.device_list()
     if not devices:
         print("错误: 未检测到 ADB 设备")
         exit(1)
-    device_names = {d.serial: get_device_name(d) for d in devices}
-    print(f"已连接设备: {[device_names[d.serial] for d in devices]}")
+
+    # 连接设备
+    for device in devices:
+        try:
+            connect_device(f"Android:///{device.serial}")
+            device_name = get_device_name(device)
+            setup_device_logger(device_name)
+            print(f"设备 {device_name} 连接成功")
+        except Exception as e:
+            print(f"设备 {device.serial} 连接失败: {e}")
+
+    # 检查设备状态
+    for device in devices:
+        device_name = get_device_name(device)
+        if not check_device_status(device, device_name):
+            print(f"设备 {device_name} 不可用，跳过回放")
+            exit(1)
+
+    # 加载模型
+    try:
+        model = YOLO("/Users/helloppx/PycharmProjects/GameAI/outputs/train/weights/best.pt")
+    except Exception as e:
+        print(f"模型加载失败: {e}")
+        exit(1)
+
+    # 检测设备
+    devices = adb.device_list()
+    if not devices:
+        print("错误: 未检测到 ADB 设备")
+        exit(1)
 
     try:
         model = YOLO("/Users/helloppx/PycharmProjects/GameAI/outputs/train/weights/best.pt")
