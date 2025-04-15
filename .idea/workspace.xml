@@ -2,224 +2,26 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="c30644e7-2373-4ecb-8e47-5923e35822fd" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/templates/report_tpl.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/outputs/recordlogs/scene1_nologin_steps_2025-04-07.json" beforeDir="false" afterPath="$PROJECT_DIR$/outputs/recordlogs/scene1_nologin_steps_2025-04-07.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replay_reports/OnePlus-KB2000-1080x2400_report.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/HUAWEI-JAD-AL00-1228x2700_log/device_info.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/HUAWEI-JAD-AL00-1228x2700_log/failed_detection_step_1_1744364018.539593.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/HUAWEI-JAD-AL00-1228x2700_log/failed_detection_step_1_1744364026.352297.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/HUAWEI-JAD-AL00-1228x2700_log/failed_detection_step_1_1744364031.3488572.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/HUAWEI-JAD-AL00-1228x2700_log/failed_detection_step_1_1744364036.574208.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/HUAWEI-JAD-AL00-1228x2700_log/failed_detection_step_1_1744365324.1033049.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/HUAWEI-JAD-AL00-1228x2700_log/failed_detection_step_1_1744365331.716049.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/HUAWEI-JAD-AL00-1228x2700_log/failed_detection_step_1_1744365335.9118369.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/HUAWEI-JAD-AL00-1228x2700_log/failed_detection_step_1_1744365339.959755.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/HUAWEI-JAD-AL00-1228x2700_log/failed_detection_step_1_1744365343.90381.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/HUAWEI-JAD-AL00-1228x2700_log/failed_detection_step_1_1744369153.9400058.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/HUAWEI-JAD-AL00-1228x2700_log/failed_detection_step_1_1744369161.401375.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/HUAWEI-JAD-AL00-1228x2700_log/failed_detection_step_1_1744369165.234231.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/HUAWEI-JAD-AL00-1228x2700_log/failed_detection_step_1_1744369169.0809238.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/HUAWEI-JAD-AL00-1228x2700_log/log.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744364020679.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744364020847.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744364020847_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744364024808.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744364024808_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744364024958.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744364024958_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744364026464.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744364026464_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744364031494.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744364031494_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744364035623.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744364035623_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744364036691.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744364036691_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744364037036.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744364037036_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744364039523.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744364039523_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744364041808.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744364041808_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744364042000.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744364042123.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744364042238.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744364042238_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744364045504.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744364045504_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744364048570.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744364048570_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744364048696.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744364048696_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744364052170.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744364052280.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744364052280_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744365326301.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744365326354.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744365326354_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744365330099.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744365330099_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744365331814.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744365331814_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744365332407.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744365332407_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744365334632.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744365334632_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744365336018.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744365336018_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744365336867.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744365336867_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744365339096.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744365339096_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744365339275.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744365340030.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744365340030_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744365343210.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744365343210_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744365344005.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744365344005_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744369156069.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744369156263.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744369156263_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744369159889.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744369159889_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744369161492.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744369161492_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744369162120.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744369162120_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744369164400.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744369164400_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744369165340.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744369165340_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744369166656.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744369166656_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744369168934.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744369168934_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744369169085.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744369169197.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744369169197_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744369172879.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744369172879_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744369173036.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744369173036_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744369173210.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744369173210_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370050612.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370050612_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370054148.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370054148_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370054318.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370054318_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370064918.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370064918_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370066300.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370066300_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370066476.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370066476_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370075760.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370075760_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370076967.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370076967_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370077105.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370077105_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370079357.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370079357_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370080703.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370080703_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370083202.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370083202_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370083349.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370083349_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370086648.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370086648_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370242600.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370246244.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370246412.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370248801.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370249903.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370252304.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370254668.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370257050.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370257174.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370260482.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370339570.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370339570_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370343307.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370343307_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370343504.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370343504_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370354078.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370354078_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370355533.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370355533_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370355664.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370355664_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370358035.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370358035_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370359599.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370359599_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370362169.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370362169_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370362334.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370362334_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370364538.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370364538_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370365957.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370365957_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370366135.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370366135_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370369433.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744370369433_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744597737306.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744597737306_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744597738684.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744597738684_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744597741401.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744597741401_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744597743004.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744597743004_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744597743153.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744597743153_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744597745028.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744597745028_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744597746092.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744597746092_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744597746222.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744597746222_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744597748605.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/1744597748605_small.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/device_info.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/failed_detection_step_1_1744364018.464181.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/failed_detection_step_1_1744365323.9662201.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/failed_detection_step_1_1744365330.0038888.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/failed_detection_step_1_1744365332.286009.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/failed_detection_step_1_1744365334.518253.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/failed_detection_step_1_1744365336.776681.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/failed_detection_step_1_1744369153.6999848.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/failed_detection_step_1_1744369159.7926269.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/failed_detection_step_1_1744369162.027354.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/failed_detection_step_1_1744369164.277039.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/failed_detection_step_1_1744369166.534282.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/failed_detection_step_1_1744370048.818708.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/failed_detection_step_1_1744370240.8456461.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/failed_detection_step_1_1744370337.825736.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/failed_detection_step_2_1744364036.903579.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/failed_detection_step_2_1744364039.401891.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/failed_detection_step_2_1744370249.8329349.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/failed_detection_step_2_1744370252.221392.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/failed_detection_step_2_1744370254.602529.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/failed_detection_step_3_1744370359.517791.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/failed_detection_step_4_1744370080.622123.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_log/log.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/replay_log_2025-04-10_153245.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/replay_log_2025-04-10_153531.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/replay_log_2025-04-10_154324.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/replay_log_2025-04-10_154626.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/replay_log_2025-04-10_154700.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/replay_log_2025-04-10_165132.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/outputs/replay_reports/summary_report_2025-04-14-17-04-44.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/outputs/replay_reports/summary_report_2025-04-14-17-12-50.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_2025-04-14-17-12-50/1744621976914.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_2025-04-14-17-12-50/1744621976914_small.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_2025-04-14-17-12-50/1744621978135.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_2025-04-14-17-12-50/1744621978135_small.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_2025-04-14-17-12-50/1744621980284.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_2025-04-14-17-12-50/1744621980284_small.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_2025-04-14-17-12-50/1744621981350.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_2025-04-14-17-12-50/1744621981350_small.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_2025-04-14-17-12-50/1744621981479.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_2025-04-14-17-12-50/1744621981479_small.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_2025-04-14-17-12-50/1744621983892.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_2025-04-14-17-12-50/1744621983892_small.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_2025-04-14-17-12-50/log.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/outputs/replaylogs/OnePlus-KB2000-1080x2400_2025-04-14-17-12-50/report/log.html" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/replay_script.py" beforeDir="false" afterPath="$PROJECT_DIR$/replay_script.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test.py" beforeDir="false" afterPath="$PROJECT_DIR$/test.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -238,15 +40,16 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "WebServerToolWindowFactoryState": "false",
-    "last_opened_file_path": "/Users/helloppx/PycharmProjects/GameAI/templates",
-    "nodejs_package_manager_path": "npm"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/helloppx/PycharmProjects/GameAI/templates&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/templates" />
@@ -285,7 +88,8 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1744274919831</updated>
-      <workItem from="1744274921478" duration="37108000" />
+      <workItem from="1744274921478" duration="67545000" />
+      <workItem from="1744714489278" duration="1102000" />
     </task>
     <servers />
   </component>
