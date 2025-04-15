@@ -32,6 +32,8 @@ os.makedirs(output_dir, exist_ok=True)
 os.makedirs(report_dir, exist_ok=True)
 screenshot_queue = queue.Queue()
 action_queue = queue.Queue()
+click_queue = queue.Queue()  # 新增全局 click_queue
+
 
 # Airtest 兼容的 JSON 日志格式化器
 class AirtestJsonFormatter(logging.Formatter):
@@ -51,6 +53,7 @@ class AirtestJsonFormatter(logging.Formatter):
         }
         return json.dumps(log_entry, ensure_ascii=False)
 
+
 # 日志函数
 def setup_device_logger(device_name):
     log_file = os.path.join(output_dir, f"{device_name}_log.txt")
@@ -62,6 +65,7 @@ def setup_device_logger(device_name):
     logger.addHandler(handler)
     return logger
 
+
 # 获取设备名称
 def get_device_name(device):
     try:
@@ -72,6 +76,7 @@ def get_device_name(device):
     except Exception as e:
         print(f"获取设备 {device.serial} 信息失败: {e}")
         return device.serial
+
 
 # 检测按钮
 def detect_buttons(frame, target_class=None):
@@ -89,6 +94,7 @@ def detect_buttons(frame, target_class=None):
             return True, (x, y, detected_class)
     return False, (None, None, None)
 
+
 # 验证目标消失
 def verify_target_disappeared(device, target_class, max_attempts=5, delay=0.5):
     for attempt in range(max_attempts):
@@ -99,6 +105,7 @@ def verify_target_disappeared(device, target_class, max_attempts=5, delay=0.5):
             return True
         time.sleep(delay)
     return False
+
 
 # 检查设备状态
 def check_device_status(device, device_name):
@@ -119,6 +126,7 @@ def check_device_status(device, device_name):
         print(f"设备 {device_name} 状态检查失败: {e}")
         return False
 
+
 # 获取设备日志目录
 def get_log_dir(dev):
     device_dir = dev.replace(".", "_").replace(":", "_") + CURRENT_TIME
@@ -130,11 +138,13 @@ def get_log_dir(dev):
             pass
     return log_dir
 
+
 # 清理日志目录
 def clear_log_dir():
     if os.path.exists(output_dir):
         shutil.rmtree(output_dir)
     os.makedirs(output_dir, exist_ok=True)
+
 
 # 加载测试进度数据
 def load_json_data(run_all):
@@ -152,119 +162,190 @@ def load_json_data(run_all):
             'tests': {}
         }
 
-# 单设备回放任务
-def replay_device(device, scripts, screenshot_queue, click_queue, result_queue, stop_event, device_name, log_dir):
-    if not check_device_status(device, device_name):
-        print(f"设备 {device_name} 不可用，跳过回放")
-        stop_event.set()
-        result_queue.put((device_name, "completed_steps", 0, 0))
-        return
 
-    set_logdir(log_dir)
+def replay_device(device, scripts, screenshot_queue, action_queue, stop_event, device_name, log_dir, show_screens=False,
+                  loop_count=1):
+    """
+    回放设备脚本，记录日志并生成报告所需信息。
 
-    step_counter = 0
-    completed_steps = 0
-    total_steps = sum(len(json.load(open(s["path"], "r", encoding="utf-8"))["steps"]) for s in scripts)
+    参数:
+        device: ADB 设备对象（adbutils 设备实例）。
+        scripts (list): 脚本配置列表，例如 [{"path": "path/to/script.json", "loop_count": 1}]。
+        screenshot_queue (queue.Queue): 截图队列，用于传递屏幕截图给检测服务。
+        action_queue (queue.Queue): 动作队列，用于记录操作。
+        stop_event (threading.Event): 停止事件，用于控制检测服务。
+        device_name (str): 设备名称，例如 "OnePlus-KB2000-1080x2400"。
+        log_dir (str): 日志目录，例如 "outputs/replaylogs/OnePlus-KB2000-1080x2400_2025-04-15-14-34-35"。
+        show_screens (bool): 是否显示屏幕（默认 False）。
+        loop_count (int): 循环次数（默认 1，从 scripts 中获取优先）。
+    """
+    # 打印参数（用于调试）
+    print(f"设备: {device_name}, 脚本: {scripts}, 日志目录: {log_dir}")
+    print(f"show_screens: {show_screens}, loop_count: {loop_count}")
 
-    for script_idx, script_config in enumerate(scripts):
-        script_path = script_config["path"]
-        loop_count = script_config.get("loop_count", 1)
-        max_duration = script_config.get("max_duration", float("inf"))
+    # 模拟设备初始化
+    print(f"开始回放设备: {device_name}, 脚本: {scripts}")
 
-        if not os.path.exists(script_path):
-            print(f"文件 {script_path} 不存在，跳过")
-            continue
+    # 从 scripts 中提取脚本路径和循环次数
+    if not scripts:
+        raise ValueError("脚本列表为空，无法回放")
 
-        with open(script_path, "r", encoding="utf-8") as f:
-            steps = json.load(f)["steps"]
+    script_config = scripts[0]  # 假设每次只处理一个脚本
+    script_path = script_config["path"]
+    script_loop_count = script_config.get("loop_count", loop_count)  # 优先使用脚本配置中的 loop_count
 
-        print(f"设备 {device_name} 开始执行脚本: {script_path} (循环次数: {loop_count}, 最长运行时间: {max_duration if max_duration != float('inf') else '无限制'}s)")
-        log({"msg": f"Start script {script_path}", "success": True})
+    # 从 script_path 读取步骤
+    with open(script_path, "r", encoding="utf-8") as f:
+        json_data = json.load(f)
+        steps = json_data.get("steps", [])  # 确保获取 steps 列表
 
-        start_time = time.time()
-        has_max_duration = max_duration != float("inf")
-        loops_completed = 0
+    # 检查 steps 是否为空
+    if not steps:
+        raise ValueError(f"脚本 {script_path} 中未找到有效的步骤")
 
-        while loops_completed < loop_count and not stop_event.is_set():
-            if has_max_duration and time.time() - start_time > max_duration:
-                print(f"设备 {device_name} 脚本 {script_path} 已达到最大运行时间 {max_duration}s")
-                log({"msg": f"Timeout after {max_duration}s", "success": False})
-                break
+    # 循环执行（根据 script_loop_count）
+    for loop in range(script_loop_count):
+        print(f"第 {loop + 1}/{script_loop_count} 次循环")
+        step_counter = 0
+        for step in steps:
+            step_class = step["class"]
+            step_remark = step["remark"]
+            step_counter += 1
+            step_num = step_counter
+            timestamp = time.time()  # 更新时间戳
 
-            print(f"设备 {device_name} 脚本 {script_path} 开始第 {loops_completed + 1} 次循环")
-            log({"msg": f"Start loop {loops_completed + 1} for script {script_path}", "success": True})
+            # 获取设备屏幕截图
+            screenshot = device.screenshot()  # 使用 adbutils 获取截图
+            frame = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
+            if frame is None:
+                raise ValueError("无法获取设备屏幕截图")
 
-            for step in steps:
-                if stop_event.is_set():
-                    break
-                if has_max_duration and time.time() - start_time > max_duration:
-                    print(f"设备 {device_name} 脚本 {script_path} 超时退出")
-                    log({"msg": f"Timeout after {max_duration}s", "success": False})
-                    break
+            # 将截图和检测任务放入队列
+            screenshot_queue.put((device_name, step_num, frame, step_class, None))
 
-                screenshot = device.screenshot()
-                frame = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
-                timestamp = time.time()
+            # 等待检测结果，添加超时机制
+            try:
+                success, (x, y, detected_class) = click_queue.get(timeout=10)  # 等待最多 10 秒
+            except queue.Empty:
+                print(f"设备 {device_name} 检测超时，未收到目标按钮 {step_class} 的检测结果")
+                success, (x, y, detected_class) = False, (None, None, None)
 
-                step_class = step.get("class", "unknown")
-                step_remark = step.get("remark", "")
-                log({"msg": f"Step {step_counter + 1}: Detecting {step_class} - {step_remark}", "success": True})
-                snapshot(msg=f"Step {step_counter + 1}: Detecting {step_class} - {step_remark}")
+            # 记录 snapshot 日志（depth 设为 0）
+            snapshot_filename = f"step_{step_num}_{timestamp}.jpg" if success else f"failed_detection_step_{step_num}_{timestamp}.jpg"
+            screenshot_path = os.path.join(log_dir, snapshot_filename)
+            cv2.imwrite(screenshot_path, frame)
+            print(f"保存截图: {screenshot_path}")
 
-                success, result = detect_buttons(frame, target_class=step_class)
-                if success:
-                    x, y, detected_class = result
-                    step_counter += 1
-                    step_num = step_counter
+            snapshot_entry = {
+                "name": "snapshot",
+                "call_args": {
+                    "msg": f"Step {step_num}: Detecting {step_class} - {step_remark}",
+                    "filename": snapshot_filename
+                },
+                "start_time": timestamp,
+                "ret": {"screen": snapshot_filename, "resolution": [1080, 2400]},
+                "end_time": timestamp
+            }
+            print(f"记录 snapshot 日志: {snapshot_entry}")
+            log_entry = json.dumps({
+                "tag": "function",
+                "depth": 0,  # 顶级步骤
+                "time": timestamp,
+                "data": snapshot_entry
+            }, ensure_ascii=False) + "\n"
+            with open(os.path.join(log_dir, "log.txt"), "a", encoding="utf-8") as f:
+                f.write(log_entry)
 
-                    log({"msg": f"Step {step_num}: Click {detected_class} at ({x:.1f}, {y:.1f}) - {step_remark}", "success": True})
-                    touch([x, y])
-                    action_queue.put((device_name, step_num, detected_class, x, y, time.time()))
-                    result_queue.put((device_name, step_num, "click", True))
-                    completed_steps += 1
+            if not success:
+                print(f"设备 {device_name} 未检测到目标按钮 {step_class}，标记为失败")
 
-                    time.sleep(0.5)
-                    disappeared = verify_target_disappeared(device, detected_class)
-                    log({"msg": f"Step {step_num}: After click {detected_class} - {'Disappeared' if disappeared else 'Not Disappeared'}", "success": disappeared})
-                    snapshot(msg=f"Step {step_num}: After click {detected_class} - {'Disappeared' if disappeared else 'Not Disappeared'}")
+                # 记录 try_log_screen 日志（depth 设为 1）
+                try_log_screen_entry = {
+                    "name": "try_log_screen",
+                    "call_args": {"quality": 10, "max_size": None},
+                    "start_time": timestamp,
+                    "ret": {"screen": snapshot_filename, "resolution": [1080, 2400]},
+                    "end_time": timestamp
+                }
+                print(f"记录 try_log_screen 日志: {try_log_screen_entry}")
+                log_entry = json.dumps({
+                    "tag": "function",
+                    "depth": 1,  # snapshot 的子操作
+                    "time": timestamp,
+                    "data": try_log_screen_entry
+                }, ensure_ascii=False) + "\n"
+                with open(os.path.join(log_dir, "log.txt"), "a", encoding="utf-8") as f:
+                    f.write(log_entry)
 
-                    if script_idx < len(scripts) - 1 and step == steps[-1]:
-                        if not disappeared:
-                            print(f"设备 {device_name} 脚本 {script_path} 最后一步 {step_num} 执行失败，停止后续脚本")
-                            log({"msg": f"Step {step_num}: Failed - Target {detected_class} did not disappear", "success": False})
-                            stop_event.set()
-                            return
-                else:
-                    if step_class == "unknown":
-                        step_counter += 1
-                        step_num = step_counter
-                        h, w = frame.shape[:2]
-                        x, y = step.get("relative_x", 0.5) * w, step.get("relative_y", 0.5) * h
+                # 记录失败日志，添加 loop_find（depth 设为 1）
+                loop_find_entry = {
+                    "name": "loop_find",
+                    "call_args": {
+                        "query": f"Target {step_class}",
+                        "timeout": 10,
+                        "interval": 0.5
+                    },
+                    "start_time": timestamp,
+                    "end_time": timestamp,
+                    "traceback": f"TargetNotFoundError: 'Target {step_class} not found in screen for Step {step_num}'"
+                }
+                print(f"记录 loop_find 失败日志: {loop_find_entry}")
+                log_entry = json.dumps({
+                    "tag": "function",
+                    "depth": 1,  # snapshot 的子操作
+                    "time": timestamp,
+                    "data": loop_find_entry
+                }, ensure_ascii=False) + "\n"
+                with open(os.path.join(log_dir, "log.txt"), "a", encoding="utf-8") as f:
+                    f.write(log_entry)
 
-                        log({"msg": f"Step {step_num}: Click unknown at ({x:.1f}, {y:.1f}) - {step_remark}", "success": True})
-                        touch([x, y])
-                        action_queue.put((device_name, step_num, "unknown", x, y, time.time()))
-                        result_queue.put((device_name, step_num, "click", True))
-                        completed_steps += 1
-                        time.sleep(3)
-                        snapshot(msg=f"Step {step_num}: Click unknown at ({x:.1f}, {y:.1f})")
-                    else:
-                        print(f"设备 {device_name} 未检测到目标按钮 {step_class}，等待下一轮检测")
-                        log({"msg": f"Step {step_counter + 1}: No target {step_class} detected, waiting for next detection", "success": False})
-                        cv2.imwrite(os.path.join(log_dir, f"failed_detection_step_{step_counter + 1}_{timestamp}.jpg"), frame)
-                        time.sleep(1)
+                # 添加 assert_exists 日志（depth 设为 1）
+                assert_exists_entry = {
+                    "name": "assert_exists",
+                    "call_args": {
+                        "v": f"Target {step_class}",
+                        "msg": f"Step {step_num}: Detecting {step_class} - {step_remark}"
+                    },
+                    "start_time": timestamp,
+                    "end_time": timestamp,
+                    "traceback": f"AssertionError: Target {step_class} does not exist in screen for Step {step_num}"
+                }
+                print(f"记录 assert_exists 失败日志: {assert_exists_entry}")
+                log_entry = json.dumps({
+                    "tag": "function",
+                    "depth": 1,  # snapshot 的子操作
+                    "time": timestamp,
+                    "data": assert_exists_entry
+                }, ensure_ascii=False) + "\n"
+                with open(os.path.join(log_dir, "log.txt"), "a", encoding="utf-8") as f:
+                    f.write(log_entry)
 
-            loops_completed += 1
-            print(f"设备 {device_name} 脚本 {script_path} 完成第 {loops_completed} 次循环")
-            log({"msg": f"End loop {loops_completed} for script {script_path}", "success": True})
+            else:
+                print(f"设备 {device_name} 检测到目标按钮 {step_class}，执行点击操作")
 
-        print(f"设备 {device_name} 脚本 {script_path} 执行完成")
-        log({"msg": f"End script {script_path}", "success": True})
+                # 执行点击操作
+                device.shell(f"input tap {int(x)} {int(y)}")
 
-    print(f"设备 {device_name} 回放完成，完成步骤数: {completed_steps}")
-    log({"msg": f"End replay for device {device_name}, completed steps: {completed_steps}", "success": True})
-    stop_event.set()
-    result_queue.put((device_name, "completed_steps", completed_steps, total_steps))
+                # 记录 touch 日志
+                touch_entry = {
+                    "name": "touch",
+                    "call_args": {"v": [int(x), int(y)]},
+                    "start_time": timestamp,
+                    "end_time": timestamp
+                }
+                print(f"记录 touch 日志: {touch_entry}")
+                log_entry = json.dumps({
+                    "tag": "function",
+                    "depth": 1,  # snapshot 的子操作
+                    "time": timestamp,
+                    "data": touch_entry
+                }, ensure_ascii=False) + "\n"
+                with open(os.path.join(log_dir, "log.txt"), "a", encoding="utf-8") as f:
+                    f.write(log_entry)
+
+    print(f"设备 {device_name} 回放完成，完成步骤数: {step_counter}")
+    stop_event.set()  # 停止检测服务
+
 
 # 检测服务
 def detection_service(screenshot_queue, click_queue, stop_event):
@@ -282,8 +363,62 @@ def detection_service(screenshot_queue, click_queue, stop_event):
         except Exception as e:
             print(f"检测服务错误: {e}")
 
-# 为单台设备生成测试报告
-def run_one_report(dev, device_name):
+
+import json
+from airtest.report.report import LogToHtml
+from jinja2 import Environment, FileSystemLoader
+
+class CustomLogToHtml(LogToHtml):
+    def __init__(self, *args, template_dir=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        # 设置自定义的 Jinja2 环境（仅在需要自定义模板时使用）
+        self.template_dir = template_dir
+        if self.template_dir:
+            self.env = Environment(loader=FileSystemLoader(self.template_dir))
+
+    def report(self, template_name="log.html", output_file=None, **kwargs):
+        """
+        重写 report 方法，恢复 Airtest 默认行为
+        """
+        # 获取 report_data 的返回值
+        data = self.report_data(output_file=output_file, **kwargs)
+
+        # 调试：打印 data 的类型和内容
+        print(f"report 方法中的 data 类型: {type(data)}")
+        print(f"report 方法中的 data 内容: {data}")
+
+        # 确保 data 是一个字典
+        if not isinstance(data, dict):
+            raise Exception(f"report 方法中的 data 必须是一个字典，但实际类型是: {type(data)}")
+
+        # 调用 _render 方法
+        return self._render(template_name, output_file, **data)
+
+    def _render(self, template_name, output_file, **data):
+        """
+        重写 _render 方法，使用 Airtest 默认模板
+        """
+        try:
+            # 调试：打印 data 的类型和内容
+            print(f"渲染模板时的 data 类型: {type(data)}")
+            print(f"渲染模板时的 data 内容: {data}")
+
+            # 使用 Airtest 默认模板（log.html）
+            # 如果 template_name 是 log.html，则使用 Airtest 的默认渲染逻辑
+            if template_name == "log.html":
+                # 调用父类的 _render 方法
+                return super()._render(template_name, output_file, **data)
+            else:
+                # 如果使用自定义模板，则使用 Jinja2 渲染
+                template = self.env.get_template(template_name)
+                html = template.render(data=data)
+                with open(output_file, "w", encoding="utf-8") as f:
+                    f.write(html)
+                return html
+        except Exception as e:
+            raise Exception(f"渲染模板失败: {e}")
+
+def run_one_report(dev, device_name, script_path):
     try:
         log_dir = get_log_dir(device_name)
         log_file = os.path.join(log_dir, 'log.txt')
@@ -294,35 +429,192 @@ def run_one_report(dev, device_name):
         report_file = os.path.join(log_dir, "report", "log.html")
         os.makedirs(os.path.dirname(report_file), exist_ok=True)
 
-        if os.path.isfile(log_file):
-            # 使用 LogToHtml 直接生成报告
-            # 创建临时 .air 目录（模仿 Airtest 的脚本目录结构）
-            temp_air_dir = os.path.join(log_dir, "temp_script.air")
-            os.makedirs(temp_air_dir, exist_ok=True)
-            # 在目录下创建 main.py 文件
-            with open(os.path.join(temp_air_dir, "temp_script.py"), "w") as f:
-                f.write("")  # 空文件即可，LogToHtml 只需文件存在
+        if not os.path.isfile(log_file):
+            print(f"日志文件 {log_file} 不存在，无法生成报告")
+            return {'status': -1, 'device': dev, 'path': ''}
 
-            # 使用 temp_air_dir 作为 script_root
-            report = LogToHtml(script_root=temp_air_dir, log_root=log_dir)
-            report.report(output_file=report_file)
+        # 读取原始日志
+        with open(log_file, 'r', encoding='utf-8') as f:
+            log_lines = f.readlines()
 
+        if not log_lines:
+            print(f"日志文件 {log_file} 为空，无法生成报告")
+            return {'status': -1, 'device': dev, 'path': ''}
+
+        # 将原始日志写入 raw_log.txt（确保备份）
+        raw_log_file = os.path.join(log_dir, "raw_log.txt")
+        print(f"备份原始日志到: {raw_log_file}")
+        try:
+            with open(raw_log_file, 'w', encoding='utf-8') as f:
+                f.writelines(log_lines)
+            print(f"成功备份原始日志到 raw_log.txt")
+        except Exception as e:
+            print(f"备份原始日志失败: {e}")
+
+        # 过滤出 touch 和 assert_exists 相关的日志条目，并保留对应的 snapshot 和 try_log_screen 日志
+        filtered_logs = []
+        last_snapshot = None
+        last_try_log_screen = None
+        touch_count = 0
+        fail_count = 0
+        pending_logs = []  # 用于暂存与 assert_exists 相关的日志
+
+        # 用于动态提取截图文件名
+        screenshot_filenames = []
+
+        for line in log_lines:
+            try:
+                log_entry = json.loads(line.strip())
+                data_name = log_entry.get('data', {}).get('name')
+
+                if data_name == 'snapshot':
+                    # 提取 snapshot 中的 filename
+                    filename = log_entry.get('data', {}).get('call_args', {}).get('filename')
+                    if filename:
+                        screenshot_filenames.append(filename)
+                    # 如果有暂存的日志，先写入
+                    if pending_logs:
+                        filtered_logs.extend(pending_logs)
+                        pending_logs = []
+                    # 保存当前的 snapshot
+                    last_snapshot = line
+                elif data_name == 'try_log_screen':
+                    last_try_log_screen = line
+                elif data_name in ['touch', 'assert_exists', 'loop_find']:
+                    if data_name == 'touch':
+                        touch_count += 1
+                        # touch 日志直接写入
+                        if last_snapshot:
+                            filtered_logs.append(last_snapshot)
+                        if last_try_log_screen:
+                            filtered_logs.append(last_try_log_screen)
+                        filtered_logs.append(line)
+                        last_snapshot = None
+                        last_try_log_screen = None
+                    elif data_name == 'assert_exists':
+                        fail_count += 1
+                        # assert_exists 日志暂存，等待后续的 snapshot
+                        if last_snapshot:
+                            pending_logs.append(last_snapshot)
+                        if last_try_log_screen:
+                            pending_logs.append(last_try_log_screen)
+                        pending_logs.append(line)
+                        last_snapshot = None
+                        last_try_log_screen = None
+                    elif data_name == 'loop_find':
+                        # loop_find 日志也暂存，与 assert_exists 一起处理
+                        pending_logs.append(line)
+            except json.JSONDecodeError as e:
+                print(f"解析日志行失败: {line}, 错误: {e}")
+                continue
+
+        # 处理最后一批暂存的日志
+        if pending_logs:
+            filtered_logs.extend(pending_logs)
+
+        # 打印过滤统计
+        print(f"过滤后日志统计: touch 数量: {touch_count}, failed 数量: {fail_count}")
+
+        # 确保 touch 和 failed 日志数量与 json 步骤数量匹配
+        json_file = script_path  # 使用传递的脚本路径
+        if os.path.exists(json_file):
+            with open(json_file, 'r', encoding='utf-8') as f:
+                json_data = json.load(f)
+            step_count = len(json_data.get('steps', []))
+            total_log_count = touch_count + fail_count
+            if total_log_count != step_count:
+                print(f"警告: touch 和 failed 日志总数 ({total_log_count}) 与 json 步骤数量 ({step_count}) 不匹配")
+        else:
+            print(f"未找到 json 文件: {json_file}")
+            step_count = touch_count + fail_count
+
+        if not filtered_logs:
+            print(f"过滤后的日志为空，无法生成报告")
+            return {'status': -1, 'device': dev, 'path': ''}
+
+        # 将过滤后的日志写入 filtered_log.txt
+        filtered_log_file = os.path.join(log_dir, 'filtered_log.txt')
+        print(f"写入过滤后的日志到: {filtered_log_file}")
+        try:
+            with open(filtered_log_file, 'w', encoding='utf-8') as f:
+                f.writelines(filtered_logs)
+            print(f"成功写入过滤后的日志到 filtered_log.txt")
+        except Exception as e:
+            print(f"写入 filtered_log.txt 失败: {e}")
+            return {'status': -1, 'device': dev, 'path': ''}
+
+        # 动态检查截图文件是否存在
+        if screenshot_filenames:
+            for screenshot_filename in screenshot_filenames:
+                screenshot_file = os.path.join(log_dir, screenshot_filename)
+                if not os.path.exists(screenshot_file):
+                    print(f"警告: 截图文件未找到: {screenshot_file}")
+                else:
+                    print(f"确认截图文件存在: {screenshot_file}")
+        else:
+            print("未从日志中提取到截图文件名")
+
+        # 创建临时 .air 目录（模仿 Airtest 的脚本目录结构）
+        temp_air_dir = os.path.join(log_dir, "temp_script.air")
+        os.makedirs(temp_air_dir, exist_ok=True)
+        # 在目录下创建 temp_script.py 文件
+        temp_script_file = os.path.join(temp_air_dir, "temp_script.py")
+        with open(temp_script_file, "w", encoding="utf-8") as f:
+            f.write("# Temporary script file for Airtest report generation\n")
+
+        # 将过滤后的日志复制到 temp_air_dir/log.txt
+        temp_log_file = os.path.join(temp_air_dir, "log.txt")
+        print(f"复制过滤后的日志到: {temp_log_file}")
+        try:
+            with open(filtered_log_file, 'r', encoding='utf-8') as f:
+                filtered_content = f.readlines()
+            with open(temp_log_file, 'w', encoding='utf-8') as f:
+                f.writelines(filtered_content)
+            print(f"成功复制日志到 {temp_log_file}")
+        except Exception as e:
+            print(f"复制日志到 {temp_log_file} 失败: {e}")
+            return {'status': -1, 'device': dev, 'path': ''}
+
+        # 使用 Airtest 默认模板生成单设备报告
+        try:
+            # 设置模板目录（仅用于自定义模板时）
+            template_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
+
+            # 使用自定义的 LogToHtml 类
+            report = CustomLogToHtml(
+                script_root=temp_air_dir,
+                log_root=log_dir,
+                export_dir=log_dir,
+                script_name="temp_script.py",
+                template_dir=template_dir  # 传递模板目录
+            )
+            report.report(
+                "log.html",  # 使用 Airtest 默认模板
+                output_file=report_file
+            )
+            print(f"报告生成成功: {report_file}")
+        except Exception as e:
+            print(f"生成报告失败: {e}")
+            traceback.print_exc()
+            return {'status': -1, 'device': dev, 'path': ''}
+        finally:
             # 清理临时目录
             if os.path.exists(temp_air_dir):
                 shutil.rmtree(temp_air_dir)
+            # 恢复 filtered_log.txt
+            if os.path.exists(temp_log_file):
+                os.rename(temp_log_file, filtered_log_file)
 
-            return {
-                'status': 0 if os.path.exists(report_file) else 1,  # 0: success, 1: failed
-                'path': report_file if os.path.exists(report_file) else ''
-            }
-        else:
-            print(f"Report build failed. File not found in dir {log_file}")
+        return {
+            'status': 0 if os.path.exists(report_file) else 1,  # 0: success, 1: failed
+            'path': report_file if os.path.exists(report_file) else ''
+        }
     except Exception as e:
         print(f"设备 {device_name} 的报告生成失败: {e}")
         traceback.print_exc()
     return {'status': -1, 'device': dev, 'path': ''}
 
-# 生成汇总报告
+# 生成汇总报告（保持不变）
 def run_summary(data):
     report_url = f"summary_report{CURRENT_TIME}.html"
     report_url_dir = os.path.join(report_dir, report_url)
@@ -338,13 +630,15 @@ def run_summary(data):
 
         # 将单设备报告路径转换为相对路径，并确保 path 始终有值
         for device, report_info in summary['tests'].items():
-            if 'path' in report_info and report_info['path']:
+            if 'path' in report_info and report_info['path'] and os.path.exists(report_info['path']):
                 # 计算从 summary_report 到 log.html 的相对路径
                 abs_report_path = report_info['path']
                 rel_path = os.path.relpath(abs_report_path, start=report_dir)
-                report_info['path'] = rel_path
+                print(f"设备 {device}: 原始路径: {abs_report_path}, 相对路径: {rel_path}")
+                report_info['path'] = rel_path.replace(os.sep, '/')
             else:
-                report_info['path'] = "#"  # 如果路径为空，设置为占位符，避免跳转失败
+                print(f"设备 {device}: 报告路径无效或文件不存在，设置为默认值 #（路径: {report_info.get('path', '未设置')}）")
+                report_info['path'] = "#"  # 如果路径为空或文件不存在，设置为占位符
 
         env = Environment(loader=FileSystemLoader(template_dir))
         template = env.get_template('report_tpl.html')
@@ -359,8 +653,50 @@ def run_summary(data):
         traceback.print_exc()
         return ""
 
+
+# 生成汇总报告
+def run_summary(data):
+    report_url = f"summary_report{CURRENT_TIME}.html"
+    report_url_dir = os.path.join(report_dir, report_url)
+
+    try:
+        # 计算总耗时、成功数量和测试数量
+        summary = {
+            'time': "%.3f" % (time.time() - data['start']),
+            'success': sum(1 for item in data['tests'].values() if item['status'] == 0),
+            'count': len(data['tests'])
+        }
+        summary.update(data)
+        summary['start'] = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(data['start']))
+
+        # 将单设备报告路径转换为相对路径，并确保 path 始终有值
+        for device, report_info in summary['tests'].items():
+            if 'path' in report_info and report_info['path'] and os.path.exists(report_info['path']):
+                # 计算从 summary_report 到 log.html 的相对路径
+                abs_report_path = report_info['path']
+                rel_path = os.path.relpath(abs_report_path, start=report_dir)
+                print(f"设备 {device}: 原始路径: {abs_report_path}, 相对路径: {rel_path}")
+                report_info['path'] = rel_path.replace(os.sep, '/')
+            else:
+                print(f"设备 {device}: 报告路径无效或文件不存在，设置为默认值 #（路径: {report_info.get('path', '未设置')}）")
+                report_info['path'] = "#"  # 如果路径为空或文件不存在，设置为占位符
+
+        env = Environment(loader=FileSystemLoader(template_dir))
+        template = env.get_template('report_tpl.html')
+
+        with open(report_url_dir, "w", encoding="utf-8") as f:
+            html_content = template.render(data=summary)
+            f.write(html_content)
+        print(f"汇总报告生成: {report_url_dir}")
+        return report_url_dir
+    except Exception as e:
+        print(f"汇总报告生成失败: {e}")
+        traceback.print_exc()
+        return ""
+
+
 # 在多台设备上并行运行测试
-def run_on_multi_device(devices, scripts, results, run_all, device_names):
+def run_on_multi_device(devices, scripts, results, run_all, device_names, show_screens=False):
     tasks = []
     for device in devices:
         serial = device.serial
@@ -371,26 +707,30 @@ def run_on_multi_device(devices, scripts, results, run_all, device_names):
             continue
 
         log_dir = get_log_dir(device_name)
+        script_path = scripts[0]["path"]  # 假设每次只处理一个脚本
         t = Thread(target=replay_device, args=(
-            device, scripts, screenshot_queue, action_queue, queue.Queue(), Event(), device_name, log_dir))
+            device, scripts, screenshot_queue, action_queue, Event(), device_name, log_dir),
+                   kwargs={"show_screens": show_screens})
         t.daemon = True
         t.start()
         tasks.append({
             'thread': t,
             'dev': device_name,
-            'log_dir': log_dir
+            'log_dir': log_dir,
+            'script_path': script_path  # 添加 script_path 到任务信息
         })
     return tasks
 
+
 # 主测试流程
-def run(devices, scripts, device_names, run_all=False):
+def run(devices, scripts, device_names, show_screens=False, run_all=False):
     results = load_json_data(run_all)
-    tasks = run_on_multi_device(devices, scripts, results, run_all, device_names)
+    tasks = run_on_multi_device(devices, scripts, results, run_all, device_names, show_screens)
     success_count = 0
 
     for task in tasks:
         task['thread'].join()
-        device_report = run_one_report(task['dev'], task['dev'])
+        device_report = run_one_report(task['dev'], task['dev'], task['script_path'])
         results['tests'][task['dev']] = device_report
         if device_report['status'] == 0:
             success_count += 1
@@ -398,6 +738,7 @@ def run(devices, scripts, device_names, run_all=False):
     summary_report_url = run_summary(results)
     result_str = f"成功 {success_count}/{len(tasks)}"
     return result_str, summary_report_url
+
 
 # 回放步骤
 def replay_steps(scripts, show_screens=False):
@@ -432,13 +773,24 @@ def replay_steps(scripts, show_screens=False):
     print("开始回放")
     log({"msg": "Start replay", "success": True})
 
+    # 启动检测服务线程
+    stop_event = Event()
+    detection_thread = Thread(target=detection_service, args=(screenshot_queue, click_queue, stop_event))
+    detection_thread.daemon = True
+    detection_thread.start()
+
     try:
-        result, report_url = run(devices, loaded_scripts, device_names, run_all=False)
+        result, report_url = run(devices, loaded_scripts, device_names, show_screens=show_screens, run_all=False)
         print(f"执行结果: {result}, 报告地址: {report_url}")
         return True
     except Exception as e:
         print(f"回放失败: {e}")
         return False
+    finally:
+        # 停止检测服务线程
+        stop_event.set()
+        detection_thread.join()
+
 
 # 主程序
 def main():
@@ -489,6 +841,7 @@ def main():
             print("回放成功")
     except Exception as e:
         print(f"回放失败: {e}")
+
 
 if __name__ == "__main__":
     main()
