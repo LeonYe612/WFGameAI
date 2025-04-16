@@ -364,60 +364,6 @@ def detection_service(screenshot_queue, click_queue, stop_event):
             print(f"检测服务错误: {e}")
 
 
-import json
-from airtest.report.report import LogToHtml
-from jinja2 import Environment, FileSystemLoader
-
-class CustomLogToHtml(LogToHtml):
-    def __init__(self, *args, template_dir=None, **kwargs):
-        super().__init__(*args, **kwargs)
-        # 设置自定义的 Jinja2 环境（仅在需要自定义模板时使用）
-        self.template_dir = template_dir
-        if self.template_dir:
-            self.env = Environment(loader=FileSystemLoader(self.template_dir))
-
-    def report(self, template_name="log.html", output_file=None, **kwargs):
-        """
-        重写 report 方法，恢复 Airtest 默认行为
-        """
-        # 获取 report_data 的返回值
-        data = self.report_data(output_file=output_file, **kwargs)
-
-        # 调试：打印 data 的类型和内容
-        print(f"report 方法中的 data 类型: {type(data)}")
-        print(f"report 方法中的 data 内容: {data}")
-
-        # 确保 data 是一个字典
-        if not isinstance(data, dict):
-            raise Exception(f"report 方法中的 data 必须是一个字典，但实际类型是: {type(data)}")
-
-        # 调用 _render 方法
-        return self._render(template_name, output_file, **data)
-
-    def _render(self, template_name, output_file, **data):
-        """
-        重写 _render 方法，使用 Airtest 默认模板
-        """
-        try:
-            # 调试：打印 data 的类型和内容
-            print(f"渲染模板时的 data 类型: {type(data)}")
-            print(f"渲染模板时的 data 内容: {data}")
-
-            # 使用 Airtest 默认模板（log.html）
-            # 如果 template_name 是 log.html，则使用 Airtest 的默认渲染逻辑
-            if template_name == "log.html":
-                # 调用父类的 _render 方法
-                return super()._render(template_name, output_file, **data)
-            else:
-                # 如果使用自定义模板，则使用 Jinja2 渲染
-                template = self.env.get_template(template_name)
-                html = template.render(data=data)
-                with open(output_file, "w", encoding="utf-8") as f:
-                    f.write(html)
-                return html
-        except Exception as e:
-            raise Exception(f"渲染模板失败: {e}")
-
 def run_one_report(dev, device_name, script_path):
     try:
         log_dir = get_log_dir(device_name)
@@ -426,8 +372,9 @@ def run_one_report(dev, device_name, script_path):
         print(f"log_dir: {log_dir}")
         print(f"log_file: {log_file}")
 
-        report_file = os.path.join(log_dir, "report", "log.html")
-        os.makedirs(os.path.dirname(report_file), exist_ok=True)
+        report_dir = os.path.join(log_dir, "report")
+        report_file = os.path.join(report_dir, "log.html")
+        os.makedirs(report_dir, exist_ok=True)
 
         if not os.path.isfile(log_file):
             print(f"日志文件 {log_file} 不存在，无法生成报告")
@@ -577,20 +524,19 @@ def run_one_report(dev, device_name, script_path):
 
         # 使用 Airtest 默认模板生成单设备报告
         try:
-            # 设置模板目录（仅用于自定义模板时）
-            template_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
-
-            # 使用自定义的 LogToHtml 类
-            report = CustomLogToHtml(
+            # 创建 LogToHtml 实例用于生成报告
+            report = LogToHtml(
                 script_root=temp_air_dir,
                 log_root=log_dir,
-                export_dir=log_dir,
-                script_name="temp_script.py",
-                template_dir=template_dir  # 传递模板目录
+                export_dir=report_dir,  # 确保 export_dir 路径正确
+                script_name="temp_script.py"
             )
+
+            print('report_dir:', report_dir)
+            # 修正 report_file 路径，确保路径正确
             report.report(
-                "log.html",  # 使用 Airtest 默认模板
-                output_file=report_file
+                "log_template.html",  # 使用 Airtest 默认模板
+                output_file=os.path.join(report_dir, "log.html")  # 修正后的 report_file 路径
             )
             print(f"报告生成成功: {report_file}")
         except Exception as e:
@@ -614,53 +560,13 @@ def run_one_report(dev, device_name, script_path):
         traceback.print_exc()
     return {'status': -1, 'device': dev, 'path': ''}
 
+
 # 生成汇总报告（保持不变）
 def run_summary(data):
     report_url = f"summary_report{CURRENT_TIME}.html"
     report_url_dir = os.path.join(report_dir, report_url)
 
     try:
-        summary = {
-            'time': "%.3f" % (time.time() - data['start']),
-            'success': sum(1 for item in data['tests'].values() if item['status'] == 0),
-            'count': len(data['tests'])
-        }
-        summary.update(data)
-        summary['start'] = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(data['start']))
-
-        # 将单设备报告路径转换为相对路径，并确保 path 始终有值
-        for device, report_info in summary['tests'].items():
-            if 'path' in report_info and report_info['path'] and os.path.exists(report_info['path']):
-                # 计算从 summary_report 到 log.html 的相对路径
-                abs_report_path = report_info['path']
-                rel_path = os.path.relpath(abs_report_path, start=report_dir)
-                print(f"设备 {device}: 原始路径: {abs_report_path}, 相对路径: {rel_path}")
-                report_info['path'] = rel_path.replace(os.sep, '/')
-            else:
-                print(f"设备 {device}: 报告路径无效或文件不存在，设置为默认值 #（路径: {report_info.get('path', '未设置')}）")
-                report_info['path'] = "#"  # 如果路径为空或文件不存在，设置为占位符
-
-        env = Environment(loader=FileSystemLoader(template_dir))
-        template = env.get_template('report_tpl.html')
-
-        with open(report_url_dir, "w", encoding="utf-8") as f:
-            html_content = template.render(data=summary)
-            f.write(html_content)
-        print(f"汇总报告生成: {report_url_dir}")
-        return report_url_dir
-    except Exception as e:
-        print(f"汇总报告生成失败: {e}")
-        traceback.print_exc()
-        return ""
-
-
-# 生成汇总报告
-def run_summary(data):
-    report_url = f"summary_report{CURRENT_TIME}.html"
-    report_url_dir = os.path.join(report_dir, report_url)
-
-    try:
-        # 计算总耗时、成功数量和测试数量
         summary = {
             'time': "%.3f" % (time.time() - data['start']),
             'success': sum(1 for item in data['tests'].values() if item['status'] == 0),
@@ -796,21 +702,19 @@ def replay_steps(scripts, show_screens=False):
 def main():
     parser = argparse.ArgumentParser(description="设备回放脚本")
     parser.add_argument("--show-screens", action="store_true", help="显示所有设备画面并同步回放")
-    parser.add_argument("--steps", nargs="+", help="指定多个回放步骤文件")
+    parser.add_argument("--script", action="append", help="指定回放步骤文件，可多次使用")
     parser.add_argument("--loop-count", type=int, action="append", help="指定循环次数，逐脚本应用")
     parser.add_argument("--max-duration", type=float, action="append", help="指定最大运行时间（秒），逐脚本应用")
 
     args = parser.parse_args()
     scripts = []
 
-    if args.steps:
-        script_files = args.steps
+    if args.script:
+        script_files = args.script
         loop_counts = args.loop_count or []
         max_durations = args.max_duration or []
 
         for i, script_path in enumerate(script_files):
-            if script_path.startswith("--"):
-                continue
             script_config = {"path": script_path}
             if i < len(loop_counts):
                 script_config["loop_count"] = loop_counts[i]
@@ -819,7 +723,7 @@ def main():
             scripts.append(script_config)
 
     if not scripts:
-        parser.error("必须使用 --steps 指定至少一个脚本文件")
+        parser.error("必须使用 --script 指定至少一个脚本文件")
 
     global devices, model
     devices = adb.device_list()
