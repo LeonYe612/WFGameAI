@@ -4257,7 +4257,7 @@
         "kind": 2,
         "importPath": "replay_script",
         "description": "replay_script",
-        "peekOfCode": "def main():\n    parser = argparse.ArgumentParser(description=\"设备回放脚本\")\n    parser.add_argument(\"--show-screens\", action=\"store_true\", help=\"显示所有设备画面并同步回放\")\n    parser.add_argument(\"--script\", action=\"append\", help=\"指定回放步骤文件，可多次使用\")\n    parser.add_argument(\"--loop-count\", type=int, action=\"append\", help=\"指定循环次数，逐脚本应用\")\n    parser.add_argument(\"--max-duration\", type=float, action=\"append\", help=\"指定最大运行时间（秒），逐脚本应用\")\n    args = parser.parse_args()\n    scripts = []\n    if args.script:\n        script_files = args.script",
+        "peekOfCode": "def main():\n    parser = argparse.ArgumentParser(description=\"设备回放脚本\")\n    parser.add_argument(\"--show-screens\", action=\"store_true\", help=\"显示所有设备画面并同步回放\")\n    parser.add_argument(\"--script\", action=\"append\", help=\"指定回放步骤文件，可多次使用\")\n    parser.add_argument(\"--loop-count\", type=int, action=\"append\", help=\"指定循环次数，逐脚本应用\")\n    parser.add_argument(\"--max-duration\", type=float, action=\"append\", help=\"指定最大运行时间（秒），逐脚本应用\")\n    args = parser.parse_args()\n    scripts = []\n    if args.script:\n        # 解析命令行参数，按照顺序重建脚本配置",
         "detail": "replay_script",
         "documentation": {}
     },
