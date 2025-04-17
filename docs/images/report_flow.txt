@@ -1,0 +1,16 @@
+graph TD
+    A[开始报告生成] --> B[收集日志和截图]
+    B --> C[创建报告目录结构]
+    C --> D[复制静态资源]
+    D --> E[配置LogToHtml]
+    E --> F[生成HTML报告]
+    F --> G[修复HTML文件中的资源引用]
+    G --> H[为每个设备生成报告]
+    H --> I[创建汇总报告]
+    I --> J[完成报告生成]
+    
+    style A fill:#d4f1f9,stroke:#333,stroke-width:2px
+    style E fill:#fff2cc,stroke:#333,stroke-width:2px
+    style F fill:#fff2cc,stroke:#333,stroke-width:2px
+    style I fill:#d5e8d4,stroke:#333,stroke-width:2px
+    style J fill:#d4f1f9,stroke:#333,stroke-width:2px 

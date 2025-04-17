@@ -1,0 +1,11 @@
+{
+    "start": 1679293304.236004,
+    "script": "main.air",
+    "tests": {
+        "CWM0222215003786": {
+            "status": 0,
+            "path": "E:\\auto-platform-gitlab\\honeydou_atp_master_django\\AutotestWebD\\apps\\ui_run\\main.air\\log\\CWM0222215003786_2023-03-20-14-21-44\\main.log\\log.html",
+            "packageName": "com.qianxi.fqsg_yy.qxhf"
+        }
+    }
+}

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+    <title>Airtest报告</title>
+    <link href="static/css/report.css" rel="stylesheet">
+    <script src="static/js/jquery-1.10.2.min.js"></script>
+    <script src="static/js/jquery-lang.js" charset="utf-8" type="text/javascript"></script>
+    <script src="static/js/langpack/zh_CN.js" charset="utf-8" type="text/javascript"></script>
+    <script src="static/js/lazyload.js" charset="utf-8" type="text/javascript"></script>
+    <style>
+      /* 基础样式 - 如果无法加载外部CSS，使用这些 */
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background: #f5f5f5;
+        line-height: 1.5;
+      }
+      h1, h2 {
+        color: #333;
+        margin-top: 20px;
+      }
+      .summary {
+        background: white;
+        border-radius: 5px;
+        padding: 15px;
+        margin-bottom: 20px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      }
+      .steps {
+        background: white;
+        border-radius: 5px;
+        padding: 15px;
+        margin-bottom: 20px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      }
+      .step {
+        border-bottom: 1px solid #eee;
+        padding: 10px 0;
+      }
+      .step img {
+        max-width: 100%;
+        height: auto;
+        margin: 10px 0;
+        border: 1px solid #ddd;
+      }
+      .success {
+        color: green;
+      }
+      .error {
+        color: red;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container-fluid">
+      <div class="report-title">
+        <div class="btn-group btn-group-lg" role="group" aria-label="...">
+          <button type="button" class="btn btn-default" name="lang" data-lang="zh_CN">中文</button>
+          <button type="button" class="btn btn-default" name="lang" data-lang="en">English</button>
+        </div>
+        <h1 class="lang" data-lang="zh_CN">测试报告: {{script_name}}</h1>
+        <h1 class="lang" data-lang="en">Test Report: {{script_name}}</h1>
+      </div>
+      
+      <!-- 概述 -->
+      <div class="summary">
+        <div class="info info-title">
+          <div class="info-content">
+            <div class="info-desc"><span class="lang" data-lang="zh_CN">设备:</span><span class="lang" data-lang="en">Device:</span></div>
+            <div class="info-value">{{device_name}}</div>
+          </div>
+          <div class="info-content">
+            <div class="info-desc"><span class="lang" data-lang="zh_CN">开始时间:</span><span class="lang" data-lang="en">Start Time:</span></div>
+            <div class="info-value">{{run_start}}</div>
+          </div>
+          <div class="info-content">
+            <div class="info-desc"><span class="lang" data-lang="zh_CN">结束时间:</span><span class="lang" data-lang="en">End Time:</span></div>
+            <div class="info-value">{{run_end}}</div>
+          </div>
+          <div class="info-content">
+            <div class="info-desc"><span class="lang" data-lang="zh_CN">测试结果:</span><span class="lang" data-lang="en">Test Result:</span></div>
+            {% if test_result %}
+            <div class="info-value success"><span class="lang" data-lang="zh_CN">通过</span><span class="lang" data-lang="en">Pass</span></div>
+            {% else %}
+            <div class="info-value error"><span class="lang" data-lang="zh_CN">失败</span><span class="lang" data-lang="en">Fail</span></div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      
+      <!-- 测试步骤 -->
+      <div class="steps">
+        <h2 class="lang" data-lang="zh_CN">测试步骤</h2>
+        <h2 class="lang" data-lang="en">Test Steps</h2>
+        
+        {% for step in steps %}
+        <div class="step">
+          <h3>{{step.title}}</h3>
+          {% if step.screen %}
+            <img data-original="{{step.screen}}" src="{{step.screen}}" class="lazy">
+          {% endif %}
+          
+          {% if step.assert %}
+            <p class="success lang" data-lang="zh_CN">⚡断言成功: {{step.assert}}</p>
+            <p class="success lang" data-lang="en">⚡Assert Success: {{step.assert}}</p>
+          {% endif %}
+          
+          {% if step.traceback %}
+            <p class="error lang" data-lang="zh_CN">❌错误: {{step.traceback}}</p>
+            <p class="error lang" data-lang="en">❌Error: {{step.traceback}}</p>
+          {% endif %}
+          
+          {% if step.log %}
+            <pre>{{step.log}}</pre>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    
+    <script type="text/javascript">
+      window.onload = function() {
+        // 默认语言为中文
+        var lang = 'zh_CN';
+        
+        // 语言切换
+        $("button[name='lang']").click(function() {
+          lang = $(this).data('lang');
+          $.lang.change(lang);
+        });
+        
+        // 初始化语言
+        $.lang.change(lang);
+        
+        // 图片懒加载
+        $("img.lazy").lazyload({
+          threshold : 200,
+          effect : "fadeIn"
+        });
+      };
+    </script>
+  </body>
+</html> 
