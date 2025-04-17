@@ -1,5 +1,13 @@
 ## **1. 报告生成逻辑**
 1.单设备生成的模版使用log_template.html生成log.html。多设备报告使用report_tpl.html，将所有log.html汇总起来。
+Airtest 中各个报告文件的关系：
+    log_template.html - 这是 Airtest 安装目录中的模板文件，用于生成单设备报告 log.html
+    report_tpl.html - 这是用于生成汇总报告 summary_report_xx.html 的模板文件
+    log.html - 每个设备的详细报告，由 LogToHtml 类使用 log_template.html 模板生成
+    summary_report_xx.html - 汇总报告，包含所有设备的测试结果概览，应该使用 report_tpl.html 模板生成
+    问题在于混淆了这些文件的使用方式，我需要检查一下 run_summary 函数来修复汇总报告生成问题：
+
+
 
 ## replay_script.py 用于回放录制的脚本。
 执行命令及参数解释说明：
