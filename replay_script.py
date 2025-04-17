@@ -28,12 +28,10 @@ model = None
 devices = []
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CURRENT_TIME = "_" + time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))
-output_dir = os.path.join(BASE_DIR, "outputs/replaylogs")
 report_dir = os.path.join(BASE_DIR, "outputs/replay_reports")
 template_dir = os.path.join(BASE_DIR, "templates")  # 模板目录路径
 
 # 确保所有必要的目录都存在
-os.makedirs(output_dir, exist_ok=True)
 os.makedirs(report_dir, exist_ok=True)
 os.makedirs(template_dir, exist_ok=True)
 
@@ -63,7 +61,7 @@ class AirtestJsonFormatter(logging.Formatter):
 
 # 日志函数
 def setup_device_logger(device_name):
-    log_file = os.path.join(output_dir, f"{device_name}_log.txt")
+    log_file = os.path.join(report_dir, f"{device_name}_log.txt")
     logger = logging.getLogger(device_name)
     logger.setLevel(logging.INFO)
     handler = logging.FileHandler(log_file, encoding="utf-8")
@@ -137,12 +135,10 @@ def check_device_status(device, device_name):
 # 获取设备日志目录
 def get_log_dir(dev):
     device_dir = dev.replace(".", "_").replace(":", "_") + CURRENT_TIME
-    log_dir = os.path.normpath(os.path.join(output_dir, device_dir))
+    log_dir = os.path.normpath(os.path.join(report_dir, device_dir))
     
     # 创建必要的目录结构
     os.makedirs(log_dir, exist_ok=True)
-    os.makedirs(os.path.join(log_dir, "report"), exist_ok=True)
-    os.makedirs(os.path.join(log_dir, "temp_script.air"), exist_ok=True)
     
     # 确保日志文件存在
     log_file = os.path.join(log_dir, "log.txt")
@@ -155,9 +151,9 @@ def get_log_dir(dev):
 
 # 清理日志目录
 def clear_log_dir():
-    if os.path.exists(output_dir):
-        shutil.rmtree(output_dir)
-    os.makedirs(output_dir, exist_ok=True)
+    if os.path.exists(report_dir):
+        shutil.rmtree(report_dir)
+    os.makedirs(report_dir, exist_ok=True)
 
 
 # 加载测试进度数据
@@ -168,7 +164,7 @@ def load_json_data(run_all):
         data['start'] = time.time()
         return data
     else:
-        print(f"清理日志目录: {output_dir}")
+        print(f"清理日志目录: {report_dir}")
         clear_log_dir()
         return {
             'start': time.time(),
@@ -388,33 +384,15 @@ def run_one_report(log_dir, report_dir, script_path=None):
     
     参数:
         log_dir: 包含日志文件的目录
-        report_dir: 生成报告的目标目录
+        report_dir: 生成报告的目标目录（现在与log_dir相同）
         script_path: 可选的脚本文件路径，如果提供则会复制到报告目录
         
     返回:
         bool: 是否成功生成报告
     """
     try:
-        import io
-        import shutil
         import traceback
         from airtest.report.report import LogToHtml
-        
-        # 创建Airtest标准项目结构
-        # - report_dir/
-        #   - script.py
-        #   - log/
-        #     - log.txt
-        #     - 截图文件
-        
-        # 确保报告目录存在并清空
-        os.makedirs(report_dir, exist_ok=True)
-        for item in os.listdir(report_dir):
-            item_path = os.path.join(report_dir, item)
-            if os.path.isdir(item_path):
-                shutil.rmtree(item_path)
-            else:
-                os.remove(item_path)
         
         # 检查日志文件是否存在
         log_file = os.path.join(log_dir, "log.txt")
@@ -422,32 +400,25 @@ def run_one_report(log_dir, report_dir, script_path=None):
             print(f"找不到日志文件: {log_file}")
             return False
         
-        # 读取并过滤日志内容
-        with open(log_file, "r", encoding="utf-8") as f:
-            log_content = f.read()
-        
-        # 如果日志内容为空，添加一个空的JSON行
-        if not log_content.strip():
-            log_content = '{"time": ' + str(time.time()) + ', "tag": "info", "depth": 0, "data": {"log": "No log data available"}}'
-            print("警告: 日志内容为空，添加了一个空的JSON行")
-        
-        # 1. 创建标准Airtest项目结构：script.py和log目录
-        script_file = os.path.join(report_dir, "script.py")
-        with open(script_file, 'w', encoding='utf-8') as f:
-            f.write("# Generated script for YOLO-based automation\n")
-        
-        # 创建log目录，符合Airtest标准结构
-        log_report_dir = os.path.join(report_dir, "log")
+        # 创建log子目录，符合Airtest标准结构
+        log_report_dir = os.path.join(log_dir, "log")
         os.makedirs(log_report_dir, exist_ok=True)
         
-        # 2. 复制截图和缩略图到log目录
+        # 1. 创建标准Airtest项目结构：script.py
+        script_file = os.path.join(log_dir, "script.py")
+        if not os.path.exists(script_file):
+            with open(script_file, 'w', encoding='utf-8') as f:
+                f.write("# Generated script for YOLO-based automation\n")
+        
+        # 2. 移动截图和缩略图到log子目录
         image_files = []
         for img in os.listdir(log_dir):
             if (img.endswith(".jpg") or img.endswith(".png")) and not img.endswith("_small.jpg") and not img.endswith("_small.png"):
-                # 主图片
+                # 移动主图片
                 src = os.path.join(log_dir, img)
                 dst = os.path.join(log_report_dir, img)
-                shutil.copy2(src, dst)
+                if src != dst:  # 如果源和目标不同，则移动文件
+                    shutil.move(src, dst)
                 image_files.append(img)
                 
                 # 对应的缩略图
@@ -455,23 +426,32 @@ def run_one_report(log_dir, report_dir, script_path=None):
                 small_src = os.path.join(log_dir, small_img)
                 if os.path.exists(small_src):
                     small_dst = os.path.join(log_report_dir, small_img)
-                    shutil.copy2(small_src, small_dst)
+                    if small_src != small_dst:  # 如果源和目标不同，则移动文件
+                        shutil.move(small_src, small_dst)
                 else:
                     # 如果没有缩略图，尝试创建一个
                     try:
                         import cv2
-                        img_data = cv2.imread(src)
-                        if img_data is not None:
-                            small_img_data = cv2.resize(img_data, (0, 0), fx=0.3, fy=0.3)
-                            cv2.imwrite(os.path.join(log_report_dir, small_img), small_img_data, [cv2.IMWRITE_JPEG_QUALITY, 60])
-                            print(f"创建缩略图: {small_img}")
+                        if os.path.exists(dst):
+                            img_data = cv2.imread(dst)
+                            if img_data is not None:
+                                small_img_data = cv2.resize(img_data, (0, 0), fx=0.3, fy=0.3)
+                                cv2.imwrite(os.path.join(log_report_dir, small_img), small_img_data, [cv2.IMWRITE_JPEG_QUALITY, 60])
+                                print(f"创建缩略图: {small_img}")
                     except Exception as e:
                         print(f"创建缩略图失败: {e}")
         
-        # 3. 将日志写入log目录下的log.txt
+        # 3. 将日志移动到log子目录下的log.txt
+        with open(log_file, "r", encoding="utf-8") as f:
+            log_content = f.read()
+        
         log_txt_file = os.path.join(log_report_dir, "log.txt")
         with open(log_txt_file, "w", encoding="utf-8") as f:
             f.write(log_content)
+        
+        # 如果原始日志文件不在log子目录，则删除它
+        if log_file != log_txt_file:
+            os.remove(log_file)
         
         # 4. 复制脚本文件（如果提供）
         if script_path and os.path.exists(script_path):
@@ -484,7 +464,7 @@ def run_one_report(log_dir, report_dir, script_path=None):
         report_path = os.path.join(airtest_path, "report")
         
         # 创建static目录及子目录
-        static_dir = os.path.join(report_dir, "static")
+        static_dir = os.path.join(log_dir, "static")
         for resource in ["css", "js", "image", "fonts"]:
             os.makedirs(os.path.join(static_dir, resource), exist_ok=True)
         
@@ -518,23 +498,22 @@ def run_one_report(log_dir, report_dir, script_path=None):
         if not os.path.exists(template_file):
             raise FileNotFoundError(f"找不到模板文件: {template_file}")
         
-        dest_template = os.path.join(report_dir, "log_template.html")
+        dest_template = os.path.join(log_dir, "log_template.html")
         shutil.copy2(template_file, dest_template)
         
         # 7. 使用Airtest的LogToHtml生成报告
-        # 注意：使用标准结构下的路径
         rpt = LogToHtml(
-            script_root=report_dir,         # 项目根目录
-            log_root=log_report_dir,        # log子目录
-            static_root="static/",          # 静态资源目录
+            script_root=log_dir,           # 项目根目录
+            log_root=log_report_dir,       # log子目录
+            static_root="static/",         # 静态资源目录
             export_dir=None,
-            logfile="log.txt",              # log.txt在log子目录中
-            script_name="script.py",        # 脚本名称
+            logfile="log.txt",             # log.txt在log子目录中
+            script_name="script.py",       # 脚本名称
             lang="zh"
         )
         
         # 生成报告
-        report_html_file = os.path.join(report_dir, "log.html")
+        report_html_file = os.path.join(log_dir, "log.html")
         rpt.report(template_name="log_template.html", output_file=report_html_file)
         
         # 修复HTML文件中的资源路径和截图引用
@@ -687,9 +666,10 @@ def run_summary(data):
                 success_count += 1
                 # 计算相对路径
                 abs_report_path = report_info
-                device_log_dir = os.path.dirname(os.path.dirname(abs_report_path))
-                device_name = os.path.basename(device_log_dir).split('_')[0]
-                rel_path = f"../replaylogs/{os.path.basename(device_log_dir)}/report/log.html"
+                device_dir = os.path.dirname(abs_report_path)
+                device_name = os.path.basename(device_dir).split('_')[0]
+                # 由于报告和设备报告都在同一目录下，直接使用basename即可
+                rel_path = f"{os.path.basename(device_dir)}/log.html"
                 data['tests'][device] = {
                     'status': 0,  # 成功
                     'path': rel_path
@@ -744,7 +724,6 @@ def run_on_multi_device(devices, scripts, results, run_all, device_names, show_s
             continue
 
         log_dir = get_log_dir(device_name)
-        report_dir = os.path.join(log_dir, "report")  # 修改为正确的报告目录路径
         t = Thread(target=replay_device, args=(
             device, scripts, screenshot_queue, action_queue, Event(), device_name, log_dir),
                    kwargs={"show_screens": show_screens})
@@ -753,8 +732,7 @@ def run_on_multi_device(devices, scripts, results, run_all, device_names, show_s
         tasks.append({
             'thread': t,
             'dev': device_name,
-            'log_dir': log_dir,
-            'report_dir': report_dir  # 使用正确的报告目录
+            'log_dir': log_dir
         })
     return tasks
 
@@ -767,8 +745,7 @@ def run(devices, scripts, device_names, show_screens=False, run_all=False):
     
     # 创建报告基础目录
     timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-    report_base_dir = os.path.join(BASE_DIR, "outputs", "replay_reports")
-    os.makedirs(report_base_dir, exist_ok=True)
+    os.makedirs(report_dir, exist_ok=True)
     
     # 在多设备上运行测试
     tasks = run_on_multi_device(devices, scripts, results, run_all, device_names, show_screens)
@@ -777,21 +754,20 @@ def run(devices, scripts, device_names, show_screens=False, run_all=False):
     # 对每个设备生成报告
     for task in tasks:
         task['thread'].join()
-        # 为每个设备创建独立的报告目录
-        device_report_dir = os.path.join(report_base_dir, f"{task['dev']}_{timestamp}")
-        os.makedirs(device_report_dir, exist_ok=True)
+        # 报告目录就是日志目录
+        device_report_dir = task['log_dir']
         
         # 复制脚本文件到报告目录
         script_path = None
         if scripts and scripts[0].get('path'):
             script_path = scripts[0]['path']
-            script_target = os.path.join(device_report_dir, "script.py")
-            if os.path.exists(script_path):
-                shutil.copy2(script_path, script_target)
-                script_path = script_target
+            
+        # 生成报告
+        device_report = run_one_report(device_report_dir, device_report_dir, script_path)
+        # 更新报告路径为log.html的绝对路径
+        report_path = os.path.join(device_report_dir, "log.html") if device_report else None
+        results['tests'][task['dev']] = report_path
         
-        device_report = run_one_report(task['log_dir'], device_report_dir, script_path)
-        results['tests'][task['dev']] = device_report
         if device_report:
             success_count += 1
             print(f"设备 {task['dev']} 测试成功")
@@ -800,46 +776,7 @@ def run(devices, scripts, device_names, show_screens=False, run_all=False):
 
     # 生成汇总报告
     print(f"开始生成汇总报告，成功率: {success_count}/{len(tasks)}")
-    summary_report = os.path.join(report_base_dir, f"summary_report_{timestamp}.html")
-    
-    # 生成汇总报告HTML
-    with open(summary_report, "w", encoding="utf-8") as f:
-        f.write(f"""
-        <html>
-        <head>
-            <title>测试报告汇总</title>
-            <meta charset="utf-8">
-            <style>
-                body {{ font-family: Arial, sans-serif; margin: 20px; }}
-                h1 {{ color: #333; }}
-                .device {{ margin: 10px 0; padding: 10px; border: 1px solid #ddd; }}
-                .success {{ color: green; }}
-                .failure {{ color: red; }}
-            </style>
-        </head>
-        <body>
-            <h1>测试报告汇总</h1>
-            <p>时间: {timestamp}</p>
-            <p>总测试数: {len(results['tests'])}</p>
-            <p>成功数: {success_count}</p>
-            <div class="devices">
-                {''.join([
-                    f'''
-                    <div class="device">
-                        <h2>设备: {dev}</h2>
-                        <p class="{'success' if success else 'failure'}">
-                            状态: {'成功' if success else '失败'}
-                        </p>
-                        {f'<p><a href="{dev}_{timestamp}/log.html">查看报告</a></p>' if success else ''}
-                    </div>
-                    '''
-                    for dev, success in results['tests'].items()
-                ])}
-            </div>
-        </body>
-        </html>
-        """)
-    print(f"汇总报告生成成功: {summary_report}")
+    summary_report = run_summary(results)
     
     # 返回结果
     result_str = f"成功 {success_count}/{len(tasks)}"

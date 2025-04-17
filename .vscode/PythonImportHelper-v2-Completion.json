@@ -3983,7 +3983,7 @@
         "kind": 2,
         "importPath": "replay_script",
         "description": "replay_script",
-        "peekOfCode": "def setup_device_logger(device_name):\n    log_file = os.path.join(output_dir, f\"{device_name}_log.txt\")\n    logger = logging.getLogger(device_name)\n    logger.setLevel(logging.INFO)\n    handler = logging.FileHandler(log_file, encoding=\"utf-8\")\n    formatter = AirtestJsonFormatter()\n    handler.setFormatter(formatter)\n    logger.addHandler(handler)\n    return logger\n# 获取设备名称",
+        "peekOfCode": "def setup_device_logger(device_name):\n    log_file = os.path.join(report_dir, f\"{device_name}_log.txt\")\n    logger = logging.getLogger(device_name)\n    logger.setLevel(logging.INFO)\n    handler = logging.FileHandler(log_file, encoding=\"utf-8\")\n    formatter = AirtestJsonFormatter()\n    handler.setFormatter(formatter)\n    logger.addHandler(handler)\n    return logger\n# 获取设备名称",
         "detail": "replay_script",
         "documentation": {}
     },
@@ -4028,7 +4028,7 @@
         "kind": 2,
         "importPath": "replay_script",
         "description": "replay_script",
-        "peekOfCode": "def get_log_dir(dev):\n    device_dir = dev.replace(\".\", \"_\").replace(\":\", \"_\") + CURRENT_TIME\n    log_dir = os.path.normpath(os.path.join(output_dir, device_dir))\n    # 创建必要的目录结构\n    os.makedirs(log_dir, exist_ok=True)\n    os.makedirs(os.path.join(log_dir, \"report\"), exist_ok=True)\n    os.makedirs(os.path.join(log_dir, \"temp_script.air\"), exist_ok=True)\n    # 确保日志文件存在\n    log_file = os.path.join(log_dir, \"log.txt\")\n    if not os.path.exists(log_file):",
+        "peekOfCode": "def get_log_dir(dev):\n    device_dir = dev.replace(\".\", \"_\").replace(\":\", \"_\") + CURRENT_TIME\n    log_dir = os.path.normpath(os.path.join(report_dir, device_dir))\n    # 创建必要的目录结构\n    os.makedirs(log_dir, exist_ok=True)\n    # 确保日志文件存在\n    log_file = os.path.join(log_dir, \"log.txt\")\n    if not os.path.exists(log_file):\n        with open(log_file, \"w\", encoding=\"utf-8\") as f:\n            pass",
         "detail": "replay_script",
         "documentation": {}
     },
@@ -4037,7 +4037,7 @@
         "kind": 2,
         "importPath": "replay_script",
         "description": "replay_script",
-        "peekOfCode": "def clear_log_dir():\n    if os.path.exists(output_dir):\n        shutil.rmtree(output_dir)\n    os.makedirs(output_dir, exist_ok=True)\n# 加载测试进度数据\ndef load_json_data(run_all):\n    json_file = os.path.join(BASE_DIR, 'data.json')\n    if not run_all and os.path.isfile(json_file):\n        data = json.load(open(json_file))\n        data['start'] = time.time()",
+        "peekOfCode": "def clear_log_dir():\n    if os.path.exists(report_dir):\n        shutil.rmtree(report_dir)\n    os.makedirs(report_dir, exist_ok=True)\n# 加载测试进度数据\ndef load_json_data(run_all):\n    json_file = os.path.join(BASE_DIR, 'data.json')\n    if not run_all and os.path.isfile(json_file):\n        data = json.load(open(json_file))\n        data['start'] = time.time()",
         "detail": "replay_script",
         "documentation": {}
     },
@@ -4046,7 +4046,7 @@
         "kind": 2,
         "importPath": "replay_script",
         "description": "replay_script",
-        "peekOfCode": "def load_json_data(run_all):\n    json_file = os.path.join(BASE_DIR, 'data.json')\n    if not run_all and os.path.isfile(json_file):\n        data = json.load(open(json_file))\n        data['start'] = time.time()\n        return data\n    else:\n        print(f\"清理日志目录: {output_dir}\")\n        clear_log_dir()\n        return {",
+        "peekOfCode": "def load_json_data(run_all):\n    json_file = os.path.join(BASE_DIR, 'data.json')\n    if not run_all and os.path.isfile(json_file):\n        data = json.load(open(json_file))\n        data['start'] = time.time()\n        return data\n    else:\n        print(f\"清理日志目录: {report_dir}\")\n        clear_log_dir()\n        return {",
         "detail": "replay_script",
         "documentation": {}
     },
@@ -4082,7 +4082,7 @@
         "kind": 2,
         "importPath": "replay_script",
         "description": "replay_script",
-        "peekOfCode": "def run_one_report(log_dir, report_dir, script_path=None):\n    \"\"\"\n    为单个设备生成HTML报告，遵循Airtest标准结构\n    参数:\n        log_dir: 包含日志文件的目录\n        report_dir: 生成报告的目标目录\n        script_path: 可选的脚本文件路径，如果提供则会复制到报告目录\n    返回:\n        bool: 是否成功生成报告\n    \"\"\"",
+        "peekOfCode": "def run_one_report(log_dir, report_dir, script_path=None):\n    \"\"\"\n    为单个设备生成HTML报告，遵循Airtest标准结构\n    参数:\n        log_dir: 包含日志文件的目录\n        report_dir: 生成报告的目标目录（现在与log_dir相同）\n        script_path: 可选的脚本文件路径，如果提供则会复制到报告目录\n    返回:\n        bool: 是否成功生成报告\n    \"\"\"",
         "detail": "replay_script",
         "documentation": {}
     },
@@ -4127,7 +4127,7 @@
         "kind": 2,
         "importPath": "replay_script",
         "description": "replay_script",
-        "peekOfCode": "def run(devices, scripts, device_names, show_screens=False, run_all=False):\n    \"\"\"运行主测试流程\"\"\"\n    # 加载测试进度数据\n    results = load_json_data(run_all)\n    # 创建报告基础目录\n    timestamp = datetime.now().strftime(\"%Y-%m-%d-%H-%M-%S\")\n    report_base_dir = os.path.join(BASE_DIR, \"outputs\", \"replay_reports\")\n    os.makedirs(report_base_dir, exist_ok=True)\n    # 在多设备上运行测试\n    tasks = run_on_multi_device(devices, scripts, results, run_all, device_names, show_screens)",
+        "peekOfCode": "def run(devices, scripts, device_names, show_screens=False, run_all=False):\n    \"\"\"运行主测试流程\"\"\"\n    # 加载测试进度数据\n    results = load_json_data(run_all)\n    # 创建报告基础目录\n    timestamp = datetime.now().strftime(\"%Y-%m-%d-%H-%M-%S\")\n    os.makedirs(report_dir, exist_ok=True)\n    # 在多设备上运行测试\n    tasks = run_on_multi_device(devices, scripts, results, run_all, device_names, show_screens)\n    success_count = 0",
         "detail": "replay_script",
         "documentation": {}
     },
@@ -4163,7 +4163,7 @@
         "kind": 5,
         "importPath": "replay_script",
         "description": "replay_script",
-        "peekOfCode": "model = None\ndevices = []\nBASE_DIR = os.path.dirname(os.path.abspath(__file__))\nCURRENT_TIME = \"_\" + time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))\noutput_dir = os.path.join(BASE_DIR, \"outputs/replaylogs\")\nreport_dir = os.path.join(BASE_DIR, \"outputs/replay_reports\")\ntemplate_dir = os.path.join(BASE_DIR, \"templates\")  # 模板目录路径\n# 确保所有必要的目录都存在\nos.makedirs(output_dir, exist_ok=True)\nos.makedirs(report_dir, exist_ok=True)",
+        "peekOfCode": "model = None\ndevices = []\nBASE_DIR = os.path.dirname(os.path.abspath(__file__))\nCURRENT_TIME = \"_\" + time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))\nreport_dir = os.path.join(BASE_DIR, \"outputs/replay_reports\")\ntemplate_dir = os.path.join(BASE_DIR, \"templates\")  # 模板目录路径\n# 确保所有必要的目录都存在\nos.makedirs(report_dir, exist_ok=True)\nos.makedirs(template_dir, exist_ok=True)\nscreenshot_queue = queue.Queue()",
         "detail": "replay_script",
         "documentation": {}
     },
@@ -4172,7 +4172,7 @@
         "kind": 5,
         "importPath": "replay_script",
         "description": "replay_script",
-        "peekOfCode": "devices = []\nBASE_DIR = os.path.dirname(os.path.abspath(__file__))\nCURRENT_TIME = \"_\" + time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))\noutput_dir = os.path.join(BASE_DIR, \"outputs/replaylogs\")\nreport_dir = os.path.join(BASE_DIR, \"outputs/replay_reports\")\ntemplate_dir = os.path.join(BASE_DIR, \"templates\")  # 模板目录路径\n# 确保所有必要的目录都存在\nos.makedirs(output_dir, exist_ok=True)\nos.makedirs(report_dir, exist_ok=True)\nos.makedirs(template_dir, exist_ok=True)",
+        "peekOfCode": "devices = []\nBASE_DIR = os.path.dirname(os.path.abspath(__file__))\nCURRENT_TIME = \"_\" + time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))\nreport_dir = os.path.join(BASE_DIR, \"outputs/replay_reports\")\ntemplate_dir = os.path.join(BASE_DIR, \"templates\")  # 模板目录路径\n# 确保所有必要的目录都存在\nos.makedirs(report_dir, exist_ok=True)\nos.makedirs(template_dir, exist_ok=True)\nscreenshot_queue = queue.Queue()\naction_queue = queue.Queue()",
         "detail": "replay_script",
         "documentation": {}
     },
@@ -4181,7 +4181,7 @@
         "kind": 5,
         "importPath": "replay_script",
         "description": "replay_script",
-        "peekOfCode": "BASE_DIR = os.path.dirname(os.path.abspath(__file__))\nCURRENT_TIME = \"_\" + time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))\noutput_dir = os.path.join(BASE_DIR, \"outputs/replaylogs\")\nreport_dir = os.path.join(BASE_DIR, \"outputs/replay_reports\")\ntemplate_dir = os.path.join(BASE_DIR, \"templates\")  # 模板目录路径\n# 确保所有必要的目录都存在\nos.makedirs(output_dir, exist_ok=True)\nos.makedirs(report_dir, exist_ok=True)\nos.makedirs(template_dir, exist_ok=True)\nscreenshot_queue = queue.Queue()",
+        "peekOfCode": "BASE_DIR = os.path.dirname(os.path.abspath(__file__))\nCURRENT_TIME = \"_\" + time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))\nreport_dir = os.path.join(BASE_DIR, \"outputs/replay_reports\")\ntemplate_dir = os.path.join(BASE_DIR, \"templates\")  # 模板目录路径\n# 确保所有必要的目录都存在\nos.makedirs(report_dir, exist_ok=True)\nos.makedirs(template_dir, exist_ok=True)\nscreenshot_queue = queue.Queue()\naction_queue = queue.Queue()\nclick_queue = queue.Queue()  # 新增全局 click_queue",
         "detail": "replay_script",
         "documentation": {}
     },
@@ -4190,16 +4190,7 @@
         "kind": 5,
         "importPath": "replay_script",
         "description": "replay_script",
-        "peekOfCode": "CURRENT_TIME = \"_\" + time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))\noutput_dir = os.path.join(BASE_DIR, \"outputs/replaylogs\")\nreport_dir = os.path.join(BASE_DIR, \"outputs/replay_reports\")\ntemplate_dir = os.path.join(BASE_DIR, \"templates\")  # 模板目录路径\n# 确保所有必要的目录都存在\nos.makedirs(output_dir, exist_ok=True)\nos.makedirs(report_dir, exist_ok=True)\nos.makedirs(template_dir, exist_ok=True)\nscreenshot_queue = queue.Queue()\naction_queue = queue.Queue()",
-        "detail": "replay_script",
-        "documentation": {}
-    },
-    {
-        "label": "output_dir",
-        "kind": 5,
-        "importPath": "replay_script",
-        "description": "replay_script",
-        "peekOfCode": "output_dir = os.path.join(BASE_DIR, \"outputs/replaylogs\")\nreport_dir = os.path.join(BASE_DIR, \"outputs/replay_reports\")\ntemplate_dir = os.path.join(BASE_DIR, \"templates\")  # 模板目录路径\n# 确保所有必要的目录都存在\nos.makedirs(output_dir, exist_ok=True)\nos.makedirs(report_dir, exist_ok=True)\nos.makedirs(template_dir, exist_ok=True)\nscreenshot_queue = queue.Queue()\naction_queue = queue.Queue()\nclick_queue = queue.Queue()  # 新增全局 click_queue",
+        "peekOfCode": "CURRENT_TIME = \"_\" + time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))\nreport_dir = os.path.join(BASE_DIR, \"outputs/replay_reports\")\ntemplate_dir = os.path.join(BASE_DIR, \"templates\")  # 模板目录路径\n# 确保所有必要的目录都存在\nos.makedirs(report_dir, exist_ok=True)\nos.makedirs(template_dir, exist_ok=True)\nscreenshot_queue = queue.Queue()\naction_queue = queue.Queue()\nclick_queue = queue.Queue()  # 新增全局 click_queue\n# Airtest 兼容的 JSON 日志格式化器",
         "detail": "replay_script",
         "documentation": {}
     },
@@ -4208,7 +4199,7 @@
         "kind": 5,
         "importPath": "replay_script",
         "description": "replay_script",
-        "peekOfCode": "report_dir = os.path.join(BASE_DIR, \"outputs/replay_reports\")\ntemplate_dir = os.path.join(BASE_DIR, \"templates\")  # 模板目录路径\n# 确保所有必要的目录都存在\nos.makedirs(output_dir, exist_ok=True)\nos.makedirs(report_dir, exist_ok=True)\nos.makedirs(template_dir, exist_ok=True)\nscreenshot_queue = queue.Queue()\naction_queue = queue.Queue()\nclick_queue = queue.Queue()  # 新增全局 click_queue\n# Airtest 兼容的 JSON 日志格式化器",
+        "peekOfCode": "report_dir = os.path.join(BASE_DIR, \"outputs/replay_reports\")\ntemplate_dir = os.path.join(BASE_DIR, \"templates\")  # 模板目录路径\n# 确保所有必要的目录都存在\nos.makedirs(report_dir, exist_ok=True)\nos.makedirs(template_dir, exist_ok=True)\nscreenshot_queue = queue.Queue()\naction_queue = queue.Queue()\nclick_queue = queue.Queue()  # 新增全局 click_queue\n# Airtest 兼容的 JSON 日志格式化器\nclass AirtestJsonFormatter(logging.Formatter):",
         "detail": "replay_script",
         "documentation": {}
     },
@@ -4217,7 +4208,7 @@
         "kind": 5,
         "importPath": "replay_script",
         "description": "replay_script",
-        "peekOfCode": "template_dir = os.path.join(BASE_DIR, \"templates\")  # 模板目录路径\n# 确保所有必要的目录都存在\nos.makedirs(output_dir, exist_ok=True)\nos.makedirs(report_dir, exist_ok=True)\nos.makedirs(template_dir, exist_ok=True)\nscreenshot_queue = queue.Queue()\naction_queue = queue.Queue()\nclick_queue = queue.Queue()  # 新增全局 click_queue\n# Airtest 兼容的 JSON 日志格式化器\nclass AirtestJsonFormatter(logging.Formatter):",
+        "peekOfCode": "template_dir = os.path.join(BASE_DIR, \"templates\")  # 模板目录路径\n# 确保所有必要的目录都存在\nos.makedirs(report_dir, exist_ok=True)\nos.makedirs(template_dir, exist_ok=True)\nscreenshot_queue = queue.Queue()\naction_queue = queue.Queue()\nclick_queue = queue.Queue()  # 新增全局 click_queue\n# Airtest 兼容的 JSON 日志格式化器\nclass AirtestJsonFormatter(logging.Formatter):\n    def format(self, record):",
         "detail": "replay_script",
         "documentation": {}
     },
@@ -4307,7 +4298,7 @@
         "kind": 2,
         "importPath": "test_report",
         "description": "test_report",
-        "peekOfCode": "def create_test_log():\n    \"\"\"创建测试日志和截图，用于测试报告生成\"\"\"\n    # 创建测试目录\n    test_log_dir = os.path.join(\"outputs\", \"test_logs\")\n    os.makedirs(test_log_dir, exist_ok=True)\n    # 创建测试报告目录\n    test_report_dir = os.path.join(\"outputs\", \"test_reports\")\n    os.makedirs(test_report_dir, exist_ok=True)\n    # 清空测试目录\n    for item in os.listdir(test_log_dir):",
+        "peekOfCode": "def create_test_log():\n    \"\"\"创建测试日志和截图，用于测试报告生成\"\"\"\n    # 创建测试目录\n    test_dir = os.path.join(\"outputs\", \"test_logs\")\n    os.makedirs(test_dir, exist_ok=True)\n    # 清空测试目录\n    for item in os.listdir(test_dir):\n        item_path = os.path.join(test_dir, item)\n        if os.path.isdir(item_path):\n            shutil.rmtree(item_path)",
         "detail": "test_report",
         "documentation": {}
     },
@@ -4316,7 +4307,7 @@
         "kind": 2,
         "importPath": "test_report",
         "description": "test_report",
-        "peekOfCode": "def test_report_generation():\n    \"\"\"测试报告生成\"\"\"\n    # 创建测试日志\n    test_log_dir, test_report_dir = create_test_log()\n    # 生成报告\n    success = run_one_report(test_log_dir, test_report_dir)\n    if success:\n        print(f\"报告生成成功，请查看: {os.path.join(test_report_dir, 'log.html')}\")\n    else:\n        print(\"报告生成失败\")",
+        "peekOfCode": "def test_report_generation():\n    \"\"\"测试报告生成\"\"\"\n    # 创建测试日志\n    test_dir = create_test_log()\n    # 生成报告\n    success = run_one_report(test_dir, test_dir)\n    if success:\n        print(f\"报告生成成功，请查看: {os.path.join(test_dir, 'log.html')}\")\n    else:\n        print(\"报告生成失败\")",
         "detail": "test_report",
         "documentation": {}
     },

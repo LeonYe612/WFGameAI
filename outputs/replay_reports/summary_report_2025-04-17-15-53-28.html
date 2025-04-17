@@ -244,22 +244,22 @@
 	<div class="container">
 		<div class="main">
 			<div class="material">
-				<h1>{{data['script']}}</h1>
+				<h1>replay_script</h1>
 				<div class="center">
 					<div class="btn lang">Switch to English version</div>
-					<div class="time zh">开始时间：{{data['start']}}，耗时 <b>{{data['time']}}</b> 秒</div>
-					<div class="time en">Started at：{{data['start']}}，cost <b>{{data['time']}}</b> s</div>
+					<div class="time zh">开始时间：2025-04-17 15:53:28，耗时 <b>7.319</b> 秒</div>
+					<div class="time en">Started at：2025-04-17 15:53:28，cost <b>7.319</b> s</div>
 				</div>
 				<div class="head">
-					<header class="zh"><span class="rate"></span>成功率：</span> {{data["success"]}}/{{data["count"]}}
+					<header class="zh"><span class="rate"></span>成功率：</span> 1/1
 					</header>
-					<header class="en"><span class="rate">Success rate：</span> {{data["success"]}}/{{data["count"]}}
+					<header class="en"><span class="rate">Success rate：</span> 1/1
 					</header>
 					<div>
 						<div class="progress">
 							<div class="progress-bar progress-bar-success" role="progressbar" aria-valuemin="0"
-							     aria-valuemax="100" style="width: {{data['success'] *100 / data['count']}}%">
-								<span class="">{{'%0.2f' % (data["success"] *100 / data["count"])}}%</span>
+							     aria-valuemax="100" style="width: 100.0%">
+								<span class="">100.00%</span>
 							</div>
 						</div>
 					</div>
@@ -280,20 +280,18 @@
 							<div class="table-col short en">device</div>
 							<div class="table-col short">--</div>
 						</div>
-						{% for dev, item in data['tests'].items() %}
-						<div class="table-row" path="{{item['path']}}">
-							<div class="table-col short">{{loop.index}}</div>
-							<div class="table-col short zh {{'success' if item['status']==0 else 'failed'}}">{{"完毕" if
-								item['status']==0 else "异常"}}
+						
+						<div class="table-row" path="OnePlus-KB2000-1080x2400_2025-04-17-15-53-28/log.html">
+							<div class="table-col short">1</div>
+							<div class="table-col short zh success">完毕
 							</div>
-							<div class="table-col short en {{'success' if item['status']==0 else 'failed'}}">{{"success"
-								if item['status']==0 else "failed"}}
+							<div class="table-col short en success">success
 							</div>
-							<div class="table-col long">{{dev}}</div>
+							<div class="table-col long">OnePlus-KB2000-1080x2400</div>
 							<div class="table-col detail zh">点击可查看详情</div>
 							<div class="table-col detail en">click to see detail</div>
 						</div>
-						{% endfor %}
+						
 					</div>
 				</div>
 			</div>
