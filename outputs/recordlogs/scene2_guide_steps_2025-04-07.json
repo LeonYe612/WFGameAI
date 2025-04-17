@@ -27,6 +27,13 @@
     },
     {
       "Priority": 6,
+      "class": "navigation-fight",
+      "relative_x": 0.5,
+      "relative_y": 0.9,
+      "remark": "点击进入战斗场景"
+    },
+    {
+      "Priority": 7,
       "class": "unknown",
       "relative_x": 0.5,
       "relative_y": 0.9,

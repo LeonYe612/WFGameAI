@@ -196,158 +196,339 @@ def replay_device(device, scripts, screenshot_queue, action_queue, stop_event, d
     # 模拟设备初始化
     print(f"开始回放设备: {device_name}, 脚本: {scripts}")
 
-    # 从 scripts 中提取脚本路径和循环次数
+    # 检查脚本列表是否为空
     if not scripts:
         raise ValueError("脚本列表为空，无法回放")
-
-    script_config = scripts[0]  # 假设每次只处理一个脚本
-    script_path = script_config["path"]
-    script_loop_count = script_config.get("loop_count", loop_count)  # 优先使用脚本配置中的 loop_count
-
-    # 从 script_path 读取步骤
-    with open(script_path, "r", encoding="utf-8") as f:
-        json_data = json.load(f)
-        steps = json_data.get("steps", [])  # 确保获取 steps 列表
-
-    # 检查 steps 是否为空
-    if not steps:
-        raise ValueError(f"脚本 {script_path} 中未找到有效的步骤")
 
     # 创建log.txt文件
     log_txt_path = os.path.join(log_dir, "log.txt")
     with open(log_txt_path, "w", encoding="utf-8") as f:
         f.write("")  # 创建空文件
 
-    # 循环执行（根据 script_loop_count）
-    for loop in range(script_loop_count):
-        print(f"第 {loop + 1}/{script_loop_count} 次循环")
-        step_counter = 0
-        for step in steps:
-            step_class = step["class"]
-            step_remark = step.get("remark", "")
-            step_counter += 1
-            step_num = step_counter
-            timestamp = time.time()  # 更新时间戳
+    # 执行所有脚本
+    total_step_counter = 0
+    for script_config in scripts:
+        script_path = script_config["path"]
+        script_loop_count = script_config.get("loop_count", loop_count)  # 优先使用脚本配置中的 loop_count
+        max_duration = script_config.get("max_duration", None)  # 获取最大执行时间（如果有）
+        
+        print(f"开始执行脚本: {script_path}, 循环次数: {script_loop_count}, 最大执行时间: {max_duration}秒")
+        
+        # 从 script_path 读取步骤
+        with open(script_path, "r", encoding="utf-8") as f:
+            json_data = json.load(f)
+            steps = json_data.get("steps", [])  # 确保获取 steps 列表
 
-            # 获取设备屏幕截图
-            screenshot = device.screenshot()  # 使用 adbutils 获取截图
-            frame = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
-            if frame is None:
-                raise ValueError("无法获取设备屏幕截图")
+        # 检查 steps 是否为空
+        if not steps:
+            print(f"警告: 脚本 {script_path} 中未找到有效的步骤，跳过此脚本")
+            continue
 
-            # 使用纯时间戳作为截图文件名，符合ka2-reports-demo的命名约定
-            screenshot_timestamp = int(timestamp * 1000)
-            screenshot_filename = f"{screenshot_timestamp}.jpg"
-            screenshot_path = os.path.join(log_dir, screenshot_filename)
-            cv2.imwrite(screenshot_path, frame)
-            print(f"保存截图: {screenshot_path}")
-
-            # 创建缩略图
-            thumbnail_filename = f"{screenshot_timestamp}_small.jpg"
-            thumbnail_path = os.path.join(log_dir, thumbnail_filename)
-            small_frame = cv2.resize(frame, (0, 0), fx=0.3, fy=0.3)
-            cv2.imwrite(thumbnail_path, small_frame, [cv2.IMWRITE_JPEG_QUALITY, 60])
-            print(f"保存缩略图: {thumbnail_path}")
-
-            # 获取屏幕分辨率
-            height, width = frame.shape[:2]
-            resolution = [width, height]
-
-            # 将截图和检测任务放入队列
-            screenshot_queue.put((device_name, step_num, frame, step_class, None))
-
-            # 等待检测结果，添加超时机制
-            try:
-                success, (x, y, detected_class) = click_queue.get(timeout=10)  # 等待最多 10 秒
-            except queue.Empty:
-                print(f"设备 {device_name} 检测超时，未收到目标按钮 {step_class} 的检测结果")
-                success, (x, y, detected_class) = False, (None, None, None)
-
-            # 准备screen对象，格式与ka2-reports-demo一致
-            screen_object = {
-                "src": f"log/{screenshot_filename}",
-                "_filepath": f"log/{screenshot_filename}",
-                "thumbnail": f"log/{thumbnail_filename}",
-                "resolution": resolution,
-                "pos": [[int(x), int(y)]] if success and x is not None and y is not None else [],
-                "vector": [],
-                "confidence": 0.85 if success else None,
-                "rect": [{"left": int(x)-50, "top": int(y)-50, "width": 100, "height": 100}] if success and x is not None and y is not None else []
-            }
-
-            # 1. 记录snapshot操作（作为底层操作，记录截图）
-            snapshot_entry = {
-                "tag": "function",
-                "depth": 0,
-                "time": timestamp,
-                "data": {
-                    "name": "snapshot",
-                    "call_args": {},
-                    "start_time": timestamp - 0.002,
-                    "ret": screenshot_filename,  # 返回文件名
-                    "end_time": timestamp,
-                    "screen": screen_object  # 包含完整的screen对象
-                }
-            }
+        # 检查脚本类型：是否是基于优先级的动态脚本
+        is_priority_based = any("Priority" in step for step in steps)
+        if is_priority_based:
+            print(f"检测到基于优先级的动态脚本: {script_path}")
+            # 按优先级排序（如果未指定Priority，则默认为最低优先级999）
+            steps.sort(key=lambda s: s.get("Priority", 999))
             
-            with open(log_txt_path, "a", encoding="utf-8") as f:
-                f.write(json.dumps(snapshot_entry, ensure_ascii=False) + "\n")
-
-            # 处理检测结果
-            if success:
-                print(f"设备 {device_name} 检测到目标按钮 {step_class}，执行点击操作")
+        script_start_time = time.time()  # 记录脚本开始执行的时间
+        
+        # 循环执行（根据 script_loop_count）
+        for loop in range(script_loop_count):
+            print(f"第 {loop + 1}/{script_loop_count} 次循环")
+            step_counter = 0
+            
+            # 如果是基于优先级的脚本，则一直循环执行直到达到最大执行时间
+            if is_priority_based:
+                priority_start_time = time.time()  # 记录优先级模式的实际开始时间
+                print(f"优先级模式开始时间: {priority_start_time}, 最大执行时间: {max_duration}秒")
                 
-                # 执行点击操作
-                device.shell(f"input tap {int(x)} {int(y)}")
-                
-                # 2. 记录touch操作（点击成功）- 使用与ka2-reports-demo一致的格式
-                touch_entry = {
-                    "tag": "function",
-                    "depth": 0,
-                    "time": timestamp + 0.001,
-                    "data": {
-                        "name": "touch",
-                        "call_args": {
-                            "v": [int(x), int(y)]
-                        },
-                        "start_time": timestamp + 0.001,
-                        "ret": [int(x), int(y)],
-                        "end_time": timestamp + 0.002,
-                        "screen": screen_object  # 直接引用相同的screen对象
-                    }
-                }
-                
-                with open(log_txt_path, "a", encoding="utf-8") as f:
-                    f.write(json.dumps(touch_entry, ensure_ascii=False) + "\n")
+                while True:
+                    # 检查是否超过最大执行时间
+                    current_time = time.time()
+                    elapsed_time = current_time - priority_start_time
+                    if max_duration is not None and elapsed_time > max_duration:
+                        print(f"脚本 {script_path} 已达到最大执行时间 {max_duration}秒，实际运行了{elapsed_time:.2f}秒，停止执行")
+                        break
                     
-                # 等待一段时间，让UI响应
-                time.sleep(0.5)
-                
-            else:
-                print(f"设备 {device_name} 未检测到目标按钮 {step_class}，标记为失败")
-                
-                # 3. 记录assert_exists操作（检测失败）
-                assert_exists_entry = {
-                    "tag": "function",
-                    "depth": 0,
-                    "time": timestamp + 0.001,
-                    "data": {
-                        "name": "assert_exists",
-                        "call_args": {
-                            "v": f"Target {step_class}",
-                            "msg": f"Step {step_num}: 断言目标图片存在"
-                        },
-                        "start_time": timestamp + 0.001,
-                        "traceback": f"AssertionError: Target {step_class} does not exist in screen for Step {step_num}",
-                        "end_time": timestamp + 0.002,
-                        "screen": screen_object  # 包含相同的screen对象
+                    # 截取屏幕以检测目标
+                    timestamp = time.time()
+                    screenshot = device.screenshot()
+                    frame = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
+                    if frame is None:
+                        raise ValueError("无法获取设备屏幕截图")
+                        
+                    # 使用纯时间戳作为截图文件名
+                    screenshot_timestamp = int(timestamp * 1000)
+                    screenshot_filename = f"{screenshot_timestamp}.jpg"
+                    screenshot_path = os.path.join(log_dir, screenshot_filename)
+                    cv2.imwrite(screenshot_path, frame)
+                    print(f"保存截图: {screenshot_path}")
+                    
+                    # 创建缩略图
+                    thumbnail_filename = f"{screenshot_timestamp}_small.jpg"
+                    thumbnail_path = os.path.join(log_dir, thumbnail_filename)
+                    small_frame = cv2.resize(frame, (0, 0), fx=0.3, fy=0.3)
+                    cv2.imwrite(thumbnail_path, small_frame, [cv2.IMWRITE_JPEG_QUALITY, 60])
+                    
+                    # 获取屏幕分辨率
+                    height, width = frame.shape[:2]
+                    resolution = [width, height]
+                    
+                    # 按优先级检测所有可能的目标
+                    highest_priority_detected = None
+                    highest_priority_coords = None
+                    
+                    for step in steps:
+                        step_class = step["class"]
+                        if step_class == "unknown":  # 默认操作
+                            # 如果所有优先级都未检测到，则使用默认操作
+                            relative_x = step.get("relative_x", 0.5)
+                            relative_y = step.get("relative_y", 0.9)
+                            x = int(width * relative_x)
+                            y = int(height * relative_y)
+                            highest_priority_detected = step
+                            highest_priority_coords = (x, y, "unknown")
+                            print(f"未检测到任何目标，使用默认操作: 点击位置 ({x}, {y})")
+                            break
+                        
+                        # 将截图和检测任务放入队列
+                        screenshot_queue.put((device_name, total_step_counter+1, frame, step_class, None))
+                        
+                        # 等待检测结果
+                        try:
+                            success, (x, y, detected_class) = click_queue.get(timeout=5)
+                            if success:
+                                highest_priority_detected = step
+                                highest_priority_coords = (x, y, detected_class)
+                                print(f"检测到优先级目标: {step_class}，优先级: {step.get('Priority', 999)}")
+                                break
+                        except queue.Empty:
+                            print(f"检测 {step_class} 超时，尝试下一个优先级")
+                            continue
+                    
+                    # 如果没有检测到任何目标且没有默认操作
+                    if highest_priority_detected is None:
+                        print("没有检测到任何目标，且没有默认操作，等待1秒后重试")
+                        time.sleep(1)
+                        continue
+                    
+                    # 执行检测到的最高优先级操作
+                    step_counter += 1
+                    total_step_counter += 1
+                    step_num = total_step_counter
+                    x, y, detected_class = highest_priority_coords
+                    step_remark = highest_priority_detected.get("remark", "")
+                    
+                    # 准备screen对象
+                    screen_object = {
+                        "src": f"log/{screenshot_filename}",
+                        "_filepath": f"log/{screenshot_filename}",
+                        "thumbnail": f"log/{thumbnail_filename}",
+                        "resolution": resolution,
+                        "pos": [[int(x), int(y)]] if x is not None and y is not None else [],
+                        "vector": [],
+                        "confidence": 0.85,
+                        "rect": [{"left": int(x)-50, "top": int(y)-50, "width": 100, "height": 100}] if x is not None and y is not None else []
                     }
-                }
-                
-                with open(log_txt_path, "a", encoding="utf-8") as f:
-                    f.write(json.dumps(assert_exists_entry, ensure_ascii=False) + "\n")
+                    
+                    # 1. 记录snapshot操作
+                    snapshot_entry = {
+                        "tag": "function",
+                        "depth": 0,
+                        "time": timestamp,
+                        "data": {
+                            "name": "snapshot",
+                            "call_args": {},
+                            "start_time": timestamp - 0.002,
+                            "ret": screenshot_filename,
+                            "end_time": timestamp,
+                            "screen": screen_object
+                        }
+                    }
+                    
+                    with open(log_txt_path, "a", encoding="utf-8") as f:
+                        f.write(json.dumps(snapshot_entry, ensure_ascii=False) + "\n")
+                    
+                    # 执行点击操作
+                    device.shell(f"input tap {int(x)} {int(y)}")
+                    print(f"设备 {device_name} 执行优先级操作: {detected_class}，点击位置: ({int(x)}, {int(y)})")
+                    
+                    # 2. 记录touch操作
+                    touch_entry = {
+                        "tag": "function",
+                        "depth": 0,
+                        "time": timestamp + 0.001,
+                        "data": {
+                            "name": "touch",
+                            "call_args": {
+                                "v": [int(x), int(y)]
+                            },
+                            "start_time": timestamp + 0.001,
+                            "ret": [int(x), int(y)],
+                            "end_time": timestamp + 0.002,
+                            "screen": screen_object
+                        }
+                    }
+                    
+                    with open(log_txt_path, "a", encoding="utf-8") as f:
+                        f.write(json.dumps(touch_entry, ensure_ascii=False) + "\n")
+                    
+                    # 等待一段时间，让UI响应
+                    time.sleep(0.5)
+                    
+                    # 再次检查是否超过最大执行时间
+                    if max_duration is not None:
+                        current_time = time.time()
+                        elapsed_time = current_time - priority_start_time
+                        print(f"已运行时间: {elapsed_time:.2f}秒, 最大执行时间: {max_duration}秒")
+                        if elapsed_time > max_duration:
+                            print(f"脚本 {script_path} 已达到最大执行时间 {max_duration}秒，实际运行了{elapsed_time:.2f}秒，停止执行")
+                            break
+            else:
+                # 常规脚本，按顺序执行固定步骤
+                for step in steps:
+                    # 检查是否超过最大执行时间
+                    if max_duration is not None and (time.time() - script_start_time) > max_duration:
+                        print(f"脚本 {script_path} 已达到最大执行时间 {max_duration}秒，停止执行")
+                        break
+                    
+                    step_class = step["class"]
+                    step_remark = step.get("remark", "")
+                    step_counter += 1
+                    total_step_counter += 1
+                    step_num = total_step_counter
+                    timestamp = time.time()  # 更新时间戳
 
-    print(f"设备 {device_name} 回放完成，完成步骤数: {step_counter}")
+                    # 获取设备屏幕截图
+                    screenshot = device.screenshot()  # 使用 adbutils 获取截图
+                    frame = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
+                    if frame is None:
+                        raise ValueError("无法获取设备屏幕截图")
+
+                    # 使用纯时间戳作为截图文件名，符合ka2-reports-demo的命名约定
+                    screenshot_timestamp = int(timestamp * 1000)
+                    screenshot_filename = f"{screenshot_timestamp}.jpg"
+                    screenshot_path = os.path.join(log_dir, screenshot_filename)
+                    cv2.imwrite(screenshot_path, frame)
+                    print(f"保存截图: {screenshot_path}")
+
+                    # 创建缩略图
+                    thumbnail_filename = f"{screenshot_timestamp}_small.jpg"
+                    thumbnail_path = os.path.join(log_dir, thumbnail_filename)
+                    small_frame = cv2.resize(frame, (0, 0), fx=0.3, fy=0.3)
+                    cv2.imwrite(thumbnail_path, small_frame, [cv2.IMWRITE_JPEG_QUALITY, 60])
+                    print(f"保存缩略图: {thumbnail_path}")
+
+                    # 获取屏幕分辨率
+                    height, width = frame.shape[:2]
+                    resolution = [width, height]
+
+                    # 将截图和检测任务放入队列
+                    screenshot_queue.put((device_name, step_num, frame, step_class, None))
+
+                    # 等待检测结果，添加超时机制
+                    try:
+                        success, (x, y, detected_class) = click_queue.get(timeout=10)  # 等待最多 10 秒
+                    except queue.Empty:
+                        print(f"设备 {device_name} 检测超时，未收到目标按钮 {step_class} 的检测结果")
+                        success, (x, y, detected_class) = False, (None, None, None)
+
+                    # 准备screen对象，格式与ka2-reports-demo一致
+                    screen_object = {
+                        "src": f"log/{screenshot_filename}",
+                        "_filepath": f"log/{screenshot_filename}",
+                        "thumbnail": f"log/{thumbnail_filename}",
+                        "resolution": resolution,
+                        "pos": [[int(x), int(y)]] if success and x is not None and y is not None else [],
+                        "vector": [],
+                        "confidence": 0.85 if success else None,
+                        "rect": [{"left": int(x)-50, "top": int(y)-50, "width": 100, "height": 100}] if success and x is not None and y is not None else []
+                    }
+
+                    # 1. 记录snapshot操作（作为底层操作，记录截图）
+                    snapshot_entry = {
+                        "tag": "function",
+                        "depth": 0,
+                        "time": timestamp,
+                        "data": {
+                            "name": "snapshot",
+                            "call_args": {},
+                            "start_time": timestamp - 0.002,
+                            "ret": screenshot_filename,  # 返回文件名
+                            "end_time": timestamp,
+                            "screen": screen_object  # 包含完整的screen对象
+                        }
+                    }
+                    
+                    with open(log_txt_path, "a", encoding="utf-8") as f:
+                        f.write(json.dumps(snapshot_entry, ensure_ascii=False) + "\n")
+
+                    # 处理检测结果
+                    if success:
+                        print(f"设备 {device_name} 检测到目标按钮 {step_class}，执行点击操作")
+                        
+                        # 执行点击操作
+                        device.shell(f"input tap {int(x)} {int(y)}")
+                        
+                        # 2. 记录touch操作（点击成功）- 使用与ka2-reports-demo一致的格式
+                        touch_entry = {
+                            "tag": "function",
+                            "depth": 0,
+                            "time": timestamp + 0.001,
+                            "data": {
+                                "name": "touch",
+                                "call_args": {
+                                    "v": [int(x), int(y)]
+                                },
+                                "start_time": timestamp + 0.001,
+                                "ret": [int(x), int(y)],
+                                "end_time": timestamp + 0.002,
+                                "screen": screen_object  # 直接引用相同的screen对象
+                            }
+                        }
+                        
+                        with open(log_txt_path, "a", encoding="utf-8") as f:
+                            f.write(json.dumps(touch_entry, ensure_ascii=False) + "\n")
+                            
+                        # 等待一段时间，让UI响应
+                        time.sleep(0.5)
+                        
+                    else:
+                        print(f"设备 {device_name} 未检测到目标按钮 {step_class}，标记为失败")
+                        
+                        # 3. 记录assert_exists操作（检测失败）
+                        assert_exists_entry = {
+                            "tag": "function",
+                            "depth": 0,
+                            "time": timestamp + 0.001,
+                            "data": {
+                                "name": "assert_exists",
+                                "call_args": {
+                                    "v": f"Target {step_class}",
+                                    "msg": f"Step {step_num}: 断言目标图片存在"
+                                },
+                                "start_time": timestamp + 0.001,
+                                "traceback": f"AssertionError: Target {step_class} does not exist in screen for Step {step_num}",
+                                "end_time": timestamp + 0.002,
+                                "screen": screen_object  # 包含相同的screen对象
+                            }
+                        }
+                        
+                        with open(log_txt_path, "a", encoding="utf-8") as f:
+                            f.write(json.dumps(assert_exists_entry, ensure_ascii=False) + "\n")
+            
+            # 检查是否因最大执行时间而中断循环
+            if is_priority_based:
+                # 优先级模式已经在内部循环中处理了时间限制
+                pass
+            elif max_duration is not None and (time.time() - script_start_time) > max_duration:
+                print(f"脚本 {script_path} 已达到最大执行时间 {max_duration}秒，跳过剩余循环")
+                break
+        
+        print(f"完成脚本 {script_path}，执行步骤数: {step_counter}，总步骤数: {total_step_counter}")
+
+    print(f"设备 {device_name} 回放完成，完成总步骤数: {total_step_counter}")
     stop_event.set()  # 停止检测服务
 
 
@@ -847,17 +1028,70 @@ def main():
     scripts = []
 
     if args.script:
-        script_files = args.script
-        loop_counts = args.loop_count or []
-        max_durations = args.max_duration or []
-
-        for i, script_path in enumerate(script_files):
-            script_config = {"path": script_path}
-            if i < len(loop_counts):
-                script_config["loop_count"] = loop_counts[i]
-            if i < len(max_durations):
-                script_config["max_duration"] = max_durations[i]
-            scripts.append(script_config)
+        # 解析命令行参数，按照顺序重建脚本配置
+        arg_values = sys.argv[1:]
+        script_configs = []
+        current_config = None
+        
+        i = 0
+        while i < len(arg_values):
+            arg = arg_values[i]
+            
+            if arg == "--script":
+                # 如果已有配置，保存它
+                if current_config is not None:
+                    script_configs.append(current_config)
+                
+                # 创建新的脚本配置
+                if i + 1 < len(arg_values) and not arg_values[i + 1].startswith("--"):
+                    script_path = arg_values[i + 1]
+                    current_config = {"path": script_path}
+                    i += 2
+                else:
+                    print("警告: --script 参数缺少值")
+                    i += 1
+            
+            elif arg == "--loop-count" and current_config is not None:
+                # 将循环次数应用于当前配置
+                if i + 1 < len(arg_values) and not arg_values[i + 1].startswith("--"):
+                    try:
+                        current_config["loop_count"] = int(arg_values[i + 1])
+                        i += 2
+                    except ValueError:
+                        print(f"警告: 无效的循环次数值: {arg_values[i + 1]}")
+                        i += 2
+                else:
+                    print("警告: --loop-count 参数缺少值")
+                    i += 1
+            
+            elif arg == "--max-duration" and current_config is not None:
+                # 将最大执行时间应用于当前配置
+                if i + 1 < len(arg_values) and not arg_values[i + 1].startswith("--"):
+                    try:
+                        current_config["max_duration"] = float(arg_values[i + 1])
+                        i += 2
+                    except ValueError:
+                        print(f"警告: 无效的最大执行时间值: {arg_values[i + 1]}")
+                        i += 2
+                else:
+                    print("警告: --max-duration 参数缺少值")
+                    i += 1
+            
+            else:
+                # 跳过其他参数
+                i += 1
+        
+        # 添加最后一个配置
+        if current_config is not None:
+            script_configs.append(current_config)
+        
+        # 将解析出的配置传递给脚本
+        scripts = script_configs
+        
+        # 打印解析结果以便调试
+        print("解析命令行参数结果:")
+        for i, config in enumerate(scripts):
+            print(f"脚本 {i+1}: {config}")
 
     if not scripts:
         parser.error("必须使用 --script 指定至少一个脚本文件")
@@ -882,6 +1116,7 @@ def main():
             print("回放成功")
     except Exception as e:
         print(f"回放失败: {e}")
+        traceback.print_exc()
 
 
 if __name__ == "__main__":

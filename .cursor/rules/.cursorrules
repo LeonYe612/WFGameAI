@@ -1,3 +1,297 @@
+# WFGame AI 自动化测试框架代码规范
+
+## Python代码规范
+
+### 导入规则
+```python
+# 标准库导入
+import os
+import sys
+import json
+
+# 第三方库导入
+import numpy as np
+import torch
+import cv2
+
+# 本地模块导入
+from utils.logger import Logger
+from models.yolo import YOLO
+```
+
+### 命名规范
+
+1. 变量命名
+```python
+# 常量使用大写
+MAX_RETRY_COUNT = 3
+DEFAULT_TIMEOUT = 30
+
+# 普通变量使用小写下划线
+device_name = "OnePlus"
+current_step = 0
+
+# 私有变量以单下划线开头
+_internal_counter = 0
+```
+
+2. 函数命名
+```python
+# 公共函数使用小写下划线
+def process_image(frame):
+    pass
+
+# 私有函数以单下划线开头
+def _internal_process():
+    pass
+
+# 类方法使用驼峰
+def processNextFrame(self):
+    pass
+```
+
+3. 类命名
+```python
+# 类名使用驼峰
+class DeviceManager:
+    pass
+
+class UIDetector:
+    pass
+```
+
+### 格式规范
+
+1. 缩进
+- 使用4个空格进行缩进
+- 不使用制表符
+
+2. 行长度
+- 最大行长度为120字符
+- 超长行使用括号换行
+
+3. 空行
+- 类定义之间空两行
+- 方法定义之间空一行
+- 相关代码块之间空一行
+
+4. 注释
+```python
+# 单行注释使用#加空格
+# 这是一个单行注释
+
+"""
+多行注释使用三引号
+第一行空行
+具体描述从第二行开始
+"""
+```
+
+### 文档字符串
+
+1. 函数文档
+```python
+def process_device(device_name: str, timeout: int = 30) -> bool:
+    """
+    处理设备连接和初始化。
+
+    Args:
+        device_name: 设备名称
+        timeout: 超时时间（秒）
+
+    Returns:
+        bool: 处理是否成功
+    
+    Raises:
+        DeviceConnectionError: 设备连接失败时抛出
+    """
+    pass
+```
+
+2. 类文档
+```python
+class DeviceManager:
+    """
+    设备管理器类。
+    
+    负责管理设备连接、状态监控和资源释放。
+    
+    Attributes:
+        devices (List[str]): 已连接设备列表
+        current_device (str): 当前活动设备
+    """
+    pass
+```
+
+### 异常处理
+
+```python
+try:
+    process_device()
+except DeviceError as e:
+    logger.error(f"设备处理失败: {e}")
+    raise
+finally:
+    cleanup_resources()
+```
+
+### 类型注解
+
+```python
+from typing import List, Dict, Optional
+
+def process_results(
+    results: List[Dict[str, float]],
+    threshold: Optional[float] = None
+) -> bool:
+    pass
+```
+
+## 项目结构规范
+
+1. 目录结构
+```
+project/
+├── scripts/          # 主要脚本
+├── models/           # 模型定义
+├── utils/            # 工具函数
+├── tests/            # 测试文件
+└── docs/            # 文档
+```
+
+2. 文件命名
+- 全小写
+- 使用下划线分隔
+- 描述性命名
+- 例如：device_manager.py
+
+## Git提交规范
+
+1. 提交信息格式
+```
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+```
+
+2. Type类别
+- feat: 新功能
+- fix: 修复
+- docs: 文档
+- style: 格式
+- refactor: 重构
+- test: 测试
+- chore: 构建
+
+3. 示例
+```
+feat(device): 添加设备自动重连功能
+
+- 实现设备断开后自动重连
+- 添加重连次数限制
+- 优化重连日志
+
+Closes #123
+```
+
+## 测试规范
+
+1. 单元测试
+```python
+def test_device_connection():
+    """测试设备连接功能"""
+    device = DeviceManager()
+    assert device.connect() is True
+```
+
+2. 集成测试
+```python
+def test_full_workflow():
+    """测试完整工作流程"""
+    device = DeviceManager()
+    detector = UIDetector()
+    assert device.connect()
+    assert detector.initialize()
+```
+
+## 日志规范
+
+```python
+import logging
+
+logger = logging.getLogger(__name__)
+
+# 错误日志
+logger.error("设备连接失败", exc_info=True)
+
+# 警告日志
+logger.warning("检测到性能下降")
+
+# 信息日志
+logger.info("开始处理设备")
+
+# 调试日志
+logger.debug("当前处理步骤: %d", step)
+```
+
+## 配置文件规范
+
+1. JSON配置
+```json
+{
+    "device": {
+        "name": "OnePlus",
+        "timeout": 30,
+        "retry_count": 3
+    },
+    "model": {
+        "path": "models/yolo.pt",
+        "confidence": 0.5
+    }
+}
+```
+
+2. YAML配置
+```yaml
+device:
+  name: OnePlus
+  timeout: 30
+  retry_count: 3
+
+model:
+  path: models/yolo.pt
+  confidence: 0.5
+```
+
+## 性能优化规范
+
+1. 资源管理
+```python
+with open("file.txt") as f:
+    content = f.read()
+```
+
+2. 循环优化
+```python
+# 优先使用列表推导
+squares = [x * x for x in range(10)]
+
+# 避免在循环中频繁分配内存
+results = []
+for item in items:
+    results.append(process(item))
+```
+
+3. 数据结构选择
+```python
+# 使用集合进行成员检查
+valid_devices = set(["device1", "device2"])
+if device in valid_devices:
+    process_device()
+```
+
 You are an expert in deep learning, transformers, diffusion models, and LLM development, with a focus on Python libraries such as PyTorch, Diffusers, Transformers, and Gradio.
 
 Key Principles:
