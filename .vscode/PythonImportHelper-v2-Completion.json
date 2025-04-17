@@ -87,6 +87,22 @@
         "documentation": {}
     },
     {
+        "label": "Thread",
+        "importPath": "threading",
+        "description": "threading",
+        "isExtraImport": true,
+        "detail": "threading",
+        "documentation": {}
+    },
+    {
+        "label": "Event",
+        "importPath": "threading",
+        "description": "threading",
+        "isExtraImport": true,
+        "detail": "threading",
+        "documentation": {}
+    },
+    {
         "label": "xlrd",
         "kind": 6,
         "isExtraImport": true,
@@ -297,6 +313,54 @@
     },
     {
         "label": "*",
+        "importPath": "airtest.core.api",
+        "description": "airtest.core.api",
+        "isExtraImport": true,
+        "detail": "airtest.core.api",
+        "documentation": {}
+    },
+    {
+        "label": "touch",
+        "importPath": "airtest.core.api",
+        "description": "airtest.core.api",
+        "isExtraImport": true,
+        "detail": "airtest.core.api",
+        "documentation": {}
+    },
+    {
+        "label": "exists",
+        "importPath": "airtest.core.api",
+        "description": "airtest.core.api",
+        "isExtraImport": true,
+        "detail": "airtest.core.api",
+        "documentation": {}
+    },
+    {
+        "label": "snapshot",
+        "importPath": "airtest.core.api",
+        "description": "airtest.core.api",
+        "isExtraImport": true,
+        "detail": "airtest.core.api",
+        "documentation": {}
+    },
+    {
+        "label": "set_logdir",
+        "importPath": "airtest.core.api",
+        "description": "airtest.core.api",
+        "isExtraImport": true,
+        "detail": "airtest.core.api",
+        "documentation": {}
+    },
+    {
+        "label": "connect_device",
+        "importPath": "airtest.core.api",
+        "description": "airtest.core.api",
+        "isExtraImport": true,
+        "detail": "airtest.core.api",
+        "documentation": {}
+    },
+    {
+        "label": "log",
         "importPath": "airtest.core.api",
         "description": "airtest.core.api",
         "isExtraImport": true,
@@ -877,6 +941,14 @@
         "documentation": {}
     },
     {
+        "label": "YOLO",
+        "importPath": "ultralytics",
+        "description": "ultralytics",
+        "isExtraImport": true,
+        "detail": "ultralytics",
+        "documentation": {}
+    },
+    {
         "label": "capture_screen",
         "importPath": "replay_script",
         "description": "replay_script",
@@ -951,6 +1023,22 @@
         "documentation": {}
     },
     {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "adb",
+        "importPath": "adbutils",
+        "description": "adbutils",
+        "isExtraImport": true,
+        "detail": "adbutils",
+        "documentation": {}
+    },
+    {
         "label": "adb",
         "importPath": "adbutils",
         "description": "adbutils",
@@ -1011,6 +1099,14 @@
         "documentation": {}
     },
     {
+        "label": "LogToHtml",
+        "importPath": "airtest.report.report",
+        "description": "airtest.report.report",
+        "isExtraImport": true,
+        "detail": "airtest.report.report",
+        "documentation": {}
+    },
+    {
         "label": "subprocess",
         "kind": 6,
         "isExtraImport": true,
@@ -1026,6 +1122,22 @@
         "importPath": "shutil",
         "description": "shutil",
         "detail": "shutil",
+        "documentation": {}
+    },
+    {
+        "label": "Environment",
+        "importPath": "jinja2",
+        "description": "jinja2",
+        "isExtraImport": true,
+        "detail": "jinja2",
+        "documentation": {}
+    },
+    {
+        "label": "FileSystemLoader",
+        "importPath": "jinja2",
+        "description": "jinja2",
+        "isExtraImport": true,
+        "detail": "jinja2",
         "documentation": {}
     },
     {
@@ -4291,6 +4403,276 @@
         "description": "replay_script_bak",
         "peekOfCode": "model = YOLO(\"outputs/train/weights/best.pt\")\nwith open(\"outputs/scene1.json\", \"r\") as f:\n    script = json.load(f)\ndef capture_screen():\n    \"\"\"捕获当前屏幕截图\"\"\"\n    os.system(\"adb shell screencap /sdcard/screen.png\")\n    os.system(\"adb pull /sdcard/screen.png screenshot.png\")\n    return cv2.imread(\"screenshot.png\")\ndef generate_fingerprint(img):\n    \"\"\"生成界面指纹\"\"\"",
         "detail": "replay_script_bak",
+        "documentation": {}
+    },
+    {
+        "label": "AirtestJsonFormatter",
+        "kind": 6,
+        "importPath": "replay_script_fixed",
+        "description": "replay_script_fixed",
+        "peekOfCode": "class AirtestJsonFormatter(logging.Formatter):\n    def format(self, record):\n        timestamp = record.created\n        log_entry = {\n            \"tag\": getattr(record, 'tag', 'function'),\n            \"depth\": getattr(record, 'depth', 0),\n            \"time\": timestamp,\n            \"data\": {\n                \"name\": getattr(record, 'operation_name', 'unknown'),\n                \"call_args\": getattr(record, 'call_args', {\"message\": record.getMessage()}),",
+        "detail": "replay_script_fixed",
+        "documentation": {}
+    },
+    {
+        "label": "setup_device_logger",
+        "kind": 2,
+        "importPath": "replay_script_fixed",
+        "description": "replay_script_fixed",
+        "peekOfCode": "def setup_device_logger(device_name):\n    log_file = os.path.join(report_dir, f\"{device_name}_log.txt\")\n    logger = logging.getLogger(device_name)\n    logger.setLevel(logging.INFO)\n    handler = logging.FileHandler(log_file, encoding=\"utf-8\")\n    formatter = AirtestJsonFormatter()\n    handler.setFormatter(formatter)\n    logger.addHandler(handler)\n    return logger\n# 获取设备名称",
+        "detail": "replay_script_fixed",
+        "documentation": {}
+    },
+    {
+        "label": "get_device_name",
+        "kind": 2,
+        "importPath": "replay_script_fixed",
+        "description": "replay_script_fixed",
+        "peekOfCode": "def get_device_name(device):\n    try:\n        brand = device.shell(\"getprop ro.product.brand\").strip()\n        model = device.shell(\"getprop ro.product.model\").strip()\n        resolution = device.shell(\"wm size\").strip().replace(\"Physical size: \", \"\")\n        return f\"{brand}-{model}-{resolution}\"\n    except Exception as e:\n        print(f\"获取设备 {device.serial} 信息失败: {e}\")\n        return device.serial\n# 检测按钮",
+        "detail": "replay_script_fixed",
+        "documentation": {}
+    },
+    {
+        "label": "detect_buttons",
+        "kind": 2,
+        "importPath": "replay_script_fixed",
+        "description": "replay_script_fixed",
+        "peekOfCode": "def detect_buttons(frame, target_class=None):\n    frame_for_detection = cv2.resize(frame, (640, 640))\n    results = model.predict(source=frame_for_detection, device=\"mps\", imgsz=640, conf=0.3, verbose=False)\n    orig_h, orig_w = frame.shape[:2]\n    scale_x, scale_y = orig_w / 640, orig_h / 640\n    for box in results[0].boxes:\n        cls_id = int(box.cls.item())\n        detected_class = model.names[cls_id]\n        if detected_class == target_class:\n            box_x, box_y = box.xywh[0][:2].tolist()",
+        "detail": "replay_script_fixed",
+        "documentation": {}
+    },
+    {
+        "label": "verify_target_disappeared",
+        "kind": 2,
+        "importPath": "replay_script_fixed",
+        "description": "replay_script_fixed",
+        "peekOfCode": "def verify_target_disappeared(device, target_class, max_attempts=5, delay=0.5):\n    for attempt in range(max_attempts):\n        screenshot = device.screenshot()\n        frame = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)\n        success, result = detect_buttons(frame, target_class=target_class)\n        if not success or result[0] is None:\n            return True\n        time.sleep(delay)\n    return False\n# 检查设备状态",
+        "detail": "replay_script_fixed",
+        "documentation": {}
+    },
+    {
+        "label": "check_device_status",
+        "kind": 2,
+        "importPath": "replay_script_fixed",
+        "description": "replay_script_fixed",
+        "peekOfCode": "def check_device_status(device, device_name):\n    try:\n        device.shell(\"echo test\")\n        device.shell(\"input keyevent 82\")\n        time.sleep(1)\n        device.shell(\"input swipe 500 1000 500 500\")\n        time.sleep(1)\n        display_state = device.shell(\"dumpsys power | grep 'mHoldingDisplaySuspendBlocker'\")\n        if \"true\" not in display_state.lower():\n            print(f\"设备 {device_name} 屏幕未打开，尝试唤醒\")",
+        "detail": "replay_script_fixed",
+        "documentation": {}
+    },
+    {
+        "label": "get_log_dir",
+        "kind": 2,
+        "importPath": "replay_script_fixed",
+        "description": "replay_script_fixed",
+        "peekOfCode": "def get_log_dir(dev):\n    device_dir = dev.replace(\".\", \"_\").replace(\":\", \"_\") + CURRENT_TIME\n    log_dir = os.path.normpath(os.path.join(report_dir, device_dir))\n    # 创建必要的目录结构\n    os.makedirs(log_dir, exist_ok=True)\n    # 确保日志文件存在\n    log_file = os.path.join(log_dir, \"log.txt\")\n    if not os.path.exists(log_file):\n        with open(log_file, \"w\", encoding=\"utf-8\") as f:\n            pass",
+        "detail": "replay_script_fixed",
+        "documentation": {}
+    },
+    {
+        "label": "clear_log_dir",
+        "kind": 2,
+        "importPath": "replay_script_fixed",
+        "description": "replay_script_fixed",
+        "peekOfCode": "def clear_log_dir():\n    if os.path.exists(report_dir):\n        shutil.rmtree(report_dir)\n    os.makedirs(report_dir, exist_ok=True)\n# 加载测试进度数据\ndef load_json_data(run_all):\n    json_file = os.path.join(BASE_DIR, 'data.json')\n    if not run_all and os.path.isfile(json_file):\n        data = json.load(open(json_file))\n        data['start'] = time.time()",
+        "detail": "replay_script_fixed",
+        "documentation": {}
+    },
+    {
+        "label": "load_json_data",
+        "kind": 2,
+        "importPath": "replay_script_fixed",
+        "description": "replay_script_fixed",
+        "peekOfCode": "def load_json_data(run_all):\n    json_file = os.path.join(BASE_DIR, 'data.json')\n    if not run_all and os.path.isfile(json_file):\n        data = json.load(open(json_file))\n        data['start'] = time.time()\n        return data\n    else:\n        print(f\"清理日志目录: {report_dir}\")\n        clear_log_dir()\n        return {",
+        "detail": "replay_script_fixed",
+        "documentation": {}
+    },
+    {
+        "label": "replay_device",
+        "kind": 2,
+        "importPath": "replay_script_fixed",
+        "description": "replay_script_fixed",
+        "peekOfCode": "def replay_device(device, scripts, screenshot_queue, action_queue, stop_event, device_name, log_dir, show_screens=False,\n                  loop_count=1):\n    \"\"\"\n    回放设备脚本，记录日志并生成报告所需信息。\n    参数:\n        device: ADB 设备对象（adbutils 设备实例）。\n        scripts (list): 脚本配置列表，例如 [{\"path\": \"path/to/script.json\", \"loop_count\": 1}]。\n        screenshot_queue (queue.Queue): 截图队列，用于传递屏幕截图给检测服务。\n        action_queue (queue.Queue): 动作队列，用于记录操作。\n        stop_event (threading.Event): 停止事件，用于控制检测服务。",
+        "detail": "replay_script_fixed",
+        "documentation": {}
+    },
+    {
+        "label": "detection_service",
+        "kind": 2,
+        "importPath": "replay_script_fixed",
+        "description": "replay_script_fixed",
+        "peekOfCode": "def detection_service(screenshot_queue, click_queue, stop_event):\n    while not stop_event.is_set():\n        try:\n            item = screenshot_queue.get(timeout=1)\n            if len(item) != 5:\n                print(f\"跳过无效数据: {item}\")\n                continue\n            device_name, step_num, frame, target_class, all_classes_or_special = item\n            success, coords = detect_buttons(frame, target_class=target_class)\n            click_queue.put((success, coords))",
+        "detail": "replay_script_fixed",
+        "documentation": {}
+    },
+    {
+        "label": "get_airtest_template_path",
+        "kind": 2,
+        "importPath": "replay_script_fixed",
+        "description": "replay_script_fixed",
+        "peekOfCode": "def get_airtest_template_path():\n    \"\"\"获取 Airtest 默认模板路径\"\"\"\n    import airtest\n    airtest_path = os.path.dirname(airtest.__file__)\n    template_path = os.path.join(airtest_path, \"report\", \"log_template.html\")\n    if not os.path.exists(template_path):\n        raise FileNotFoundError(f\"找不到 Airtest 模板文件: {template_path}\")\n    return template_path\ndef run_one_report(log_dir, report_dir, script_path=None):\n    \"\"\"",
+        "detail": "replay_script_fixed",
+        "documentation": {}
+    },
+    {
+        "label": "run_one_report",
+        "kind": 2,
+        "importPath": "replay_script_fixed",
+        "description": "replay_script_fixed",
+        "peekOfCode": "def run_one_report(log_dir, report_dir, script_path=None):\n    \"\"\"\n    为单个设备生成HTML报告，遵循Airtest标准结构\n    参数:\n        log_dir: 包含日志文件的目录\n        report_dir: 生成报告的目标目录（现在与log_dir相同）\n        script_path: 可选的脚本文件路径，如果提供则会复制到报告目录\n    返回:\n        bool: 是否成功生成报告\n    \"\"\"",
+        "detail": "replay_script_fixed",
+        "documentation": {}
+    },
+    {
+        "label": "fix_html_paths",
+        "kind": 2,
+        "importPath": "replay_script_fixed",
+        "description": "replay_script_fixed",
+        "peekOfCode": "def fix_html_paths(html_file):\n    \"\"\"修复HTML文件中的资源路径，将绝对路径转换为相对路径\"\"\"\n    try:\n        with open(html_file, \"r\", encoding=\"utf-8\") as f:\n            content = f.read()\n        # 提取资源文件所在目录的绝对路径\n        dirname = os.path.dirname(html_file)\n        # 替换绝对路径为相对路径\n        content = content.replace(dirname + \"/static/\", \"static/\")\n        with open(html_file, \"w\", encoding=\"utf-8\") as f:",
+        "detail": "replay_script_fixed",
+        "documentation": {}
+    },
+    {
+        "label": "fix_html_report",
+        "kind": 2,
+        "importPath": "replay_script_fixed",
+        "description": "replay_script_fixed",
+        "peekOfCode": "def fix_html_report(html_file, image_files):\n    \"\"\"修复HTML文件中的资源路径，并确保截图正确关联\"\"\"\n    try:\n        with open(html_file, \"r\", encoding=\"utf-8\") as f:\n            content = f.read()\n        # 提取资源文件所在目录的绝对路径\n        dirname = os.path.dirname(html_file)\n        # 替换绝对路径为相对路径\n        content = content.replace(dirname + \"/static/\", \"static/\")\n        # 尝试修复截图引用",
+        "detail": "replay_script_fixed",
+        "documentation": {}
+    },
+    {
+        "label": "run_summary",
+        "kind": 2,
+        "importPath": "replay_script_fixed",
+        "description": "replay_script_fixed",
+        "peekOfCode": "def run_summary(data):\n    \"\"\"\n    生成汇总报告 summary_report_YYYY-MM-DD-HH-MM-SS.html\n    此报告包含所有测试设备的结果概览和链接到详细报告\n    参数:\n        data: 包含测试结果的字典，包括 'start', 'tests' 等字段\n    返回:\n        生成的汇总报告的文件路径，或者出错时返回空字符串\n    \"\"\"\n    report_url = f\"summary_report{CURRENT_TIME}.html\"",
+        "detail": "replay_script_fixed",
+        "documentation": {}
+    },
+    {
+        "label": "run_on_multi_device",
+        "kind": 2,
+        "importPath": "replay_script_fixed",
+        "description": "replay_script_fixed",
+        "peekOfCode": "def run_on_multi_device(devices, scripts, results, run_all, device_names, show_screens=False):\n    tasks = []\n    for device in devices:\n        serial = device.serial\n        device_name = device_names[serial]\n        print(f\"⚠️ 当前测试设备: {device_name}\")\n        if not run_all and device_name in results['tests'] and results['tests'][device_name]['status'] == 0:\n            print(f\"❌ 跳过设备 {device_name}\")\n            continue\n        log_dir = get_log_dir(device_name)",
+        "detail": "replay_script_fixed",
+        "documentation": {}
+    },
+    {
+        "label": "run",
+        "kind": 2,
+        "importPath": "replay_script_fixed",
+        "description": "replay_script_fixed",
+        "peekOfCode": "def run(devices, scripts, device_names, show_screens=False, run_all=False):\n    \"\"\"运行主测试流程\"\"\"\n    # 加载测试进度数据\n    results = load_json_data(run_all)\n    # 创建报告基础目录\n    timestamp = datetime.now().strftime(\"%Y-%m-%d-%H-%M-%S\")\n    os.makedirs(report_dir, exist_ok=True)\n    # 在多设备上运行测试\n    tasks = run_on_multi_device(devices, scripts, results, run_all, device_names, show_screens)\n    success_count = 0",
+        "detail": "replay_script_fixed",
+        "documentation": {}
+    },
+    {
+        "label": "replay_steps",
+        "kind": 2,
+        "importPath": "replay_script_fixed",
+        "description": "replay_script_fixed",
+        "peekOfCode": "def replay_steps(scripts, show_screens=False):\n    global model, devices\n    loaded_scripts = []\n    for script_config in scripts:\n        script_path = script_config[\"path\"]\n        if not os.path.exists(script_path):\n            print(f\"文件 {script_path} 不存在，跳过\")\n            continue\n        loaded_scripts.append(script_config)\n    if not loaded_scripts:",
+        "detail": "replay_script_fixed",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "replay_script_fixed",
+        "description": "replay_script_fixed",
+        "peekOfCode": "def main():\n    parser = argparse.ArgumentParser(description=\"设备回放脚本\")\n    parser.add_argument(\"--show-screens\", action=\"store_true\", help=\"显示所有设备画面并同步回放\")\n    parser.add_argument(\"--script\", action=\"append\", help=\"指定回放步骤文件，可多次使用\")\n    parser.add_argument(\"--loop-count\", type=int, action=\"append\", help=\"指定循环次数，逐脚本应用\")\n    parser.add_argument(\"--max-duration\", type=float, action=\"append\", help=\"指定最大运行时间（秒），逐脚本应用\")\n    args = parser.parse_args()\n    scripts = []\n    if args.script:\n        script_files = args.script",
+        "detail": "replay_script_fixed",
+        "documentation": {}
+    },
+    {
+        "label": "generate_reports",
+        "kind": 2,
+        "importPath": "replay_script_fixed",
+        "description": "replay_script_fixed",
+        "peekOfCode": "def generate_reports(results, script_path=None):\n    \"\"\"\n    生成测试报告，按照Airtest标准结构\n    参数:\n        results: 包含测试结果的字典，格式如下:\n                {'logs': {设备名: 日志目录}, 'tests': {设备名: 报告结果}, 'success_count': 成功数量}\n        script_path: 可选的脚本文件路径，如果提供则会复制到报告目录\n    返回:\n        bool: 是否成功生成报告\n    \"\"\"",
+        "detail": "replay_script_fixed",
+        "documentation": {}
+    },
+    {
+        "label": "model",
+        "kind": 5,
+        "importPath": "replay_script_fixed",
+        "description": "replay_script_fixed",
+        "peekOfCode": "model = None\ndevices = []\nBASE_DIR = os.path.dirname(os.path.abspath(__file__))\nCURRENT_TIME = \"_\" + time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))\nreport_dir = os.path.join(BASE_DIR, \"outputs/replay_reports\")\ntemplate_dir = os.path.join(BASE_DIR, \"templates\")  # 模板目录路径\n# 确保所有必要的目录都存在\nos.makedirs(report_dir, exist_ok=True)\nos.makedirs(template_dir, exist_ok=True)\nscreenshot_queue = queue.Queue()",
+        "detail": "replay_script_fixed",
+        "documentation": {}
+    },
+    {
+        "label": "devices",
+        "kind": 5,
+        "importPath": "replay_script_fixed",
+        "description": "replay_script_fixed",
+        "peekOfCode": "devices = []\nBASE_DIR = os.path.dirname(os.path.abspath(__file__))\nCURRENT_TIME = \"_\" + time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))\nreport_dir = os.path.join(BASE_DIR, \"outputs/replay_reports\")\ntemplate_dir = os.path.join(BASE_DIR, \"templates\")  # 模板目录路径\n# 确保所有必要的目录都存在\nos.makedirs(report_dir, exist_ok=True)\nos.makedirs(template_dir, exist_ok=True)\nscreenshot_queue = queue.Queue()\naction_queue = queue.Queue()",
+        "detail": "replay_script_fixed",
+        "documentation": {}
+    },
+    {
+        "label": "BASE_DIR",
+        "kind": 5,
+        "importPath": "replay_script_fixed",
+        "description": "replay_script_fixed",
+        "peekOfCode": "BASE_DIR = os.path.dirname(os.path.abspath(__file__))\nCURRENT_TIME = \"_\" + time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))\nreport_dir = os.path.join(BASE_DIR, \"outputs/replay_reports\")\ntemplate_dir = os.path.join(BASE_DIR, \"templates\")  # 模板目录路径\n# 确保所有必要的目录都存在\nos.makedirs(report_dir, exist_ok=True)\nos.makedirs(template_dir, exist_ok=True)\nscreenshot_queue = queue.Queue()\naction_queue = queue.Queue()\nclick_queue = queue.Queue()  # 新增全局 click_queue",
+        "detail": "replay_script_fixed",
+        "documentation": {}
+    },
+    {
+        "label": "CURRENT_TIME",
+        "kind": 5,
+        "importPath": "replay_script_fixed",
+        "description": "replay_script_fixed",
+        "peekOfCode": "CURRENT_TIME = \"_\" + time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))\nreport_dir = os.path.join(BASE_DIR, \"outputs/replay_reports\")\ntemplate_dir = os.path.join(BASE_DIR, \"templates\")  # 模板目录路径\n# 确保所有必要的目录都存在\nos.makedirs(report_dir, exist_ok=True)\nos.makedirs(template_dir, exist_ok=True)\nscreenshot_queue = queue.Queue()\naction_queue = queue.Queue()\nclick_queue = queue.Queue()  # 新增全局 click_queue\n# Airtest 兼容的 JSON 日志格式化器",
+        "detail": "replay_script_fixed",
+        "documentation": {}
+    },
+    {
+        "label": "report_dir",
+        "kind": 5,
+        "importPath": "replay_script_fixed",
+        "description": "replay_script_fixed",
+        "peekOfCode": "report_dir = os.path.join(BASE_DIR, \"outputs/replay_reports\")\ntemplate_dir = os.path.join(BASE_DIR, \"templates\")  # 模板目录路径\n# 确保所有必要的目录都存在\nos.makedirs(report_dir, exist_ok=True)\nos.makedirs(template_dir, exist_ok=True)\nscreenshot_queue = queue.Queue()\naction_queue = queue.Queue()\nclick_queue = queue.Queue()  # 新增全局 click_queue\n# Airtest 兼容的 JSON 日志格式化器\nclass AirtestJsonFormatter(logging.Formatter):",
+        "detail": "replay_script_fixed",
+        "documentation": {}
+    },
+    {
+        "label": "template_dir",
+        "kind": 5,
+        "importPath": "replay_script_fixed",
+        "description": "replay_script_fixed",
+        "peekOfCode": "template_dir = os.path.join(BASE_DIR, \"templates\")  # 模板目录路径\n# 确保所有必要的目录都存在\nos.makedirs(report_dir, exist_ok=True)\nos.makedirs(template_dir, exist_ok=True)\nscreenshot_queue = queue.Queue()\naction_queue = queue.Queue()\nclick_queue = queue.Queue()  # 新增全局 click_queue\n# Airtest 兼容的 JSON 日志格式化器\nclass AirtestJsonFormatter(logging.Formatter):\n    def format(self, record):",
+        "detail": "replay_script_fixed",
+        "documentation": {}
+    },
+    {
+        "label": "screenshot_queue",
+        "kind": 5,
+        "importPath": "replay_script_fixed",
+        "description": "replay_script_fixed",
+        "peekOfCode": "screenshot_queue = queue.Queue()\naction_queue = queue.Queue()\nclick_queue = queue.Queue()  # 新增全局 click_queue\n# Airtest 兼容的 JSON 日志格式化器\nclass AirtestJsonFormatter(logging.Formatter):\n    def format(self, record):\n        timestamp = record.created\n        log_entry = {\n            \"tag\": getattr(record, 'tag', 'function'),\n            \"depth\": getattr(record, 'depth', 0),",
+        "detail": "replay_script_fixed",
+        "documentation": {}
+    },
+    {
+        "label": "action_queue",
+        "kind": 5,
+        "importPath": "replay_script_fixed",
+        "description": "replay_script_fixed",
+        "peekOfCode": "action_queue = queue.Queue()\nclick_queue = queue.Queue()  # 新增全局 click_queue\n# Airtest 兼容的 JSON 日志格式化器\nclass AirtestJsonFormatter(logging.Formatter):\n    def format(self, record):\n        timestamp = record.created\n        log_entry = {\n            \"tag\": getattr(record, 'tag', 'function'),\n            \"depth\": getattr(record, 'depth', 0),\n            \"time\": timestamp,",
+        "detail": "replay_script_fixed",
+        "documentation": {}
+    },
+    {
+        "label": "click_queue",
+        "kind": 5,
+        "importPath": "replay_script_fixed",
+        "description": "replay_script_fixed",
+        "peekOfCode": "click_queue = queue.Queue()  # 新增全局 click_queue\n# Airtest 兼容的 JSON 日志格式化器\nclass AirtestJsonFormatter(logging.Formatter):\n    def format(self, record):\n        timestamp = record.created\n        log_entry = {\n            \"tag\": getattr(record, 'tag', 'function'),\n            \"depth\": getattr(record, 'depth', 0),\n            \"time\": timestamp,\n            \"data\": {",
+        "detail": "replay_script_fixed",
         "documentation": {}
     },
     {

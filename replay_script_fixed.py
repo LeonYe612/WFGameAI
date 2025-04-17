@@ -223,11 +223,11 @@ def replay_device(device, scripts, screenshot_queue, action_queue, stop_event, d
         print(f"第 {loop + 1}/{script_loop_count} 次循环")
         step_counter = 0
         for step in steps:
-            step_class = step["class"]
-            step_remark = step.get("remark", "")
-            step_counter += 1
-            step_num = step_counter
-            timestamp = time.time()  # 更新时间戳
+                step_class = step["class"]
+                step_remark = step.get("remark", "")
+                step_counter += 1
+                step_num = step_counter
+                timestamp = time.time()  # 更新时间戳
 
             # 获取设备屏幕截图
             screenshot = device.screenshot()  # 使用 adbutils 获取截图

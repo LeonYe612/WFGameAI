@@ -283,12 +283,8 @@
 						{% for dev, item in data['tests'].items() %}
 						<div class="table-row" path="{{item['path']}}">
 							<div class="table-col short">{{loop.index}}</div>
-							<div class="table-col short zh {{'success' if item['status']==0 else 'failed'}}">{{"完毕" if
-								item['status']==0 else "异常"}}
-							</div>
-							<div class="table-col short en {{'success' if item['status']==0 else 'failed'}}">{{"success"
-								if item['status']==0 else "failed"}}
-							</div>
+							<div class="table-col short zh {{'success' if item['status']==0 else 'failed'}}">{{"完毕" if item['status']==0 else "异常"}}</div>
+							<div class="table-col short en {{'success' if item['status']==0 else 'failed'}}">{{"success" if item['status']==0 else "failed"}}</div>
 							<div class="table-col long">{{dev}}</div>
 							<div class="table-col detail zh">点击可查看详情</div>
 							<div class="table-col detail en">click to see detail</div>
