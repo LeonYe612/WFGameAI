@@ -1,116 +1,49 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+from replay_script import run_summary
 import os
-import json
-import time
+from datetime import datetime
 import shutil
-import numpy as np
-import cv2
-from replay_script import run_one_report
 
-def create_test_log():
-    """创建测试日志和截图，用于测试报告生成"""
-    # 创建测试目录
-    test_dir = os.path.join("outputs", "test_logs")
-    os.makedirs(test_dir, exist_ok=True)
-    
-    # 清空测试目录
-    for item in os.listdir(test_dir):
-        item_path = os.path.join(test_dir, item)
-        if os.path.isdir(item_path):
-            shutil.rmtree(item_path)
-        else:
-            os.remove(item_path)
-    
-    # 创建log.txt文件
-    log_txt_path = os.path.join(test_dir, "log.txt")
-    
-    # 创建测试截图
-    timestamp = int(time.time() * 1000)
-    
-    # 创建一个空白图像作为测试截图
-    img = np.ones((1080, 2400, 3), dtype=np.uint8) * 255
-    # 添加一些文本和矩形作为视觉元素
-    cv2.putText(img, "Test Screenshot", (100, 100), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 5)
-    cv2.rectangle(img, (500, 500), (700, 700), (0, 255, 0), 3)
-    
-    # 保存截图和缩略图
-    screenshot_filename = f"{timestamp}.jpg"
-    screenshot_path = os.path.join(test_dir, screenshot_filename)
-    cv2.imwrite(screenshot_path, img)
-    
-    thumbnail_filename = f"{timestamp}_small.jpg"
-    thumbnail_path = os.path.join(test_dir, thumbnail_filename)
-    small_img = cv2.resize(img, (0, 0), fx=0.3, fy=0.3)
-    cv2.imwrite(thumbnail_path, small_img, [cv2.IMWRITE_JPEG_QUALITY, 60])
-    
-    # 创建screen对象
-    screen_object = {
-        "src": f"log/{screenshot_filename}",
-        "_filepath": f"log/{screenshot_filename}",
-        "thumbnail": f"log/{thumbnail_filename}",
-        "resolution": [2400, 1080],
-        "pos": [[1200, 540]],
-        "vector": [],
-        "confidence": 0.85,
-        "rect": [{"left": 1150, "top": 490, "width": 100, "height": 100}]
-    }
-    
-    # 创建日志条目
-    entries = []
-    
-    # 1. 添加snapshot操作
-    snapshot_entry = {
-        "tag": "function",
-        "depth": 0,
-        "time": time.time(),
-        "data": {
-            "name": "snapshot",
-            "call_args": {},
-            "start_time": time.time() - 0.002,
-            "ret": screenshot_filename,
-            "end_time": time.time(),
-            "screen": screen_object
-        }
-    }
-    entries.append(snapshot_entry)
-    
-    # 2. 添加touch操作
-    touch_entry = {
-        "tag": "function",
-        "depth": 0,
-        "time": time.time() + 0.001,
-        "data": {
-            "name": "touch",
-            "call_args": {
-                "v": [1200, 540]
-            },
-            "start_time": time.time() + 0.001,
-            "ret": [1200, 540],
-            "end_time": time.time() + 0.002,
-            "screen": screen_object
-        }
-    }
-    entries.append(touch_entry)
-    
-    # 写入日志
-    with open(log_txt_path, "w", encoding="utf-8") as f:
-        for entry in entries:
-            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
-    
-    print(f"测试日志和截图已创建在 {test_dir}")
-    return test_dir
+# 创建测试目录和文件 - 使用与汇总报告相同的目录
+test_base_dir = 'outputs/WFGameAI-reports/ui_reports'
+device1_dir = os.path.join(test_base_dir, 'OnePlus-KB2000-1080x2400_2025-04-18-14-30-00')
+device2_dir = os.path.join(test_base_dir, 'test-device-2_2025-04-18-14-30-00')
 
-def test_report_generation():
-    """测试报告生成"""
-    # 创建测试日志
-    test_dir = create_test_log()
-    
-    # 生成报告
-    success = run_one_report(test_dir, test_dir)
-    
-    if success:
-        print(f"报告生成成功，请查看: {os.path.join(test_dir, 'log.html')}")
-    else:
-        print("报告生成失败")
+# 创建目录结构
+os.makedirs(device1_dir, exist_ok=True)
+os.makedirs(device2_dir, exist_ok=True)
 
-if __name__ == "__main__":
-    test_report_generation() 
+# 创建简单的HTML文件
+with open(os.path.join(device1_dir, 'log.html'), 'w') as f:
+    f.write('<html><body><h1>设备1测试报告</h1></body></html>')
+
+with open(os.path.join(device2_dir, 'log.html'), 'w') as f:
+    f.write('<html><body><h1>设备2测试报告</h1></body></html>')
+
+# 模拟测试数据
+data = {
+    'tests': {
+        'OnePlus-KB2000-1080x2400': os.path.join(os.getcwd(), device1_dir, 'log.html'),
+        '模拟设备1': None,  # 测试失败的设备
+        '模拟设备2': os.path.join(os.getcwd(), device2_dir, 'log.html'),
+    }
+}
+
+# 生成汇总报告
+summary_report = run_summary(data)
+print(f"汇总报告生成: {summary_report}")
+
+# 检查生成的报告
+print("\n检查报告中的链接:")
+with open(summary_report, 'r') as f:
+    content = f.read()
+    import re
+    links = re.findall(r'href="([^"]+)"', content)
+    for link in links:
+        print(f"找到链接: {link}")
+        
+# 尝试在浏览器中打开报告
+print("\n请在浏览器中打开汇总报告，并点击链接测试是否能正确打开设备报告")
+print(f"汇总报告路径: file://{os.path.abspath(summary_report)}") 

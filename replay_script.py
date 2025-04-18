@@ -28,12 +28,30 @@ model = None
 devices = []
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CURRENT_TIME = "_" + time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))
-report_dir = os.path.join(BASE_DIR, "outputs/replay_reports")
 template_dir = os.path.join(BASE_DIR, "templates")  # 模板目录路径
 
-# 确保所有必要的目录都存在
-os.makedirs(report_dir, exist_ok=True)
+# 定义报告基础目录
+reports_base_dir = os.path.join(BASE_DIR, "outputs", "WFGameAI-reports")
+# 定义UI报告目录
+ui_reports_dir = os.path.join(reports_base_dir, "ui_reports")
+# 定义运行代码目录
+ui_run_dir = os.path.join(reports_base_dir, "ui_run")
+# 定义项目目录
+project_air_dir = os.path.join(ui_run_dir, "WFGameAI.air")
+# 定义设备日志目录
+device_log_dir = os.path.join(project_air_dir, "log")
+
+# 确保目录存在
+os.makedirs(reports_base_dir, exist_ok=True)
+os.makedirs(ui_reports_dir, exist_ok=True)
+os.makedirs(ui_run_dir, exist_ok=True)
+os.makedirs(project_air_dir, exist_ok=True)
+os.makedirs(device_log_dir, exist_ok=True)
 os.makedirs(template_dir, exist_ok=True)
+
+# 旧目录结构（保留以兼容现有代码）
+report_dir = os.path.join(BASE_DIR, "outputs/device_reports")
+os.makedirs(report_dir, exist_ok=True)
 
 screenshot_queue = queue.Queue()
 action_queue = queue.Queue()
@@ -134,18 +152,24 @@ def check_device_status(device, device_name):
 
 # 获取设备日志目录
 def get_log_dir(dev):
-    device_dir = dev.replace(".", "_").replace(":", "_") + CURRENT_TIME
-    log_dir = os.path.normpath(os.path.join(report_dir, device_dir))
+    """获取日志目录"""
+    device_dir = dev.replace(':', '_').replace(' ', '_')
+    timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     
-    # 创建必要的目录结构
+    # 使用新目录结构
+    log_dir = os.path.join(device_log_dir, f"{device_dir}_{timestamp}")
     os.makedirs(log_dir, exist_ok=True)
     
-    # 确保日志文件存在
+    # 创建log子目录
+    log_images_dir = os.path.join(log_dir, "log")
+    os.makedirs(log_images_dir, exist_ok=True)
+    
+    # 检查log文件是否存在，如果不存在则创建空文件
     log_file = os.path.join(log_dir, "log.txt")
     if not os.path.exists(log_file):
-        with open(log_file, "w", encoding="utf-8") as f:
+        with open(log_file, 'w') as f:
             pass
-            
+    
     return log_dir
 
 
@@ -200,7 +224,7 @@ def replay_device(device, scripts, screenshot_queue, action_queue, stop_event, d
     if not scripts:
         raise ValueError("脚本列表为空，无法回放")
 
-    # 创建log.txt文件
+    # 创建log.txt文件 - 确保存在正确位置
     log_txt_path = os.path.join(log_dir, "log.txt")
     with open(log_txt_path, "w", encoding="utf-8") as f:
         f.write("")  # 创建空文件
@@ -211,9 +235,9 @@ def replay_device(device, scripts, screenshot_queue, action_queue, stop_event, d
         script_path = script_config["path"]
         script_loop_count = script_config.get("loop_count", loop_count)  # 优先使用脚本配置中的 loop_count
         max_duration = script_config.get("max_duration", None)  # 获取最大执行时间（如果有）
-        
+
         print(f"开始执行脚本: {script_path}, 循环次数: {script_loop_count}, 最大执行时间: {max_duration}秒")
-        
+
         # 从 script_path 读取步骤
         with open(script_path, "r", encoding="utf-8") as f:
             json_data = json.load(f)
@@ -250,7 +274,7 @@ def replay_device(device, scripts, screenshot_queue, action_queue, stop_event, d
                     if max_duration is not None and elapsed_time > max_duration:
                         print(f"脚本 {script_path} 已达到最大执行时间 {max_duration}秒，实际运行了{elapsed_time:.2f}秒，停止执行")
                         break
-                    
+
                     # 截取屏幕以检测目标
                     timestamp = time.time()
                     screenshot = device.screenshot()
@@ -258,7 +282,7 @@ def replay_device(device, scripts, screenshot_queue, action_queue, stop_event, d
                     if frame is None:
                         raise ValueError("无法获取设备屏幕截图")
                         
-                    # 使用纯时间戳作为截图文件名
+                    # 使用纯时间戳作为截图文件名 (是Airtest标准)
                     screenshot_timestamp = int(timestamp * 1000)
                     screenshot_filename = f"{screenshot_timestamp}.jpg"
                     screenshot_path = os.path.join(log_dir, screenshot_filename)
@@ -322,9 +346,9 @@ def replay_device(device, scripts, screenshot_queue, action_queue, stop_event, d
                     
                     # 准备screen对象
                     screen_object = {
-                        "src": f"log/{screenshot_filename}",
-                        "_filepath": f"log/{screenshot_filename}",
-                        "thumbnail": f"log/{thumbnail_filename}",
+                        "src": screenshot_filename,
+                        "_filepath": screenshot_filename,
+                        "thumbnail": thumbnail_filename,
                         "resolution": resolution,
                         "pos": [[int(x), int(y)]] if x is not None and y is not None else [],
                         "vector": [],
@@ -332,18 +356,17 @@ def replay_device(device, scripts, screenshot_queue, action_queue, stop_event, d
                         "rect": [{"left": int(x)-50, "top": int(y)-50, "width": 100, "height": 100}] if x is not None and y is not None else []
                     }
                     
-                    # 1. 记录snapshot操作
+                    # 第一步: 记录snapshot，与ka2-reports-demo一致
                     snapshot_entry = {
-                        "tag": "function",
-                        "depth": 0,
+                        "tag": "function", 
+                        "depth": 3,
                         "time": timestamp,
                         "data": {
-                            "name": "snapshot",
-                            "call_args": {},
-                            "start_time": timestamp - 0.002,
-                            "ret": screenshot_filename,
-                            "end_time": timestamp,
-                            "screen": screen_object
+                            "name": "try_log_screen",
+                            "call_args": {"screen": "array([[[...]]],dtype=uint8)", "quality": None, "max_size": None},
+                            "start_time": timestamp - 0.001, 
+                            "ret": {"screen": screenshot_filename, "resolution": resolution},
+                            "end_time": timestamp
                         }
                     }
                     
@@ -354,19 +377,17 @@ def replay_device(device, scripts, screenshot_queue, action_queue, stop_event, d
                     device.shell(f"input tap {int(x)} {int(y)}")
                     print(f"设备 {device_name} 执行优先级操作: {detected_class}，点击位置: ({int(x)}, {int(y)})")
                     
-                    # 2. 记录touch操作
+                    # 第二步: 记录touch操作（确保和ka2-reports-demo一致）
                     touch_entry = {
-                        "tag": "function",
-                        "depth": 0,
+                        "tag": "function", 
+                        "depth": 1,
                         "time": timestamp + 0.001,
                         "data": {
                             "name": "touch",
-                            "call_args": {
-                                "v": [int(x), int(y)]
-                            },
-                            "start_time": timestamp + 0.001,
+                            "call_args": {"v": [int(x), int(y)]},
+                            "start_time": timestamp + 0.0005,
                             "ret": [int(x), int(y)],
-                            "end_time": timestamp + 0.002,
+                            "end_time": timestamp + 0.001,
                             "screen": screen_object
                         }
                     }
@@ -385,138 +406,135 @@ def replay_device(device, scripts, screenshot_queue, action_queue, stop_event, d
                         if elapsed_time > max_duration:
                             print(f"脚本 {script_path} 已达到最大执行时间 {max_duration}秒，实际运行了{elapsed_time:.2f}秒，停止执行")
                             break
-            else:
-                # 常规脚本，按顺序执行固定步骤
-                for step in steps:
-                    # 检查是否超过最大执行时间
-                    if max_duration is not None and (time.time() - script_start_time) > max_duration:
-                        print(f"脚本 {script_path} 已达到最大执行时间 {max_duration}秒，停止执行")
-                        break
-                    
-                    step_class = step["class"]
-                    step_remark = step.get("remark", "")
-                    step_counter += 1
-                    total_step_counter += 1
-                    step_num = total_step_counter
-                    timestamp = time.time()  # 更新时间戳
+                else:
+                    # 常规脚本，按顺序执行固定步骤
+                    for step in steps:
+                        # 检查是否超过最大执行时间
+                        if max_duration is not None and (time.time() - script_start_time) > max_duration:
+                            print(f"脚本 {script_path} 已达到最大执行时间 {max_duration}秒，停止执行")
+                            break
+                        
+                        step_class = step["class"]
+                        step_remark = step.get("remark", "")
+                        step_counter += 1
+                        total_step_counter += 1
+                        step_num = total_step_counter
+                        timestamp = time.time()  # 更新时间戳
 
-                    # 获取设备屏幕截图
-                    screenshot = device.screenshot()  # 使用 adbutils 获取截图
-                    frame = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
-                    if frame is None:
-                        raise ValueError("无法获取设备屏幕截图")
+                        # 获取设备屏幕截图
+                        screenshot = device.screenshot()  # 使用 adbutils 获取截图
+                        frame = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
+                        if frame is None:
+                            raise ValueError("无法获取设备屏幕截图")
 
-                    # 使用纯时间戳作为截图文件名，符合ka2-reports-demo的命名约定
-                    screenshot_timestamp = int(timestamp * 1000)
-                    screenshot_filename = f"{screenshot_timestamp}.jpg"
-                    screenshot_path = os.path.join(log_dir, screenshot_filename)
-                    cv2.imwrite(screenshot_path, frame)
-                    print(f"保存截图: {screenshot_path}")
+                        # 使用纯时间戳作为截图文件名，符合Airtest标准
+                        screenshot_timestamp = int(timestamp * 1000)
+                        screenshot_filename = f"{screenshot_timestamp}.jpg"
+                        screenshot_path = os.path.join(log_dir, screenshot_filename)
+                        cv2.imwrite(screenshot_path, frame)
+                        print(f"保存截图: {screenshot_path}")
 
-                    # 创建缩略图
-                    thumbnail_filename = f"{screenshot_timestamp}_small.jpg"
-                    thumbnail_path = os.path.join(log_dir, thumbnail_filename)
-                    small_frame = cv2.resize(frame, (0, 0), fx=0.3, fy=0.3)
-                    cv2.imwrite(thumbnail_path, small_frame, [cv2.IMWRITE_JPEG_QUALITY, 60])
-                    print(f"保存缩略图: {thumbnail_path}")
+                        # 创建缩略图
+                        thumbnail_filename = f"{screenshot_timestamp}_small.jpg"
+                        thumbnail_path = os.path.join(log_dir, thumbnail_filename)
+                        small_frame = cv2.resize(frame, (0, 0), fx=0.3, fy=0.3)
+                        cv2.imwrite(thumbnail_path, small_frame, [cv2.IMWRITE_JPEG_QUALITY, 60])
+                        print(f"保存缩略图: {thumbnail_path}")
 
-                    # 获取屏幕分辨率
-                    height, width = frame.shape[:2]
-                    resolution = [width, height]
+                        # 获取屏幕分辨率
+                        height, width = frame.shape[:2]
+                        resolution = [width, height]
 
-                    # 将截图和检测任务放入队列
-                    screenshot_queue.put((device_name, step_num, frame, step_class, None))
+                        # 将截图和检测任务放入队列
+                        screenshot_queue.put((device_name, step_num, frame, step_class, None))
 
-                    # 等待检测结果，添加超时机制
-                    try:
-                        success, (x, y, detected_class) = click_queue.get(timeout=10)  # 等待最多 10 秒
-                    except queue.Empty:
-                        print(f"设备 {device_name} 检测超时，未收到目标按钮 {step_class} 的检测结果")
-                        success, (x, y, detected_class) = False, (None, None, None)
+                        # 等待检测结果，添加超时机制
+                        try:
+                            success, (x, y, detected_class) = click_queue.get(timeout=10)  # 等待最多 10 秒
+                        except queue.Empty:
+                            print(f"设备 {device_name} 检测超时，未收到目标按钮 {step_class} 的检测结果")
+                            success, (x, y, detected_class) = False, (None, None, None)
 
-                    # 准备screen对象，格式与ka2-reports-demo一致
-                    screen_object = {
-                        "src": f"log/{screenshot_filename}",
-                        "_filepath": f"log/{screenshot_filename}",
-                        "thumbnail": f"log/{thumbnail_filename}",
-                        "resolution": resolution,
-                        "pos": [[int(x), int(y)]] if success and x is not None and y is not None else [],
-                        "vector": [],
-                        "confidence": 0.85 if success else None,
-                        "rect": [{"left": int(x)-50, "top": int(y)-50, "width": 100, "height": 100}] if success and x is not None and y is not None else []
-                    }
-
-                    # 1. 记录snapshot操作（作为底层操作，记录截图）
-                    snapshot_entry = {
-                        "tag": "function",
-                        "depth": 0,
-                        "time": timestamp,
-                        "data": {
-                            "name": "snapshot",
-                            "call_args": {},
-                            "start_time": timestamp - 0.002,
-                            "ret": screenshot_filename,  # 返回文件名
-                            "end_time": timestamp,
-                            "screen": screen_object  # 包含完整的screen对象
+                        # 准备screen对象，与ka2-reports-demo一致的格式
+                        screen_object = {
+                            "src": screenshot_filename,
+                            "_filepath": screenshot_filename,
+                            "thumbnail": thumbnail_filename,
+                            "resolution": resolution,
+                            "pos": [[int(x), int(y)]] if success and x is not None and y is not None else [],
+                            "vector": [],
+                            "confidence": 0.85 if success else None,
+                            "rect": [{"left": int(x)-50, "top": int(y)-50, "width": 100, "height": 100}] if success and x is not None and y is not None else []
                         }
-                    }
-                    
-                    with open(log_txt_path, "a", encoding="utf-8") as f:
-                        f.write(json.dumps(snapshot_entry, ensure_ascii=False) + "\n")
 
-                    # 处理检测结果
-                    if success:
-                        print(f"设备 {device_name} 检测到目标按钮 {step_class}，执行点击操作")
-                        
-                        # 执行点击操作
-                        device.shell(f"input tap {int(x)} {int(y)}")
-                        
-                        # 2. 记录touch操作（点击成功）- 使用与ka2-reports-demo一致的格式
-                        touch_entry = {
-                            "tag": "function",
-                            "depth": 0,
-                            "time": timestamp + 0.001,
+                        # 第一步: 记录snapshot（使用与ka2-reports-demo一致的格式）
+                        snapshot_entry = {
+                            "tag": "function", 
+                            "depth": 3,
+                            "time": timestamp,
                             "data": {
-                                "name": "touch",
-                                "call_args": {
-                                    "v": [int(x), int(y)]
-                                },
-                                "start_time": timestamp + 0.001,
-                                "ret": [int(x), int(y)],
-                                "end_time": timestamp + 0.002,
-                                "screen": screen_object  # 直接引用相同的screen对象
+                                "name": "try_log_screen",
+                                "call_args": {"screen": "array([[[...]]],dtype=uint8)", "quality": None, "max_size": None},
+                                "start_time": timestamp - 0.001, 
+                                "ret": {"screen": screenshot_filename, "resolution": resolution},
+                                "end_time": timestamp
                             }
                         }
                         
                         with open(log_txt_path, "a", encoding="utf-8") as f:
-                            f.write(json.dumps(touch_entry, ensure_ascii=False) + "\n")
+                            f.write(json.dumps(snapshot_entry, ensure_ascii=False) + "\n")
+
+                        # 处理检测结果
+                        if success:
+                            print(f"设备 {device_name} 检测到目标按钮 {step_class}，执行点击操作")
                             
-                        # 等待一段时间，让UI响应
-                        time.sleep(0.5)
-                        
-                    else:
-                        print(f"设备 {device_name} 未检测到目标按钮 {step_class}，标记为失败")
-                        
-                        # 3. 记录assert_exists操作（检测失败）
-                        assert_exists_entry = {
-                            "tag": "function",
-                            "depth": 0,
-                            "time": timestamp + 0.001,
-                            "data": {
-                                "name": "assert_exists",
-                                "call_args": {
-                                    "v": f"Target {step_class}",
-                                    "msg": f"Step {step_num}: 断言目标图片存在"
-                                },
-                                "start_time": timestamp + 0.001,
-                                "traceback": f"AssertionError: Target {step_class} does not exist in screen for Step {step_num}",
-                                "end_time": timestamp + 0.002,
-                                "screen": screen_object  # 包含相同的screen对象
+                            # 执行点击操作
+                            device.shell(f"input tap {int(x)} {int(y)}")
+                            
+                            # 第二步: 记录touch操作（确保与ka2-reports-demo一致的格式）
+                            touch_entry = {
+                                "tag": "function", 
+                                "depth": 1,
+                                "time": timestamp + 0.001,
+                                "data": {
+                                    "name": "touch",
+                                    "call_args": {"v": [int(x), int(y)]},
+                                    "start_time": timestamp + 0.0005,
+                                    "ret": [int(x), int(y)],
+                                    "end_time": timestamp + 0.001,
+                                    "screen": screen_object
+                                }
                             }
-                        }
-                        
-                        with open(log_txt_path, "a", encoding="utf-8") as f:
-                            f.write(json.dumps(assert_exists_entry, ensure_ascii=False) + "\n")
+                            
+                            with open(log_txt_path, "a", encoding="utf-8") as f:
+                                f.write(json.dumps(touch_entry, ensure_ascii=False) + "\n")
+                            
+                            # 等待一段时间，让UI响应
+                            time.sleep(0.5)
+                            
+                        else:
+                            print(f"设备 {device_name} 未检测到目标按钮 {step_class}，标记为失败")
+                            
+                            # 第二步: 记录assert_exists操作（检测失败，确保与ka2-reports-demo一致的格式）
+                            assert_exists_entry = {
+                                "tag": "function", 
+                                "depth": 1,
+                                "time": timestamp + 0.001,
+                                "data": {
+                                    "name": "assert_exists",
+                                    "call_args": {
+                                        "v": f"Target {step_class}",
+                                        "msg": f"断言目标图片存在"
+                                    },
+                                    "start_time": timestamp + 0.0005,
+                                    "traceback": f"AssertionError: Target {step_class} does not exist in screen",
+                                    "end_time": timestamp + 0.001,
+                                    "screen": screen_object
+                                }
+                            }
+                            
+                            with open(log_txt_path, "a", encoding="utf-8") as f:
+                                f.write(json.dumps(assert_exists_entry, ensure_ascii=False) + "\n")
             
             # 检查是否因最大执行时间而中断循环
             if is_priority_based:
@@ -550,22 +568,49 @@ def detection_service(screenshot_queue, click_queue, stop_event):
 
 
 def get_airtest_template_path():
-    """获取 Airtest 默认模板路径"""
-    import airtest
-    airtest_path = os.path.dirname(airtest.__file__)
-    template_path = os.path.join(airtest_path, "report", "log_template.html")
-    if not os.path.exists(template_path):
-        raise FileNotFoundError(f"找不到 Airtest 模板文件: {template_path}")
-    return template_path
+    """
+    获取Airtest报告模板的路径
+    
+    返回:
+        str: Airtest报告模板的路径，如果找不到则返回None
+    """
+    try:
+        import airtest
+        import os
+        
+        # 尝试直接从airtest包中获取模板
+        airtest_path = os.path.dirname(airtest.__file__)
+        template_path = os.path.join(airtest_path, "report", "log_template.html")
+        
+        if os.path.exists(template_path):
+            return template_path
+        
+        # 尝试从site-packages获取
+        site_packages = os.path.dirname(os.path.dirname(airtest_path))
+        alt_path = os.path.join(site_packages, "airtest", "report", "log_template.html")
+        
+        if os.path.exists(alt_path):
+            return alt_path
+        
+        # 尝试从本地templates目录获取
+        local_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates", "log_template.html")
+        
+        if os.path.exists(local_path):
+            return local_path
+        
+        return None
+    except Exception as e:
+        print(f"获取Airtest模板路径时出错: {str(e)}")
+        return None
 
 
 def run_one_report(log_dir, report_dir, script_path=None):
     """
-    为单个设备生成HTML报告，遵循Airtest标准结构
+    为单个设备生成HTML报告
     
     参数:
         log_dir: 包含日志文件的目录
-        report_dir: 生成报告的目标目录（现在与log_dir相同）
+        report_dir: 生成报告的目标目录
         script_path: 可选的脚本文件路径，如果提供则会复制到报告目录
         
     返回:
@@ -575,135 +620,180 @@ def run_one_report(log_dir, report_dir, script_path=None):
         import traceback
         from airtest.report.report import LogToHtml
         
-        # 检查日志文件是否存在
+        # 检查日志文件
         log_file = os.path.join(log_dir, "log.txt")
         if not os.path.exists(log_file):
-            print(f"找不到日志文件: {log_file}")
+            print(f"❌ 日志文件不存在: {log_file}")
             return False
         
-        # 创建log子目录，符合Airtest标准结构
-        log_report_dir = os.path.join(log_dir, "log")
+        # 创建报告目录结构
+        log_report_dir = os.path.join(report_dir, "log")
         os.makedirs(log_report_dir, exist_ok=True)
         
-        # 1. 创建标准Airtest项目结构：script.py
-        script_file = os.path.join(log_dir, "script.py")
-        if not os.path.exists(script_file):
-            with open(script_file, 'w', encoding='utf-8') as f:
-                f.write("# Generated script for YOLO-based automation\n")
-        
-        # 2. 移动截图和缩略图到log子目录
-        image_files = []
-        for img in os.listdir(log_dir):
-            if (img.endswith(".jpg") or img.endswith(".png")) and not img.endswith("_small.jpg") and not img.endswith("_small.png"):
-                # 移动主图片
-                src = os.path.join(log_dir, img)
-                dst = os.path.join(log_report_dir, img)
-                if src != dst:  # 如果源和目标不同，则移动文件
-                    shutil.move(src, dst)
-                image_files.append(img)
-                
-                # 对应的缩略图
-                small_img = img.replace(".", "_small.")
-                small_src = os.path.join(log_dir, small_img)
-                if os.path.exists(small_src):
-                    small_dst = os.path.join(log_report_dir, small_img)
-                    if small_src != small_dst:  # 如果源和目标不同，则移动文件
-                        shutil.move(small_src, small_dst)
-                else:
-                    # 如果没有缩略图，尝试创建一个
-                    try:
-                        import cv2
-                        if os.path.exists(dst):
-                            img_data = cv2.imread(dst)
-                            if img_data is not None:
-                                small_img_data = cv2.resize(img_data, (0, 0), fx=0.3, fy=0.3)
-                                cv2.imwrite(os.path.join(log_report_dir, small_img), small_img_data, [cv2.IMWRITE_JPEG_QUALITY, 60])
-                                print(f"创建缩略图: {small_img}")
-                    except Exception as e:
-                        print(f"创建缩略图失败: {e}")
-        
-        # 3. 将日志移动到log子目录下的log.txt
-        with open(log_file, "r", encoding="utf-8") as f:
-            log_content = f.read()
-        
-        log_txt_file = os.path.join(log_report_dir, "log.txt")
-        with open(log_txt_file, "w", encoding="utf-8") as f:
-            f.write(log_content)
-        
-        # 如果原始日志文件不在log子目录，则删除它
-        if log_file != log_txt_file:
-            os.remove(log_file)
-        
-        # 4. 复制脚本文件（如果提供）
+        # 复制脚本文件
         if script_path and os.path.exists(script_path):
-            if script_path != script_file:  # 避免复制到同一个文件
-                shutil.copy2(script_path, script_file)
+            script_file = os.path.join(report_dir, "script.py")
+            shutil.copy2(script_path, script_file)
+            print(f"复制脚本文件: {script_path} -> {script_file}")
         
-        # 5. 创建static目录和资源
-        # 获取Airtest资源路径
-        airtest_path = os.path.dirname(airtest.__file__)
-        report_path = os.path.join(airtest_path, "report")
+        # 复制截图到日志目录
+        image_files = {}
+        for img in os.listdir(log_dir):
+            if img.endswith(".jpg") or img.endswith(".png"):
+                if not img.endswith("_small.jpg") and not img.endswith("_small.png"):
+                    # 复制原始图片
+                    src = os.path.join(log_dir, img)
+                    dst = os.path.join(log_report_dir, img)
+                    shutil.copy2(src, dst)
+                    image_files[img] = img
+                    
+                    # 检查是否存在对应的缩略图
+                    small_img = img.replace(".", "_small.")
+                    small_src = os.path.join(log_dir, small_img)
+                    
+                    if os.path.exists(small_src):
+                        small_dst = os.path.join(log_report_dir, small_img)
+                        shutil.copy2(small_src, small_dst)
+                    else:
+                        # 如果缩略图不存在，则创建一个
+                        img_data = cv2.imread(src)
+                        if img_data is not None:
+                            h, w = img_data.shape[:2]
+                            small_img_data = cv2.resize(img_data, (0, 0), fx=0.3, fy=0.3)
+                            cv2.imwrite(os.path.join(log_report_dir, small_img), small_img_data, [cv2.IMWRITE_JPEG_QUALITY, 60])
+                            print(f"创建缩略图: {small_img}")
         
-        # 创建static目录及子目录
-        static_dir = os.path.join(log_dir, "static")
-        for resource in ["css", "js", "image", "fonts"]:
-            os.makedirs(os.path.join(static_dir, resource), exist_ok=True)
+        # 复制日志文件到报告目录
+        log_txt_file = os.path.join(log_report_dir, "log.txt")
+        shutil.copy2(log_file, log_txt_file)
+        
+        # 获取Airtest模板路径
+        template_path = get_airtest_template_path()
+        if not template_path:
+            print("❌ 无法找到Airtest模板路径")
+            return False
         
         # 复制静态资源
-        for resource in ["css", "js", "image", "fonts"]:
-            src = os.path.join(report_path, resource)
-            dst = os.path.join(static_dir, resource)
-            if os.path.exists(src):
-                for item in os.listdir(src):
-                    s = os.path.join(src, item)
-                    d = os.path.join(dst, item)
-                    if os.path.isdir(s):
+        static_dir = os.path.join(report_dir, "static")
+        if not os.path.exists(static_dir):
+            # 获取Airtest的report目录
+            airtest_report_dir = os.path.dirname(template_path)
+            
+            # 创建static目录及必要的子目录
+            os.makedirs(static_dir, exist_ok=True)
+            os.makedirs(os.path.join(static_dir, "css"), exist_ok=True)
+            os.makedirs(os.path.join(static_dir, "js"), exist_ok=True)
+            os.makedirs(os.path.join(static_dir, "image"), exist_ok=True)
+            os.makedirs(os.path.join(static_dir, "fonts"), exist_ok=True)
+            
+            # 复制各个资源目录
+            resource_copied = False
+            
+            # 复制css文件
+            css_src = os.path.join(airtest_report_dir, "css")
+            css_dst = os.path.join(static_dir, "css")
+            if os.path.exists(css_src):
+                for file in os.listdir(css_src):
+                    shutil.copy2(os.path.join(css_src, file), os.path.join(css_dst, file))
+                resource_copied = True
+                print(f"复制CSS资源: {css_src} -> {css_dst}")
+            
+            # 复制js文件
+            js_src = os.path.join(airtest_report_dir, "js")
+            js_dst = os.path.join(static_dir, "js")
+            if os.path.exists(js_src):
+                for file in os.listdir(js_src):
+                    if os.path.isfile(os.path.join(js_src, file)):
+                        shutil.copy2(os.path.join(js_src, file), os.path.join(js_dst, file))
+                    elif os.path.isdir(os.path.join(js_src, file)):
+                        os.makedirs(os.path.join(js_dst, file), exist_ok=True)
+                        for subfile in os.listdir(os.path.join(js_src, file)):
+                            if os.path.isfile(os.path.join(js_src, file, subfile)):
+                                shutil.copy2(os.path.join(js_src, file, subfile), os.path.join(js_dst, file, subfile))
+                resource_copied = True
+                print(f"复制JS资源: {js_src} -> {js_dst}")
+            
+            # 复制image文件
+            image_src = os.path.join(airtest_report_dir, "image")
+            image_dst = os.path.join(static_dir, "image")
+            if os.path.exists(image_src):
+                for file in os.listdir(image_src):
+                    shutil.copy2(os.path.join(image_src, file), os.path.join(image_dst, file))
+                resource_copied = True
+                print(f"复制图片资源: {image_src} -> {image_dst}")
+            
+            # 复制fonts文件
+            fonts_src = os.path.join(airtest_report_dir, "fonts")
+            fonts_dst = os.path.join(static_dir, "fonts")
+            if os.path.exists(fonts_src):
+                for file in os.listdir(fonts_src):
+                    shutil.copy2(os.path.join(fonts_src, file), os.path.join(fonts_dst, file))
+                resource_copied = True
+                print(f"复制字体资源: {fonts_src} -> {fonts_dst}")
+            
+            if not resource_copied:
+                print(f"❌ 静态资源目录不存在: {airtest_report_dir}")
+                # 试图从其他报告中复制
+                dirs = os.listdir(os.path.dirname(report_dir))
+                for d in dirs:
+                    other_static = os.path.join(os.path.dirname(report_dir), d, "static")
+                    if os.path.exists(other_static):
                         try:
-                            shutil.copytree(s, d, dirs_exist_ok=True)
-                        except Exception as e:
-                            print(f"复制目录 {s} 到 {d} 时出错: {e}")
-                            # 尝试复制单个文件
-                            for subitem in os.listdir(s):
-                                sub_s = os.path.join(s, subitem)
-                                sub_d = os.path.join(d, subitem)
-                                if os.path.isfile(sub_s):
-                                    os.makedirs(d, exist_ok=True)
-                                    shutil.copy2(sub_s, sub_d)
-                    else:
-                        shutil.copy2(s, d)
-        else:
-                print(f"警告: 找不到静态资源目录 {src}")
+                            shutil.copytree(other_static, static_dir)
+                        except shutil.Error as e:
+                            print(f"复制静态资源时出现非致命错误: {e}")
+                        print(f"从其他报告复制静态资源: {other_static} -> {static_dir}")
+                        resource_copied = True
+                        break
+                
+                if not resource_copied:
+                    print("❌ 无法找到任何静态资源")
+                    return False
         
-        # 6. 复制模板文件
-        template_file = os.path.join(report_path, "log_template.html")
-        if not os.path.exists(template_file):
-            raise FileNotFoundError(f"找不到模板文件: {template_file}")
+        # 复制模板文件
+        dest_template = os.path.join(report_dir, "log_template.html")
+        shutil.copy2(template_path, dest_template)
         
-        dest_template = os.path.join(log_dir, "log_template.html")
-        shutil.copy2(template_file, dest_template)
-        
-        # 7. 使用Airtest的LogToHtml生成报告
+        # 生成HTML报告
         rpt = LogToHtml(
-            script_root=log_dir,           # 项目根目录
-            log_root=log_report_dir,       # log子目录
-            static_root="static/",         # 静态资源目录
-            export_dir=None,
-            logfile="log.txt",             # log.txt在log子目录中
-            script_name="script.py",       # 脚本名称
-            lang="zh"
+            script_root=report_dir,         # 项目根目录
+            log_root=log_report_dir,        # log子目录
+            static_root="static",           # 静态资源目录名称
+            export_dir=report_dir,          # 导出HTML的目录
+            script_name="script.py",        # 脚本文件名
+            logfile="log.txt",              # 日志文件名
+            lang="zh"                       # 语言
         )
         
+        # 执行报告生成
+        # 报告可能生成在report_dir/log.html或report_dir/script.log/log.html
+        report_html_file = os.path.join(report_dir, "log.html")
+        script_log_html_file = os.path.join(report_dir, "script.log", "log.html")
+        
         # 生成报告
-        report_html_file = os.path.join(log_dir, "log.html")
-        rpt.report(template_name="log_template.html", output_file=report_html_file)
+        rpt.report()
         
-        # 修复HTML文件中的资源路径和截图引用
-        fix_html_report(report_html_file, image_files)
+        # 确定实际生成的HTML文件路径
+        actual_html_file = script_log_html_file if os.path.exists(script_log_html_file) else report_html_file
+        print(f"HTML报告生成成功: {actual_html_file}")
         
-        print(f"报告生成成功: {report_html_file}")
+        # 如果报告生成在script.log子目录，复制到report_dir根目录
+        if os.path.exists(script_log_html_file) and not os.path.exists(report_html_file):
+            try:
+                shutil.copy2(script_log_html_file, report_html_file)
+                print(f"复制报告: {script_log_html_file} -> {report_html_file}")
+            except Exception as e:
+                print(f"复制报告失败: {e}")
+                
+        # 修复HTML中的路径问题
+        if os.path.exists(report_html_file):
+            fix_html_paths(report_html_file)
+            # 修复HTML中截图路径问题
+            fix_html_report(report_html_file, image_files)
+        
         return True
     except Exception as e:
-        print(f"报告生成失败: {str(e)}")
+        print(f"生成HTML报告失败: {str(e)}")
         traceback.print_exc()
         return False
 
@@ -821,72 +911,98 @@ def fix_html_report(html_file, image_files):
         traceback.print_exc()
 
 
-# 生成汇总报告（保持不变）
+# 生成汇总报告
 def run_summary(data):
     """
-    生成汇总报告 summary_report_YYYY-MM-DD-HH-MM-SS.html
-    此报告包含所有测试设备的结果概览和链接到详细报告
-    
-    参数:
-        data: 包含测试结果的字典，包括 'start', 'tests' 等字段
-    
-    返回:
-        生成的汇总报告的文件路径，或者出错时返回空字符串
+    生成汇总报告
+    :param data: 测试数据，包含每个设备的测试结果
+    :return: 汇总报告的路径
     """
-    report_url = f"summary_report{CURRENT_TIME}.html"
-    report_url_dir = os.path.join(report_dir, report_url)
-
     try:
-        # 计算测试运行统计信息
-        success_count = 0
-        total_count = len(data['tests'])
+        # 确保汇总报告目录存在
+        os.makedirs(ui_reports_dir, exist_ok=True)
         
-        # 处理每个设备的报告信息
-        for device, report_info in data['tests'].items():
-            if report_info:  # 如果报告生成成功
-                success_count += 1
-                # 计算相对路径
-                abs_report_path = report_info
-                device_dir = os.path.dirname(abs_report_path)
-                device_name = os.path.basename(device_dir).split('_')[0]
-                # 由于报告和设备报告都在同一目录下，直接使用basename即可
-                rel_path = f"{os.path.basename(device_dir)}/log.html"
-                data['tests'][device] = {
-                    'status': 0,  # 成功
-                    'path': rel_path
-                }
-            else:  # 如果报告生成失败
-                data['tests'][device] = {
-                    'status': -1,  # 失败
-                    'path': '#'
-                }
+        # 生成带时间戳的报告文件名
+        timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+        report_file = f"summary_report_{timestamp}.html"
+        summary_report_path = os.path.join(ui_reports_dir, report_file)
         
+        # 复制静态资源到汇总报告目录
+        static_dir = os.path.join(ui_reports_dir, "static")
+        if not os.path.exists(static_dir):
+            # 查找最新设备的静态资源目录
+            for dev_name, report_path in data['tests'].items():
+                if report_path and os.path.exists(report_path):
+                    device_dir = os.path.dirname(report_path)
+                    device_static = os.path.join(device_dir, "static")
+                    if os.path.exists(device_static):
+                        shutil.copytree(device_static, static_dir)
+                        print(f"从 {device_dir} 复制静态资源到汇总报告目录")
+                        break
+        
+        # 准备汇总数据
         summary = {
-            'time': "%.3f" % (time.time() - data['start']),
-            'success': success_count,
-            'count': total_count
+            "devices": [],
+            "total": 0,
+            "success": 0,
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "duration": ""
         }
-        summary.update(data)
-        summary['start'] = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(data['start']))
-
-        # 确保模板目录存在
-        os.makedirs(template_dir, exist_ok=True)
-        template_file = os.path.join(template_dir, 'report_tpl.html')
         
-        # 检查模板文件是否存在
+        # 收集各设备的测试结果
+        for dev_name, report_path in data['tests'].items():
+            is_success = report_path is not None and os.path.exists(report_path)
+            
+            # 获取设备报告的相对路径
+            report_rel_path = None
+            if is_success:
+                # 从绝对路径中提取设备目录名称
+                device_dir_name = os.path.basename(os.path.dirname(report_path))
+                
+                # 计算汇总报告目录到设备报告目录的相对路径
+                # 汇总报告在 outputs/WFGameAI-reports/ui_reports/
+                # 设备报告在 outputs/WFGameAI-reports/ui_run/WFGameAI.air/log/设备目录/
+                report_rel_path = f"../ui_run/WFGameAI.air/log/{device_dir_name}/log.html"
+                print(f"设备 {dev_name} 报告路径: {report_rel_path}")
+            
+            device_data = {
+                "name": dev_name,
+                "report": report_rel_path,
+                "success": is_success,
+                "status": "成功" if is_success else "失败"
+            }
+            summary["devices"].append(device_data)
+            summary["total"] += 1
+            if is_success:
+                summary["success"] += 1
+        
+        # 计算成功率
+        summary["rate"] = f"{summary['success']}/{summary['total']}"
+        summary["percent"] = f"{(summary['success'] / summary['total'] * 100) if summary['total'] > 0 else 0:.1f}%"
+        
+        # 使用模板生成汇总报告
+        template_file = os.path.join(os.path.dirname(__file__), "templates", "summary_template.html")
         if not os.path.exists(template_file):
-            raise FileNotFoundError(f"汇总报告模板文件不存在: {template_file}")
-
+            print(f"模板文件不存在: {template_file}")
+            template_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates", "summary_template.html")
+        
         # 使用 Jinja2 渲染模板
-        env = Environment(loader=FileSystemLoader(template_dir))
-        template = env.get_template('report_tpl.html')
+        env = Environment(loader=FileSystemLoader(os.path.dirname(template_file)))
+        template = env.get_template(os.path.basename(template_file))
 
         # 生成汇总报告 HTML
-        with open(report_url_dir, "w", encoding="utf-8") as f:
+        with open(summary_report_path, "w", encoding="utf-8") as f:
             html_content = template.render(data=summary)
             f.write(html_content)
-        print(f"汇总报告生成成功: {report_url_dir}")
-        return report_url_dir
+        print(f"汇总报告生成成功: {summary_report_path}")
+        
+        # 同时生成最新报告的快捷方式
+        latest_report = os.path.join(ui_reports_dir, "latest_report.html")
+        with open(latest_report, "w", encoding="utf-8") as f:
+            f.write(html_content)
+        print(f"最新报告快捷方式: {latest_report}")
+        
+        return summary_report_path
     except Exception as e:
         print(f"汇总报告生成失败: {e}")
         traceback.print_exc()
@@ -1138,39 +1254,15 @@ def generate_reports(results, script_path=None):
         import traceback
         from datetime import datetime
         
-        # 创建标准Airtest结构的报告目录
-        timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-        
-        # 根目录
-        base_dir = os.path.dirname(os.getcwd())
-        project_name = os.path.basename(os.getcwd())  # 使用当前目录名作为项目名称
-        
-        # 按ka2-reports-demo创建标准结构
-        # project_name-reports-demo/
-        #   - ui_reports/  (汇总报告)
-        #   - ui_run/      (代码目录)
-        #     - project_name.air/  (项目目录)
-        #       - log/             (设备报告目录)
-        
-        # 创建报告根目录
-        reports_base = os.path.join(os.getcwd(), "outputs", project_name + "-reports")
-        os.makedirs(reports_base, exist_ok=True)
-        
-        # 创建ui_reports目录 - 存放汇总报告
-        ui_reports_dir = os.path.join(reports_base, "ui_reports")
+        # 确保所有基础目录存在
+        os.makedirs(reports_base_dir, exist_ok=True)
         os.makedirs(ui_reports_dir, exist_ok=True)
-        
-        # 创建ui_run目录 - 运行代码目录
-        ui_run_dir = os.path.join(reports_base, "ui_run")
         os.makedirs(ui_run_dir, exist_ok=True)
-        
-        # 创建项目目录 - project_name.air
-        project_air_dir = os.path.join(ui_run_dir, f"{project_name}.air")
         os.makedirs(project_air_dir, exist_ok=True)
+        os.makedirs(device_log_dir, exist_ok=True)
         
-        # 创建log目录 - 存放设备报告
-        project_log_dir = os.path.join(project_air_dir, "log")
-        os.makedirs(project_log_dir, exist_ok=True)
+        # 生成时间戳
+        timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
         
         # 初始化结果计数器
         if 'success_count' not in results:
@@ -1192,9 +1284,9 @@ def generate_reports(results, script_path=None):
                 results['tests'][device_name] = False
                 continue
                 
-            # 为每个设备创建单独的报告目录
-            device_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            device_report_dir = os.path.join(project_log_dir, f"{device_name}_{device_timestamp}")
+            # 为每个设备创建标准目录路径
+            device_timestamp = timestamp  # 使用相同的时间戳保持一致性
+            device_report_dir = os.path.join(device_log_dir, f"{device_name}_{device_timestamp}")
             os.makedirs(device_report_dir, exist_ok=True)
             
             # 生成设备报告
@@ -1209,79 +1301,15 @@ def generate_reports(results, script_path=None):
             else:
                 print(f"设备 {device_name} 报告生成失败")
 
-        # 生成汇总报告到ui_reports目录
+        # 生成汇总报告
         total_tests = len(results['logs'])
         success_rate = (results['success_count'] / total_tests * 100) if total_tests > 0 else 0
         
-        summary_report = os.path.join(ui_reports_dir, f"summary_report_{timestamp}.html")
-        with open(summary_report, "w", encoding="utf-8") as f:
-            f.write(f"""
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>回放测试报告汇总</title>
-                <meta charset="utf-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1">
-                <style>
-                    body {{ font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }}
-                    h1 {{ color: #333; border-bottom: 1px solid #ddd; padding-bottom: 10px; }}
-                    .summary {{ background-color: #f8f8f8; padding: 15px; border-radius: 5px; margin-bottom: 20px; }}
-                    .devices {{ display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }}
-                    .device {{ padding: 15px; border: 1px solid #ddd; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }}
-                    .device h2 {{ margin-top: 0; color: #444; font-size: 1.2em; }}
-                    .success {{ color: green; }}
-                    .failure {{ color: red; }}
-                    a {{ color: #0066cc; text-decoration: none; }}
-                    a:hover {{ text-decoration: underline; }}
-                    .progress-bar {{ 
-                        height: 20px; 
-                        background-color: #e0e0e0; 
-                        border-radius: 10px; 
-                        margin-bottom: 10px;
-                        overflow: hidden;
-                    }}
-                    .progress {{ 
-                        height: 100%; 
-                        background-color: #4CAF50; 
-                        border-radius: 10px; 
-                        width: {success_rate}%;
-                    }}
-                </style>
-            </head>
-            <body>
-                <h1>回放测试报告汇总</h1>
-                
-                <div class="summary">
-                    <p><strong>生成时间:</strong> {timestamp.replace('-', '年' if timestamp.count('-') == 1 else '月' if timestamp.count('-') == 2 else '-').replace('-', '日', 1).replace('-', '时', 1).replace('-', '分', 1)}秒</p>
-                    <p><strong>总测试设备数:</strong> {total_tests}</p>
-                    <p><strong>成功生成报告数:</strong> {results['success_count']}</p>
-                    <p><strong>成功率:</strong> {success_rate:.1f}%</p>
-                    <div class="progress-bar">
-                        <div class="progress"></div>
-                    </div>
-                </div>
-                
-                <div class="devices">
-                    {''.join([
-                        f'''
-                        <div class="device">
-                            <h2>设备: {dev}</h2>
-                            <p class="{'success' if success else 'failure'}">
-                                状态: {'成功' if success else '失败'}
-                            </p>
-                            {f'<p><a href="../ui_run/{project_name}.air/log/{dev}_{device_timestamp}/log.html" target="_blank">查看详细报告</a></p>' if dev in device_reports else '<p>无法生成报告</p>'}
-                        </div>
-                        '''
-                        for dev, success in results['tests'].items()
-                    ])}
-                </div>
-            </body>
-            </html>
-            """)
+        # 使用run_summary函数生成汇总报告
+        summary_report = run_summary(results)
         
-        print(f"汇总报告已生成: {summary_report}")
-        print(f"共测试 {total_tests} 个设备，成功生成 {results['success_count']} 个报告，成功率: {success_rate:.1f}%")
-        print(f"报告结构已保存在: {reports_base}")
+        print(f"报告生成完成，共测试 {total_tests} 个设备，成功 {results['success_count']} 个，成功率: {success_rate:.1f}%")
+        print(f"报告目录: {reports_base_dir}")
         
         return True
     except Exception as e:

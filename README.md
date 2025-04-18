@@ -94,19 +94,7 @@ python replay_script.py --show-screens --script outputs/recordlogs/scene1_login_
 
 
 
-## 测试报告
 
-### 报告结构
-```
-outputs/
-├── replay_reports/              # 报告根目录
-│   ├── summary_report_*.html   # 汇总报告
-│   └── device_name_timestamp/  # 设备报告目录
-│       ├── log.html           # 详细测试报告
-│       ├── static/            # 静态资源
-│       └── log/              # 日志和截图
-└── recordlogs/                # 录制脚本存储
-```
 
 ### 报告特性
 
@@ -189,3 +177,53 @@ outputs/
 - 项目维护者：[Your Name]
 - 邮箱：[your.email@example.com]
 - 项目主页：[GitHub Repository URL]
+
+## 项目结构
+
+项目采用标准的Airtest目录结构组织：
+
+```
+/WFGameAI/
+├── README.md                                      # 项目说明文档
+├── datasets/                                      # 训练数据集目录
+│   ├── models/                                    # 模型存储目录
+│   ├── templates/                                 # 模板目录
+│   ├── train/                                     # 训练目录
+│   │   └── weights/                               # 权重存储目录
+│   └── yolov11-card2/                             # YOLO模型训练数据集
+│       ├── test/                                  # 测试集
+│       ├── train/                                 # 训练集
+│       └── valid/                                 # 验证集
+├── docs/                                          # 文档目录
+│   └── images/                                    # 文档图片资源
+├── outputs/                                       # 输出目录
+│   └── WFGameAI-reports/                          # 项目报告根目录
+│       ├── ui_reports/                            # 汇总报告目录
+│       │   ├── summary_report_[timestamp].html    # 汇总报告HTML
+│       │   └── latest_report.html                 # 最新报告快捷方式
+│       └── ui_run/                                # 运行代码目录
+│           └── WFGameAI.air/                      # 项目目录
+│               └── log/                           # 设备报告目录
+│                   └── [device]_[timestamp]/      # 设备目录
+│                       ├── log.html               # 设备HTML报告
+│                       ├── log.txt                # 设备日志
+│                       ├── script.py              # 脚本文件
+│                       ├── log/                   # 日志子目录
+│                       │   ├── log.txt            # 日志副本
+│                       │   ├── [timestamp].jpg    # 截图副本
+│                       │   └── [timestamp]_small.jpg # 缩略图副本
+│                       └── static/                # 静态资源
+│                           ├── css/               # CSS文件
+│                           ├── js/                # JS文件
+│                           ├── image/             # 图片资源
+│                           └── fonts/             # 字体资源
+├── scripts/                                       # 脚本目录
+├── templates/                                     # 模板文件目录
+├── testcase/                                      # 测试用例目录
+├── record_script.py                               # 录制脚本
+├── replay_script.py                               # 回放脚本
+├── train_model.py                                 # 模型训练
+├── generate_annotations.py                        # 生成标注
+├── generate_report.py                             # 生成报告
+└── ui_explore.py                                  # UI探索工具
+```
