@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WFGameAI 自动化测试报告</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
+        h1 { color: #333; border-bottom: 1px solid #ddd; padding-bottom: 10px; }
+        .summary { background-color: #f8f8f8; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+        .devices { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
+        .device { padding: 15px; border: 1px solid #ddd; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .device h2 { margin-top: 0; color: #444; font-size: 1.2em; }
+        .success { color: green; }
+        .failure { color: red; }
+        a { color: #0066cc; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .progress-bar { 
+            height: 20px; 
+            background-color: #e0e0e0; 
+            border-radius: 10px; 
+            margin-bottom: 10px;
+            overflow: hidden;
+        }
+        .progress { 
+            height: 100%; 
+            background-color: #4CAF50; 
+            border-radius: 10px; 
+            width: {{ (data.success / data.total * 100) if data.total > 0 else 0 }}%;
+        }
+    </style>
+</head>
+<body>
+    <h1>WFGameAI 自动化测试报告</h1>
+    
+    <div class="summary">
+        <p><strong>生成时间:</strong> {{ data.timestamp }}</p>
+        <p><strong>总测试设备数:</strong> {{ data.total }}</p>
+        <p><strong>成功生成报告数:</strong> {{ data.success }}</p>
+        <p><strong>成功率:</strong> {{ data.percent }}</p>
+        <div class="progress-bar">
+            <div class="progress"></div>
+        </div>
+    </div>
+    
+    <div class="devices">
+        {% for device in data.devices %}
+        <div class="device">
+            <h2>设备: {{ device.name }}</h2>
+            <p class="{{ 'success' if device.success else 'failure' }}">
+                状态: {{ device.status }}
+            </p>
+            {% if device.success %}
+            <p><a href="{{ device.report }}" target="_blank">查看详细报告</a></p>
+            {% else %}
+            <p>无法生成报告</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</body>
+</html> 

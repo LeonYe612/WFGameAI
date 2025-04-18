@@ -867,12 +867,43 @@
         "documentation": {}
     },
     {
-        "label": "yaml",
-        "kind": 6,
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
         "isExtraImport": true,
-        "importPath": "yaml",
-        "description": "yaml",
-        "detail": "yaml",
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
         "documentation": {}
     },
     {
@@ -885,67 +916,11 @@
         "documentation": {}
     },
     {
-        "label": "YOLO",
-        "importPath": "ultralytics",
-        "description": "ultralytics",
+        "label": "run_summary",
+        "importPath": "replay_script",
+        "description": "replay_script",
         "isExtraImport": true,
-        "detail": "ultralytics",
-        "documentation": {}
-    },
-    {
-        "label": "YOLO",
-        "importPath": "ultralytics",
-        "description": "ultralytics",
-        "isExtraImport": true,
-        "detail": "ultralytics",
-        "documentation": {}
-    },
-    {
-        "label": "YOLO",
-        "importPath": "ultralytics",
-        "description": "ultralytics",
-        "isExtraImport": true,
-        "detail": "ultralytics",
-        "documentation": {}
-    },
-    {
-        "label": "YOLO",
-        "importPath": "ultralytics",
-        "description": "ultralytics",
-        "isExtraImport": true,
-        "detail": "ultralytics",
-        "documentation": {}
-    },
-    {
-        "label": "YOLO",
-        "importPath": "ultralytics",
-        "description": "ultralytics",
-        "isExtraImport": true,
-        "detail": "ultralytics",
-        "documentation": {}
-    },
-    {
-        "label": "YOLO",
-        "importPath": "ultralytics",
-        "description": "ultralytics",
-        "isExtraImport": true,
-        "detail": "ultralytics",
-        "documentation": {}
-    },
-    {
-        "label": "YOLO",
-        "importPath": "ultralytics",
-        "description": "ultralytics",
-        "isExtraImport": true,
-        "detail": "ultralytics",
-        "documentation": {}
-    },
-    {
-        "label": "YOLO",
-        "importPath": "ultralytics",
-        "description": "ultralytics",
-        "isExtraImport": true,
-        "detail": "ultralytics",
+        "detail": "replay_script",
         "documentation": {}
     },
     {
@@ -981,11 +956,84 @@
         "documentation": {}
     },
     {
-        "label": "run_one_report",
+        "label": "run_summary",
         "importPath": "replay_script",
         "description": "replay_script",
         "isExtraImport": true,
         "detail": "replay_script",
+        "documentation": {}
+    },
+    {
+        "label": "yaml",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "yaml",
+        "description": "yaml",
+        "detail": "yaml",
+        "documentation": {}
+    },
+    {
+        "label": "YOLO",
+        "importPath": "ultralytics",
+        "description": "ultralytics",
+        "isExtraImport": true,
+        "detail": "ultralytics",
+        "documentation": {}
+    },
+    {
+        "label": "YOLO",
+        "importPath": "ultralytics",
+        "description": "ultralytics",
+        "isExtraImport": true,
+        "detail": "ultralytics",
+        "documentation": {}
+    },
+    {
+        "label": "YOLO",
+        "importPath": "ultralytics",
+        "description": "ultralytics",
+        "isExtraImport": true,
+        "detail": "ultralytics",
+        "documentation": {}
+    },
+    {
+        "label": "YOLO",
+        "importPath": "ultralytics",
+        "description": "ultralytics",
+        "isExtraImport": true,
+        "detail": "ultralytics",
+        "documentation": {}
+    },
+    {
+        "label": "YOLO",
+        "importPath": "ultralytics",
+        "description": "ultralytics",
+        "isExtraImport": true,
+        "detail": "ultralytics",
+        "documentation": {}
+    },
+    {
+        "label": "YOLO",
+        "importPath": "ultralytics",
+        "description": "ultralytics",
+        "isExtraImport": true,
+        "detail": "ultralytics",
+        "documentation": {}
+    },
+    {
+        "label": "YOLO",
+        "importPath": "ultralytics",
+        "description": "ultralytics",
+        "isExtraImport": true,
+        "detail": "ultralytics",
+        "documentation": {}
+    },
+    {
+        "label": "YOLO",
+        "importPath": "ultralytics",
+        "description": "ultralytics",
+        "isExtraImport": true,
+        "detail": "ultralytics",
         "documentation": {}
     },
     {
@@ -1004,30 +1052,6 @@
         "importPath": "numpy",
         "description": "numpy",
         "detail": "numpy",
-        "documentation": {}
-    },
-    {
-        "label": "datetime",
-        "importPath": "datetime",
-        "description": "datetime",
-        "isExtraImport": true,
-        "detail": "datetime",
-        "documentation": {}
-    },
-    {
-        "label": "datetime",
-        "importPath": "datetime",
-        "description": "datetime",
-        "isExtraImport": true,
-        "detail": "datetime",
-        "documentation": {}
-    },
-    {
-        "label": "datetime",
-        "importPath": "datetime",
-        "description": "datetime",
-        "isExtraImport": true,
-        "detail": "datetime",
         "documentation": {}
     },
     {
@@ -3641,6 +3665,69 @@
         "documentation": {}
     },
     {
+        "label": "base_dir",
+        "kind": 5,
+        "importPath": "outputs.test_summary_path",
+        "description": "outputs.test_summary_path",
+        "peekOfCode": "base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))\ndevice_log_dir = os.path.join(base_dir, \"outputs\", \"WFGameAI-reports\", \"ui_run\", \"WFGameAI.air\", \"log\")\n# 确保测试目录存在\nos.makedirs(device_log_dir, exist_ok=True)\n# 创建测试设备目录\ntest_device_name = \"Test-Device-1080x2400_2025-04-18-15-30-00\"\ntest_device_dir = os.path.join(device_log_dir, test_device_name)\nos.makedirs(test_device_dir, exist_ok=True)\n# 创建测试log.html文件\ntest_log_html = os.path.join(test_device_dir, \"log.html\")",
+        "detail": "outputs.test_summary_path",
+        "documentation": {}
+    },
+    {
+        "label": "device_log_dir",
+        "kind": 5,
+        "importPath": "outputs.test_summary_path",
+        "description": "outputs.test_summary_path",
+        "peekOfCode": "device_log_dir = os.path.join(base_dir, \"outputs\", \"WFGameAI-reports\", \"ui_run\", \"WFGameAI.air\", \"log\")\n# 确保测试目录存在\nos.makedirs(device_log_dir, exist_ok=True)\n# 创建测试设备目录\ntest_device_name = \"Test-Device-1080x2400_2025-04-18-15-30-00\"\ntest_device_dir = os.path.join(device_log_dir, test_device_name)\nos.makedirs(test_device_dir, exist_ok=True)\n# 创建测试log.html文件\ntest_log_html = os.path.join(test_device_dir, \"log.html\")\nwith open(test_log_html, \"w\") as f:",
+        "detail": "outputs.test_summary_path",
+        "documentation": {}
+    },
+    {
+        "label": "test_device_name",
+        "kind": 5,
+        "importPath": "outputs.test_summary_path",
+        "description": "outputs.test_summary_path",
+        "peekOfCode": "test_device_name = \"Test-Device-1080x2400_2025-04-18-15-30-00\"\ntest_device_dir = os.path.join(device_log_dir, test_device_name)\nos.makedirs(test_device_dir, exist_ok=True)\n# 创建测试log.html文件\ntest_log_html = os.path.join(test_device_dir, \"log.html\")\nwith open(test_log_html, \"w\") as f:\n    f.write(\"<html><body>测试设备报告</body></html>\")\n# 准备测试数据\ntest_data = {\n    'tests': {",
+        "detail": "outputs.test_summary_path",
+        "documentation": {}
+    },
+    {
+        "label": "test_device_dir",
+        "kind": 5,
+        "importPath": "outputs.test_summary_path",
+        "description": "outputs.test_summary_path",
+        "peekOfCode": "test_device_dir = os.path.join(device_log_dir, test_device_name)\nos.makedirs(test_device_dir, exist_ok=True)\n# 创建测试log.html文件\ntest_log_html = os.path.join(test_device_dir, \"log.html\")\nwith open(test_log_html, \"w\") as f:\n    f.write(\"<html><body>测试设备报告</body></html>\")\n# 准备测试数据\ntest_data = {\n    'tests': {\n        'Test-Device': test_log_html",
+        "detail": "outputs.test_summary_path",
+        "documentation": {}
+    },
+    {
+        "label": "test_log_html",
+        "kind": 5,
+        "importPath": "outputs.test_summary_path",
+        "description": "outputs.test_summary_path",
+        "peekOfCode": "test_log_html = os.path.join(test_device_dir, \"log.html\")\nwith open(test_log_html, \"w\") as f:\n    f.write(\"<html><body>测试设备报告</body></html>\")\n# 准备测试数据\ntest_data = {\n    'tests': {\n        'Test-Device': test_log_html\n    }\n}\n# 运行汇总报告生成",
+        "detail": "outputs.test_summary_path",
+        "documentation": {}
+    },
+    {
+        "label": "test_data",
+        "kind": 5,
+        "importPath": "outputs.test_summary_path",
+        "description": "outputs.test_summary_path",
+        "peekOfCode": "test_data = {\n    'tests': {\n        'Test-Device': test_log_html\n    }\n}\n# 运行汇总报告生成\nprint(f\"生成测试汇总报告...\")\nprint(f\"测试数据: {json.dumps(test_data, indent=2)}\")\nsummary_report_path = run_summary(test_data)\nif summary_report_path:",
+        "detail": "outputs.test_summary_path",
+        "documentation": {}
+    },
+    {
+        "label": "summary_report_path",
+        "kind": 5,
+        "importPath": "outputs.test_summary_path",
+        "description": "outputs.test_summary_path",
+        "peekOfCode": "summary_report_path = run_summary(test_data)\nif summary_report_path:\n    print(f\"✅ 汇总报告生成成功: {summary_report_path}\")\n    # 读取生成的HTML文件，检查链接\n    with open(summary_report_path, 'r', encoding='utf-8') as f:\n        html_content = f.read()\n    # 检查链接\n    import re\n    links = re.findall(r'<a href=\"([^\"]+)\"', html_content)\n    print(f\"报告中的链接: {links}\")",
+        "detail": "outputs.test_summary_path",
+        "documentation": {}
+    },
+    {
         "label": "class_names",
         "kind": 5,
         "importPath": "scripts.generate_annotations",
@@ -4140,7 +4227,7 @@
         "kind": 2,
         "importPath": "replay_script",
         "description": "replay_script",
-        "peekOfCode": "def get_log_dir(dev):\n    device_dir = dev.replace(\".\", \"_\").replace(\":\", \"_\") + CURRENT_TIME\n    log_dir = os.path.normpath(os.path.join(report_dir, device_dir))\n    # 创建必要的目录结构\n    os.makedirs(log_dir, exist_ok=True)\n    # 确保日志文件存在\n    log_file = os.path.join(log_dir, \"log.txt\")\n    if not os.path.exists(log_file):\n        with open(log_file, \"w\", encoding=\"utf-8\") as f:\n            pass",
+        "peekOfCode": "def get_log_dir(dev):\n    \"\"\"获取日志目录\"\"\"\n    device_dir = dev.replace(':', '_').replace(' ', '_')\n    timestamp = datetime.now().strftime(\"%Y-%m-%d-%H-%M-%S\")\n    # 使用新目录结构\n    log_dir = os.path.join(device_log_dir, f\"{device_dir}_{timestamp}\")\n    os.makedirs(log_dir, exist_ok=True)\n    # 创建log子目录\n    log_images_dir = os.path.join(log_dir, \"log\")\n    os.makedirs(log_images_dir, exist_ok=True)",
         "detail": "replay_script",
         "documentation": {}
     },
@@ -4185,7 +4272,7 @@
         "kind": 2,
         "importPath": "replay_script",
         "description": "replay_script",
-        "peekOfCode": "def get_airtest_template_path():\n    \"\"\"获取 Airtest 默认模板路径\"\"\"\n    import airtest\n    airtest_path = os.path.dirname(airtest.__file__)\n    template_path = os.path.join(airtest_path, \"report\", \"log_template.html\")\n    if not os.path.exists(template_path):\n        raise FileNotFoundError(f\"找不到 Airtest 模板文件: {template_path}\")\n    return template_path\ndef run_one_report(log_dir, report_dir, script_path=None):\n    \"\"\"",
+        "peekOfCode": "def get_airtest_template_path():\n    \"\"\"\n    获取Airtest报告模板的路径\n    返回:\n        str: Airtest报告模板的路径，如果找不到则返回None\n    \"\"\"\n    try:\n        import airtest\n        import os\n        # 尝试直接从airtest包中获取模板",
         "detail": "replay_script",
         "documentation": {}
     },
@@ -4194,7 +4281,7 @@
         "kind": 2,
         "importPath": "replay_script",
         "description": "replay_script",
-        "peekOfCode": "def run_one_report(log_dir, report_dir, script_path=None):\n    \"\"\"\n    为单个设备生成HTML报告，遵循Airtest标准结构\n    参数:\n        log_dir: 包含日志文件的目录\n        report_dir: 生成报告的目标目录（现在与log_dir相同）\n        script_path: 可选的脚本文件路径，如果提供则会复制到报告目录\n    返回:\n        bool: 是否成功生成报告\n    \"\"\"",
+        "peekOfCode": "def run_one_report(log_dir, report_dir, script_path=None):\n    \"\"\"\n    为单个设备生成HTML报告\n    参数:\n        log_dir: 包含日志文件的目录\n        report_dir: 生成报告的目标目录\n        script_path: 可选的脚本文件路径，如果提供则会复制到报告目录\n    返回:\n        bool: 是否成功生成报告\n    \"\"\"",
         "detail": "replay_script",
         "documentation": {}
     },
@@ -4221,7 +4308,7 @@
         "kind": 2,
         "importPath": "replay_script",
         "description": "replay_script",
-        "peekOfCode": "def run_summary(data):\n    \"\"\"\n    生成汇总报告 summary_report_YYYY-MM-DD-HH-MM-SS.html\n    此报告包含所有测试设备的结果概览和链接到详细报告\n    参数:\n        data: 包含测试结果的字典，包括 'start', 'tests' 等字段\n    返回:\n        生成的汇总报告的文件路径，或者出错时返回空字符串\n    \"\"\"\n    report_url = f\"summary_report{CURRENT_TIME}.html\"",
+        "peekOfCode": "def run_summary(data):\n    \"\"\"\n    生成汇总报告\n    :param data: 测试数据，包含每个设备的测试结果\n    :return: 汇总报告的路径\n    \"\"\"\n    try:\n        # 确保汇总报告目录存在\n        os.makedirs(ui_reports_dir, exist_ok=True)\n        # 生成带时间戳的报告文件名",
         "detail": "replay_script",
         "documentation": {}
     },
@@ -4275,7 +4362,7 @@
         "kind": 5,
         "importPath": "replay_script",
         "description": "replay_script",
-        "peekOfCode": "model = None\ndevices = []\nBASE_DIR = os.path.dirname(os.path.abspath(__file__))\nCURRENT_TIME = \"_\" + time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))\nreport_dir = os.path.join(BASE_DIR, \"outputs/replay_reports\")\ntemplate_dir = os.path.join(BASE_DIR, \"templates\")  # 模板目录路径\n# 确保所有必要的目录都存在\nos.makedirs(report_dir, exist_ok=True)\nos.makedirs(template_dir, exist_ok=True)\nscreenshot_queue = queue.Queue()",
+        "peekOfCode": "model = None\ndevices = []\nBASE_DIR = os.path.dirname(os.path.abspath(__file__))\nCURRENT_TIME = \"_\" + time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))\ntemplate_dir = os.path.join(BASE_DIR, \"templates\")  # 模板目录路径\n# 定义报告基础目录\nreports_base_dir = os.path.join(BASE_DIR, \"outputs\", \"WFGameAI-reports\")\n# 定义UI报告目录\nui_reports_dir = os.path.join(reports_base_dir, \"ui_reports\")\n# 定义运行代码目录",
         "detail": "replay_script",
         "documentation": {}
     },
@@ -4284,7 +4371,7 @@
         "kind": 5,
         "importPath": "replay_script",
         "description": "replay_script",
-        "peekOfCode": "devices = []\nBASE_DIR = os.path.dirname(os.path.abspath(__file__))\nCURRENT_TIME = \"_\" + time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))\nreport_dir = os.path.join(BASE_DIR, \"outputs/replay_reports\")\ntemplate_dir = os.path.join(BASE_DIR, \"templates\")  # 模板目录路径\n# 确保所有必要的目录都存在\nos.makedirs(report_dir, exist_ok=True)\nos.makedirs(template_dir, exist_ok=True)\nscreenshot_queue = queue.Queue()\naction_queue = queue.Queue()",
+        "peekOfCode": "devices = []\nBASE_DIR = os.path.dirname(os.path.abspath(__file__))\nCURRENT_TIME = \"_\" + time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))\ntemplate_dir = os.path.join(BASE_DIR, \"templates\")  # 模板目录路径\n# 定义报告基础目录\nreports_base_dir = os.path.join(BASE_DIR, \"outputs\", \"WFGameAI-reports\")\n# 定义UI报告目录\nui_reports_dir = os.path.join(reports_base_dir, \"ui_reports\")\n# 定义运行代码目录\nui_run_dir = os.path.join(reports_base_dir, \"ui_run\")",
         "detail": "replay_script",
         "documentation": {}
     },
@@ -4293,7 +4380,7 @@
         "kind": 5,
         "importPath": "replay_script",
         "description": "replay_script",
-        "peekOfCode": "BASE_DIR = os.path.dirname(os.path.abspath(__file__))\nCURRENT_TIME = \"_\" + time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))\nreport_dir = os.path.join(BASE_DIR, \"outputs/replay_reports\")\ntemplate_dir = os.path.join(BASE_DIR, \"templates\")  # 模板目录路径\n# 确保所有必要的目录都存在\nos.makedirs(report_dir, exist_ok=True)\nos.makedirs(template_dir, exist_ok=True)\nscreenshot_queue = queue.Queue()\naction_queue = queue.Queue()\nclick_queue = queue.Queue()  # 新增全局 click_queue",
+        "peekOfCode": "BASE_DIR = os.path.dirname(os.path.abspath(__file__))\nCURRENT_TIME = \"_\" + time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))\ntemplate_dir = os.path.join(BASE_DIR, \"templates\")  # 模板目录路径\n# 定义报告基础目录\nreports_base_dir = os.path.join(BASE_DIR, \"outputs\", \"WFGameAI-reports\")\n# 定义UI报告目录\nui_reports_dir = os.path.join(reports_base_dir, \"ui_reports\")\n# 定义运行代码目录\nui_run_dir = os.path.join(reports_base_dir, \"ui_run\")\n# 定义项目目录",
         "detail": "replay_script",
         "documentation": {}
     },
@@ -4302,16 +4389,7 @@
         "kind": 5,
         "importPath": "replay_script",
         "description": "replay_script",
-        "peekOfCode": "CURRENT_TIME = \"_\" + time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))\nreport_dir = os.path.join(BASE_DIR, \"outputs/replay_reports\")\ntemplate_dir = os.path.join(BASE_DIR, \"templates\")  # 模板目录路径\n# 确保所有必要的目录都存在\nos.makedirs(report_dir, exist_ok=True)\nos.makedirs(template_dir, exist_ok=True)\nscreenshot_queue = queue.Queue()\naction_queue = queue.Queue()\nclick_queue = queue.Queue()  # 新增全局 click_queue\n# Airtest 兼容的 JSON 日志格式化器",
-        "detail": "replay_script",
-        "documentation": {}
-    },
-    {
-        "label": "report_dir",
-        "kind": 5,
-        "importPath": "replay_script",
-        "description": "replay_script",
-        "peekOfCode": "report_dir = os.path.join(BASE_DIR, \"outputs/replay_reports\")\ntemplate_dir = os.path.join(BASE_DIR, \"templates\")  # 模板目录路径\n# 确保所有必要的目录都存在\nos.makedirs(report_dir, exist_ok=True)\nos.makedirs(template_dir, exist_ok=True)\nscreenshot_queue = queue.Queue()\naction_queue = queue.Queue()\nclick_queue = queue.Queue()  # 新增全局 click_queue\n# Airtest 兼容的 JSON 日志格式化器\nclass AirtestJsonFormatter(logging.Formatter):",
+        "peekOfCode": "CURRENT_TIME = \"_\" + time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))\ntemplate_dir = os.path.join(BASE_DIR, \"templates\")  # 模板目录路径\n# 定义报告基础目录\nreports_base_dir = os.path.join(BASE_DIR, \"outputs\", \"WFGameAI-reports\")\n# 定义UI报告目录\nui_reports_dir = os.path.join(reports_base_dir, \"ui_reports\")\n# 定义运行代码目录\nui_run_dir = os.path.join(reports_base_dir, \"ui_run\")\n# 定义项目目录\nproject_air_dir = os.path.join(ui_run_dir, \"WFGameAI.air\")",
         "detail": "replay_script",
         "documentation": {}
     },
@@ -4320,7 +4398,61 @@
         "kind": 5,
         "importPath": "replay_script",
         "description": "replay_script",
-        "peekOfCode": "template_dir = os.path.join(BASE_DIR, \"templates\")  # 模板目录路径\n# 确保所有必要的目录都存在\nos.makedirs(report_dir, exist_ok=True)\nos.makedirs(template_dir, exist_ok=True)\nscreenshot_queue = queue.Queue()\naction_queue = queue.Queue()\nclick_queue = queue.Queue()  # 新增全局 click_queue\n# Airtest 兼容的 JSON 日志格式化器\nclass AirtestJsonFormatter(logging.Formatter):\n    def format(self, record):",
+        "peekOfCode": "template_dir = os.path.join(BASE_DIR, \"templates\")  # 模板目录路径\n# 定义报告基础目录\nreports_base_dir = os.path.join(BASE_DIR, \"outputs\", \"WFGameAI-reports\")\n# 定义UI报告目录\nui_reports_dir = os.path.join(reports_base_dir, \"ui_reports\")\n# 定义运行代码目录\nui_run_dir = os.path.join(reports_base_dir, \"ui_run\")\n# 定义项目目录\nproject_air_dir = os.path.join(ui_run_dir, \"WFGameAI.air\")\n# 定义设备日志目录",
+        "detail": "replay_script",
+        "documentation": {}
+    },
+    {
+        "label": "reports_base_dir",
+        "kind": 5,
+        "importPath": "replay_script",
+        "description": "replay_script",
+        "peekOfCode": "reports_base_dir = os.path.join(BASE_DIR, \"outputs\", \"WFGameAI-reports\")\n# 定义UI报告目录\nui_reports_dir = os.path.join(reports_base_dir, \"ui_reports\")\n# 定义运行代码目录\nui_run_dir = os.path.join(reports_base_dir, \"ui_run\")\n# 定义项目目录\nproject_air_dir = os.path.join(ui_run_dir, \"WFGameAI.air\")\n# 定义设备日志目录\ndevice_log_dir = os.path.join(project_air_dir, \"log\")\n# 确保目录存在",
+        "detail": "replay_script",
+        "documentation": {}
+    },
+    {
+        "label": "ui_reports_dir",
+        "kind": 5,
+        "importPath": "replay_script",
+        "description": "replay_script",
+        "peekOfCode": "ui_reports_dir = os.path.join(reports_base_dir, \"ui_reports\")\n# 定义运行代码目录\nui_run_dir = os.path.join(reports_base_dir, \"ui_run\")\n# 定义项目目录\nproject_air_dir = os.path.join(ui_run_dir, \"WFGameAI.air\")\n# 定义设备日志目录\ndevice_log_dir = os.path.join(project_air_dir, \"log\")\n# 确保目录存在\nos.makedirs(reports_base_dir, exist_ok=True)\nos.makedirs(ui_reports_dir, exist_ok=True)",
+        "detail": "replay_script",
+        "documentation": {}
+    },
+    {
+        "label": "ui_run_dir",
+        "kind": 5,
+        "importPath": "replay_script",
+        "description": "replay_script",
+        "peekOfCode": "ui_run_dir = os.path.join(reports_base_dir, \"ui_run\")\n# 定义项目目录\nproject_air_dir = os.path.join(ui_run_dir, \"WFGameAI.air\")\n# 定义设备日志目录\ndevice_log_dir = os.path.join(project_air_dir, \"log\")\n# 确保目录存在\nos.makedirs(reports_base_dir, exist_ok=True)\nos.makedirs(ui_reports_dir, exist_ok=True)\nos.makedirs(ui_run_dir, exist_ok=True)\nos.makedirs(project_air_dir, exist_ok=True)",
+        "detail": "replay_script",
+        "documentation": {}
+    },
+    {
+        "label": "project_air_dir",
+        "kind": 5,
+        "importPath": "replay_script",
+        "description": "replay_script",
+        "peekOfCode": "project_air_dir = os.path.join(ui_run_dir, \"WFGameAI.air\")\n# 定义设备日志目录\ndevice_log_dir = os.path.join(project_air_dir, \"log\")\n# 确保目录存在\nos.makedirs(reports_base_dir, exist_ok=True)\nos.makedirs(ui_reports_dir, exist_ok=True)\nos.makedirs(ui_run_dir, exist_ok=True)\nos.makedirs(project_air_dir, exist_ok=True)\nos.makedirs(device_log_dir, exist_ok=True)\nos.makedirs(template_dir, exist_ok=True)",
+        "detail": "replay_script",
+        "documentation": {}
+    },
+    {
+        "label": "device_log_dir",
+        "kind": 5,
+        "importPath": "replay_script",
+        "description": "replay_script",
+        "peekOfCode": "device_log_dir = os.path.join(project_air_dir, \"log\")\n# 确保目录存在\nos.makedirs(reports_base_dir, exist_ok=True)\nos.makedirs(ui_reports_dir, exist_ok=True)\nos.makedirs(ui_run_dir, exist_ok=True)\nos.makedirs(project_air_dir, exist_ok=True)\nos.makedirs(device_log_dir, exist_ok=True)\nos.makedirs(template_dir, exist_ok=True)\n# 旧目录结构（保留以兼容现有代码）\nreport_dir = os.path.join(BASE_DIR, \"outputs/device_reports\")",
+        "detail": "replay_script",
+        "documentation": {}
+    },
+    {
+        "label": "report_dir",
+        "kind": 5,
+        "importPath": "replay_script",
+        "description": "replay_script",
+        "peekOfCode": "report_dir = os.path.join(BASE_DIR, \"outputs/device_reports\")\nos.makedirs(report_dir, exist_ok=True)\nscreenshot_queue = queue.Queue()\naction_queue = queue.Queue()\nclick_queue = queue.Queue()  # 新增全局 click_queue\n# Airtest 兼容的 JSON 日志格式化器\nclass AirtestJsonFormatter(logging.Formatter):\n    def format(self, record):\n        timestamp = record.created\n        log_entry = {",
         "detail": "replay_script",
         "documentation": {}
     },
@@ -4676,20 +4808,47 @@
         "documentation": {}
     },
     {
-        "label": "create_test_log",
-        "kind": 2,
+        "label": "test_base_dir",
+        "kind": 5,
         "importPath": "test_report",
         "description": "test_report",
-        "peekOfCode": "def create_test_log():\n    \"\"\"创建测试日志和截图，用于测试报告生成\"\"\"\n    # 创建测试目录\n    test_dir = os.path.join(\"outputs\", \"test_logs\")\n    os.makedirs(test_dir, exist_ok=True)\n    # 清空测试目录\n    for item in os.listdir(test_dir):\n        item_path = os.path.join(test_dir, item)\n        if os.path.isdir(item_path):\n            shutil.rmtree(item_path)",
+        "peekOfCode": "test_base_dir = 'outputs/WFGameAI-reports/ui_reports'\ndevice1_dir = os.path.join(test_base_dir, 'OnePlus-KB2000-1080x2400_2025-04-18-14-30-00')\ndevice2_dir = os.path.join(test_base_dir, 'test-device-2_2025-04-18-14-30-00')\n# 创建目录结构\nos.makedirs(device1_dir, exist_ok=True)\nos.makedirs(device2_dir, exist_ok=True)\n# 创建简单的HTML文件\nwith open(os.path.join(device1_dir, 'log.html'), 'w') as f:\n    f.write('<html><body><h1>设备1测试报告</h1></body></html>')\nwith open(os.path.join(device2_dir, 'log.html'), 'w') as f:",
         "detail": "test_report",
         "documentation": {}
     },
     {
-        "label": "test_report_generation",
-        "kind": 2,
+        "label": "device1_dir",
+        "kind": 5,
         "importPath": "test_report",
         "description": "test_report",
-        "peekOfCode": "def test_report_generation():\n    \"\"\"测试报告生成\"\"\"\n    # 创建测试日志\n    test_dir = create_test_log()\n    # 生成报告\n    success = run_one_report(test_dir, test_dir)\n    if success:\n        print(f\"报告生成成功，请查看: {os.path.join(test_dir, 'log.html')}\")\n    else:\n        print(\"报告生成失败\")",
+        "peekOfCode": "device1_dir = os.path.join(test_base_dir, 'OnePlus-KB2000-1080x2400_2025-04-18-14-30-00')\ndevice2_dir = os.path.join(test_base_dir, 'test-device-2_2025-04-18-14-30-00')\n# 创建目录结构\nos.makedirs(device1_dir, exist_ok=True)\nos.makedirs(device2_dir, exist_ok=True)\n# 创建简单的HTML文件\nwith open(os.path.join(device1_dir, 'log.html'), 'w') as f:\n    f.write('<html><body><h1>设备1测试报告</h1></body></html>')\nwith open(os.path.join(device2_dir, 'log.html'), 'w') as f:\n    f.write('<html><body><h1>设备2测试报告</h1></body></html>')",
+        "detail": "test_report",
+        "documentation": {}
+    },
+    {
+        "label": "device2_dir",
+        "kind": 5,
+        "importPath": "test_report",
+        "description": "test_report",
+        "peekOfCode": "device2_dir = os.path.join(test_base_dir, 'test-device-2_2025-04-18-14-30-00')\n# 创建目录结构\nos.makedirs(device1_dir, exist_ok=True)\nos.makedirs(device2_dir, exist_ok=True)\n# 创建简单的HTML文件\nwith open(os.path.join(device1_dir, 'log.html'), 'w') as f:\n    f.write('<html><body><h1>设备1测试报告</h1></body></html>')\nwith open(os.path.join(device2_dir, 'log.html'), 'w') as f:\n    f.write('<html><body><h1>设备2测试报告</h1></body></html>')\n# 模拟测试数据",
+        "detail": "test_report",
+        "documentation": {}
+    },
+    {
+        "label": "data",
+        "kind": 5,
+        "importPath": "test_report",
+        "description": "test_report",
+        "peekOfCode": "data = {\n    'tests': {\n        'OnePlus-KB2000-1080x2400': os.path.join(os.getcwd(), device1_dir, 'log.html'),\n        '模拟设备1': None,  # 测试失败的设备\n        '模拟设备2': os.path.join(os.getcwd(), device2_dir, 'log.html'),\n    }\n}\n# 生成汇总报告\nsummary_report = run_summary(data)\nprint(f\"汇总报告生成: {summary_report}\")",
+        "detail": "test_report",
+        "documentation": {}
+    },
+    {
+        "label": "summary_report",
+        "kind": 5,
+        "importPath": "test_report",
+        "description": "test_report",
+        "peekOfCode": "summary_report = run_summary(data)\nprint(f\"汇总报告生成: {summary_report}\")\n# 检查生成的报告\nprint(\"\\n检查报告中的链接:\")\nwith open(summary_report, 'r') as f:\n    content = f.read()\n    import re\n    links = re.findall(r'href=\"([^\"]+)\"', content)\n    for link in links:\n        print(f\"找到链接: {link}\")",
         "detail": "test_report",
         "documentation": {}
     },
