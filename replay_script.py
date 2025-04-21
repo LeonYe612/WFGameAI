@@ -344,12 +344,226 @@ def replay_device(device, scripts, screenshot_queue, action_queue, stop_event, d
             print(f"第 {loop + 1}/{script_loop_count} 次循环")
             step_counter = 0
             
-                        # 检查脚本类型
             if is_priority_based:
                 priority_start_time = time.time()  # 记录优先级模式的实际开始时间
                 print(f"优先级模式开始时间: {priority_start_time}, 最大执行时间: {max_duration}秒")
                 
-                # 优先级模式处理逻辑（原有代码）
+                # 优先级模式处理逻辑
+                detection_count = 0
+                priority_step_counter = 0
+                start_check_time = time.time()
+                
+                # 持续检测直到超出最大时间
+                while max_duration is None or (time.time() - priority_start_time) <= max_duration:
+                    # 记录当前处理轮次
+                    cycle_count = detection_count // len(steps) + 1
+                    print(f"第 {cycle_count} 轮尝试检测，已检测 {detection_count} 次")
+                    
+                    # 检测是否有任何目标匹配
+                    matched_any_target = False
+                    unknown_fallback_step = None
+                    
+                    # 对于每一个优先级步骤，按优先级顺序尝试检测
+                    for step_idx, step in enumerate(steps):
+                        # 检查是否达到最大时间
+                        if max_duration is not None and (time.time() - priority_start_time) > max_duration:
+                            print(f"优先级模式已达到最大执行时间 {max_duration}秒，停止执行")
+                            break
+
+                        step_class = step["class"]
+                        step_remark = step.get("remark", "")
+                        priority = step.get("Priority", 999)
+                        
+                        # 记录unknown步骤作为备选
+                        if step_class == "unknown":
+                            unknown_fallback_step = step
+                            continue
+                        
+                        print(f"尝试优先级步骤 P{priority}: {step_class}, 备注: {step_remark}")
+                        
+                        # 截取屏幕以检测目标
+                        timestamp = time.time()
+                        screenshot = device.screenshot()
+                        frame = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
+                        if frame is None:
+                            raise ValueError("无法获取设备屏幕截图")
+                        
+                        # 使用纯时间戳作为截图文件名 (是Airtest标准)
+                        screenshot_timestamp = int(timestamp * 1000)
+                        screenshot_filename = f"{screenshot_timestamp}.jpg"
+                        screenshot_path = os.path.join(log_dir, screenshot_filename)
+                        cv2.imwrite(screenshot_path, frame)
+                        print(f"保存截图: {screenshot_path}")
+                        
+                        # 创建缩略图
+                        thumbnail_filename = f"{screenshot_timestamp}_small.jpg"
+                        thumbnail_path = os.path.join(log_dir, thumbnail_filename)
+                        small_frame = cv2.resize(frame, (0, 0), fx=0.3, fy=0.3)
+                        cv2.imwrite(thumbnail_path, small_frame, [cv2.IMWRITE_JPEG_QUALITY, 60])
+                        
+                        # 获取屏幕分辨率
+                        height, width = frame.shape[:2]
+                        resolution = [width, height]
+                        
+                        # 将截图和检测任务放入队列
+                        detection_count += 1
+                        screenshot_queue.put((device_name, detection_count, frame, step_class, None))
+                        
+                        # 等待检测结果
+                        try:
+                            success, (x, y, detected_class) = click_queue.get(timeout=5)
+                            
+                            # 记录snapshot
+                            snapshot_entry = {
+                                "tag": "function", 
+                                "depth": 3,
+                                "time": timestamp,
+                                "data": {
+                                    "name": "try_log_screen",
+                                    "call_args": {"screen": "array([[[...]]],dtype=uint8)", "quality": None, "max_size": None},
+                                    "start_time": timestamp - 0.001, 
+                                    "ret": {"screen": screenshot_filename, "resolution": resolution},
+                                    "end_time": timestamp
+                                }
+                            }
+                            
+                            with open(log_txt_path, "a", encoding="utf-8") as f:
+                                f.write(json.dumps(snapshot_entry, ensure_ascii=False) + "\n")
+                            
+                            if success:
+                                matched_any_target = True
+                                # 准备screen对象
+                                screen_object = {
+                                    "src": screenshot_filename,
+                                    "_filepath": screenshot_filename,
+                                    "thumbnail": thumbnail_filename,
+                                    "resolution": resolution,
+                                    "pos": [[int(x), int(y)]],
+                                    "vector": [],
+                                    "confidence": 0.85,
+                                    "rect": [{"left": int(x)-50, "top": int(y)-50, "width": 100, "height": 100}]
+                                }
+                                
+                                # 如果有相对位置设置，使用相对位置
+                                if "relative_x" in step and "relative_y" in step:
+                                    rel_x = float(step["relative_x"])
+                                    rel_y = float(step["relative_y"])
+                                    # 计算绝对坐标
+                                    abs_x = int(width * rel_x)
+                                    abs_y = int(height * rel_y)
+                                    print(f"使用相对位置 ({rel_x}, {rel_y}) -> 绝对位置 ({abs_x}, {abs_y})")
+                                    x, y = abs_x, abs_y
+                                
+                                # 执行点击操作
+                                device.shell(f"input tap {int(x)} {int(y)}")
+                                print(f"设备 {device_name} 执行优先级步骤 P{priority}: {detected_class}，点击位置: ({int(x)}, {int(y)})")
+                                
+                                # 记录touch操作
+                                touch_entry = {
+                                    "tag": "function", 
+                                    "depth": 1,
+                                    "time": timestamp + 0.001,
+                                    "data": {
+                                        "name": "touch",
+                                        "call_args": {"v": [int(x), int(y)]},
+                                        "start_time": timestamp + 0.0005,
+                                        "ret": [int(x), int(y)],
+                                        "end_time": timestamp + 0.001,
+                                        "screen": screen_object
+                                    }
+                                }
+                                
+                                with open(log_txt_path, "a", encoding="utf-8") as f:
+                                    f.write(json.dumps(touch_entry,ensure_ascii=False) + "\n")
+                                
+                                has_executed_steps = True
+                                priority_step_counter += 1
+                                step_counter += 1
+                                total_step_counter += 1
+                                
+                                # 执行操作后暂停一段时间，让UI响应
+                                time.sleep(1.0)
+                                # 跳出循环，从第一个优先级步骤重新开始检测
+                                break
+                            else:
+                                print(f"未检测到目标 {step_class}，尝试下一个优先级步骤")
+                        
+                        except queue.Empty:
+                            print(f"检测 {step_class} 超时，尝试下一个优先级步骤")
+                    
+                    # 如果所有目标都未匹配，但有unknown备选步骤，则执行unknown步骤
+                    if not matched_any_target and unknown_fallback_step is not None:
+                        print(f"未检测到任何目标，执行备选步骤 class=unknown: {unknown_fallback_step.get('remark', '')}")
+                        
+                        # 获取最后一次截图的分辨率
+                        height, width = frame.shape[:2]
+                        
+                        # 使用相对坐标
+                        if "relative_x" in unknown_fallback_step and "relative_y" in unknown_fallback_step:
+                            rel_x = float(unknown_fallback_step["relative_x"])
+                            rel_y = float(unknown_fallback_step["relative_y"])
+                            # 计算绝对坐标
+                            abs_x = int(width * rel_x)
+                            abs_y = int(height * rel_y)
+                            print(f"使用unknown备选相对位置 ({rel_x}, {rel_y}) -> 绝对位置 ({abs_x}, {abs_y})")
+                            
+                            # 准备screen对象
+                            screen_object = {
+                                "src": screenshot_filename,
+                                "_filepath": screenshot_filename,
+                                "thumbnail": thumbnail_filename,
+                                "resolution": resolution,
+                                "pos": [[abs_x, abs_y]],
+                                "vector": [],
+                                "confidence": 0.85,
+                                "rect": [{"left": abs_x-50, "top": abs_y-50, "width": 100, "height": 100}]
+                            }
+                            
+                            # 执行点击操作
+                            device.shell(f"input tap {abs_x} {abs_y}")
+                            print(f"设备 {device_name} 执行unknown备选步骤，点击位置: ({abs_x}, {abs_y})")
+                            
+                            # 记录touch操作
+                            touch_entry = {
+                                "tag": "function", 
+                                "depth": 1,
+                                "time": timestamp + 0.001,
+                                "data": {
+                                    "name": "touch",
+                                    "call_args": {"v": [abs_x, abs_y]},
+                                    "start_time": timestamp + 0.0005,
+                                    "ret": [abs_x, abs_y],
+                                    "end_time": timestamp + 0.001,
+                                    "screen": screen_object
+                                }
+                            }
+                            
+                            with open(log_txt_path, "a", encoding="utf-8") as f:
+                                f.write(json.dumps(touch_entry,ensure_ascii=False) + "\n")
+                            
+                            has_executed_steps = True
+                            priority_step_counter += 1
+                            step_counter += 1
+                            total_step_counter += 1
+                            
+                            # 执行操作后暂停一段时间，让UI响应
+                            time.sleep(1.0)
+                        else:
+                            print("警告: unknown步骤未指定relative_x和relative_y，无法执行备选点击")
+                    
+                    # 如果已经超过30秒没有检测到任何步骤，则退出循环
+                    if time.time() - start_check_time > 30 and priority_step_counter == 0:
+                        print("连续30秒未检测到任何优先级步骤，停止检测")
+                        break
+                        
+                    # 如果执行了某个步骤，重置计时器
+                    if priority_step_counter > 0:
+                        start_check_time = time.time()
+                    
+                    # 暂停一短暂时间再进行下一轮检测
+                    time.sleep(0.5)
+                
+                print(f"优先级模式执行完成，检测次数: {detection_count}，成功执行步骤: {priority_step_counter}")
             else:
                 # 普通脚本模式：按顺序执行每个步骤
                 print(f"按顺序执行步骤，共 {len(steps)} 个步骤")
@@ -359,7 +573,7 @@ def replay_device(device, scripts, screenshot_queue, action_queue, stop_event, d
                         print(f"脚本 {script_path} 已达到最大执行时间 {max_duration}秒，停止执行")
                         break
                         
-                    step_counter += 1
+                        step_counter += 1
                     total_step_counter += 1
                     step_class = step["class"]
                     step_remark = step.get("remark", "")
@@ -731,7 +945,7 @@ def run_one_report(log_dir, report_dir, script_path=None):
                     if os.path.exists(small_src):
                         small_dst = os.path.join(log_report_dir, small_img)
                         shutil.copy2(small_src, small_dst)
-                    else:
+        else:
                         # 如果缩略图不存在，则创建一个
                         img_data = cv2.imread(src)
                         if img_data is not None:
@@ -753,8 +967,9 @@ def run_one_report(log_dir, report_dir, script_path=None):
         # 复制静态资源
         static_dir = os.path.join(report_dir, "static")
         if not os.path.exists(static_dir):
-            # 获取Airtest的report目录
-            airtest_report_dir = os.path.dirname(template_path)
+            # 获取Airtest安装路径
+            import airtest
+            airtest_dir = os.path.dirname(airtest.__file__)
             
             # 创建static目录及必要的子目录
             os.makedirs(static_dir, exist_ok=True)
@@ -763,69 +978,123 @@ def run_one_report(log_dir, report_dir, script_path=None):
             os.makedirs(os.path.join(static_dir, "image"), exist_ok=True)
             os.makedirs(os.path.join(static_dir, "fonts"), exist_ok=True)
             
-            # 复制各个资源目录
+            # 直接从airtest/report目录中复制资源（而不是使用airtest_report_dir）
+            report_dir_path = os.path.join(airtest_dir, "report")
             resource_copied = False
             
-            # 复制css文件
-            css_src = os.path.join(airtest_report_dir, "css")
-            css_dst = os.path.join(static_dir, "css")
-            if os.path.exists(css_src):
-                for file in os.listdir(css_src):
-                    shutil.copy2(os.path.join(css_src, file), os.path.join(css_dst, file))
-                resource_copied = True
-                print(f"复制CSS资源: {css_src} -> {css_dst}")
+            try:
+                # 复制CSS文件
+                css_src = os.path.join(report_dir_path, "css")
+                css_dst = os.path.join(static_dir, "css")
+                if os.path.exists(css_src) and os.path.isdir(css_src):
+                    for file in os.listdir(css_src):
+                        src_file = os.path.join(css_src, file)
+                        dst_file = os.path.join(css_dst, file)
+                        if os.path.isfile(src_file):
+                            shutil.copy2(src_file, dst_file)
+                    resource_copied = True
+                    print(f"复制CSS资源: {css_src} -> {css_dst}")
+                
+                # 复制JS文件
+                js_src = os.path.join(report_dir_path, "js")
+                js_dst = os.path.join(static_dir, "js")
+                if os.path.exists(js_src) and os.path.isdir(js_src):
+                    for file in os.listdir(js_src):
+                        src_file = os.path.join(js_src, file)
+                        dst_file = os.path.join(js_dst, file)
+                        if os.path.isfile(src_file):
+                            shutil.copy2(src_file, dst_file)
+                        elif os.path.isdir(src_file):
+                            dst_subdir = os.path.join(js_dst, file)
+                            os.makedirs(dst_subdir, exist_ok=True)
+                            for subfile in os.listdir(src_file):
+                                src_subfile = os.path.join(src_file, subfile)
+                                dst_subfile = os.path.join(dst_subdir, subfile)
+                                if os.path.isfile(src_subfile):
+                                    shutil.copy2(src_subfile, dst_subfile)
+                    resource_copied = True
+                    print(f"复制JS资源: {js_src} -> {js_dst}")
+                
+                # 复制image文件
+                image_src = os.path.join(report_dir_path, "image")
+                image_dst = os.path.join(static_dir, "image")
+                if os.path.exists(image_src) and os.path.isdir(image_src):
+                    for file in os.listdir(image_src):
+                        src_file = os.path.join(image_src, file)
+                        dst_file = os.path.join(image_dst, file)
+                        if os.path.isfile(src_file):
+                            shutil.copy2(src_file, dst_file)
+                    resource_copied = True
+                    print(f"复制image资源: {image_src} -> {image_dst}")
+                    
+                # 处理字体文件
+                fonts_src = os.path.join(report_dir_path, "fonts")
+                fonts_dst = os.path.join(static_dir, "fonts")
+                if os.path.exists(fonts_src) and os.path.isdir(fonts_src):
+                    for file in os.listdir(fonts_src):
+                        src_file = os.path.join(fonts_src, file)
+                        dst_file = os.path.join(fonts_dst, file)
+                        if os.path.isfile(src_file):
+                            shutil.copy2(src_file, dst_file)
+                    resource_copied = True
+                    print(f"复制字体资源: {fonts_src} -> {fonts_dst}")
+            except Exception as e:
+                print(f"从airtest包复制资源时出错: {e}")
+                traceback.print_exc()
+                
+                # 资源复制失败时，创建基础的资源文件
+                try:
+                    # 创建基础CSS文件
+                    basic_css = os.path.join(static_dir, "css", "report.css")
+                    with open(basic_css, "w", encoding="utf-8") as f:
+                        f.write("""
+                        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+                        .screen { max-width: 100%; border: 1px solid #ddd; }
+                        .step { margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+                        .success { color: green; }
+                        .fail { color: red; }
+                        """)
+                    
+                    # 创建基础JS文件
+                    basic_js = os.path.join(static_dir, "js", "report.js")
+                    with open(basic_js, "w", encoding="utf-8") as f:
+                        f.write("// Basic report functionality")
+                    
+                    resource_copied = True
+                    print("✅ 创建了基础静态资源文件作为备份")
+                except Exception as e_fallback:
+                    print(f"创建基础资源文件失败: {e_fallback}")
             
-            # 复制js文件
-            js_src = os.path.join(airtest_report_dir, "js")
-            js_dst = os.path.join(static_dir, "js")
-            if os.path.exists(js_src):
-                for file in os.listdir(js_src):
-                    if os.path.isfile(os.path.join(js_src, file)):
-                        shutil.copy2(os.path.join(js_src, file), os.path.join(js_dst, file))
-                    elif os.path.isdir(os.path.join(js_src, file)):
-                        os.makedirs(os.path.join(js_dst, file), exist_ok=True)
-                        for subfile in os.listdir(os.path.join(js_src, file)):
-                            if os.path.isfile(os.path.join(js_src, file, subfile)):
-                                shutil.copy2(os.path.join(js_src, file, subfile), os.path.join(js_dst, file, subfile))
-                resource_copied = True
-                print(f"复制JS资源: {js_src} -> {js_dst}")
-            
-            # 复制image文件
-            image_src = os.path.join(airtest_report_dir, "image")
-            image_dst = os.path.join(static_dir, "image")
-            if os.path.exists(image_src):
-                for file in os.listdir(image_src):
-                    shutil.copy2(os.path.join(image_src, file), os.path.join(image_dst, file))
-                resource_copied = True
-                print(f"复制图片资源: {image_src} -> {image_dst}")
-            
-            # 复制fonts文件
-            fonts_src = os.path.join(airtest_report_dir, "fonts")
-            fonts_dst = os.path.join(static_dir, "fonts")
-            if os.path.exists(fonts_src):
-                for file in os.listdir(fonts_src):
-                    shutil.copy2(os.path.join(fonts_src, file), os.path.join(fonts_dst, file))
-                resource_copied = True
-                print(f"复制字体资源: {fonts_src} -> {fonts_dst}")
-            
+            # 如果所有资源复制方法都失败，尝试从其他报告复制
             if not resource_copied:
-                print(f"❌ 静态资源目录不存在: {airtest_report_dir}")
+                print("尝试从其他报告复制静态资源...")
                 # 试图从其他报告中复制
                 dirs = os.listdir(os.path.dirname(report_dir))
                 for d in dirs:
                     other_static = os.path.join(os.path.dirname(report_dir), d, "static")
-                    if os.path.exists(other_static):
+                    if os.path.exists(other_static) and d != os.path.basename(report_dir):
                         try:
-                            shutil.copytree(other_static, static_dir)
-                        except shutil.Error as e:
-                            print(f"复制静态资源时出现非致命错误: {e}")
-                        print(f"从其他报告复制静态资源: {other_static} -> {static_dir}")
-                        resource_copied = True
-                        break
+                            # 使用递归复制目录树
+                            for root, _, files in os.walk(other_static):
+                                # 计算相对路径
+                                rel_path = os.path.relpath(root, other_static)
+                                # 创建目标目录
+                                target_dir = os.path.join(static_dir, rel_path)
+                                os.makedirs(target_dir, exist_ok=True)
+                                # 复制文件
+                                for file in files:
+                                    src_file = os.path.join(root, file)
+                                    dst_file = os.path.join(target_dir, file)
+                                    shutil.copy2(src_file, dst_file)
+                            
+                            resource_copied = True
+                            print(f"从其他报告复制静态资源: {other_static} -> {static_dir}")
+                            break
+                        except Exception as e:
+                            print(f"复制静态资源时出现错误: {e}")
                 
                 if not resource_copied:
-                    print("❌ 无法找到任何静态资源")
-                    return False
+                    print("❌ 无法找到任何静态资源，但会继续尝试生成报告")
         
         # 复制模板文件
         dest_template = os.path.join(report_dir, "log_template.html")
@@ -1227,6 +1496,37 @@ def replay_steps(scripts, show_screens=False):
         detection_thread.join()
 
 
+# 修改函数位置
+def cleanup_unused_files():
+    """清理生成的无用临时文件"""
+    print("🧹 开始清理无用文件...")
+    
+    # 清理项目根目录下错误创建的静态资源目录
+    root_static_dirs = ['static', 'static/css', 'static/js', 'static/image', 'static/fonts']
+    for static_dir in root_static_dirs:
+        if os.path.exists(static_dir) and os.path.abspath(static_dir).startswith(os.path.abspath(BASE_DIR)):
+            try:
+                if os.path.isdir(static_dir):
+                    shutil.rmtree(static_dir)
+                else:
+                    os.remove(static_dir)
+                print(f"✅ 已删除项目根目录下的静态资源: {static_dir}")
+            except Exception as e:
+                print(f"❌ 删除失败: {static_dir}, 错误: {e}")
+    
+    # 清理script.log目录中的冗余文件(保留log.html)
+    for root, dirs, files in os.walk(reports_base_dir):
+        if root.endswith("script.log"):
+            for file in files:
+                if file != "log.html":
+                    file_path = os.path.join(root, file)
+                    try:
+                        os.remove(file_path)
+                        print(f"✅ 已删除冗余文件: {file_path}")
+                    except Exception as e:
+                        print(f"❌ 删除失败: {file_path}, 错误: {e}")
+
+
 # 主程序
 def main():
     parser = argparse.ArgumentParser(description="设备回放脚本")
@@ -1325,6 +1625,9 @@ def main():
     except Exception as e:
         print(f"回放失败: {e}")
         traceback.print_exc()
+
+    # 清理无用文件
+    cleanup_unused_files()
 
 
 if __name__ == "__main__":

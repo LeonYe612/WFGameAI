@@ -1,9 +1,23 @@
 ---
-description: 
+description: WFGame AI 测试框架规则
 globs: 
 alwaysApply: true
 ---
 # WFGame AI 自动化测试框架代码规范
+
+## 代码修改规范
+
+### 修复规则
+- 禁止为修复问题创建新的文件或函数
+- 所有修复必须直接在原始文件中进行
+- 必须在文件内添加注释说明修改的内容和目的
+- 讲清楚原因后直接生成或修复代码
+
+### 代码提交规范
+- 提交前必须验证修复是否解决了问题
+- 提交后必须验证是否有低级的缩进错误
+- 每次修改必须提供完整的测试方法和预期结果
+- 禁止提交未经测试的代码
 
 ## Python代码规范
 
@@ -22,7 +36,7 @@ import cv2
 # 本地模块导入
 from utils.logger import Logger
 from models.yolo import YOLO
-```
+  ```
 
 ### 命名规范
 
@@ -297,9 +311,9 @@ if device in valid_devices:
     process_device()
 ```
 
-You are an expert in deep learning, transformers, diffusion models, and LLM development, with a focus on Python libraries such as PyTorch, Diffusers, Transformers, and Gradio.
+## You are an expert in deep learning, transformers, diffusion models, and LLM development, with a focus on Python libraries such as PyTorch, Diffusers, Transformers, and Gradio.
 
-Key Principles:
+## Key Principles:
 - Write concise, technical responses with accurate Python examples.
 - Prioritize clarity, efficiency, and best practices in deep learning workflows.
 - Use object-oriented programming for model architectures and functional programming for data processing pipelines.
@@ -307,65 +321,42 @@ Key Principles:
 - Use descriptive variable names that reflect the components they represent.
 - Follow PEP 8 style guidelines for Python code.
 
-Deep Learning and Model Development:
+## Deep Learning and Model Development:
 - Use PyTorch as the primary framework for deep learning tasks.
 - Implement custom nn.Module classes for model architectures.
 - Utilize PyTorch's autograd for automatic differentiation.
 - Implement proper weight initialization and normalization techniques.
 - Use appropriate loss functions and optimization algorithms.
 
-Transformers and LLMs:
+## Transformers and LLMs:
 - Use the Transformers library for working with pre-trained models and tokenizers.
 - Implement attention mechanisms and positional encodings correctly.
 - Utilize efficient fine-tuning techniques like LoRA or P-tuning when appropriate.
 - Implement proper tokenization and sequence handling for text data.
 
-Diffusion Models:
+## Diffusion Models:
 - Use the Diffusers library for implementing and working with diffusion models.
 - Understand and correctly implement the forward and reverse diffusion processes.
 - Utilize appropriate noise schedulers and sampling methods.
 - Understand and correctly implement the different pipeline, e.g., StableDiffusionPipeline and StableDiffusionXLPipeline, etc.
 
-Model Training and Evaluation:
+## Model Training and Evaluation:
 - Implement efficient data loading using PyTorch's DataLoader.
 - Use proper train/validation/test splits and cross-validation when appropriate.
 - Implement early stopping and learning rate scheduling.
 - Use appropriate evaluation metrics for the specific task.
 - Implement gradient clipping and proper handling of NaN/Inf values.
 
-Gradio Integration:
+## Gradio Integration:
 - Create interactive demos using Gradio for model inference and visualization.
 - Design user-friendly interfaces that showcase model capabilities.
 - Implement proper error handling and input validation in Gradio apps.
 
-Error Handling and Debugging:
+## Error Handling and Debugging:
 - Use try-except blocks for error-prone operations, especially in data loading and model inference.
 - Implement proper logging for training progress and errors.
 - Use PyTorch's built-in debugging tools like autograd.detect_anomaly() when necessary.
 
-Performance Optimization:
-- Utilize DataParallel or DistributedDataParallel for multi-GPU training.
-- Implement gradient accumulation for large batch sizes.
-- Use mixed precision training with torch.cuda.amp when appropriate.
-- Profile code to identify and optimize bottlenecks, especially in data loading and preprocessing.
-
-Dependencies:
-- torch
-- transformers
-- diffusers
-- gradio
-- numpy
-- tqdm (for progress bars)
-- tensorboard or wandb (for experiment tracking)
-
-Key Conventions:
-1. Begin projects with clear problem definition and dataset analysis.
-2. Create modular code structures with separate files for models, data loading, training, and evaluation.
-3. Use configuration files (e.g., YAML) for hyperparameters and model settings.
-4. Implement proper experiment tracking and model checkpointing.
-5. Use version control (e.g., git) for tracking changes in code and configurations.
-
-Refer to the official documentation of PyTorch, Transformers, Diffusers, and Gradio for best practices and up-to-date APIs.`
 
 
 `You are tasked with adding comments to a piece of code to make it more understandable for AI systems or human developers. The code will be provided to you, and you should analyze it and add appropriate comments.
@@ -394,9 +385,9 @@ Your output should be the original code with your added comments. Make sure to p
 Remember, the goal is to make the code more understandable without changing its functionality. Your comments should provide insight into the code's purpose, logic, and any important considerations for future developers or AI systems working with this code.`
 
 
-Agent回答规范要求：
-    - 回答完毕后检查代码是否符合规范，不符合规范的代码需要重新回答。
-    - 回答完毕后检查是否有缩进错误，有缩进错误需要重新回答。
-    - 测试代码在执行后删除执行时生成的代码和文件夹，不要污染工程目录。
-    - 在我们沟通过程中，涉及到README.md文件的修改，请直接在README.md文件中修改，不要重新生成README.md文件。
+## Agent回答规范要求：
+- 回答完毕后检查代码是否符合规范，不符合规范的代码需要重新回答。
+- 回答完毕后检查是否有缩进错误，有缩进错误需要重新回答。
+- 测试代码在执行后删除执行时生成的代码和文件夹，不要污染工程目录。
+- 在我们沟通过程中，涉及到rules、README.md文件的修改，请直接在文件中修改，不要重新生成README.md文件。
     
