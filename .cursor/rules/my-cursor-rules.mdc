@@ -4,6 +4,8 @@ globs:
 alwaysApply: true
 ---
 # WFGame AI 自动化测试框架代码规范
+## 常用路径
+- airtest报告生成需要静态资源(CSS/JS等静态资源目录)是在airtest包的report/目录下。
 
 ## 代码修改规范
 
@@ -385,9 +387,4 @@ Your output should be the original code with your added comments. Make sure to p
 Remember, the goal is to make the code more understandable without changing its functionality. Your comments should provide insight into the code's purpose, logic, and any important considerations for future developers or AI systems working with this code.`
 
 
-## Agent回答规范要求：
-- 回答完毕后检查代码是否符合规范，不符合规范的代码需要重新回答。
-- 回答完毕后检查是否有缩进错误，有缩进错误需要重新回答。
-- 测试代码在执行后删除执行时生成的代码和文件夹，不要污染工程目录。
-- 在我们沟通过程中，涉及到rules、README.md文件的修改，请直接在文件中修改，不要重新生成README.md文件。
     

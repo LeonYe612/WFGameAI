@@ -97,14 +97,28 @@ def setup_device_logger(device_name):
 
 # 获取设备名称
 def get_device_name(device):
+    """
+    获取设备的友好名称
+    :param device: adb设备对象
+    :return: 设备友好名称
+    """
     try:
         brand = device.shell("getprop ro.product.brand").strip()
         model = device.shell("getprop ro.product.model").strip()
         resolution = device.shell("wm size").strip().replace("Physical size: ", "")
-        return f"{brand}-{model}-{resolution}"
+        
+        # 清理和规范化设备信息
+        brand = "".join(c for c in brand if c.isalnum() or c in ('-', '_'))
+        model = "".join(c for c in model if c.isalnum() or c in ('-', '_'))
+        resolution = "".join(c for c in resolution if c.isalnum() or c in ('-', '_'))
+        
+        # 组合设备名称
+        device_name = f"{brand}-{model}-{resolution}"
+        return device_name
     except Exception as e:
         print(f"获取设备 {device.serial} 信息失败: {e}")
-        return device.serial
+        # 返回清理后的序列号作为后备名称
+        return "".join(c for c in device.serial if c.isalnum() or c in ('-', '_'))
 
 
 # 检测按钮
@@ -159,7 +173,8 @@ def check_device_status(device, device_name):
 # 获取设备日志目录
 def get_log_dir(dev):
     """获取日志目录"""
-    device_dir = dev.replace(':', '_').replace(' ', '_')
+    # 清理设备名称，移除任何可能导致路径问题的字符
+    device_dir = "".join(c for c in dev if c.isalnum() or c in ('-', '_'))
     timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     
     # 使用新目录结构
@@ -173,7 +188,7 @@ def get_log_dir(dev):
     # 检查log文件是否存在，如果不存在则创建空文件
     log_file = os.path.join(log_dir, "log.txt")
     if not os.path.exists(log_file):
-        with open(log_file, 'w') as f:
+        with open(log_file, 'w', encoding='utf-8') as f:
             pass
     
     return log_dir
@@ -469,7 +484,11 @@ def replay_device(device, scripts, screenshot_queue, action_queue, stop_event, d
                                         "start_time": timestamp + 0.0005,
                                         "ret": [int(x), int(y)],
                                         "end_time": timestamp + 0.001,
-                                        "screen": screen_object
+                                        "screen": screen_object,
+                                        # 添加描述字段，使用步骤的remark
+                                        "desc": step.get("remark", f"点击 {detected_class}"),
+                                        # 添加标题字段，用于左侧步骤列表显示
+                                        "title": f"#{step_counter+1} {step.get('remark', '点击')}"
                                     }
                                 }
                                 
@@ -487,9 +506,139 @@ def replay_device(device, scripts, screenshot_queue, action_queue, stop_event, d
                                 break
                             else:
                                 print(f"未检测到目标 {step_class}，尝试下一个优先级步骤")
+                                
+                                # 检查JSON步骤是否包含step字段，如果有则记录失败信息
+                                if "step" in step:
+                                    step_num = step.get("step", step_idx+1)
+                                    step_remark = step.get("remark", "")
+                                    
+                                    # 记录exists失败操作
+                                    fail_entry = {
+                                        "tag": "function", 
+                                        "depth": 1,
+                                        "time": timestamp + 0.001,
+                                        "data": {
+                                            "name": "exists",
+                                            "call_args": {"v": step_class},
+                                            "start_time": timestamp + 0.0005, 
+                                            "ret": None,
+                                            "end_time": timestamp + 0.001,
+                                            "screen": {
+                                                "src": screenshot_filename,
+                                                "_filepath": screenshot_filename,
+                                                "thumbnail": thumbnail_filename,
+                                                "resolution": resolution,
+                                                "pos": [],
+                                                "vector": [],
+                                                "confidence": 0,
+                                                "rect": []
+                                            }
+                                        }
+                                    }
+                                    
+                                    with open(log_txt_path, "a", encoding="utf-8") as f:
+                                        f.write(json.dumps(fail_entry, ensure_ascii=False) + "\n")
+                                    
+                                    # 记录一个明确的assert_exists失败
+                                    fail_assert_entry = {
+                                        "tag": "function", 
+                                        "depth": 1,
+                                        "time": timestamp + 0.002,
+                                        "data": {
+                                            "name": "assert_exists",
+                                            "call_args": {"v": step_class, "msg": f"步骤{step_num}: {step_remark}"},
+                                            "start_time": timestamp + 0.0015, 
+                                            "ret": {
+                                                "result": False,
+                                                "expected": "True", 
+                                                "actual": "False",
+                                                "reason": f"未找到元素: {step_class}"
+                                            },
+                                            "traceback": f"步骤{step_num}失败: 未检测到目标 {step_class}\n{step_remark}",
+                                            "end_time": timestamp + 0.002,
+                                            "screen": {
+                                                "src": screenshot_filename,
+                                                "_filepath": screenshot_filename,
+                                                "thumbnail": thumbnail_filename,
+                                                "resolution": resolution,
+                                                "pos": [],  # 空位置，表示未找到
+                                                "vector": [],
+                                                "confidence": 0,  # 零置信度
+                                                "rect": []  # 空区域
+                                            }
+                                        }
+                                    }
+                                    
+                                    with open(log_txt_path, "a", encoding="utf-8") as f:
+                                        f.write(json.dumps(fail_assert_entry, ensure_ascii=False) + "\n")
+                                    
+                                    print(f"已记录优先级步骤 {step_num} 失败: {step_remark}")
                         
                         except queue.Empty:
                             print(f"检测 {step_class} 超时，尝试下一个优先级步骤")
+                            
+                            # 检查JSON步骤是否包含step字段，如果有则记录失败信息
+                            if "step" in step:
+                                step_num = step.get("step", step_idx+1)
+                                step_remark = step.get("remark", "")
+                                
+                                # 记录exists超时失败
+                                timeout_entry = {
+                                    "tag": "function", 
+                                    "depth": 1,
+                                    "time": timestamp + 0.001,
+                                    "data": {
+                                        "name": "exists",
+                                        "call_args": {"v": step_class},
+                                        "start_time": timestamp + 0.0005, 
+                                        "ret": None,
+                                        "end_time": timestamp + 0.001,
+                                        "screen": {
+                                            "src": screenshot_filename,
+                                            "_filepath": screenshot_filename,
+                                            "thumbnail": thumbnail_filename,
+                                            "resolution": resolution,
+                                            "pos": [],
+                                            "vector": [],
+                                            "confidence": 0,
+                                            "rect": []
+                                        }
+                                    }
+                                }
+                                
+                                with open(log_txt_path, "a", encoding="utf-8") as f:
+                                    f.write(json.dumps(timeout_entry, ensure_ascii=False) + "\n")
+                                
+                                # 记录assert_exists超时失败
+                                timeout_assert_entry = {
+                                    "tag": "function", 
+                                    "depth": 1,
+                                    "time": timestamp + 0.002,
+                                    "data": {
+                                        "name": "assert_exists",
+                                        "call_args": {"v": step_class, "msg": f"步骤{step_num}超时: {step_remark}"},
+                                        "start_time": timestamp + 0.0015, 
+                                        "ret": {
+                                            "result": False,
+                                            "expected": "True", 
+                                            "actual": "False",
+                                            "reason": f"检测超时: {step_class}"
+                                        },
+                                        "traceback": f"步骤{step_num}失败: 检测超时 {step_class}\n{step_remark}",
+                                        "end_time": timestamp + 0.002,
+                                        "screen": {
+                                            "src": screenshot_filename,
+                                            "_filepath": screenshot_filename,
+                                            "thumbnail": thumbnail_filename,
+                                            "resolution": resolution
+                                        }
+                                    }
+                                }
+                                
+                                with open(log_txt_path, "a", encoding="utf-8") as f:
+                                    f.write(json.dumps(timeout_assert_entry, ensure_ascii=False) + "\n")
+                                
+                                print(f"已记录优先级步骤 {step_num} 超时失败: {step_remark}")
                     
                     # 如果所有目标都未匹配，但有unknown备选步骤，则执行unknown步骤
                     if not matched_any_target and unknown_fallback_step is not None:
@@ -656,7 +805,11 @@ def replay_device(device, scripts, screenshot_queue, action_queue, stop_event, d
                                     "start_time": timestamp + 0.0005,
                                     "ret": [int(x), int(y)],
                                     "end_time": timestamp + 0.001,
-                                    "screen": screen_object
+                                    "screen": screen_object,
+                                    # 添加描述字段，使用步骤的remark
+                                    "desc": step.get("remark", f"点击 {detected_class}"),
+                                    # 添加标题字段，用于左侧步骤列表显示
+                                    "title": f"#{step_idx+1} {step.get('remark', '点击')}"
                                 }
                             }
                             
@@ -666,9 +819,139 @@ def replay_device(device, scripts, screenshot_queue, action_queue, stop_event, d
                             has_executed_steps = True
                         else:
                             print(f"未检测到目标 {step_class}，跳过此步骤")
+                            
+                            # 检查JSON步骤是否包含step字段，如果有则记录失败信息
+                            if "step" in step:
+                                step_num = step.get("step", step_idx+1)
+                                step_remark = step.get("remark", "")
+                                
+                                # 记录exists失败操作
+                                fail_entry = {
+                                    "tag": "function", 
+                                    "depth": 1,
+                                    "time": timestamp + 0.001,
+                                    "data": {
+                                        "name": "exists",
+                                        "call_args": {"v": step_class},
+                                        "start_time": timestamp + 0.0005, 
+                                        "ret": None,
+                                        "end_time": timestamp + 0.001,
+                                        "screen": {
+                                            "src": screenshot_filename,
+                                            "_filepath": screenshot_filename,
+                                            "thumbnail": thumbnail_filename,
+                                            "resolution": resolution,
+                                            "pos": [],
+                                            "vector": [],
+                                            "confidence": 0,
+                                            "rect": []
+                                        }
+                                    }
+                                }
+                                
+                                with open(log_txt_path, "a", encoding="utf-8") as f:
+                                    f.write(json.dumps(fail_entry, ensure_ascii=False) + "\n")
+                                
+                                # 记录一个明确的assert_exists失败
+                                fail_assert_entry = {
+                                    "tag": "function", 
+                                    "depth": 1,
+                                    "time": timestamp + 0.002,
+                                    "data": {
+                                        "name": "assert_exists",
+                                        "call_args": {"v": step_class, "msg": f"步骤{step_num}: {step_remark}"},
+                                        "start_time": timestamp + 0.0015, 
+                                        "ret": {
+                                            "result": False,
+                                            "expected": "True", 
+                                            "actual": "False",
+                                            "reason": f"未找到元素: {step_class}"
+                                        },
+                                        "traceback": f"步骤{step_num}失败: 未检测到目标 {step_class}\n{step_remark}",
+                                        "end_time": timestamp + 0.002,
+                                        "screen": {
+                                            "src": screenshot_filename,
+                                            "_filepath": screenshot_filename,
+                                            "thumbnail": thumbnail_filename,
+                                            "resolution": resolution,
+                                            "pos": [],  # 空位置，表示未找到
+                                            "vector": [],
+                                            "confidence": 0,  # 零置信度
+                                            "rect": []  # 空区域
+                                        }
+                                    }
+                                }
+                                
+                                with open(log_txt_path, "a", encoding="utf-8") as f:
+                                    f.write(json.dumps(fail_assert_entry, ensure_ascii=False) + "\n")
+                                
+                                print(f"已记录步骤 {step_num} 失败: {step_remark}")
                     
                     except queue.Empty:
                         print(f"检测 {step_class} 超时，跳过此步骤")
+                        
+                        # 检查JSON步骤是否包含step字段，如果有则记录失败信息
+                        if "step" in step:
+                            step_num = step.get("step", step_idx+1)
+                            step_remark = step.get("remark", "")
+                            
+                            # 记录超时失败日志 - 使用exists和assert_exists组合
+                            timeout_entry = {
+                                "tag": "function", 
+                                "depth": 1,
+                                "time": timestamp + 0.001,
+                                "data": {
+                                    "name": "exists",  # 改为exists函数
+                                    "call_args": {"v": step_class},
+                                    "start_time": timestamp + 0.0005, 
+                                    "ret": None,  # 设为None或False表示不存在
+                                    "end_time": timestamp + 0.001,
+                                    "screen": {
+                                        "src": screenshot_filename,
+                                        "_filepath": screenshot_filename,
+                                        "thumbnail": thumbnail_filename,
+                                        "resolution": resolution,
+                                        "pos": [],  # 空位置列表
+                                        "vector": [],
+                                        "confidence": 0,  # 零置信度
+                                        "rect": []  # 空区域
+                                    }
+                                }
+                            }
+                            
+                            with open(log_txt_path, "a", encoding="utf-8") as f:
+                                f.write(json.dumps(timeout_entry, ensure_ascii=False) + "\n")
+                            
+                            # 添加一个明确的失败日志条目
+                            timeout_assert_entry = {
+                                "tag": "function", 
+                                "depth": 1,
+                                "time": timestamp + 0.002,
+                                "data": {
+                                    "name": "assert_exists",  # 使用assert_exists
+                                    "call_args": {"v": step_class, "msg": f"步骤{step_num}超时: {step_remark}"},
+                                    "start_time": timestamp + 0.0015, 
+                                    "ret": {
+                                        "result": False,
+                                        "expected": "True", 
+                                        "actual": "False",
+                                        "reason": f"检测超时: {step_class}"
+                                    },
+                                    "traceback": f"步骤{step_num}失败: 检测超时 {step_class}\n{step_remark}",
+                                    "end_time": timestamp + 0.002,
+                                    "screen": {
+                                        "src": screenshot_filename,
+                                        "_filepath": screenshot_filename,
+                                        "thumbnail": thumbnail_filename,
+                                        "resolution": resolution
+                                    }
+                                }
+                            }
+                            
+                            with open(log_txt_path, "a", encoding="utf-8") as f:
+                                f.write(json.dumps(timeout_assert_entry, ensure_ascii=False) + "\n")
+                            
+                            print(f"已记录步骤 {step_num} 超时失败: {step_remark}")
                     
                     # 等待一段时间，让UI响应
                     time.sleep(0.5)
@@ -846,10 +1129,7 @@ def run_one_report(log_dir, report_dir, script_path=None):
     返回:
         bool: 是否成功生成报告
     """
-    try:
-        import traceback
-        from airtest.report.report import LogToHtml
-        
+    try:       
         # 检查日志文件
         log_file = os.path.join(log_dir, "log.txt")
         if not os.path.exists(log_file):
@@ -1146,8 +1426,6 @@ def run_one_report(log_dir, report_dir, script_path=None):
                     f.write(content)
                 print(f"HTML路径修复成功: {actual_html_file}")
                 
-                # 修复HTML中截图路径问题
-                fix_html_report(actual_html_file, image_files)
             except Exception as e:
                 print(f"修复HTML路径失败: {e}")
                 traceback.print_exc()
@@ -1158,118 +1436,10 @@ def run_one_report(log_dir, report_dir, script_path=None):
         traceback.print_exc()
         return False
 
-
-def fix_html_paths(html_file):
-    """修复HTML文件中的资源路径，将绝对路径转换为相对路径"""
-    try:
-        with open(html_file, "r", encoding="utf-8") as f:
-            content = f.read()
-        
-        # 提取资源文件所在目录的绝对路径
-        dirname = os.path.dirname(html_file)
-        
-        # 替换绝对路径为相对路径
-        content = content.replace(dirname + "/static/", "static/")
-        
-        with open(html_file, "w", encoding="utf-8") as f:
-            f.write(content)
     except Exception as e:
-        print(f"修复HTML路径失败: {str(e)}")
-        traceback.print_exc()
-
-
-def fix_html_report(html_file, image_files):
-    """修复HTML文件中的资源路径，并确保截图正确关联"""
-    try:
-        with open(html_file, "r", encoding="utf-8") as f:
-            content = f.read()
-        
-        # 提取资源文件所在目录的绝对路径
-        dirname = os.path.dirname(html_file)
-        
-        # 替换绝对路径为相对路径
-        content = content.replace(dirname + "/static/", "static/")
-        
-        # 尝试修复截图引用
-        start_idx = content.find('data =')
-        if start_idx > 0:
-            # 找到data = {开始的位置
-            json_start = content.find('{', start_idx)
-            json_end = content.find('};', json_start) + 1
-            
-            if json_start > 0 and json_end > 0:
-                # 提取JSON数据
-                json_str = content[json_start:json_end]
-                
-                # 构建截图文件映射
-                img_map = {}
-                for img in image_files:
-                    if img.endswith('.jpg') and not img.endswith('_small.jpg'):
-                        img_map[img] = img
-                
-                # 分析steps数组，确保每一步正确关联到对应截图
-                import json
-                import re
-                
-                try:
-                    # 解析JSON以便于修改
-                    data_obj = json.loads(json_str)
-                    
-                    # 打开日志文件，读取原始日志条目
-                    log_file = os.path.join(dirname, "log", "log.txt")
-                    if os.path.exists(log_file):
-                        log_entries = []
-                        with open(log_file, "r", encoding="utf-8") as f:
-                            for line in f:
-                                try:
-                                    entry = json.loads(line.strip())
-                                    log_entries.append(entry)
-                                except:
-                                    continue
-                    
-                    if 'steps' in data_obj and log_entries:
-                        # 收集日志中的截图信息
-                        for i, step in enumerate(data_obj['steps']):
-                            # 查找对应的日志条目
-                            for entry in log_entries:
-                                if entry.get("tag") == "function" and entry.get("data", {}):
-                                    # 检查操作名称是否匹配
-                                    log_op_name = entry.get("data", {}).get("name", "")
-                                    html_op_name = step.get("code", {}).get("name", "")
-                                    
-                                    if log_op_name == html_op_name:
-                                        # 检查时间戳是否接近
-                                        if abs(entry.get("time", 0) - step.get("time", 0)) < 0.1:
-                                            # 找到匹配的日志条目，提取screen信息
-                                            if "screen" in entry.get("data", {}):
-                                                step["screen"] = entry["data"]["screen"]
-                                                print(f"修复步骤 {i} ({html_op_name}) 的截图引用")
-                                                break
-                    
-                    # 写回修改后的JSON字符串
-                    json_str = json.dumps(data_obj)
-                    
-                except json.JSONDecodeError:
-                    print("JSON解析失败，使用正则表达式方法")
-                    # 使用正则表达式方法作为备选
-                    for img_file in img_map.values():
-                        # 查找touch操作但没有截图的步骤
-                        pattern = r'"name":\s*"touch".*?"screen":\s*null'
-                        replacement = f'"name": "touch", "screen": {{"src": "log/{img_file}", "_filepath": "log/{img_file}", "thumbnail": "log/{img_file.replace(".", "_small.")}", "resolution": [1080, 2400], "pos": [], "vector": [], "rect": []}}'
-                        json_str = re.sub(pattern, replacement, json_str)
-                
-                # 替换原始的JSON字符串
-                modified_content = content[:json_start] + json_str + content[json_end:]
-                content = modified_content
-                
-        # 写回修复后的内容
-        with open(html_file, "w", encoding="utf-8") as f:
-            f.write(content)
-            
-        print(f"成功修复HTML报告的截图引用")
-    except Exception as e:
-        print(f"修复HTML报告失败: {str(e)}")
-        traceback.print_exc()
+        print(f"生成报告失败: {e}")
+        traceback.print_exc()  # 添加堆栈跟踪以便调试
+        return False
 
 
 # 生成汇总报告
@@ -1287,19 +1457,6 @@ def run_summary(data):
         timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
         report_file = f"summary_report_{timestamp}.html"
         summary_report_path = os.path.join(ui_reports_dir, report_file)
-        
-        # 复制静态资源到汇总报告目录
-        static_dir = os.path.join(ui_reports_dir, "static")
-        if not os.path.exists(static_dir):
-            # 查找最新设备的静态资源目录
-            for dev_name, report_path in data['tests'].items():
-                if report_path and os.path.exists(report_path):
-                    device_dir = os.path.dirname(report_path)
-                    device_static = os.path.join(device_dir, "static")
-                    if os.path.exists(device_static):
-                        shutil.copytree(device_static, static_dir)
-                        print(f"从 {device_dir} 复制静态资源到汇总报告目录")
-                        break
         
         # 准备汇总数据
         summary = {
@@ -1355,13 +1512,13 @@ def run_summary(data):
         with open(summary_report_path, "w", encoding="utf-8") as f:
             html_content = template.render(data=summary)
             f.write(html_content)
-        print(f"汇总报告生成成功: {summary_report_path}")
         
-        # 同时生成最新报告的快捷方式
-        latest_report = os.path.join(ui_reports_dir, "latest_report.html")
-        with open(latest_report, "w", encoding="utf-8") as f:
-            f.write(html_content)
-        print(f"最新报告快捷方式: {latest_report}")
+        # 同时创建一个latest_report.html作为最新报告的快捷方式
+        latest_report_path = os.path.join(ui_reports_dir, "latest_report.html")
+        shutil.copy(summary_report_path, latest_report_path)
+        
+        print(f"汇总报告已生成: {summary_report_path}")
+        print(f"最新报告快捷方式: {latest_report_path}")
         
         return summary_report_path
     except Exception as e:
@@ -1375,7 +1532,7 @@ def run_on_multi_device(devices, scripts, results, run_all, device_names, show_s
     tasks = []
     for i, device in enumerate(devices):
         serial = device.serial
-        # 修复：从字典改为根据索引获取设备名称
+        # 修复：从列表中获取设备名称，使用索引而不是字典
         device_name = device_names[i] if i < len(device_names) else serial
         print(f"⚠️ 当前测试设备: {device_name}")
         if not run_all and device_name in results['tests'] and results['tests'][device_name]['status'] == 0:
