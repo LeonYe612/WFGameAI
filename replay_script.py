@@ -1429,7 +1429,7 @@ def run_one_report(log_dir, report_dir, script_path=None):
         print(f"report_html_file: {report_html_file}")
         print(f"script_log_html_file: {script_log_html_file}")
 
-        # 生成报告
+    # 生成报告
         rpt.report()
         
         # 确定实际生成的HTML文件路径
@@ -1582,11 +1582,45 @@ def run_one_report(log_dir, report_dir, script_path=None):
                     print(f"修改数据模型失败: {e}")
                 
                 # 修复步骤描述显示
-                # 1. 在HTML中查找并修改步骤描述CSS样式，确保desc元素显示
-                content = content.replace(
-                    '.step-head .desc{display:none}',
-                    '.step-head .desc{display:block !important; font-weight:bold; margin:5px 0; color:#333;}'
-                )
+                try:
+                    # 1. 在HTML中查找并修改步骤描述CSS样式，确保desc元素显示
+                    content = content.replace(
+                        '.step-head .desc{display:none}',
+                        '.step-head .desc{display:block !important; font-weight:bold; margin:5px 0; color:#333;}'
+                    )
+                    
+                    # 如果没有找到，尝试其他可能的CSS选择器格式
+                    if '.step-head .desc{display:none}' not in content:
+                        content = content.replace(
+                            '.step-head .desc {display: none}',
+                            '.step-head .desc {display: block !important; font-weight: bold; margin: 5px 0; color: #333;}'
+                        )
+                    
+                    # 再添加一个全局CSS规则，确保所有desc元素显示
+                    inject_css = """
+<style>
+.step-head .desc { 
+    display: block !important; 
+    font-weight: bold; 
+    margin: 5px 0; 
+    color: #333;
+}
+.step-head .step-title {
+    display: block;
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+.step-content .info-param {
+    display: block;
+}
+</style>
+"""
+                    
+                    # 在</head>标签前插入CSS
+                    content = content.replace('</head>', f'{inject_css}</head>')
+                except Exception as e:
+                    print(f"修改CSS样式失败: {e}")
                 
                 # 2. 添加JavaScript代码来确保步骤信息显示
                 js_fix = """
@@ -1621,27 +1655,6 @@ def run_one_report(log_dir, report_dir, script_path=None):
                     }, 500);
                 });
                 </script>
-                <style>
-                /* 确保描述文本显示 */
-                .step-head .desc {
-                    display: block !important;
-                    font-weight: bold;
-                    margin: 5px 0;
-                    color: #333;
-                    font-size: 14px;
-                }
-                /* 增强步骤左侧标题样式 */
-                .step-head .step-title {
-                    display: block;
-                    font-size: 16px;
-                    font-weight: bold;
-                    margin-bottom: 5px;
-                }
-                /* 确保正确显示参数区域 */
-                .step-content .info-param {
-                    display: block;
-                }
-                </style>
                 """
                 
                 # 将JS代码插入到HTML中的</body>前

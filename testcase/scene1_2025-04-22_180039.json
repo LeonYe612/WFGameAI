@@ -1,0 +1,41 @@
+{
+    "steps": [
+        {
+            "step": 1,
+            "class": "system-cleanUpCache",
+            "confidence": 0.7048535943031311,
+            "timestamp": "2025-04-22 18:00:51.298328",
+            "remark": "待命名"
+        },
+        {
+            "step": 2,
+            "class": "system-cleanUpCache",
+            "confidence": 0.7048535943031311,
+            "timestamp": "2025-04-22 18:00:52.999538",
+            "remark": "待命名"
+        },
+        {
+            "step": 3,
+            "class": "system-notices",
+            "confidence": 0.951894998550415,
+            "timestamp": "2025-04-22 18:01:07.212684",
+            "remark": "待命名"
+        },
+        {
+            "step": 4,
+            "class": "operation-close",
+            "confidence": 0.9466069340705872,
+            "timestamp": "2025-04-22 18:01:13.944711",
+            "remark": "待命名"
+        },
+        {
+            "step": 5,
+            "class": "unknown",
+            "confidence": 0.0,
+            "relative_x": 0.6546296296296297,
+            "relative_y": 0.8117886178861788,
+            "timestamp": "2025-04-22 18:01:20.899102",
+            "remark": "未识别按钮"
+        }
+    ]
+}

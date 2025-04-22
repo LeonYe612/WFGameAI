@@ -1,2 +1,0 @@
-{"tag": "function", "depth": 1, "time": 1745301435.6424289, "data": {"name": "开始测试", "call_args": {"device": "Redmi-22041216C-1080x2460", "scripts": ["test.py"]}, "start_time": 1745301435.641429, "ret": true, "end_time": 1745301435.6424289}}
-{"tag": "function", "depth": 3, "time": 1745301435.642578, "data": {"name": "try_log_screen", "call_args": {"screen": "array([[[...]]],dtype=uint8)", "quality": null, "max_size": null}, "start_time": 1745301435.641578, "ret": {"screen": "1745301435642.jpg", "resolution": [1080, 2460]}, "end_time": 1745301435.642578}}

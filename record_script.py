@@ -366,7 +366,7 @@ def on_mouse(event, x, y, flags, param):
                             "class": button_class,
                             "confidence": conf,
                             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f"),
-                            "remark": ""
+                            "remark": "待命名"
                         }
                         script["steps"].append(step)
                         
