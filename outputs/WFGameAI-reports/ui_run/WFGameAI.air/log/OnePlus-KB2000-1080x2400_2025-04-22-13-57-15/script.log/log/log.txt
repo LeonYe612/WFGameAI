@@ -1,0 +1,2 @@
+{"tag": "function", "depth": 1, "time": 1745301435.641899, "data": {"name": "开始测试", "call_args": {"device": "OnePlus-KB2000-1080x2400", "scripts": ["test.py"]}, "start_time": 1745301435.6408992, "ret": true, "end_time": 1745301435.641899}}
+{"tag": "function", "depth": 3, "time": 1745301435.642122, "data": {"name": "try_log_screen", "call_args": {"screen": "array([[[...]]],dtype=uint8)", "quality": null, "max_size": null}, "start_time": 1745301435.641122, "ret": {"screen": "1745301435642.jpg", "resolution": [1080, 2400]}, "end_time": 1745301435.642122}}

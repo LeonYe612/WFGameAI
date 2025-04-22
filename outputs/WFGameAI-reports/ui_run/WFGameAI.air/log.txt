@@ -1,0 +1,3 @@
+{"tag": "function", "depth": 1, "time": 1745302204.0275671, "data": {"name": "connect_device", "call_args": {"uri": "Android:///5c41023b"}, "start_time": 1745302203.959938, "ret": "<Android '5c41023b'>", "end_time": 1745302204.027551}}
+{"tag": "function", "depth": 1, "time": 1745302204.169649, "data": {"name": "connect_device", "call_args": {"uri": "Android:///65WGZT7P9XHEKN7D"}, "start_time": 1745302204.115808, "ret": "<Android '65WGZT7P9XHEKN7D'>", "end_time": 1745302204.169632}}
+{"tag": "info", "depth": 0, "time": 1745302204.295928, "data": {"name": "{'msg': 'Start replay', 'success': True}", "traceback": null, "log": "{'msg': 'Start replay', 'success': True}"}}

@@ -21,6 +21,7 @@ import airtest  # 添加这行
 from datetime import datetime
 import random
 import torch
+import re
 
 # 禁用 Ultralytics 的日志输出
 logging.getLogger("ultralytics").setLevel(logging.CRITICAL)
@@ -50,6 +51,10 @@ os.makedirs(ui_run_dir, exist_ok=True)
 os.makedirs(project_air_dir, exist_ok=True)
 os.makedirs(device_log_dir, exist_ok=True)
 os.makedirs(template_dir, exist_ok=True)
+
+# 设置Airtest日志存储目录，避免在根目录生成日志文件
+set_logdir(project_air_dir)
+airtest.core.api.ST.LOG_DIR = project_air_dir  # 显式设置静态变量
 
 # 旧目录结构（保留以兼容现有代码）
 report_dir = os.path.join(BASE_DIR, "outputs/device_reports")
@@ -191,6 +196,10 @@ def get_log_dir(dev):
         with open(log_file, 'w', encoding='utf-8') as f:
             pass
     
+    # 为每个设备单独设置日志目录，避免日志混乱
+    airtest.core.api.ST.LOG_DIR = log_dir
+    set_logdir(log_dir)
+    
     return log_dir
 
 
@@ -234,6 +243,10 @@ def replay_device(device, scripts, screenshot_queue, action_queue, stop_event, d
         show_screens (bool): 是否显示屏幕（默认 False）。
         loop_count (int): 循环次数（默认 1，从 scripts 中获取优先）。
     """
+    # 为当前设备设置日志目录
+    set_logdir(log_dir)
+    airtest.core.api.ST.LOG_DIR = log_dir  # 确保Airtest使用正确的日志目录
+    
     # 打印参数（用于调试）
     print(f"设备: {device_name}, 脚本: {scripts}, 日志目录: {log_dir}")
     print(f"show_screens: {show_screens}, loop_count: {loop_count}")
@@ -488,7 +501,7 @@ def replay_device(device, scripts, screenshot_queue, action_queue, stop_event, d
                                         # 添加描述字段，使用步骤的remark
                                         "desc": step.get("remark", f"点击 {detected_class}"),
                                         # 添加标题字段，用于左侧步骤列表显示
-                                        "title": f"#{step_counter+1} {step.get('remark', '点击')}"
+                                        "title": f"#{priority_step_counter} {step.get('remark', '点击')}"
                                     }
                                 }
                                 
@@ -683,7 +696,11 @@ def replay_device(device, scripts, screenshot_queue, action_queue, stop_event, d
                                     "start_time": timestamp + 0.0005,
                                     "ret": [abs_x, abs_y],
                                     "end_time": timestamp + 0.001,
-                                    "screen": screen_object
+                                    "screen": screen_object,
+                                    # 添加描述字段，使用步骤的remark
+                                    "desc": unknown_fallback_step.get("remark", "执行备选点击"),
+                                    # 添加标题字段，用于左侧步骤列表显示
+                                    "title": f"#{priority_step_counter} {unknown_fallback_step.get('remark', '备选点击')}"
                                 }
                             }
                             
@@ -1084,33 +1101,37 @@ def get_airtest_template_path():
     """
     获取Airtest报告模板的路径
     
+    此函数尝试从多个可能的位置找到Airtest的HTML报告模板文件，
+    按照优先级依次尝试不同位置。
+    
     返回:
         str: Airtest报告模板的路径，如果找不到则返回None
     """
     try:
-        import airtest
-        import os
-        
         # 尝试直接从airtest包中获取模板
+        # 这是最常见的情况，即从已安装的airtest包中获取模板
         airtest_path = os.path.dirname(airtest.__file__)
-        template_path = os.path.join(airtest_path, "report", "log_template.html")
+        template_path = os.path.join(airtest_path, "report", "log_template.html")   #
         
         if os.path.exists(template_path):
             return template_path
         
-        # 尝试从site-packages获取
+        # 如果第一种方法失败，尝试从site-packages获取
+        # 这是为了处理某些Python环境中包结构可能不同的情况
         site_packages = os.path.dirname(os.path.dirname(airtest_path))
         alt_path = os.path.join(site_packages, "airtest", "report", "log_template.html")
         
         if os.path.exists(alt_path):
             return alt_path
         
-        # 尝试从本地templates目录获取
+        # 如果前两种方法都失败，尝试从本地templates目录获取
+        # 这是为了在airtest包不完整或结构异常时提供备选方案
         local_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates", "log_template.html")
         
         if os.path.exists(local_path):
             return local_path
         
+        # 如果所有方法都失败，返回None
         return None
     except Exception as e:
         print(f"获取Airtest模板路径时出错: {str(e)}")
@@ -1121,16 +1142,23 @@ def run_one_report(log_dir, report_dir, script_path=None):
     """
     为单个设备生成HTML报告
     
-    参数:
+    此函数完成以下任务:
+    1. 检查和修复日志文件的JSON格式
+    2. 创建报告目录结构
+    3. 复制并处理图片资源
+    4. 复制静态资源(CSS/JS等)
+    5. 生成HTML报告
+    
+    Args:
         log_dir: 包含日志文件的目录
         report_dir: 生成报告的目标目录
         script_path: 可选的脚本文件路径，如果提供则会复制到报告目录
         
-    返回:
+    Returns:
         bool: 是否成功生成报告
     """
     try:       
-        # 检查日志文件
+        # 检查日志文件是否存在
         log_file = os.path.join(log_dir, "log.txt")
         if not os.path.exists(log_file):
             print(f"❌ 日志文件不存在: {log_file}")
@@ -1160,6 +1188,7 @@ def run_one_report(log_dir, report_dir, script_path=None):
             valid_lines = []
             fixed_count = 0
             
+            # 逐行处理JSON数据
             for line in lines:
                 line = line.strip()
                 if not line:
@@ -1201,13 +1230,13 @@ def run_one_report(log_dir, report_dir, script_path=None):
         log_report_dir = os.path.join(report_dir, "log")
         os.makedirs(log_report_dir, exist_ok=True)
         
-        # 复制脚本文件
+        # 复制脚本文件(如果提供)
         if script_path and os.path.exists(script_path):
             script_file = os.path.join(report_dir, "script.py")
             shutil.copy2(script_path, script_file)
             print(f"复制脚本文件: {script_path} -> {script_file}")
         
-        # 复制截图到日志目录
+        # 处理图片资源
         image_files = {}
         for img in os.listdir(log_dir):
             if img.endswith(".jpg") or img.endswith(".png"):
@@ -1218,14 +1247,14 @@ def run_one_report(log_dir, report_dir, script_path=None):
                     shutil.copy2(src, dst)
                     image_files[img] = img
                     
-                    # 检查是否存在对应的缩略图
+                    # 检查或创建缩略图
                     small_img = img.replace(".", "_small.")
                     small_src = os.path.join(log_dir, small_img)
                     
                     if os.path.exists(small_src):
                         small_dst = os.path.join(log_report_dir, small_img)
                         shutil.copy2(small_src, small_dst)
-        else:
+                    else:
                         # 如果缩略图不存在，则创建一个
                         img_data = cv2.imread(src)
                         if img_data is not None:
@@ -1243,9 +1272,9 @@ def run_one_report(log_dir, report_dir, script_path=None):
         if not template_path:
             print("❌ 无法找到Airtest模板路径")
             return False
-        
-        # 复制静态资源
-        static_dir = os.path.join(report_dir, "static")
+
+    # 复制静态资源
+        static_dir = os.path.join(report_dir, "static")     
         if not os.path.exists(static_dir):
             # 获取Airtest安装路径
             import airtest
@@ -1258,7 +1287,7 @@ def run_one_report(log_dir, report_dir, script_path=None):
             os.makedirs(os.path.join(static_dir, "image"), exist_ok=True)
             os.makedirs(os.path.join(static_dir, "fonts"), exist_ok=True)
             
-            # 直接从airtest/report目录中复制资源（而不是使用airtest_report_dir）
+            # 从airtest包复制静态资源
             report_dir_path = os.path.join(airtest_dir, "report")
             resource_copied = False
             
@@ -1295,7 +1324,7 @@ def run_one_report(log_dir, report_dir, script_path=None):
                     resource_copied = True
                     print(f"复制JS资源: {js_src} -> {js_dst}")
                 
-                # 复制image文件
+                # 复制图片资源
                 image_src = os.path.join(report_dir_path, "image")
                 image_dst = os.path.join(static_dir, "image")
                 if os.path.exists(image_src) and os.path.isdir(image_src):
@@ -1307,7 +1336,7 @@ def run_one_report(log_dir, report_dir, script_path=None):
                     resource_copied = True
                     print(f"复制image资源: {image_src} -> {image_dst}")
                     
-                # 处理字体文件
+                # 复制字体文件
                 fonts_src = os.path.join(report_dir_path, "fonts")
                 fonts_dst = os.path.join(static_dir, "fonts")
                 if os.path.exists(fonts_src) and os.path.isdir(fonts_src):
@@ -1377,7 +1406,9 @@ def run_one_report(log_dir, report_dir, script_path=None):
                     print("❌ 无法找到任何静态资源，但会继续尝试生成报告")
         
         # 复制模板文件
+        print(f"复制模板文件: {template_path} -> {report_dir}")
         dest_template = os.path.join(report_dir, "log_template.html")
+        print(f"复制模板文件: {dest_template}")
         shutil.copy2(template_path, dest_template)
         
         # 生成HTML报告
@@ -1388,14 +1419,16 @@ def run_one_report(log_dir, report_dir, script_path=None):
             export_dir=report_dir,          # 导出HTML的目录
             script_name="script.py",        # 脚本文件名
             logfile="log.txt",              # 日志文件名
-            lang="zh"                       # 语言
+            lang="zh"                       # 语言参数，使用中文
         )
         
         # 执行报告生成
         # 报告可能生成在report_dir/log.html或report_dir/script.log/log.html
         report_html_file = os.path.join(report_dir, "log.html")
         script_log_html_file = os.path.join(report_dir, "script.log", "log.html")
-        
+        print(f"report_html_file: {report_html_file}")
+        print(f"script_log_html_file: {script_log_html_file}")
+
         # 生成报告
         rpt.report()
         
@@ -1411,7 +1444,7 @@ def run_one_report(log_dir, report_dir, script_path=None):
                 actual_html_file = report_html_file
             except Exception as e:
                 print(f"复制报告失败: {e}")
-                
+        
         # 修复HTML中的路径问题
         if os.path.exists(actual_html_file):
             try:
@@ -1422,23 +1455,322 @@ def run_one_report(log_dir, report_dir, script_path=None):
                 dirname = os.path.dirname(actual_html_file)
                 content = content.replace(dirname + "/static/", "static/")
                 
+                # 修复数据模型 - 直接修改data对象中的步骤描述
+                # 1. 先读取整个日志文件内容
+                try:
+                    log_file_path = os.path.join(log_dir, "log.txt")
+                    if os.path.exists(log_file_path):
+                        with open(log_file_path, "r", encoding="utf-8") as log_f:
+                            log_content = log_f.read()
+                            log_lines = log_content.split("\n")
+                            
+                            # 提取所有自定义描述和标题
+                            touch_steps = {}
+                            for line in log_lines:
+                                if not line.strip():
+                                    continue
+                                try:
+                                    log_entry = json.loads(line)
+                                    if log_entry.get("tag") == "function" and log_entry.get("data", {}).get("name") == "touch":
+                                        coords = log_entry["data"]["call_args"]["v"]
+                                        coord_key = f"{coords[0]},{coords[1]}"
+                                        
+                                        # 保存自定义描述和标题
+                                        touch_steps[coord_key] = {
+                                            "desc": log_entry["data"].get("desc", ""),
+                                            "title": log_entry["data"].get("title", "")
+                                        }
+                                except Exception as e:
+                                    print(f"解析日志行失败: {e}")
+                        
+                        # 查找data对象定义部分
+                        data_pattern = re.compile(r"data\s*=\s*(\{.*?\});", re.DOTALL)
+                        data_match = data_pattern.search(content)
+                        
+                        if data_match:
+                            data_str = data_match.group(1)
+                            
+                            # 直接解析为Python对象
+                            data_obj = None
+                            # 尝试通过eval安全解析
+                            try:
+                                # 使用ast.literal_eval更安全
+                                import ast
+                                # 先将所有Unicode转义处理为Python字符串格式
+                                python_data_str = data_str.replace("\\\\", "\\").replace('\\"', '"')
+                                # 替换JS格式的true/false/null为Python格式
+                                python_data_str = python_data_str.replace("true", "True").replace("false", "False").replace("null", "None")
+                                data_obj = ast.literal_eval(python_data_str)
+                            except Exception as e:
+                                print(f"无法解析data对象: {e}")
+                            
+                            if data_obj and "steps" in data_obj:
+                                # 首先清理掉不存在于日志中的伪步骤（如exists）
+                                filtered_steps = []
+                                for step in data_obj["steps"]:
+                                    # 保留除了"Exists"标题的步骤
+                                    if not (step.get("title") == "Exists" and step.get("code", {}).get("name") == "exists"):
+                                        filtered_steps.append(step)
+                                
+                                # 更新步骤列表
+                                data_obj["steps"] = filtered_steps
+                                
+                                # 修复断言失败步骤
+                                for i, step in enumerate(data_obj["steps"]):
+                                    # 更新步骤索引顺序
+                                    if "assert" in step.get("code", {}).get("name", "") and "未检测到目标" in step.get("traceback", ""):
+                                        # 查找断言目标
+                                        target_name = None
+                                        for arg in step["code"].get("args", []):
+                                            if arg.get("key") == "v":
+                                                target_name = arg.get("value")
+                                        
+                                        if target_name:
+                                            # 确保描述符合要求
+                                            step["desc"] = f"断言失败: 未找到元素 {target_name}"
+                                            
+                                            # 如果没有screen字段，寻找前一个具有screen的步骤
+                                            if "screen" not in step or step["screen"] is None:
+                                                screen_found = False
+                                                for prev_step in reversed(data_obj["steps"][:i]):
+                                                    if "screen" in prev_step and prev_step["screen"] is not None:
+                                                        step["screen"] = prev_step["screen"]
+                                                        print(f"为断言失败步骤找到截图: {prev_step['screen']}")
+                                                        screen_found = True
+                                                        break
+                                                
+                                            
+                                            # 即使有截图，确保内容正确
+                                            if "info" not in step:
+                                                step["info"] = {}
+                                            # 确保args信息中包含目标名称和清晰的失败原因
+                                            step["info"]["args"] = {"v": target_name, "msg": f"步骤: 启动游戏后先有一个公告弹窗，点击关闭"}
+                                
+                                # 修改Touch步骤数据
+                                for step in data_obj["steps"]:
+                                    if step.get("title") == "Touch" and "code" in step and "args" in step["code"]:
+                                        for arg in step["code"]["args"]:
+                                            if arg.get("key") == "v" and isinstance(arg.get("value"), list) and len(arg.get("value")) == 2:
+                                                coords = arg["value"]
+                                                coord_key = f"{coords[0]},{coords[1]}"
+                                                
+                                                if coord_key in touch_steps:
+                                                    # 替换描述和标题
+                                                    custom_data = touch_steps[coord_key]
+                                                    if custom_data["desc"]:
+                                                        step["desc"] = custom_data["desc"]
+                                                    
+                                                    # 也可以替换标题
+                                                    if custom_data["title"] and "#" in custom_data["title"]:
+                                                        # 从标题中提取实际描述文本（跳过步骤编号部分）
+                                                        parts = custom_data["title"].split(" ", 1)
+                                                        if len(parts) > 1:
+                                                            step["title"] = parts[1]
+                                
+                                # 将修改后的对象转换回JSON字符串
+                                try:
+                                    modified_data_str = json.dumps(data_obj, ensure_ascii=False)
+                                    # 重新格式化回JavaScript格式
+                                    modified_data_str = modified_data_str.replace("True", "true").replace("False", "false").replace("None", "null")
+                                    # 替换原来的数据对象
+                                    content = content.replace(data_match.group(1), modified_data_str)
+                                except Exception as e:
+                                    print(f"转换修改后的数据对象失败: {e}")
+                    else:
+                        print(f"警告: 日志文件不存在: {log_file_path}")
+                except Exception as e:
+                    print(f"修改数据模型失败: {e}")
+                
+                # 修复步骤描述显示
+                # 1. 在HTML中查找并修改步骤描述CSS样式，确保desc元素显示
+                content = content.replace(
+                    '.step-head .desc{display:none}',
+                    '.step-head .desc{display:block !important; font-weight:bold; margin:5px 0; color:#333;}'
+                )
+                
+                # 2. 添加JavaScript代码来确保步骤信息显示
+                js_fix = """
+                <script>
+                $(document).ready(function(){
+                    // 确保所有步骤的desc元素可见
+                    $('.step-head .desc').show();
+                    
+                    // 在步骤右侧区域显示详细信息时也确保desc显示
+                    $(document).on('click', '.step', function(){
+                        setTimeout(function(){
+                            $('#step-right .desc').show();
+                        }, 100);
+                    });
+                    
+                    // 立即执行一次修复
+                    setTimeout(function(){
+                        // 修复左侧步骤列表
+                        $('.step_title').each(function() {
+                            var $this = $(this);
+                            var text = $this.text();
+                            
+                            // 显示自定义标题
+                            if (text.indexOf('Touch') === 0) {
+                                var stepIndex = parseInt($this.prev().text().replace('# ', '')) - 1;
+                                var step = data.steps[stepIndex];
+                                if (step && step.title && step.title !== 'Touch') {
+                                    $this.text(step.title);
+                                }
+                            }
+                        });
+                    }, 500);
+                });
+                </script>
+                <style>
+                /* 确保描述文本显示 */
+                .step-head .desc {
+                    display: block !important;
+                    font-weight: bold;
+                    margin: 5px 0;
+                    color: #333;
+                    font-size: 14px;
+                }
+                /* 增强步骤左侧标题样式 */
+                .step-head .step-title {
+                    display: block;
+                    font-size: 16px;
+                    font-weight: bold;
+                    margin-bottom: 5px;
+                }
+                /* 确保正确显示参数区域 */
+                .step-content .info-param {
+                    display: block;
+                }
+                </style>
+                """
+                
+                # 将JS代码插入到HTML中的</body>前
+                content = content.replace('</body>', js_fix + '</body>')
+                
+                # 添加一个直接修改步骤描述的脚本
+                steps_fix_script = """
+                <script>
+                // 直接修改步骤数据
+                $(document).ready(function() {
+                    // 读取每个touch步骤的信息
+                    var steps = data.steps;
+                    
+                    // 修改步骤数据
+                    for (var i = 0; i < steps.length; i++) {
+                        var step = steps[i];
+                        
+                        // 处理Touch步骤，将描述从坐标替换为自定义描述
+                        if (step.title === "Touch" && step.desc && step.desc.indexOf("点击 屏幕坐标") === 0) {
+                            // 从日志文件中查找对应的步骤
+                            $.ajax({
+                                url: 'log/log.txt',
+                                async: false,
+                                success: function(logContent) {
+                                    var lines = logContent.split('\\n');
+                                    for (var j = 0; j < lines.length; j++) {
+                                        if (lines[j].trim() === "") continue;
+                                        
+                                        try {
+                                            var logEntry = JSON.parse(lines[j]);
+                                            
+                                            // 检查是否是touch操作
+                                            if (logEntry.data && logEntry.data.name === "touch") {
+                                                // 检查坐标是否匹配
+                                                var coords = logEntry.data.call_args.v;
+                                                var stepCoords = step.code.args[0].value;
+                                                
+                                                if (coords[0] === stepCoords[0] && coords[1] === stepCoords[1]) {
+                                                    // 找到匹配的步骤，更新描述
+                                                    if (logEntry.data.desc) {
+                                                        step.desc = logEntry.data.desc;
+                                                        console.log("更新步骤 " + (i+1) + " 描述为: " + logEntry.data.desc);
+                                                    }
+                                                    
+                                                    // 更新标题
+                                                    if (logEntry.data.title) {
+                                                        var titleText = logEntry.data.title;
+                                                        if (titleText.indexOf('#') === 0) {
+                                                            titleText = titleText.split(' ').slice(1).join(' ');
+                                                        }
+                                                        step.title = titleText;
+                                                        console.log("更新步骤 " + (i+1) + " 标题为: " + titleText);
+                                                    }
+                                                    
+                                                    break;
+                                                }
+                                            }
+                                        } catch (e) {
+                                            console.error("解析日志行失败:", e);
+                                        }
+                                    }
+                                },
+                                error: function() {
+                                    console.error("无法读取日志文件");
+                                }
+                            });
+                        }
+                    }
+                    
+                    // 刷新视图
+                    setTimeout(function() {
+                        // 刷新左侧步骤列表
+                        if (window.makeSteps) {
+                            window.makeSteps(data.steps);
+                        }
+                    }, 500);
+                });
+                </script>
+                """
+                
+                content = content.replace('</body>', steps_fix_script + '</body>')
+                
+                # 添加JS代码来改进断言失败步骤的显示
+                js_assert_fix = """
+                <script>
+                $(document).ready(function(){
+                    // 处理断言失败步骤
+                    for (var i = 0; i < data.steps.length; i++) {
+                        var step = data.steps[i];
+                        if (step.title && step.title.indexOf('断言') >= 0 && step.traceback && step.traceback.indexOf('未检测到目标') >= 0) {
+                            // 获取步骤屏幕截图并添加到参数区域
+                            if (step.screen) {
+                                var screenPath = step.screen;
+                                // 当用户点击该步骤时
+                                (function(index, imgPath) {
+                                    $(document).on('click', '.step:eq(' + index + ')', function(){
+                                        setTimeout(function(){
+                                            // 确保Args区域显示图片
+                                            var $argsDiv = $('#step-right .info-args');
+                                            if ($argsDiv.length > 0 && $argsDiv.find('img.assert-fail-img').length === 0) {
+                                                var imgHtml = '<div class="assert-fail-img-container" style="margin-top:10px;"><p style="color:red;font-weight:bold;">断言失败时的屏幕截图:</p>' +
+                                                              '<img src="' + imgPath + '" class="assert-fail-img" style="max-width:100%;border:2px solid red;"></div>';
+                                                $argsDiv.append(imgHtml);
+                                            }
+                                        }, 200);
+                                    });
+                                })(i, screenPath);
+                            }
+                        }
+                    }
+                });
+                </script>
+                """
+                
+                # 将断言失败修复代码添加到HTML中
+                content = content.replace('</body>', js_assert_fix + '</body>')
+                
                 with open(actual_html_file, "w", encoding="utf-8") as f:
                     f.write(content)
-                print(f"HTML路径修复成功: {actual_html_file}")
+                print(f"HTML路径和显示修复成功: {actual_html_file}")
                 
             except Exception as e:
                 print(f"修复HTML路径失败: {e}")
                 traceback.print_exc()
-        
+
         return True
     except Exception as e:
         print(f"生成HTML报告失败: {str(e)}")
         traceback.print_exc()
-        return False
-
-    except Exception as e:
-        print(f"生成报告失败: {e}")
-        traceback.print_exc()  # 添加堆栈跟踪以便调试
         return False
 
 
@@ -1583,6 +1915,8 @@ def run(devices, scripts, device_names, show_screens=False, run_all=False):
         # 更新报告路径为log.html的绝对路径
         report_path = os.path.join(device_report_dir, "log.html") if device_report else None
         results['tests'][task['dev']] = report_path
+        print(f"设备 {task['dev']} 报告目录: {device_report_dir}")
+        print(f"设备 {task['dev']} 报告路径: {report_path}")
         
         if device_report:
             success_count += 1
@@ -1614,6 +1948,9 @@ def replay_steps(scripts, show_screens=False):
     if not loaded_scripts:
         print("未加载任何有效脚本，回放终止")
         return False
+
+    # 设置默认日志目录为项目目录，避免在根目录生成日志
+    set_logdir(project_air_dir)
 
     # 修改为列表
     device_names = []
@@ -1653,7 +1990,7 @@ def replay_steps(scripts, show_screens=False):
         detection_thread.join()
 
 
-# 修改函数位置
+# 修改函数位置。禁止使用或增加清理无用文件的函数！！！
 def cleanup_unused_files():
     """清理生成的无用临时文件"""
     print("🧹 开始清理无用文件...")
@@ -1784,7 +2121,7 @@ def main():
         traceback.print_exc()
 
     # 清理无用文件
-    cleanup_unused_files()
+    # cleanup_unused_files()
 
 
 if __name__ == "__main__":

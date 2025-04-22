@@ -76,19 +76,19 @@ python record_script.py --record-no-match
 ```bash
 # 单脚本回放
 
-python replay_script.py --show-screens --script outputs/recordlogs/scene2_guide_steps_2025-04-07.json --max-duration 30
-``` --script参数指定了回放步骤文件为outputs/recordlogs/scene2_guide_steps_2025-04-07.json，可能会循环执行一到多次，直到达到最大运行时间30秒。```
+python replay_script.py --show-screens --script testcase/scene2_guide_steps_2025-04-07.json --max-duration 30
+``` --script参数指定了回放步骤文件为testcase/scene2_guide_steps_2025-04-07.json，可能会循环执行一到多次，直到达到最大运行时间30秒。```
 
-python replay_script.py --show-screens --script outputs/recordlogs/scene1_login_steps_2025-04-07.json --loop-count 1：
-```--script参数指定了回放步骤文件为outputs/recordlogs/scene1_login_steps_2025-04-07.json，并且会循环执行一次。```
+python replay_script.py --show-screens --script testcase/scene1_login_steps_2025-04-07.json --loop-count 1：
+```--script参数指定了回放步骤文件为testcase/scene1_login_steps_2025-04-07.json，并且会循环执行一次。```
 
 # 多脚本顺序回放
-```python replay_script.py --show-screens --script outputs/recordlogs/scene1_nologin_steps_2025-04-07.json --loop-count 1 --script outputs/recordlogs/scene2_guide_steps_2025-04-07.json --max-duration 30```
+```python replay_script.py --show-screens --script testcase/scene1_nologin_steps_2025-04-07.json --loop-count 1 --script testcase/scene2_guide_steps_2025-04-07.json --max-duration 30```
 
 ```说明：先执行场景1的登录操作，然后执行场景2的引导操作。
-    --script 参数表示指定了回放步骤文件为outputs/recordlogs/scene1_nologin_steps_2025-04-07.json 
+    --script 参数表示指定了回放步骤文件为testcase/scene1_nologin_steps_2025-04-07.json 
     --loop-count 1 ，表示此文件只会循环执行一次。
-    --script 参数指定了回放步骤文件为outputs/recordlogs/scene2_guide_steps_2025-04-07.json 
+    --script 参数指定了回放步骤文件为testcase/scene2_guide_steps_2025-04-07.json 
     --max-duration 30，表示此步骤无视循环次数，会执行30秒后结束。且只对此文件生效，非全局。```
 
 
