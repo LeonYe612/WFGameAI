@@ -36,6 +36,7 @@ STATE_CHANGE_THRESHOLD = 5.0  # 界面变化判断阈值
 AUTO_INTERACTION = False  # 是否启用自动交互
 WINDOWS_DISPLAY_SCALE = 0.5 if sys.platform == "win32" else 1.0  # Windows下显示缩放比例调整为50%
 WINDOW_SIZES = {}  # 存储每个窗口的固定显示尺寸
+USER_WINDOW_SIZES = {}  # 存储用户调整后的窗口尺寸
 
 # 设置界面状态枚举
 class UIState:
@@ -312,28 +313,33 @@ def adapt_coordinates(source_serial, target_serial, x, y):
 # 鼠标点击回调
 def on_mouse(event, x, y, flags, param):
     global script, save_path, model, click_counts, multi_devices_control, click_threads, last_click_time
-    serial = param["serial"]
-    frame = param["frame"]
-    results = param["results"]
-    device = next(d for d in devices if d.serial == serial)
-
     if event == cv2.EVENT_LBUTTONDOWN:
+        serial = param["serial"]
+        frame = param["frame"]
+        results = param["results"]
+        device = next(d for d in devices if d.serial == serial)
+        
+        # 获取当前显示尺寸
+        window_name = windows[serial]
+        current_size = get_window_size(window_name)
+        if not current_size:
+            current_size = USER_WINDOW_SIZES[serial]
+        
+        # 计算点击坐标相对于原始图像的位置
+        orig_h, orig_w = frame.shape[:2]
+        display_w, display_h = current_size
+        
+        # 转换点击坐标到原始图像坐标
+        orig_x = int(x * (orig_w / display_w))
+        orig_y = int(y * (orig_h / display_h))
+        
         # 防止点击过于频繁导致设备反应不过来
         current_time = time.time()
-        if current_time - last_click_time < MIN_CLICK_INTERVAL:
+        if not hasattr(on_mouse, 'last_click_time'):
+            on_mouse.last_click_time = 0
+        if current_time - on_mouse.last_click_time < MIN_CLICK_INTERVAL:
             return
-        last_click_time = current_time
-        
-        # 获取原始帧的尺寸
-        orig_h, orig_w = frame.shape[:2]
-        
-        # 计算实际显示尺寸
-        display_w = int(orig_w * WINDOWS_DISPLAY_SCALE)
-        display_h = int(orig_h * WINDOWS_DISPLAY_SCALE)
-        
-        # 将点击坐标转换回原始尺寸
-        orig_x = int(x / WINDOWS_DISPLAY_SCALE)
-        orig_y = int(y / WINDOWS_DISPLAY_SCALE)
+        on_mouse.last_click_time = current_time
         
         matched = False
         
@@ -395,10 +401,9 @@ def on_mouse(event, x, y, flags, param):
                         print(f"【按钮动作录入】: {button_class}，步骤 {step['step']} 已保存至 {save_path}")
                         print("=" * 50 + "\n")
                     
-                    # 执行点击（录制模式或交互模式）
-                    # 一机多控功能：同步点击所有设备
+                    # 执行点击
                     if multi_devices_control and device.serial == main_device.serial:
-                        # 首先处理主设备自身的点击，以减少延迟
+                        # 首先处理主设备自身的点击
                         t = Thread(target=execute_tap, args=(device, box_x, box_y, button_class))
                         t.daemon = True
                         t.start()
@@ -407,7 +412,6 @@ def on_mouse(event, x, y, flags, param):
                         # 并行处理其他设备的点击
                         for dev in devices:
                             if dev.serial != device.serial:
-                                # 根据目标设备分辨率转换坐标
                                 target_x, target_y = adapt_coordinates(device.serial, dev.serial, box_x, box_y)
                                 t = Thread(target=execute_tap, args=(dev, target_x, target_y, button_class))
                                 t.daemon = True
@@ -422,7 +426,6 @@ def on_mouse(event, x, y, flags, param):
                     return
 
         # 未识别按钮处理
-        # 修改：所有录制模式都记录未识别的点击
         if is_recording:  # 同时适用于 --record 和 --record-no-match
             rel_x, rel_y = x / orig_w, y / orig_h
             step = {
@@ -450,8 +453,8 @@ def on_mouse(event, x, y, flags, param):
         
         # 执行点击（对所有未匹配的点击）
         if multi_devices_control and device.serial == main_device.serial:
-            # 首先处理主设备自身的点击，以减少延迟
-            t = Thread(target=execute_tap, args=(device, x, y))
+            # 首先处理主设备自身的点击
+            t = Thread(target=execute_tap, args=(device, orig_x, orig_y))
             t.daemon = True
             t.start()
             click_threads.append(t)
@@ -459,15 +462,14 @@ def on_mouse(event, x, y, flags, param):
             # 并行处理其他设备的点击
             for dev in devices:
                 if dev.serial != device.serial:
-                    # 根据目标设备分辨率转换坐标
-                    target_x, target_y = adapt_coordinates(device.serial, dev.serial, x, y)
+                    target_x, target_y = adapt_coordinates(device.serial, dev.serial, orig_x, orig_y)
                     t = Thread(target=execute_tap, args=(dev, target_x, target_y))
                     t.daemon = True
                     t.start()
                     click_threads.append(t)
         else:
             # 单设备操作
-            t = Thread(target=execute_tap, args=(device, x, y))
+            t = Thread(target=execute_tap, args=(device, orig_x, orig_y))
             t.daemon = True
             t.start()
             click_threads.append(t)
@@ -549,6 +551,15 @@ def init_window_size(device_serial):
     display_w = int(dev_res["width"] * WINDOWS_DISPLAY_SCALE)
     display_h = int(dev_res["height"] * WINDOWS_DISPLAY_SCALE)
     return (display_w, display_h)
+
+# 移除on_window_resize回调函数，改用更简单的方式
+def get_window_size(window_name):
+    """获取窗口当前大小"""
+    try:
+        return (cv2.getWindowImageSize(window_name)[0],
+                cv2.getWindowImageSize(window_name)[1])
+    except:
+        return None
 
 # 解析命令行参数
 parser = argparse.ArgumentParser(description="Record game operation script")
@@ -654,6 +665,7 @@ windows = {}
 for d in devices:
     # 初始化窗口尺寸
     WINDOW_SIZES[d.serial] = init_window_size(d.serial)
+    USER_WINDOW_SIZES[d.serial] = WINDOW_SIZES[d.serial]  # 初始化用户尺寸
     
     # 为主设备添加[Main]标识
     if d.serial == main_device.serial:
@@ -661,7 +673,7 @@ for d in devices:
     else:
         windows[d.serial] = f"Device {get_device_name(d)}"
     
-    # 创建固定大小的窗口
+    # 创建可调整大小的窗口
     cv2.namedWindow(windows[d.serial], cv2.WINDOW_NORMAL)
     cv2.resizeWindow(windows[d.serial], *WINDOW_SIZES[d.serial])
 
@@ -674,8 +686,14 @@ while True:
         frame_for_detection = cv2.resize(frame, (640, 640))
         results_for_detection = model.predict(source=frame_for_detection, device="mps", imgsz=640, conf=0.6)
 
-        # 使用固定尺寸调整显示帧
-        display_frame = cv2.resize(frame, WINDOW_SIZES[serial])
+        # 检查并更新窗口大小
+        window_name = windows[serial]
+        current_size = get_window_size(window_name)
+        if current_size:
+            USER_WINDOW_SIZES[serial] = current_size
+        
+        # 使用当前窗口大小显示
+        display_frame = cv2.resize(frame, USER_WINDOW_SIZES[serial])
         
         # 更新缓冲区
         frame_buffers[serial] = display_frame
@@ -683,8 +701,8 @@ while True:
 
         annotated_frame = display_frame.copy()
         if results_for_detection:
-            # 使用固定的显示尺寸计算检测框
-            display_w, display_h = WINDOW_SIZES[serial]
+            # 使用当前显示尺寸计算检测框
+            display_w, display_h = USER_WINDOW_SIZES[serial]
             
             for box in results_for_detection[0].boxes:
                 x, y, w, h = box.xywh[0].tolist()
@@ -705,8 +723,6 @@ while True:
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
         cv2.imshow(windows[serial], annotated_frame)
-        # 强制设置窗口大小，防止抖动
-        cv2.resizeWindow(windows[serial], *WINDOW_SIZES[serial])
         cv2.setMouseCallback(windows[serial], on_mouse, param={"serial": serial, "frame": frame, "results": results_for_detection})
 
         key = cv2.waitKey(50) & 0xFF
@@ -717,8 +733,6 @@ while True:
         for serial in windows:
             if frame_buffers[serial] is not None:
                 cv2.imshow(windows[serial], frame_buffers[serial])
-                # 在空闲时也保持窗口大小
-                cv2.resizeWindow(windows[serial], *WINDOW_SIZES[serial])
         continue
     except Exception as e:
         print(f"主循环异常: {traceback.format_exc()}")
