@@ -4,6 +4,12 @@ globs:
 alwaysApply: true
 ---
 # WFGame AI 自动化测试框架代码规范
+
+## 注意事项
+- 需要保证可以在 MAC 和 Windows系统上均可运行
+- 分析后直接在原文件内改动代码
+- 添加详细的注释
+
 ## 常用路径
 - airtest报告生成需要静态资源(CSS/JS等静态资源目录)是在airtest包的report/目录下。
 

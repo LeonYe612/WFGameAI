@@ -34,6 +34,8 @@ device_states = {}  # 存储每个设备的界面状态
 prev_frames = {}  # 存储每个设备的前一帧
 STATE_CHANGE_THRESHOLD = 5.0  # 界面变化判断阈值
 AUTO_INTERACTION = False  # 是否启用自动交互
+WINDOWS_DISPLAY_SCALE = 0.5 if sys.platform == "win32" else 1.0  # Windows下显示缩放比例调整为50%
+WINDOW_SIZES = {}  # 存储每个窗口的固定显示尺寸
 
 # 设置界面状态枚举
 class UIState:
@@ -322,8 +324,17 @@ def on_mouse(event, x, y, flags, param):
             return
         last_click_time = current_time
         
+        # 获取原始帧的尺寸
         orig_h, orig_w = frame.shape[:2]
-        scale_x, scale_y = orig_w / 640, orig_h / 640
+        
+        # 计算实际显示尺寸
+        display_w = int(orig_w * WINDOWS_DISPLAY_SCALE)
+        display_h = int(orig_h * WINDOWS_DISPLAY_SCALE)
+        
+        # 将点击坐标转换回原始尺寸
+        orig_x = int(x / WINDOWS_DISPLAY_SCALE)
+        orig_y = int(y / WINDOWS_DISPLAY_SCALE)
+        
         matched = False
         
         # 清理已完成的点击线程
@@ -332,10 +343,12 @@ def on_mouse(event, x, y, flags, param):
         if results and len(results[0].boxes) > 0:
             for box in results[0].boxes:
                 box_x, box_y, box_w, box_h = box.xywh[0].tolist()
-                box_x, box_y, box_w, box_h = box_x * scale_x, box_y * scale_y, box_w * scale_x, box_h * scale_y
-                left, top = int(box_x - box_w / 2), int(box_y - box_h / 2)
-                right, bottom = int(box_x + box_w / 2), int(box_y + box_h / 2)
-                if left <= x <= right and top <= y <= bottom:
+                box_x, box_y, box_w, box_h = box_x * orig_w/640, box_y * orig_h/640, box_w * orig_w/640, box_h * orig_h/640
+                left, top = int(box_x - box_w/2), int(box_y - box_h/2)
+                right, bottom = int(box_x + box_w/2), int(box_y + box_h/2)
+                
+                # 使用转换后的坐标进行碰撞检测
+                if left <= orig_x <= right and top <= orig_y <= bottom:
                     cls_id = int(box.cls.item())
                     conf = box.conf.item()
                     button_class = model.names[cls_id]
@@ -525,6 +538,18 @@ def capture_and_analyze_device(device, screenshot_queue):
             print(f"获取设备 {get_device_name(device)} 截图失败: {e}")
             time.sleep(0.5)  # 错误后稍等长一点再重试
 
+# 添加窗口尺寸初始化函数
+def init_window_size(device_serial):
+    """初始化并固定窗口尺寸"""
+    if device_serial not in device_resolutions:
+        return (1080, 2400)  # 默认尺寸
+        
+    dev_res = device_resolutions[device_serial]
+    # 计算显示尺寸
+    display_w = int(dev_res["width"] * WINDOWS_DISPLAY_SCALE)
+    display_h = int(dev_res["height"] * WINDOWS_DISPLAY_SCALE)
+    return (display_w, display_h)
+
 # 解析命令行参数
 parser = argparse.ArgumentParser(description="Record game operation script")
 parser.add_argument("--record", action="store_true", help="Enable recording mode")
@@ -627,12 +652,19 @@ for device in devices:
 # 主循环显示所有设备
 windows = {}
 for d in devices:
+    # 初始化窗口尺寸
+    WINDOW_SIZES[d.serial] = init_window_size(d.serial)
+    
     # 为主设备添加[Main]标识
     if d.serial == main_device.serial:
         windows[d.serial] = f"[Main] Device {get_device_name(d)}"
     else:
         windows[d.serial] = f"Device {get_device_name(d)}"
-        
+    
+    # 创建固定大小的窗口
+    cv2.namedWindow(windows[d.serial], cv2.WINDOW_NORMAL)
+    cv2.resizeWindow(windows[d.serial], *WINDOW_SIZES[d.serial])
+
 frame_buffers = {d.serial: None for d in devices}
 results_buffers = {d.serial: None for d in devices}
 
@@ -642,28 +674,39 @@ while True:
         frame_for_detection = cv2.resize(frame, (640, 640))
         results_for_detection = model.predict(source=frame_for_detection, device="mps", imgsz=640, conf=0.6)
 
+        # 使用固定尺寸调整显示帧
+        display_frame = cv2.resize(frame, WINDOW_SIZES[serial])
+        
         # 更新缓冲区
-        frame_buffers[serial] = frame
+        frame_buffers[serial] = display_frame
         results_buffers[serial] = results_for_detection
 
-        annotated_frame = frame.copy()
+        annotated_frame = display_frame.copy()
         if results_for_detection:
-            orig_h, orig_w = frame.shape[:2]
-            scale_x, scale_y = orig_w / 640, orig_h / 640
+            # 使用固定的显示尺寸计算检测框
+            display_w, display_h = WINDOW_SIZES[serial]
+            
             for box in results_for_detection[0].boxes:
                 x, y, w, h = box.xywh[0].tolist()
-                x, y, w, h = x * scale_x, y * scale_y, w * scale_x, h * scale_y
+                # 转换检测框坐标到显示尺寸
+                x = x * display_w/640
+                y = y * display_h/640
+                w = w * display_w/640
+                h = h * display_h/640
+                
                 cls_id = int(box.cls.item())
                 conf = box.conf.item()
                 cv2.rectangle(annotated_frame,
-                              (int(x - w / 2), int(y - h / 2)),
-                              (int(x + w / 2), int(y + h / 2)),
+                              (int(x - w/2), int(y - h/2)),
+                              (int(x + w/2), int(y + h/2)),
                               (0, 255, 0), 2)
                 cv2.putText(annotated_frame, f"{model.names[cls_id]} {conf:.2f}",
-                            (int(x - w / 2), int(y - h / 2 - 10)),
+                            (int(x - w/2), int(y - h/2 - 10)),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
         cv2.imshow(windows[serial], annotated_frame)
+        # 强制设置窗口大小，防止抖动
+        cv2.resizeWindow(windows[serial], *WINDOW_SIZES[serial])
         cv2.setMouseCallback(windows[serial], on_mouse, param={"serial": serial, "frame": frame, "results": results_for_detection})
 
         key = cv2.waitKey(50) & 0xFF
@@ -674,6 +717,8 @@ while True:
         for serial in windows:
             if frame_buffers[serial] is not None:
                 cv2.imshow(windows[serial], frame_buffers[serial])
+                # 在空闲时也保持窗口大小
+                cv2.resizeWindow(windows[serial], *WINDOW_SIZES[serial])
         continue
     except Exception as e:
         print(f"主循环异常: {traceback.format_exc()}")
