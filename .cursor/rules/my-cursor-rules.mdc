@@ -18,6 +18,19 @@ alwaysApply: true
 ### 路径规则
 - 禁止使用绝对路径
 
+##  YOLO训练规范
+
+### Windows配置：
+- Intel(R) Core(TM) i7-14700   2.10 GHz
+- 显示卡 NVIDIA GeForce RTX 4090
+- RAM 32.0 GB 
+- 64 位操作系统, 基于 x64 的处理器
+
+### Mac配置：
+- Apple M2 Pro
+- RAM 16GB
+
+
 
 ### 修复规则
 - 禁止为修复问题创建新的文件或函数。禁止增加或使用cleanup_unused_files！
