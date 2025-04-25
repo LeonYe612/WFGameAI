@@ -15,201 +15,205 @@ logger = logging.getLogger(__name__)
 
 # 在文件开头添加环境变量设置
 import os
+
 os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'max_split_size_mb:256,expandable_segments:True'
 
+
 def main():
-    # CUDA验证
-    if not torch.cuda.is_available():
-        raise RuntimeError("""
+	# CUDA验证
+	if not torch.cuda.is_available():
+		raise RuntimeError("""
         CUDA不可用! 请按以下步骤操作:
         1. 确保已安装NVIDIA驱动
         2. 卸载当前PyTorch: pip uninstall torch torchvision torchaudio
         3. 安装CUDA版PyTorch: pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
         4. 在NVIDIA控制面板中将Python设置为使用独立显卡
         """)
+	
+	# 获取当前目录作为项目根目录
+	PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+	
+	# 启用CUDA优化
+	if torch.cuda.is_available():
+		# 启用TensorFloat-32
+		torch.backends.cuda.matmul.allow_tf32 = True
+		torch.backends.cudnn.allow_tf32 = True
+		# 启用cuDNN自动调优
+		torch.backends.cudnn.benchmark = True
+	
+	# 检查系统和设备
+	logger.info(f"操作系统: {platform.system()}")
+	logger.info(f"PyTorch版本: {torch.__version__}")
+	logger.info(f"CUDA是否可用: {torch.cuda.is_available()}")
+	if torch.cuda.is_available():
+		logger.info(f"使用GPU: {torch.cuda.get_device_name(0)}")
+		logger.info(f"显存总量: {torch.cuda.get_device_properties(0).total_memory / 1024 ** 3:.1f} GB")
+	
+	# 获取系统内存信息
+	system_ram = psutil.virtual_memory().total / (1024 ** 3)  # GB
+	logger.info(f"系统内存: {system_ram:.2f} GB")
+	
+	# 强制使用CUDA设备
+	device = "cuda:0" if torch.cuda.is_available() else "cpu"
+	logger.info(f"使用设备: {device}")
+	
+	# 计算最佳batch_size和workers数量
+	if torch.cuda.is_available():
+		gpu_name = torch.cuda.get_device_name(0).lower()
+		gpu_mem = torch.cuda.get_device_properties(0).total_memory / 1024 ** 3  # 转换为GB
+		
+		# 为RTX 4090特别优化
+		if "4090" in gpu_name:
+			batch_size = 24  # 使用中间值，既利用GPU又避免OOM
+			num_workers = min(16, os.cpu_count() or 1)  # 工作线程数
+			# accumulate不是有效参数，使用nbs实现类似效果
+			nominal_batch_size = 64  # 标称批量大小，用于计算学习率
+			val_batch_size = 2  # 验证阶段使用更小的batch size
+			logger.info("检测到RTX 4090，使用优化配置")
+			logger.info(f"使用batch size: {batch_size}，标称batch size: {nominal_batch_size}")
+			# 启用CUDA优化
+			torch.backends.cudnn.benchmark = True
+			torch.backends.cuda.matmul.allow_tf32 = True
+			torch.backends.cudnn.enabled = True
+			# 清理GPU缓存
+			torch.cuda.empty_cache()
+			gc.collect()
+			# 限制torch缓存分配
+			torch.cuda.memory._set_allocator_settings('max_split_size_mb:128')
+			
+			# 添加定期清理显存的函数
+			def clean_gpu_cache(epoch):
+				if epoch % 2 == 0:  # 每2个epoch清理一次
+					torch.cuda.empty_cache()
+					gc.collect()
+		else:
+			# 其他GPU的默认配置
+			batch_size = 4
+			val_batch_size = 2
+			num_workers = min(4, os.cpu_count() or 1)
+	
+	logger.info(f"Batch size: {batch_size}")
+	logger.info(f"Number of workers: {num_workers}")
+	
+	# 加载模型
+	logger.info("开始加载模型")
+	model_path = os.path.join(PROJECT_ROOT, "models", "yolo11m.pt")
+	if not os.path.exists(model_path):
+		logger.warning(f"本地模型文件不存在: {model_path}，将从官方下载")
+		model = YOLO("yolov8m.pt").to(device)
+	else:
+		logger.info(f"使用本地模型文件: {model_path}")
+		model = YOLO(model_path).to(device)
+	logger.info("模型加载完成")
+	
+	# 数据集路径
+	data_yaml = os.path.join(PROJECT_ROOT, "datasets", "yolov11-card2", "data.yaml")
+	if not os.path.exists(data_yaml):
+		raise FileNotFoundError(f"数据集配置文件不存在: {data_yaml}")
+	
+	# 开始训练
+	logger.info("开始训练")
+	try:
+		# 在训练前主动清理一次GPU缓存
+		torch.cuda.empty_cache()
+		gc.collect()
+		
+		model.train(
+			data=data_yaml,  # 数据集配置文件
+			epochs=100,  # 训练轮次
+			batch=batch_size,  # 设置的批次大小
+			workers=num_workers,  # 工作线程数
+			device=device,  # 设备
+			imgsz=640,  # 图像大小
+			patience=20,  # 早停耐心
+			amp=True,  # 使用自动混合精度
+			save_period=5,  # 每5个epoch保存一次（减少磁盘IO）
+			project=os.path.join(PROJECT_ROOT, "train_results", "train"),  # 保存训练结果的目录
+			name="exp",  # 实验名称
+			exist_ok=False,  # 如果目录存在则覆盖
+			cache="ram" if system_ram > 24 else "disk",  # 系统内存充足时使用RAM缓存，否则磁盘缓存
+			val=True,  # 启用验证
+			conf=0.001,  # 验证时的置信度阈值
+			iou=0.6,  # 验证时的IoU阈值
+			half=True,  # 使用半精度训练
+			plots=True,  # 绘制训练图表
+			rect=False,  # 不使用矩形训练
+			multi_scale=False,  # 关闭多尺度训练
+			close_mosaic=10,  # 最后10个epoch关闭mosaic增强
+			# 内存优化设置
+			overlap_mask=True,  # 启用mask重叠
+			single_cls=False,  # 不使用单类别训练
+			optimizer="AdamW",  # 使用AdamW优化器
+			lr0=0.001,  # 初始学习率
+			lrf=0.01,  # 最终学习率比例
+			momentum=0.937,  # 动量
+			weight_decay=0.0005,  # 权重衰减
+			warmup_epochs=3.0,  # 预热轮次
+			warmup_momentum=0.8,  # 预热动量
+			warmup_bias_lr=0.1,  # 预热偏置学习率
+			box=7.5,  # 边界框损失权重
+			cls=0.5,  # 分类损失权重
+			dfl=1.5,  # DFL损失权重
+			nbs=nominal_batch_size if "4090" in gpu_name else 64,  # 标称batch size
+			# 新增选项:
+			augment=True,  # 使用增强
+			verbose=False,  # 减少日志输出
+			deterministic=False  # 关闭确定性模式以提高性能
+		)
+		logger.info("训练完成")
+		
+		# 验证模型性能
+		logger.info("开始验证模型")
+		model.val()
+		logger.info("验证完成")
+		
+		# 导出最佳模型
+		logger.info("导出最佳模型")
+		output_path = os.path.join(PROJECT_ROOT, "outputs", "weights", "best.pt")
+		os.makedirs(os.path.dirname(output_path), exist_ok=True)
+		
+		# 直接从训练目录获取最佳模型路径
+		best_model_path = os.path.join(PROJECT_ROOT, "train_results", "train", "exp", "weights", "best.pt")
+		if os.path.exists(best_model_path):
+			shutil.copy(best_model_path, output_path)
+			logger.info(f"模型已保存到: {output_path}")
+		else:
+			# 搜索所有训练结果目录并找到最新的一个
+			train_dir = os.path.join(PROJECT_ROOT, "train_results", "train")
+			exp_dirs = [d for d in os.listdir(train_dir) if d.startswith("exp")]
+			if exp_dirs:
+				# 按创建时间排序
+				latest_exp_dir = max(
+					exp_dirs,
+					key=lambda x: os.path.getmtime(os.path.join(train_dir, x))
+				)
+				latest_best_model = os.path.join(train_dir, latest_exp_dir, "weights", "best.pt")
+				
+				# 检查文件是否存在
+				if os.path.exists(latest_best_model):
+					shutil.copy(latest_best_model, output_path)
+					logger.info(f"模型已保存到: {output_path}")
+				else:
+					# 尝试last.pt模型
+					latest_last_model = os.path.join(train_dir, latest_exp_dir, "weights", "last.pt")
+					if os.path.exists(latest_last_model):
+						shutil.copy(latest_last_model, output_path)
+						logger.info(f"最佳模型文件未找到，改用最新模型。已保存到: {output_path}")
+					else:
+						logger.error(f"无法找到任何模型文件。最新的训练目录: {latest_exp_dir}")
+			else:
+				logger.error("没有找到任何训练结果目录")
+	
+	# 如果需要其他格式，可以使用有效的格式如下
+	# 可选：导出为其他格式
+	# model.export(format="onnx", save_dir=os.path.dirname(output_path))
+	
+	except Exception as e:
+		logger.error(f"训练过程中出现错误: {str(e)}", exc_info=True)
+		raise
 
-    # 获取当前目录作为项目根目录
-    PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
-
-    # 启用CUDA优化
-    if torch.cuda.is_available():
-        # 启用TensorFloat-32
-        torch.backends.cuda.matmul.allow_tf32 = True
-        torch.backends.cudnn.allow_tf32 = True
-        # 启用cuDNN自动调优
-        torch.backends.cudnn.benchmark = True
-
-    # 检查系统和设备
-    logger.info(f"操作系统: {platform.system()}")
-    logger.info(f"PyTorch版本: {torch.__version__}")
-    logger.info(f"CUDA是否可用: {torch.cuda.is_available()}")
-    if torch.cuda.is_available():
-        logger.info(f"使用GPU: {torch.cuda.get_device_name(0)}")
-        logger.info(f"显存总量: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f} GB")
-        
-    # 获取系统内存信息
-    system_ram = psutil.virtual_memory().total / (1024**3)  # GB
-    logger.info(f"系统内存: {system_ram:.2f} GB")
-
-    # 强制使用CUDA设备
-    device = "cuda:0" if torch.cuda.is_available() else "cpu"
-    logger.info(f"使用设备: {device}")
-
-    # 计算最佳batch_size和workers数量
-    if torch.cuda.is_available():
-        gpu_name = torch.cuda.get_device_name(0).lower()
-        gpu_mem = torch.cuda.get_device_properties(0).total_memory / 1024**3  # 转换为GB
-        
-        # 为RTX 4090特别优化
-        if "4090" in gpu_name:
-            batch_size = 24  # 使用中间值，既利用GPU又避免OOM
-            num_workers = min(16, os.cpu_count() or 1)  # 工作线程数
-            # accumulate不是有效参数，使用nbs实现类似效果
-            nominal_batch_size = 64  # 标称批量大小，用于计算学习率
-            val_batch_size = 2  # 验证阶段使用更小的batch size
-            logger.info("检测到RTX 4090，使用优化配置")
-            logger.info(f"使用batch size: {batch_size}，标称batch size: {nominal_batch_size}")
-            # 启用CUDA优化
-            torch.backends.cudnn.benchmark = True
-            torch.backends.cuda.matmul.allow_tf32 = True
-            torch.backends.cudnn.enabled = True
-            # 清理GPU缓存
-            torch.cuda.empty_cache()
-            gc.collect()
-            # 限制torch缓存分配
-            torch.cuda.memory._set_allocator_settings('max_split_size_mb:128')
-            # 添加定期清理显存的函数
-            def clean_gpu_cache(epoch):
-                if epoch % 2 == 0:  # 每2个epoch清理一次
-                    torch.cuda.empty_cache()
-                    gc.collect()
-        else:
-            # 其他GPU的默认配置
-            batch_size = 4
-            val_batch_size = 2
-            num_workers = min(4, os.cpu_count() or 1)
-
-    logger.info(f"Batch size: {batch_size}")
-    logger.info(f"Number of workers: {num_workers}")
-
-    # 加载模型
-    logger.info("开始加载模型")
-    model_path = os.path.join(PROJECT_ROOT, "models", "yolo11m.pt")
-    if not os.path.exists(model_path):
-        logger.warning(f"本地模型文件不存在: {model_path}，将从官方下载")
-        model = YOLO("yolov8m.pt").to(device)
-    else:
-        logger.info(f"使用本地模型文件: {model_path}")
-        model = YOLO(model_path).to(device)
-    logger.info("模型加载完成")
-
-    # 数据集路径
-    data_yaml = os.path.join(PROJECT_ROOT, "datasets", "yolov11-card2", "data.yaml")
-    if not os.path.exists(data_yaml):
-        raise FileNotFoundError(f"数据集配置文件不存在: {data_yaml}")
-
-    # 开始训练
-    logger.info("开始训练")
-    try:
-        # 在训练前主动清理一次GPU缓存
-        torch.cuda.empty_cache()
-        gc.collect()
-        
-        model.train(
-            data=data_yaml,  # 数据集配置文件
-            epochs=100,  # 训练轮次
-            batch=batch_size,  # 设置的批次大小
-            workers=num_workers,  # 工作线程数
-            device=device,  # 设备
-            imgsz=640,  # 图像大小
-            patience=10,  # 早停耐心
-            amp=True,  # 使用自动混合精度
-            save_period=5,  # 每5个epoch保存一次（减少磁盘IO）
-            project=os.path.join(PROJECT_ROOT, "train_results", "train"),  # 保存训练结果的目录
-            name="exp",  # 实验名称
-            exist_ok=False,  # 如果目录存在则覆盖
-            cache="ram" if system_ram > 24 else "disk",  # 系统内存充足时使用RAM缓存，否则磁盘缓存
-            val=True,  # 启用验证
-            conf=0.001,  # 验证时的置信度阈值
-            iou=0.6,  # 验证时的IoU阈值
-            half=True,  # 使用半精度训练
-            plots=True,  # 绘制训练图表
-            rect=False,  # 不使用矩形训练
-            multi_scale=False,  # 关闭多尺度训练
-            close_mosaic=10,  # 最后10个epoch关闭mosaic增强
-            # 内存优化设置
-            overlap_mask=True,  # 启用mask重叠
-            single_cls=False,  # 不使用单类别训练
-            optimizer="AdamW",  # 使用AdamW优化器
-            lr0=0.001,  # 初始学习率
-            lrf=0.01,  # 最终学习率比例
-            momentum=0.937,  # 动量
-            weight_decay=0.0005,  # 权重衰减
-            warmup_epochs=3.0,  # 预热轮次
-            warmup_momentum=0.8,  # 预热动量
-            warmup_bias_lr=0.1,  # 预热偏置学习率
-            box=7.5,  # 边界框损失权重
-            cls=0.5,  # 分类损失权重
-            dfl=1.5,  # DFL损失权重
-            nbs=nominal_batch_size if "4090" in gpu_name else 64,  # 标称batch size
-            # 新增选项:
-            augment=True,  # 使用增强
-            verbose=False,  # 减少日志输出
-            deterministic=False  # 关闭确定性模式以提高性能
-        )
-        logger.info("训练完成")
-
-        # 验证模型性能
-        logger.info("开始验证模型")
-        model.val()
-        logger.info("验证完成")
-
-        # 导出最佳模型
-        logger.info("导出最佳模型")
-        output_path = os.path.join(PROJECT_ROOT, "outputs", "weights", "best.pt")
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
-
-        # 直接从训练目录获取最佳模型路径
-        best_model_path = os.path.join(PROJECT_ROOT, "train_results", "train", "exp", "weights", "best.pt")
-        if os.path.exists(best_model_path):
-            shutil.copy(best_model_path, output_path)
-            logger.info(f"模型已保存到: {output_path}")
-        else:
-            # 搜索所有训练结果目录并找到最新的一个
-            train_dir = os.path.join(PROJECT_ROOT, "train_results", "train")
-            exp_dirs = [d for d in os.listdir(train_dir) if d.startswith("exp")]
-            if exp_dirs:
-                # 按创建时间排序
-                latest_exp_dir = max(
-                    exp_dirs,
-                    key=lambda x: os.path.getmtime(os.path.join(train_dir, x))
-                )
-                latest_best_model = os.path.join(train_dir, latest_exp_dir, "weights", "best.pt")
-                
-                # 检查文件是否存在
-                if os.path.exists(latest_best_model):
-                    shutil.copy(latest_best_model, output_path)
-                    logger.info(f"模型已保存到: {output_path}")
-                else:
-                    # 尝试last.pt模型
-                    latest_last_model = os.path.join(train_dir, latest_exp_dir, "weights", "last.pt")
-                    if os.path.exists(latest_last_model):
-                        shutil.copy(latest_last_model, output_path)
-                        logger.info(f"最佳模型文件未找到，改用最新模型。已保存到: {output_path}")
-                    else:
-                        logger.error(f"无法找到任何模型文件。最新的训练目录: {latest_exp_dir}")
-            else:
-                logger.error("没有找到任何训练结果目录")
-
-        # 如果需要其他格式，可以使用有效的格式如下
-        # 可选：导出为其他格式
-        # model.export(format="onnx", save_dir=os.path.dirname(output_path))
-
-    except Exception as e:
-        logger.error(f"训练过程中出现错误: {str(e)}", exc_info=True)
-        raise
 
 if __name__ == '__main__':
-    # Windows系统需要这个
-    multiprocessing.freeze_support()
-    main()
+	# Windows系统需要这个
+	multiprocessing.freeze_support()
+	main()
