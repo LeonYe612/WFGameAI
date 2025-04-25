@@ -1399,7 +1399,7 @@ def run_one_report(log_dir, report_dir, script_path=None):
                             resource_copied = True
                             print(f"从其他报告复制静态资源: {other_static} -> {static_dir}")
                             break
-                        except Exception as e:
+        except Exception as e:
                             print(f"复制静态资源时出现错误: {e}")
                 
                 if not resource_copied:
@@ -1442,7 +1442,7 @@ def run_one_report(log_dir, report_dir, script_path=None):
                 shutil.copy2(script_log_html_file, report_html_file)
                 print(f"复制报告: {script_log_html_file} -> {report_html_file}")
                 actual_html_file = report_html_file
-            except Exception as e:
+    except Exception as e:
                 print(f"复制报告失败: {e}")
         
         # 修复HTML中的路径问题
@@ -1780,7 +1780,7 @@ def run_one_report(log_dir, report_dir, script_path=None):
                 print(f"修复HTML路径失败: {e}")
                 traceback.print_exc()
 
-        return True
+    return True
     except Exception as e:
         print(f"生成HTML报告失败: {str(e)}")
         traceback.print_exc()
