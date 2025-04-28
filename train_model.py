@@ -199,6 +199,10 @@ def main():
 	# 获取当前目录作为项目根目录
 	PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 	
+	# 在训练开始前清理旧的实验目录，只保留最新的3个实验目录和每个实验中最新的3个模型文件
+	logger.info("开始清理旧的实验目录和模型文件...")
+	clean_all_experiment_folders(PROJECT_ROOT, keep_latest_exps=3, keep_models_per_exp=3)
+	
 	# 启用CUDA优化
 	if torch.cuda.is_available():
 		# 启用TensorFloat-32
@@ -264,12 +268,18 @@ def main():
 	# 加载模型
 	logger.info("开始加载模型")
 	model_path = os.path.join(PROJECT_ROOT, "models", "yolo11m.pt")
-	if not os.path.exists(model_path):
+	datasets_model_path = os.path.join(PROJECT_ROOT, "datasets", "models", "yolo11m.pt")
+
+	# 首先检查主目录，然后检查datasets/models目录
+	if os.path.exists(model_path):
+		logger.info(f"使用主目录模型文件: {model_path}")
+		model = YOLO(model_path).to(device)
+	elif os.path.exists(datasets_model_path):
+		logger.info(f"使用datasets/models目录模型文件: {datasets_model_path}")
+		model = YOLO(datasets_model_path).to(device)
+	else:
 		logger.warning(f"本地模型文件不存在: {model_path}，将从官方下载")
 		model = YOLO("yolov8m.pt").to(device)
-	else:
-		logger.info(f"使用本地模型文件: {model_path}")
-		model = YOLO(model_path).to(device)
 	logger.info("模型加载完成")
 	
 	# 数据集路径
@@ -339,8 +349,15 @@ def main():
 		
 		# 验证模型性能
 		logger.info("开始验证模型")
-		model.val()
+		# 使用与训练相同的实验名称进行验证
+		val_results = model.val(name=exp_name)
 		logger.info("验证完成")
+		
+		# 清理权重文件，只保留最新的3个
+		weights_dir = os.path.join(PROJECT_ROOT, "train_results", "train", exp_name, "weights")
+		if os.path.exists(weights_dir):
+			logger.info("开始清理权重文件，只保留最新的3个")
+			clean_model_files(weights_dir, keep_num=3)
 		
 		# 导出最佳模型
 		logger.info("导出最佳模型")
@@ -348,7 +365,9 @@ def main():
 		os.makedirs(os.path.dirname(output_path), exist_ok=True)
 		
 		# 直接从训练目录获取最佳模型路径
-		best_model_path = os.path.join(PROJECT_ROOT, "train_results", "train", "exp", "weights", "best.pt")
+		train_dir = os.path.join(PROJECT_ROOT, "train_results", "train")
+		best_model_path = os.path.join(train_dir, exp_name, "weights", "best.pt")
+		
 		if os.path.exists(best_model_path):
 			shutil.copy(best_model_path, output_path)
 			logger.info(f"模型已保存到: {output_path}")
@@ -368,25 +387,30 @@ def main():
 			if possible_exp_dirs:
 				# 按创建时间排序，最新的优先
 				latest_exp_dir = max(
-					exp_dirs,
+					possible_exp_dirs,
 					key=lambda x: os.path.getmtime(os.path.join(train_dir, x))
 				)
-				latest_best_model = os.path.join(train_dir, latest_exp_dir, "weights", "best.pt")
+				logger.info(f"尝试使用最新的实验目录: {latest_exp_dir}")
 				
-				# 检查文件是否存在
+				# 尝试查找最佳模型
+				latest_best_model = os.path.join(train_dir, latest_exp_dir, "weights", "best.pt")
 				if os.path.exists(latest_best_model):
 					shutil.copy(latest_best_model, output_path)
-					logger.info(f"模型已保存到: {output_path}")
+					logger.info(f"找到并保存了最佳模型到: {output_path}")
 				else:
 					# 尝试last.pt模型
 					latest_last_model = os.path.join(train_dir, latest_exp_dir, "weights", "last.pt")
 					if os.path.exists(latest_last_model):
 						shutil.copy(latest_last_model, output_path)
-						logger.info(f"最佳模型文件未找到，改用最新模型。已保存到: {output_path}")
+						logger.info(f"找到并保存了最新模型到: {output_path}")
 					else:
-						logger.error(f"无法找到任何模型文件。最新的训练目录: {latest_exp_dir}")
+						logger.error(f"在实验目录 {latest_exp_dir} 中未找到任何模型文件")
 			else:
 				logger.error("没有找到任何训练结果目录")
+		
+		# 训练结束后再次清理所有实验目录
+		logger.info("训练结束，开始最终清理所有实验目录...")
+		clean_all_experiment_folders(PROJECT_ROOT, keep_latest_exps=3, keep_models_per_exp=3)
 	
 	# 如果需要其他格式，可以使用有效的格式如下
 	# 可选：导出为其他格式
@@ -400,4 +424,27 @@ def main():
 if __name__ == '__main__':
 	# Windows系统需要这个
 	multiprocessing.freeze_support()
-	main()
+	
+	# 获取当前目录作为项目根目录
+	PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+	
+	# 解析命令行参数
+	import argparse
+	parser = argparse.ArgumentParser(description='YOLO模型训练与清理工具')
+	parser.add_argument('--clean-only', action='store_true', help='只执行清理操作，不进行训练')
+	parser.add_argument('--clean-git', action='store_true', help='清理Git仓库中的大文件')
+	args = parser.parse_args()
+	
+	if args.clean_only:
+		# 只执行清理操作
+		logger.info("开始清理操作...")
+		clean_all_experiment_folders(PROJECT_ROOT, keep_latest_exps=3, keep_models_per_exp=3)
+		logger.info("清理操作完成")
+	elif args.clean_git:
+		# 清理Git仓库
+		logger.info("开始清理Git仓库...")
+		cleanup_git_repository()
+		logger.info("Git仓库清理完成")
+	else:
+		# 执行正常训练流程
+		main()
