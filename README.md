@@ -2,44 +2,28 @@
 
 ## 项目概述
 
-WFGame AI 自动化测试框架是一个基于计算机视觉（YOLO）与Airtest的游戏UI自动化测试解决方案。该框架通过深度学习模型实现了跨平台、跨分辨率的UI元素识别，显著降低了传统图像识别自动化测试的维护成本，提高了测试稳定性。
+WFGame AI 自动化测试框架是一个基于YOLO11m计算机视觉的游戏UI自动化测试解决方案。该框架通过深度学习模型实现了跨平台、跨分辨率的UI元素精准识别，彻底替代传统图像对比方法，显著提高了自动化测试的稳定性和可靠性，并支持多设备并行测试（1-100台规模）。
 
 ### 核心特性
 
-- **AI驱动的UI识别**：使用YOLO模型进行实时UI元素检测
-- **多设备并行测试**：支持多台设备同时执行测试用例
+- **AI驱动的UI识别**：使用YOLO11m自定义模型进行实时UI元素检测，替代传统图像对比方法
+- **B/S架构平台**：基于honeydou平台，提供完整的Web界面进行脚本管理、任务调度、设备管理等
+- **多设备并行测试**：支持大规模（1-100台）设备同时执行测试用例
+- **数据驱动测试**：支持数据与脚本分离，通过Excel/数据库导入测试数据
 - **完整的测试流程**：包含录制、回放、报告生成等全流程功能
 - **智能报告系统**：生成详细的HTML测试报告，支持多设备汇总
-- **三种测试模式**：
-  - 固定场景模式：预设流程自动化遍历
-  - UI深度遍历模式：智能探索未知界面
-  - 路径全量遍历模式：自动验证所有可能路径
-
-## 技术架构
-
-```
-WFGameAI/
-├── scripts/                # 核心脚本目录
-│   ├── train_model.py     # 模型训练
-│   ├── record_script.py   # 测试录制
-│   └── replay_script.py   # 测试回放
-├── models/                 # 模型存储
-├── datasets/              # 训练数据集
-├── outputs/               # 输出目录
-│   ├── train/            # 训练输出
-│   ├── recordlogs/       # 录制日志
-│   └── replay_reports/   # 回放报告
-└── templates/            # 报告模板
-```
+- **平台兼容**：支持Windows（CUDA）。不用支持Mac（MPS）系统（模型训练完全在Windows上进行）。
 
 ## 环境要求
 
 - Python 3.9+
-- PyTorch
+- PyTorch（Windows: CUDA支持，Mac: MPS支持）
 - Ultralytics YOLO
 - OpenCV
-- Airtest
-- ADB工具
+- Django 3.2+（Web平台）
+- MySQL 5.7+（数据存储）
+- Redis 7.2+（缓存）
+- ADB工具（设备连接）
 
 ## 快速开始
 
@@ -55,15 +39,10 @@ pip install -r requirements.txt
 
 2. **模型训练**
 ```bash
-python scripts/train_model.py
+python train_model.py
 ```
 
-3. **生成标注**
-```bash
-python scripts/generate_annotations.py
-```
-
-4. **录制测试**
+3. **录制测试**
 ```bash
 # 基础录制（仅记录匹配按钮）
 python record_script.py --record
@@ -72,36 +51,58 @@ python record_script.py --record
 python record_script.py --record-no-match
 ```
 
-5. **回放测试**
+4. **回放测试**
 ```bash
 # 单脚本回放
-
-python replay_script.py --show-screens --script testcase/scene2_guide_steps_2025-04-07.json --max-duration 30
-``` --script参数指定了回放步骤文件为testcase/scene2_guide_steps_2025-04-07.json，可能会循环执行一到多次，直到达到最大运行时间30秒。```
-
-python replay_script.py --show-screens --script testcase/scene1_login_steps_2025-04-07.json --loop-count 1：
-```--script参数指定了回放步骤文件为testcase/scene1_login_steps_2025-04-07.json，并且会循环执行一次。```
+python replay_script.py --show-screens --script testcase/scene1_login_steps_2025-04-07.json --loop-count 1
 
 # 多脚本顺序回放
-```python replay_script.py --show-screens --script testcase/scene1_nologin_steps_2025-04-07.json --loop-count 1 --script testcase/scene2_guide_steps_2025-04-07.json --max-duration 30```
+python replay_script.py --show-screens --script testcase/scene1_nologin_steps_2025-04-07.json --loop-count 1 --script testcase/scene2_guide_steps_2025-04-07.json --max-duration 30
+```
 
-```说明：先执行场景1的登录操作，然后执行场景2的引导操作。
-    --script 参数表示指定了回放步骤文件为testcase/scene1_nologin_steps_2025-04-07.json 
-    --loop-count 1 ，表示此文件只会循环执行一次。
-    --script 参数指定了回放步骤文件为testcase/scene2_guide_steps_2025-04-07.json 
-    --max-duration 30，表示此步骤无视循环次数，会执行30秒后结束。且只对此文件生效，非全局。```
+## Web平台（基于honeydou）
 
+WFGame AI自动化测试框架基于honeydou自动化测试平台构建，采用Django+Vue的B/S架构，提供完整的Web界面进行测试管理。详细信息请参考[honeydou平台文档](docs/README_honeydou.md)。
 
+主要功能包括：
+- 脚本管理与版本控制
+- 测试任务调度与执行
+- 设备管理与状态监控
+- 报告生成与查看
+- 数据驱动测试配置
 
+## 实施路线图
 
+项目分为四个主要阶段实施：
 
+1. **阶段一：构建AI核心引擎与平台基础**
+   - 开发AI视觉引擎：利用YOLO11m替代传统图像识别
+   - 构建完整B/S架构平台：集成脚本管理、任务调度等功能
+   - 确保固定场景脚本稳定回放
 
-### 报告特性
+2. **阶段二：引入数据驱动与赋能团队**
+   - 构建数据驱动框架：实现数据与脚本分离
+   - 提升平台易用性：开发低代码界面
+   - 培训功能测试团队（22人）
 
-- 分层结构：设备级别报告 + 汇总报告
-- 详细记录：包含每步操作的截图和结果
-- 资源完整：确保所有静态资源可访问
-- 交互友好：支持报告间快速导航
+3. **阶段三：集成智能优化与线上监控**
+   - 实施智能测试选择：基于代码变更和历史数据筛选用例
+   - 部署线上自动化监控：对生产/预发环境进行监控
+   - 探索AI异常检测
+
+4. **阶段四：持续探索AI深度应用**
+   - 研究AI辅助生成：探索生成测试数据/用例
+   - 深化路径遍历应用：UI深度遍历和场景路径全遍历
+   - 开发AI辅助探索测试工具
+
+当前实施进度请参考[实施进度跟踪文档](docs/WFGameAI_实施进度跟踪.md)。
+
+## 测试报告系统
+
+- **分层结构**：设备级别报告 + 汇总报告
+- **详细记录**：包含每步操作的截图和结果
+- **资源完整**：确保所有静态资源可访问
+- **交互友好**：支持报告间快速导航
 
 ## 工作流程
 
@@ -159,32 +160,13 @@ python replay_script.py --show-screens --script testcase/scene1_login_steps_2025
    - 验证静态资源
    - 确认目录权限
 
-## 贡献指南
-
-欢迎提交Issue和Pull Request来改进项目。请确保：
-
-1. 遵循项目的代码规范
-2. 添加必要的测试用例
-3. 更新相关文档
-4. 提供清晰的提交信息
-
-## 许可证
-
-[MIT License](LICENSE)
-
-## 联系方式
-
-- 项目维护者：[Your Name]
-- 邮箱：[your.email@example.com]
-- 项目主页：[GitHub Repository URL]
-
 ## 项目结构
-
-项目采用标准的Airtest目录结构组织：
 
 ```
 /WFGameAI/
-├── README.md                                      # 项目说明文档
+├── README.md     
+├── external/                                      # 引入外部GIT仓库                          
+│   └── honeydou/                                  # WF自动化测试平台仓库代码（Django+VUE）
 ├── datasets/                                      # 训练数据集目录
 │   ├── models/                                    # 模型存储目录
 │   ├── templates/                                 # 模板目录
@@ -195,7 +177,11 @@ python replay_script.py --show-screens --script testcase/scene1_login_steps_2025
 │       ├── train/                                 # 训练集
 │       └── valid/                                 # 验证集
 ├── docs/                                          # 文档目录
-│   └── images/                                    # 文档图片资源
+│   ├── README_honeydou.md                         # honeydou平台文档
+│   ├── WFGameAI_实施进度跟踪.md                     # 项目进度跟踪
+│   ├── AI 自动化测试框架实施路线图-【精简】.md         # 实施路线图（精简版）
+│   ├── AI 自动化测试框架实施路线图 -【详细】.md        # 实施路线图（详细版）
+│   └── WFGameAI_开发文档.md                        # 开发文档
 ├── outputs/                                       # 输出目录
 │   └── WFGameAI-reports/                          # 项目报告根目录
 │       ├── ui_reports/                            # 汇总报告目录
@@ -205,25 +191,25 @@ python replay_script.py --show-screens --script testcase/scene1_login_steps_2025
 │           └── WFGameAI.air/                      # 项目目录
 │               └── log/                           # 设备报告目录
 │                   └── [device]_[timestamp]/      # 设备目录
-│                       ├── log.html               # 设备HTML报告
-│                       ├── log.txt                # 设备日志
-│                       ├── script.py              # 脚本文件
-│                       ├── log/                   # 日志子目录
-│                       │   ├── log.txt            # 日志副本
-│                       │   ├── [timestamp].jpg    # 截图副本
-│                       │   └── [timestamp]_small.jpg # 缩略图副本
-│                       └── static/                # 静态资源
-│                           ├── css/               # CSS文件
-│                           ├── js/                # JS文件
-│                           ├── image/             # 图片资源
-│                           └── fonts/             # 字体资源
 ├── scripts/                                       # 脚本目录
 ├── templates/                                     # 模板文件目录
 ├── testcase/                                      # 测试用例目录
 ├── record_script.py                               # 录制脚本
 ├── replay_script.py                               # 回放脚本
 ├── train_model.py                                 # 模型训练
+├── fix_static_path.py                             # 修复静态资源路径
 ├── generate_annotations.py                        # 生成标注
 ├── generate_report.py                             # 生成报告
 └── ui_explore.py                                  # UI探索工具
 ```
+
+## 最新更新
+
+- **2023-05-28**: 添加项目实施进度跟踪文档
+- **2023-05-28**: 集成honeydou自动化测试平台
+- **2023-05-28**: 更新README文档，更详细描述项目架构和实施路线
+
+## 联系方式
+
+- 项目维护者：WFGameAI团队
+- 邮箱：[contact@example.com]

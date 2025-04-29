@@ -12,6 +12,8 @@ import datetime
 import glob
 import re
 import subprocess
+import math  # 添加math模块支持
+import numpy as np  # 添加numpy支持
 
 # 设置日志
 logging.basicConfig(level=logging.INFO)
@@ -21,6 +23,93 @@ logger = logging.getLogger(__name__)
 import os
 
 os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'max_split_size_mb:256,expandable_segments:True'
+
+# 添加UI特有数据增强配置
+UI_AUGMENTATION = {
+	'mosaic': 0.5,            # 马赛克增强
+	'mixup': 0.1,             # 混合增强
+	'copy_paste': 0.1,        # 复制粘贴增强
+	'degrees': 0.0,           # UI界面不需要大角度旋转
+	'translate': 0.1,         # 轻微平移
+	'scale': 0.1,             # 轻微缩放
+	'shear': 0.0,             # UI不需要剪切
+	'perspective': 0.0,       # UI不需要透视
+	'hsv_h': 0.015,           # 色调轻微变化
+	'hsv_s': 0.2,             # 饱和度变化
+	'hsv_v': 0.2,             # 亮度变化
+	'fliplr': 0.01,           # UI界面很少需要翻转
+	'flipud': 0.0,            # UI不需要上下翻转
+}
+
+# 添加Focal Loss难例挖掘实现
+class FocalLoss(torch.nn.Module):
+	"""实现Focal Loss以关注难例
+	
+	Focal Loss用于处理类别不平衡问题，特别关注难以分类的样本。
+	公式: FL(pt) = -alpha * (1 - pt)^gamma * log(pt)
+	
+	Args:
+		alpha: 权重因子，用于平衡正负样本
+		gamma: 聚焦参数，降低易分类样本的损失权重
+		reduction: 损失计算方式 ('mean', 'sum' 或 'none')
+	"""
+	def __init__(self, alpha=0.25, gamma=2.0, reduction='mean'):
+		super(FocalLoss, self).__init__()
+		self.alpha = alpha
+		self.gamma = gamma
+		self.reduction = reduction
+		
+	def forward(self, inputs, targets):
+		"""计算Focal Loss
+		
+		Args:
+			inputs: 模型预测的logits
+			targets: 真实标签
+			
+		Returns:
+			计算得到的focal loss
+		"""
+		# 计算交叉熵损失
+		ce_loss = torch.nn.functional.cross_entropy(
+			inputs, targets, reduction='none'
+		)
+		
+		# 计算预测概率
+		pt = torch.exp(-ce_loss)
+		
+		# 应用focal loss公式
+		focal_loss = self.alpha * (1 - pt) ** self.gamma * ce_loss
+		
+		# 根据reduction方式返回结果
+		if self.reduction == 'mean':
+			return focal_loss.mean()
+		elif self.reduction == 'sum':
+			return focal_loss.sum()
+		else:
+			return focal_loss
+
+# 添加难例挖掘工具函数
+def hard_example_mining(loss_values, keep_ratio=0.7):
+	"""保留损失较大的难例样本
+	
+	Args:
+		loss_values: 每个样本的损失值
+		keep_ratio: 保留的样本比例
+		
+	Returns:
+		难例样本的掩码
+	"""
+	# 确定保留的样本数量
+	k = int(len(loss_values) * keep_ratio)
+	
+	# 对损失值进行排序获取索引
+	_, indices = torch.sort(loss_values, descending=True)
+	
+	# 创建掩码，标记保留的难例
+	mask = torch.zeros_like(loss_values, dtype=torch.bool)
+	mask[indices[:k]] = True
+	
+	return mask
 
 
 def clean_model_files(weights_dir, keep_num=3):
@@ -448,3 +537,73 @@ if __name__ == '__main__':
 	else:
 		# 执行正常训练流程
 		main()
+
+# 为不同UI元素定义自适应阈值配置
+UI_ADAPTIVE_THRESHOLDS = {
+	# 按钮元素
+	'button': {
+		'base_conf': 0.25,          # 基础置信度阈值
+		'min_conf': 0.20,           # 最小置信度阈值
+		'adaptive_factor': 0.05,    # 自适应调整因子
+	},
+	# 文本元素
+	'text': {
+		'base_conf': 0.30,
+		'min_conf': 0.25, 
+		'adaptive_factor': 0.03,
+	},
+	# 图标元素
+	'icon': {
+		'base_conf': 0.35,
+		'min_conf': 0.30,
+		'adaptive_factor': 0.04,
+	},
+	# 菜单元素
+	'menu': {
+		'base_conf': 0.40,
+		'min_conf': 0.30,
+		'adaptive_factor': 0.05,
+	},
+	# 对话框元素
+	'dialog': {
+		'base_conf': 0.45,
+		'min_conf': 0.35,
+		'adaptive_factor': 0.05,
+	},
+	# 默认值(用于未指定的元素类型)
+	'default': {
+		'base_conf': 0.30,
+		'min_conf': 0.25,
+		'adaptive_factor': 0.04,
+	}
+}
+
+def get_adaptive_threshold(element_type, image_quality=1.0):
+	"""
+	根据UI元素类型和图像质量获取自适应阈值
+	
+	Args:
+		element_type: UI元素类型 ('button', 'text', 'icon', 'menu', 'dialog')
+		image_quality: 图像质量因子(0.0-1.0)，值越小表示图像质量越差
+		
+	Returns:
+		适合该元素类型的检测阈值
+	"""
+	# 如果元素类型不在配置中，使用默认值
+	if element_type not in UI_ADAPTIVE_THRESHOLDS:
+		element_type = 'default'
+	
+	# 获取该元素类型的阈值配置    
+	threshold_config = UI_ADAPTIVE_THRESHOLDS[element_type]
+	
+	# 根据图像质量调整阈值
+	quality_factor = max(0.0, min(1.0, image_quality))  # 确保在0-1范围内
+	quality_adjustment = threshold_config['adaptive_factor'] * (1.0 - quality_factor)
+	
+	# 计算最终阈值 (质量越低，阈值越低)
+	final_threshold = threshold_config['base_conf'] - quality_adjustment
+	
+	# 确保不低于最小阈值
+	final_threshold = max(final_threshold, threshold_config['min_conf'])
+	
+	return final_threshold
