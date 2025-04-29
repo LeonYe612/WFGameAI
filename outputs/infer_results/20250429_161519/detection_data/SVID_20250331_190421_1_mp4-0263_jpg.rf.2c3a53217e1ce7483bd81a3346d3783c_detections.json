@@ -1,0 +1,18 @@
+{
+  "image_file": "SVID_20250331_190421_1_mp4-0263_jpg.rf.2c3a53217e1ce7483bd81a3346d3783c.jpg",
+  "image_path": "C:\\Users\\Administrator\\PycharmProjects\\WFGameAI\\datasets\\yolov11-card2\\test\\images\\SVID_20250331_190421_1_mp4-0263_jpg.rf.2c3a53217e1ce7483bd81a3346d3783c.jpg",
+  "num_detections": 1,
+  "detections": [
+    {
+      "class_id": 0,
+      "class_name": "hint-guide",
+      "confidence": 0.85107421875,
+      "box": [
+        250,
+        625,
+        392,
+        639
+      ]
+    }
+  ]
+}

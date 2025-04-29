@@ -1,0 +1,29 @@
+{
+  "image_file": "SVID_20250331_190421_1_mp4-0242_jpg.rf.60872d7d6868947037cb36037aee1b84.jpg",
+  "image_path": "C:\\Users\\Administrator\\PycharmProjects\\WFGameAI\\datasets\\yolov11-card2\\test\\images\\SVID_20250331_190421_1_mp4-0242_jpg.rf.60872d7d6868947037cb36037aee1b84.jpg",
+  "num_detections": 2,
+  "detections": [
+    {
+      "class_id": 71,
+      "class_name": "operation-tenRecruit",
+      "confidence": 0.95263671875,
+      "box": [
+        48,
+        581,
+        290,
+        617
+      ]
+    },
+    {
+      "class_id": 71,
+      "class_name": "operation-tenRecruit",
+      "confidence": 0.63525390625,
+      "box": [
+        342,
+        578,
+        579,
+        619
+      ]
+    }
+  ]
+}

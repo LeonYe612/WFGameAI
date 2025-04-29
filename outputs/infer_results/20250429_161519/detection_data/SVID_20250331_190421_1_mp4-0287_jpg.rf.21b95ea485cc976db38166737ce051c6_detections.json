@@ -1,0 +1,128 @@
+{
+  "image_file": "SVID_20250331_190421_1_mp4-0287_jpg.rf.21b95ea485cc976db38166737ce051c6.jpg",
+  "image_path": "C:\\Users\\Administrator\\PycharmProjects\\WFGameAI\\datasets\\yolov11-card2\\test\\images\\SVID_20250331_190421_1_mp4-0287_jpg.rf.21b95ea485cc976db38166737ce051c6.jpg",
+  "num_detections": 11,
+  "detections": [
+    {
+      "class_id": 11,
+      "class_name": "navigation-hero",
+      "confidence": 0.974609375,
+      "box": [
+        372,
+        580,
+        476,
+        630
+      ]
+    },
+    {
+      "class_id": 1,
+      "class_name": "hint-reddot",
+      "confidence": 0.9560546875,
+      "box": [
+        431,
+        584,
+        465,
+        600
+      ]
+    },
+    {
+      "class_id": 3,
+      "class_name": "navigation-bag",
+      "confidence": 0.93359375,
+      "box": [
+        260,
+        581,
+        361,
+        629
+      ]
+    },
+    {
+      "class_id": 36,
+      "class_name": "navigation-station-off",
+      "confidence": 0.93212890625,
+      "box": [
+        150,
+        583,
+        239,
+        628
+      ]
+    },
+    {
+      "class_id": 25,
+      "class_name": "navigation-main",
+      "confidence": 0.92236328125,
+      "box": [
+        28,
+        582,
+        131,
+        629
+      ]
+    },
+    {
+      "class_id": 9,
+      "class_name": "navigation-fight",
+      "confidence": 0.9140625,
+      "box": [
+        498,
+        569,
+        640,
+        632
+      ]
+    },
+    {
+      "class_id": 56,
+      "class_name": "operation-challenge",
+      "confidence": 0.888671875,
+      "box": [
+        461,
+        475,
+        627,
+        558
+      ]
+    },
+    {
+      "class_id": 28,
+      "class_name": "navigation-role",
+      "confidence": 0.8740234375,
+      "box": [
+        11,
+        25,
+        135,
+        81
+      ]
+    },
+    {
+      "class_id": 1,
+      "class_name": "hint-reddot",
+      "confidence": 0.82666015625,
+      "box": [
+        88,
+        584,
+        119,
+        599
+      ]
+    },
+    {
+      "class_id": 1,
+      "class_name": "hint-reddot",
+      "confidence": 0.80908203125,
+      "box": [
+        608,
+        573,
+        640,
+        589
+      ]
+    },
+    {
+      "class_id": 1,
+      "class_name": "hint-reddot",
+      "confidence": 0.6259765625,
+      "box": [
+        88,
+        32,
+        117,
+        45
+      ]
+    }
+  ]
+}

@@ -1,0 +1,117 @@
+{
+  "image_file": "SVID_20250331_190421_1_mp4-0280_jpg.rf.84e1f88d691c158a42ff0640651931ee.jpg",
+  "image_path": "C:\\Users\\Administrator\\PycharmProjects\\WFGameAI\\datasets\\yolov11-card2\\test\\images\\SVID_20250331_190421_1_mp4-0280_jpg.rf.84e1f88d691c158a42ff0640651931ee.jpg",
+  "num_detections": 10,
+  "detections": [
+    {
+      "class_id": 65,
+      "class_name": "operation-levelUp",
+      "confidence": 0.9638671875,
+      "box": [
+        464,
+        508,
+        637,
+        578
+      ]
+    },
+    {
+      "class_id": 73,
+      "class_name": "operation-train",
+      "confidence": 0.9580078125,
+      "box": [
+        314,
+        594,
+        404,
+        630
+      ]
+    },
+    {
+      "class_id": 50,
+      "class_name": "operation-advanced",
+      "confidence": 0.953125,
+      "box": [
+        426,
+        598,
+        508,
+        630
+      ]
+    },
+    {
+      "class_id": 1,
+      "class_name": "hint-reddot",
+      "confidence": 0.94189453125,
+      "box": [
+        575,
+        594,
+        607,
+        608
+      ]
+    },
+    {
+      "class_id": 52,
+      "class_name": "operation-back",
+      "confidence": 0.861328125,
+      "box": [
+        4,
+        603,
+        99,
+        633
+      ]
+    },
+    {
+      "class_id": 1,
+      "class_name": "hint-reddot",
+      "confidence": 0.77978515625,
+      "box": [
+        370,
+        594,
+        401,
+        608
+      ]
+    },
+    {
+      "class_id": 1,
+      "class_name": "hint-reddot",
+      "confidence": 0.7607421875,
+      "box": [
+        575,
+        508,
+        607,
+        522
+      ]
+    },
+    {
+      "class_id": 0,
+      "class_name": "hint-guide",
+      "confidence": 0.482421875,
+      "box": [
+        455,
+        505,
+        637,
+        582
+      ]
+    },
+    {
+      "class_id": 63,
+      "class_name": "operation-equipment",
+      "confidence": 0.48046875,
+      "box": [
+        528,
+        594,
+        612,
+        630
+      ]
+    },
+    {
+      "class_id": 1,
+      "class_name": "hint-reddot",
+      "confidence": 0.37939453125,
+      "box": [
+        599,
+        26,
+        629,
+        39
+      ]
+    }
+  ]
+}

@@ -1,0 +1,161 @@
+{
+  "image_file": "SVID_20250331_190421_1_mp4-0299_jpg.rf.2663607c7d88cc6cd02a8c1eab2dadcf.jpg",
+  "image_path": "C:\\Users\\Administrator\\PycharmProjects\\WFGameAI\\datasets\\yolov11-card2\\test\\images\\SVID_20250331_190421_1_mp4-0299_jpg.rf.2663607c7d88cc6cd02a8c1eab2dadcf.jpg",
+  "num_detections": 14,
+  "detections": [
+    {
+      "class_id": 36,
+      "class_name": "navigation-station-off",
+      "confidence": 0.99169921875,
+      "box": [
+        144,
+        582,
+        246,
+        630
+      ]
+    },
+    {
+      "class_id": 0,
+      "class_name": "hint-guide",
+      "confidence": 0.9716796875,
+      "box": [
+        45,
+        279,
+        572,
+        400
+      ]
+    },
+    {
+      "class_id": 11,
+      "class_name": "navigation-hero",
+      "confidence": 0.96630859375,
+      "box": [
+        373,
+        580,
+        476,
+        630
+      ]
+    },
+    {
+      "class_id": 1,
+      "class_name": "hint-reddot",
+      "confidence": 0.953125,
+      "box": [
+        431,
+        584,
+        465,
+        600
+      ]
+    },
+    {
+      "class_id": 3,
+      "class_name": "navigation-bag",
+      "confidence": 0.9501953125,
+      "box": [
+        259,
+        581,
+        359,
+        629
+      ]
+    },
+    {
+      "class_id": 28,
+      "class_name": "navigation-role",
+      "confidence": 0.8955078125,
+      "box": [
+        10,
+        26,
+        135,
+        80
+      ]
+    },
+    {
+      "class_id": 9,
+      "class_name": "navigation-fight",
+      "confidence": 0.880859375,
+      "box": [
+        497,
+        569,
+        640,
+        632
+      ]
+    },
+    {
+      "class_id": 1,
+      "class_name": "hint-reddot",
+      "confidence": 0.80419921875,
+      "box": [
+        88,
+        585,
+        119,
+        600
+      ]
+    },
+    {
+      "class_id": 25,
+      "class_name": "navigation-main",
+      "confidence": 0.79443359375,
+      "box": [
+        21,
+        581,
+        134,
+        629
+      ]
+    },
+    {
+      "class_id": 1,
+      "class_name": "hint-reddot",
+      "confidence": 0.7373046875,
+      "box": [
+        88,
+        32,
+        117,
+        45
+      ]
+    },
+    {
+      "class_id": 56,
+      "class_name": "operation-challenge",
+      "confidence": 0.7294921875,
+      "box": [
+        457,
+        473,
+        628,
+        556
+      ]
+    },
+    {
+      "class_id": 1,
+      "class_name": "hint-reddot",
+      "confidence": 0.65478515625,
+      "box": [
+        217,
+        542,
+        254,
+        560
+      ]
+    },
+    {
+      "class_id": 1,
+      "class_name": "hint-reddot",
+      "confidence": 0.6279296875,
+      "box": [
+        607,
+        573,
+        640,
+        589
+      ]
+    },
+    {
+      "class_id": 0,
+      "class_name": "hint-guide",
+      "confidence": 0.368408203125,
+      "box": [
+        79,
+        533,
+        225,
+        593
+      ]
+    }
+  ]
+}

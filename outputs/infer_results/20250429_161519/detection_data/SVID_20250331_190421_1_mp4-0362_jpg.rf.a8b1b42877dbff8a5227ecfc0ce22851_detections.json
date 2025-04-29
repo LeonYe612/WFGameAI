@@ -1,0 +1,139 @@
+{
+  "image_file": "SVID_20250331_190421_1_mp4-0362_jpg.rf.a8b1b42877dbff8a5227ecfc0ce22851.jpg",
+  "image_path": "C:\\Users\\Administrator\\PycharmProjects\\WFGameAI\\datasets\\yolov11-card2\\test\\images\\SVID_20250331_190421_1_mp4-0362_jpg.rf.a8b1b42877dbff8a5227ecfc0ce22851.jpg",
+  "num_detections": 12,
+  "detections": [
+    {
+      "class_id": 0,
+      "class_name": "hint-guide",
+      "confidence": 0.92578125,
+      "box": [
+        64,
+        555,
+        306,
+        639
+      ]
+    },
+    {
+      "class_id": 26,
+      "class_name": "navigation-myHeroes",
+      "confidence": 0.85693359375,
+      "box": [
+        129,
+        302,
+        254,
+        481
+      ]
+    },
+    {
+      "class_id": 26,
+      "class_name": "navigation-myHeroes",
+      "confidence": 0.8232421875,
+      "box": [
+        504,
+        313,
+        625,
+        480
+      ]
+    },
+    {
+      "class_id": 58,
+      "class_name": "operation-confirm",
+      "confidence": 0.73388671875,
+      "box": [
+        67,
+        574,
+        297,
+        622
+      ]
+    },
+    {
+      "class_id": 58,
+      "class_name": "operation-confirm",
+      "confidence": 0.484375,
+      "box": [
+        353,
+        581,
+        594,
+        618
+      ]
+    },
+    {
+      "class_id": 26,
+      "class_name": "navigation-myHeroes",
+      "confidence": 0.43017578125,
+      "box": [
+        254,
+        108,
+        376,
+        285
+      ]
+    },
+    {
+      "class_id": 26,
+      "class_name": "navigation-myHeroes",
+      "confidence": 0.403564453125,
+      "box": [
+        131,
+        109,
+        253,
+        285
+      ]
+    },
+    {
+      "class_id": 26,
+      "class_name": "navigation-myHeroes",
+      "confidence": 0.39599609375,
+      "box": [
+        378,
+        110,
+        500,
+        287
+      ]
+    },
+    {
+      "class_id": 26,
+      "class_name": "navigation-myHeroes",
+      "confidence": 0.392333984375,
+      "box": [
+        503,
+        109,
+        625,
+        284
+      ]
+    },
+    {
+      "class_id": 26,
+      "class_name": "navigation-myHeroes",
+      "confidence": 0.368408203125,
+      "box": [
+        9,
+        108,
+        128,
+        286
+      ]
+    },
+    {
+      "class_id": 1,
+      "class_name": "hint-reddot",
+      "confidence": 0.3310546875,
+      "box": [
+        206,
+        109,
+        256,
+        139
+      ]
+    },
+    {
+      "class_id": 1,
+      "class_name": "hint-reddot",
+      "confidence": 0.32421875,
+      "box": [
+        82,
+        109,
+        129,
+        139
+      ]
+    }
+  ]
+}

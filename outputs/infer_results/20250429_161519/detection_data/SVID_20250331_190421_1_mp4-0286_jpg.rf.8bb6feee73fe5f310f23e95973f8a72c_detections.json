@@ -1,0 +1,326 @@
+{
+  "image_file": "SVID_20250331_190421_1_mp4-0286_jpg.rf.8bb6feee73fe5f310f23e95973f8a72c.jpg",
+  "image_path": "C:\\Users\\Administrator\\PycharmProjects\\WFGameAI\\datasets\\yolov11-card2\\test\\images\\SVID_20250331_190421_1_mp4-0286_jpg.rf.8bb6feee73fe5f310f23e95973f8a72c.jpg",
+  "num_detections": 29,
+  "detections": [
+    {
+      "class_id": 26,
+      "class_name": "navigation-myHeroes",
+      "confidence": 0.98779296875,
+      "box": [
+        169,
+        101,
+        311,
+        209
+      ]
+    },
+    {
+      "class_id": 0,
+      "class_name": "hint-guide",
+      "confidence": 0.9794921875,
+      "box": [
+        45,
+        317,
+        585,
+        443
+      ]
+    },
+    {
+      "class_id": 26,
+      "class_name": "navigation-myHeroes",
+      "confidence": 0.9755859375,
+      "box": [
+        16,
+        98,
+        160,
+        210
+      ]
+    },
+    {
+      "class_id": 26,
+      "class_name": "navigation-myHeroes",
+      "confidence": 0.955078125,
+      "box": [
+        466,
+        99,
+        614,
+        210
+      ]
+    },
+    {
+      "class_id": 26,
+      "class_name": "navigation-myHeroes",
+      "confidence": 0.94970703125,
+      "box": [
+        316,
+        101,
+        460,
+        211
+      ]
+    },
+    {
+      "class_id": 0,
+      "class_name": "hint-guide",
+      "confidence": 0.94189453125,
+      "box": [
+        487,
+        566,
+        640,
+        638
+      ]
+    },
+    {
+      "class_id": 55,
+      "class_name": "operation-camp",
+      "confidence": 0.93994140625,
+      "box": [
+        224,
+        540,
+        281,
+        564
+      ]
+    },
+    {
+      "class_id": 55,
+      "class_name": "operation-camp",
+      "confidence": 0.9326171875,
+      "box": [
+        360,
+        540,
+        417,
+        564
+      ]
+    },
+    {
+      "class_id": 1,
+      "class_name": "hint-reddot",
+      "confidence": 0.92041015625,
+      "box": [
+        434,
+        584,
+        465,
+        600
+      ]
+    },
+    {
+      "class_id": 1,
+      "class_name": "hint-reddot",
+      "confidence": 0.9130859375,
+      "box": [
+        609,
+        51,
+        640,
+        67
+      ]
+    },
+    {
+      "class_id": 55,
+      "class_name": "operation-camp",
+      "confidence": 0.9052734375,
+      "box": [
+        293,
+        540,
+        348,
+        565
+      ]
+    },
+    {
+      "class_id": 55,
+      "class_name": "operation-camp",
+      "confidence": 0.896484375,
+      "box": [
+        157,
+        540,
+        209,
+        564
+      ]
+    },
+    {
+      "class_id": 28,
+      "class_name": "navigation-role",
+      "confidence": 0.888671875,
+      "box": [
+        10,
+        26,
+        130,
+        79
+      ]
+    },
+    {
+      "class_id": 36,
+      "class_name": "navigation-station-off",
+      "confidence": 0.88427734375,
+      "box": [
+        141,
+        583,
+        249,
+        631
+      ]
+    },
+    {
+      "class_id": 61,
+      "class_name": "operation-deployment",
+      "confidence": 0.88232421875,
+      "box": [
+        515,
+        536,
+        588,
+        572
+      ]
+    },
+    {
+      "class_id": 1,
+      "class_name": "hint-reddot",
+      "confidence": 0.87890625,
+      "box": [
+        138,
+        99,
+        171,
+        114
+      ]
+    },
+    {
+      "class_id": 1,
+      "class_name": "hint-reddot",
+      "confidence": 0.87744140625,
+      "box": [
+        434,
+        100,
+        469,
+        115
+      ]
+    },
+    {
+      "class_id": 55,
+      "class_name": "operation-camp",
+      "confidence": 0.8740234375,
+      "box": [
+        427,
+        539,
+        489,
+        565
+      ]
+    },
+    {
+      "class_id": 3,
+      "class_name": "navigation-bag",
+      "confidence": 0.8740234375,
+      "box": [
+        257,
+        580,
+        361,
+        629
+      ]
+    },
+    {
+      "class_id": 11,
+      "class_name": "navigation-hero",
+      "confidence": 0.85595703125,
+      "box": [
+        379,
+        580,
+        474,
+        628
+      ]
+    },
+    {
+      "class_id": 1,
+      "class_name": "hint-reddot",
+      "confidence": 0.82421875,
+      "box": [
+        287,
+        100,
+        320,
+        115
+      ]
+    },
+    {
+      "class_id": 55,
+      "class_name": "operation-camp",
+      "confidence": 0.82421875,
+      "box": [
+        89,
+        540,
+        141,
+        564
+      ]
+    },
+    {
+      "class_id": 1,
+      "class_name": "hint-reddot",
+      "confidence": 0.79833984375,
+      "box": [
+        87,
+        32,
+        118,
+        46
+      ]
+    },
+    {
+      "class_id": 1,
+      "class_name": "hint-reddot",
+      "confidence": 0.77197265625,
+      "box": [
+        584,
+        99,
+        620,
+        115
+      ]
+    },
+    {
+      "class_id": 9,
+      "class_name": "navigation-fight",
+      "confidence": 0.74755859375,
+      "box": [
+        490,
+        570,
+        639,
+        635
+      ]
+    },
+    {
+      "class_id": 1,
+      "class_name": "hint-reddot",
+      "confidence": 0.74462890625,
+      "box": [
+        90,
+        584,
+        118,
+        598
+      ]
+    },
+    {
+      "class_id": 25,
+      "class_name": "navigation-main",
+      "confidence": 0.67724609375,
+      "box": [
+        24,
+        578,
+        129,
+        628
+      ]
+    },
+    {
+      "class_id": 1,
+      "class_name": "hint-reddot",
+      "confidence": 0.62255859375,
+      "box": [
+        607,
+        574,
+        639,
+        589
+      ]
+    },
+    {
+      "class_id": 64,
+      "class_name": "operation-gallery",
+      "confidence": 0.3173828125,
+      "box": [
+        545,
+        49,
+        640,
+        91
+      ]
+    }
+  ]
+}

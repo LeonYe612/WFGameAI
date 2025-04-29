@@ -1,0 +1,128 @@
+{
+  "image_file": "SVID_20250331_190421_1_mp4-0277_jpg.rf.fd0a836daa2953f5e07cb01ae191fb7a.jpg",
+  "image_path": "C:\\Users\\Administrator\\PycharmProjects\\WFGameAI\\datasets\\yolov11-card2\\test\\images\\SVID_20250331_190421_1_mp4-0277_jpg.rf.fd0a836daa2953f5e07cb01ae191fb7a.jpg",
+  "num_detections": 11,
+  "detections": [
+    {
+      "class_id": 73,
+      "class_name": "operation-train",
+      "confidence": 0.9677734375,
+      "box": [
+        314,
+        594,
+        403,
+        629
+      ]
+    },
+    {
+      "class_id": 50,
+      "class_name": "operation-advanced",
+      "confidence": 0.96435546875,
+      "box": [
+        426,
+        598,
+        508,
+        630
+      ]
+    },
+    {
+      "class_id": 1,
+      "class_name": "hint-reddot",
+      "confidence": 0.9501953125,
+      "box": [
+        576,
+        594,
+        607,
+        608
+      ]
+    },
+    {
+      "class_id": 65,
+      "class_name": "operation-levelUp",
+      "confidence": 0.9345703125,
+      "box": [
+        462,
+        509,
+        636,
+        578
+      ]
+    },
+    {
+      "class_id": 52,
+      "class_name": "operation-back",
+      "confidence": 0.8818359375,
+      "box": [
+        4,
+        603,
+        99,
+        633
+      ]
+    },
+    {
+      "class_id": 1,
+      "class_name": "hint-reddot",
+      "confidence": 0.7578125,
+      "box": [
+        575,
+        508,
+        606,
+        522
+      ]
+    },
+    {
+      "class_id": 1,
+      "class_name": "hint-reddot",
+      "confidence": 0.69580078125,
+      "box": [
+        370,
+        594,
+        401,
+        608
+      ]
+    },
+    {
+      "class_id": 0,
+      "class_name": "hint-guide",
+      "confidence": 0.541015625,
+      "box": [
+        453,
+        506,
+        636,
+        582
+      ]
+    },
+    {
+      "class_id": 1,
+      "class_name": "hint-reddot",
+      "confidence": 0.37744140625,
+      "box": [
+        601,
+        26,
+        629,
+        38
+      ]
+    },
+    {
+      "class_id": 63,
+      "class_name": "operation-equipment",
+      "confidence": 0.368408203125,
+      "box": [
+        527,
+        594,
+        611,
+        630
+      ]
+    },
+    {
+      "class_id": 76,
+      "class_name": "skill-multi2-off",
+      "confidence": 0.352294921875,
+      "box": [
+        457,
+        306,
+        576,
+        350
+      ]
+    }
+  ]
+}

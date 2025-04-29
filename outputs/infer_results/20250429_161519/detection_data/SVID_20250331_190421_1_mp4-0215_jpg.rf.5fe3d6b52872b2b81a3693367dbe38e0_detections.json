@@ -1,0 +1,18 @@
+{
+  "image_file": "SVID_20250331_190421_1_mp4-0215_jpg.rf.5fe3d6b52872b2b81a3693367dbe38e0.jpg",
+  "image_path": "C:\\Users\\Administrator\\PycharmProjects\\WFGameAI\\datasets\\yolov11-card2\\test\\images\\SVID_20250331_190421_1_mp4-0215_jpg.rf.5fe3d6b52872b2b81a3693367dbe38e0.jpg",
+  "num_detections": 1,
+  "detections": [
+    {
+      "class_id": 82,
+      "class_name": "system-skip",
+      "confidence": 0.84912109375,
+      "box": [
+        544,
+        595,
+        613,
+        628
+      ]
+    }
+  ]
+}

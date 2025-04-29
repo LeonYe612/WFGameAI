@@ -16,6 +16,8 @@ import torch
 from pathlib import Path
 import logging
 import time
+import json
+from datetime import datetime
 
 # 设置日志
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -185,7 +187,7 @@ def apply_adaptive_thresholds(results, classes, images, conf_base=0.25):
         else:
             filtered_result = result
         
-        # filtered_results.append(filtered_result)
+        filtered_results.append(filtered_result)
     
     return filtered_results
 
@@ -207,7 +209,7 @@ def run_inference(
     Args:
         model_path: 模型路径，默认使用训练好的最佳模型
         source_dir: 测试图片目录，默认使用测试集图片
-        save_dir: 结果保存目录，默认保存到outputs/infer_results
+        save_dir: 结果保存目录，默认保存到outputs/infer_results/YYYY-MM-DD_HH-MM-SS
         device: 推理设备，默认自动选择(cuda/mps/cpu)
         img_size: 输入图像大小，默认640提高精度
         conf_threshold: 置信度阈值
@@ -223,16 +225,22 @@ def run_inference(
     
     # 设置默认参数
     if model_path is None:
-        model_path = ROOT_DIR / "outputs" / "train" / "weights" / "best.pt"
+        model_path = ROOT_DIR / "datasets" / "train" / "weights" / "best.pt"
     
     if source_dir is None:
         source_dir = ROOT_DIR / "datasets" / "yolov11-card2" / "test" / "images"
     
     if save_dir is None:
-        save_dir = ROOT_DIR / "outputs" / "infer_results"
+        # 创建按日期和时间命名的结果文件夹
+        current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
+        save_dir = ROOT_DIR / "outputs" / "infer_results" / current_time
     
     # 确保输出目录存在
     os.makedirs(save_dir, exist_ok=True)
+    
+    # 创建存储识别结果数据的子目录
+    detection_data_dir = save_dir / "detection_data"
+    os.makedirs(detection_data_dir, exist_ok=True)
     
     # 自动选择设备
     if device is None:
@@ -314,37 +322,105 @@ def run_inference(
             logger.info("应用自适应阈值...")
             results = apply_adaptive_thresholds(results, class_names, raw_images, conf_base=conf_threshold)
         
+        # 保存总结果信息到JSON文件
+        summary_data = {
+            "inference_time": time.time() - start_time,
+            "model_path": str(model_path),
+            "source_dir": str(source_dir),
+            "device": device,
+            "image_size": img_size,
+            "conf_threshold": conf_threshold,
+            "use_adaptive_threshold": use_adaptive_threshold,
+            "total_images": len(results),
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
+        
         # 保存并打印结果
         if save_results:
             logger.info("保存结果...")
+            all_detections = []
+            
             for i, result in enumerate(results):
                 file_name = os.path.basename(image_files[i] if i < len(image_files) else f"image_{i}")
                 base_name = os.path.splitext(file_name)[0]
-                save_path = str(Path(save_dir) / f"{base_name}_result.jpg")
+                
+                # 保存带检测框的图像
+                save_path = str(save_dir / f"{base_name}_result.jpg")
                 result.save(filename=save_path)
-                logger.info(f"保存推理结果: {save_path}")
+                logger.info(f"保存推理结果图像: {save_path}")
+                
+                # 提取并保存检测数据
+                boxes = result.boxes
+                num_objects = len(boxes)
+                
+                # 准备当前图像的检测数据
+                image_detections = {
+                    "image_file": file_name,
+                    "image_path": str(image_files[i]),
+                    "num_detections": num_objects,
+                    "detections": []
+                }
+                
+                # 添加每个检测框的详细信息
+                if num_objects > 0:
+                    for j in range(num_objects):
+                        cls_id = int(boxes.cls[j].item())
+                        cls_name = class_names[cls_id] if cls_id in class_names else f"未知类别({cls_id})"
+                        conf = float(boxes.conf[j].item())  # 转换为Python浮点数以便JSON序列化
+                        box = boxes.xyxy[j].tolist()
+                        
+                        # 保存检测数据
+                        detection = {
+                            "class_id": cls_id,
+                            "class_name": cls_name,
+                            "confidence": conf,
+                            "box": [int(box[0]), int(box[1]), int(box[2]), int(box[3])]
+                        }
+                        image_detections["detections"].append(detection)
+                
+                # 将当前图像的检测数据添加到总列表
+                all_detections.append(image_detections)
+                
+                # 为每个图像单独保存一个JSON文件
+                detection_json_path = detection_data_dir / f"{base_name}_detections.json"
+                with open(detection_json_path, 'w', encoding='utf-8') as f:
+                    json.dump(image_detections, f, ensure_ascii=False, indent=2)
+            
+            # 将所有检测数据保存到一个汇总JSON文件
+            summary_data["detections"] = all_detections
+            summary_json_path = save_dir / "inference_results.json"
+            with open(summary_json_path, 'w', encoding='utf-8') as f:
+                json.dump(summary_data, f, ensure_ascii=False, indent=2)
+            
+            logger.info(f"保存检测结果数据: {summary_json_path}")
         
         # 计算并打印总推理时间
         inference_time = time.time() - start_time
-        logger.info(f"推理完成，总耗时: {inference_time:.2f} 秒，平均每张: {inference_time/len(results):.3f} 秒")
-        
-        # 检查检测结果
-        total_objects = 0
-        for i, result in enumerate(results):
-            boxes = result.boxes
-            num_objects = len(boxes)
-            total_objects += num_objects
+        if results and len(results) > 0:
+            logger.info(f"推理完成，总耗时: {inference_time:.2f} 秒，平均每张: {inference_time/len(results):.3f} 秒")
             
-            logger.info(f"\n图像 {i} 检测结果: 检测到 {num_objects} 个对象")
-            if num_objects > 0:
-                for j in range(num_objects):
-                    cls_id = int(boxes.cls[j].item())
-                    cls_name = class_names[cls_id] if cls_id in class_names else f"未知类别({cls_id})"
-                    conf = boxes.conf[j].item()
-                    box = boxes.xyxy[j].tolist()
-                    logger.info(f"  - {cls_name}: 置信度={conf:.2f}, 位置=[{int(box[0])}, {int(box[1])}, {int(box[2])}, {int(box[3])}]")
+            # 检查检测结果
+            total_objects = 0
+            for i, result in enumerate(results):
+                boxes = result.boxes
+                num_objects = len(boxes)
+                total_objects += num_objects
+                
+                logger.info(f"\n图像 {i} 检测结果: 检测到 {num_objects} 个对象")
+                if num_objects > 0:
+                    for j in range(num_objects):
+                        cls_id = int(boxes.cls[j].item())
+                        cls_name = class_names[cls_id] if cls_id in class_names else f"未知类别({cls_id})"
+                        conf = boxes.conf[j].item()
+                        box = boxes.xyxy[j].tolist()
+                        logger.info(f"  - {cls_name}: 置信度={conf:.2f}, 位置=[{int(box[0])}, {int(box[1])}, {int(box[2])}, {int(box[3])}]")
+            
+            logger.info(f"总共检测到 {total_objects} 个对象，平均每张图像 {total_objects/len(results):.1f} 个")
+        else:
+            logger.warning("未检测到任何有效结果")
+            logger.info(f"推理完成，总耗时: {inference_time:.2f} 秒")
         
-        logger.info(f"总共检测到 {total_objects} 个对象，平均每张图像 {total_objects/len(results):.1f} 个")
+        logger.info(f"结果已保存到目录: {save_dir}")
         
         return results
     
