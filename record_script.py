@@ -12,6 +12,7 @@ import sys
 import traceback
 from threading import Thread
 import queue
+import subprocess
 
 # 设置项目根目录为基准
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -37,6 +38,9 @@ AUTO_INTERACTION = False  # 是否启用自动交互
 WINDOWS_DISPLAY_SCALE = 0.5 if sys.platform == "win32" else 1.0  # Windows下显示缩放比例调整为50%
 WINDOW_SIZES = {}  # 存储每个窗口的固定显示尺寸
 USER_WINDOW_SIZES = {}  # 存储用户调整后的窗口尺寸
+# 选择正确的推理设备
+DEVICE = "cuda" if sys.platform == "win32" else "mps" if sys.platform == "darwin" else "cpu"
+print(f"使用推理设备: {DEVICE}")
 
 # 设置界面状态枚举
 class UIState:
@@ -67,14 +71,46 @@ def init_device_state(device_serial):
         "action_queue": queue.Queue()
     }
 
+# 在系统信号处理中添加安全清理
+def safe_cleanup():
+    """程序退出时安全清理资源"""
+    try:
+        print("\n执行安全清理...")
+        
+        # 保存录制文件
+        if is_recording and script["steps"]:
+            try:
+                with open(save_path, "w", encoding="utf-8") as f:
+                    json.dump(script, f, indent=4, ensure_ascii=False)
+                print(f"脚本已保存至: {save_path}")
+            except Exception as save_err:
+                print(f"保存脚本失败: {save_err}")
+        
+        # 关闭所有窗口
+        try:
+            cv2.destroyAllWindows()
+        except:
+            pass
+            
+        # 重置ADB连接
+        try:
+            for device in devices:
+                try:
+                    # 尝试断开连接，确保下次连接正常
+                    device_id = device.serial
+                    if ":" in device_id:  # 无线设备
+                        subprocess.run(['adb', 'disconnect', device_id], check=False)
+                except:
+                    pass
+        except:
+            pass
+    except Exception as cleanup_err:
+        print(f"清理过程出错: {cleanup_err}")
+
 # 优雅退出处理
 def signal_handler(sig, frame):
-    print("\n收到 Ctrl+C，退出")
-    if is_recording and script["steps"]:  # 录制模式保存
-        with open(save_path, "w", encoding="utf-8") as f:
-            json.dump(script, f, indent=4, ensure_ascii=False)
-        print(f"最终脚本保存至: {save_path}")
-    cv2.destroyAllWindows()
+    print("\n收到 Ctrl+C，正在安全退出...")
+    safe_cleanup()
     sys.exit(0)
 
 signal.signal(signal.SIGINT, signal_handler)
@@ -271,9 +307,58 @@ def execute_action(device, action):
     device_states[device.serial]["last_action"] = action
     print(f"设备 {get_device_name(device)} 自动执行: {action['action']}")
 
-# 执行点击的线程函数，以非阻塞方式执行点击
-def execute_tap(device, x, y, button_class=None):
+# 添加设备健康检查函数
+def check_device_health(device):
+    """检查设备健康状态并尝试恢复"""
     try:
+        # 基本连接测试
+        result = device.shell("echo health_check", timeout=2)
+        if result:
+            return True
+            
+        return False
+    except Exception as e:
+        print(f"设备 {get_device_name(device)} 健康检查失败: {e}")
+        
+        # 尝试重连
+        try:
+            print(f"尝试重新连接设备 {get_device_name(device)}...")
+            # 使用adb命令重新连接
+            device_id = device.serial
+            if ":" in device_id:  # 无线设备
+                subprocess.run(['adb', 'disconnect', device_id], check=False)
+                time.sleep(1)
+                subprocess.run(['adb', 'connect', device_id], check=False)
+            time.sleep(2)
+            
+            # 再次测试
+            try:
+                if device.shell("echo reconnected", timeout=2):
+                    print(f"设备 {get_device_name(device)} 重连成功")
+                    return True
+            except:
+                pass
+        except:
+            pass
+            
+        return False
+
+# 修改执行点击函数，增加错误处理
+def execute_tap(device, x, y, button_class=None):
+    """
+    以非阻塞方式执行点击，增强错误处理
+    """
+    try:
+        # 确保设备连接正常
+        try:
+            device.shell("echo tap_check", timeout=1)
+        except Exception as conn_err:
+            print(f"点击前设备连接检查失败: {conn_err}")
+            # 尝试重连
+            if not check_device_health(device):
+                print(f"设备 {get_device_name(device)} 不可用，点击操作取消")
+                return False
+        
         # 确保坐标在有效范围内
         res = device_resolutions.get(device.serial, {"width": 1080, "height": 2400})
         x = max(0, min(int(x), res["width"]))
@@ -287,8 +372,11 @@ def execute_tap(device, x, y, button_class=None):
             print(f"点击设备 {get_device_name(device)}: {button_class} at ({x}, {y})")
         else:
             print(f"点击设备 {get_device_name(device)}: 未识别按钮 at ({x}, {y})")
+            
+        return True
     except Exception as e:
         print(f"点击设备 {get_device_name(device)} 失败: {e}")
+        return False
 
 # 转换点击坐标，根据设备分辨率进行适配
 def adapt_coordinates(source_serial, target_serial, x, y):
@@ -477,9 +565,59 @@ def on_mouse(event, x, y, flags, param):
 # 设备屏幕捕获和分析线程
 def capture_and_analyze_device(device, screenshot_queue):
     last_time = time.time()
+    error_count = 0  # 添加错误计数器
+    last_error_time = time.time()  # 记录上次错误时间
+    consecutive_errors = 0  # 连续错误计数
     
     while True:
         try:
+            # 检查设备连接状态（不使用device.connected属性，改用shell命令测试）
+            try:
+                device.shell("echo connectivity_check", timeout=1)
+                # 如果命令成功执行，设备处于连接状态
+            except Exception as conn_err:
+                # 命令执行失败，可能是设备已断开
+                consecutive_errors += 1
+                if consecutive_errors > 5:
+                    print(f"设备 {get_device_name(device)} 连接检查失败 {consecutive_errors} 次，停止捕获线程")
+                    break
+                time.sleep(1)
+                continue
+                
+            # 添加心跳检测机制
+            try:
+                device.shell("echo heartbeat", timeout=2)
+                # 成功获取心跳响应，重置连续错误计数
+                consecutive_errors = 0
+            except Exception as hb_err:
+                print(f"设备 {get_device_name(device)} 心跳检测失败: {str(hb_err)[:50]}")
+                consecutive_errors += 1
+                if consecutive_errors > 5:  # 连续5次心跳失败才认为设备断开
+                    # 在认为设备彻底断开前尝试重连
+                    try:
+                        # 尝试重启ADB连接
+                        if ":" in device.serial:  # 无线设备
+                            print(f"尝试重新连接无线设备 {device.serial}...")
+                            subprocess.run(['adb', 'disconnect', device.serial], check=False)
+                            time.sleep(1)
+                            subprocess.run(['adb', 'connect', device.serial], check=False)
+                            time.sleep(2)
+                            # 再次测试连接
+                            try:
+                                if device.shell("echo reconnected", timeout=2):
+                                    print(f"设备 {get_device_name(device)} 重连成功")
+                                    consecutive_errors = 0
+                                    continue
+                            except:
+                                pass
+                    except:
+                        pass
+                        
+                    print(f"设备 {get_device_name(device)} 连接丢失，终止捕获线程")
+                    break  # 不抛出异常，直接退出循环
+                time.sleep(1)  # 等待一秒再重试
+                continue
+                
             # 计算是否需要暂停来控制速率
             current_time = time.time()
             elapsed = current_time - last_time
@@ -489,27 +627,53 @@ def capture_and_analyze_device(device, screenshot_queue):
                 
             last_time = current_time
             
-            # 队列已满，跳过此帧
+            # 队列已满处理
             if screenshot_queue.full():
-                continue
+                try:
+                    # 尝试清除最旧的一帧，确保新帧可以加入
+                    screenshot_queue.get_nowait()
+                except queue.Empty:
+                    pass  # 队列已经被清空，不做处理
                 
             # 获取屏幕截图
-            screenshot = device.screenshot()
-            frame = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
-            
+            try:
+                screenshot = device.screenshot()
+                if screenshot is None:
+                    raise Exception("获取截图为空")
+                    
+                frame = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
+            except Exception as ss_err:
+                print(f"获取设备 {get_device_name(device)} 截图失败: {str(ss_err)[:50]}")
+                # 截图失败，尝试重置ADB连接
+                if consecutive_errors > 3:
+                    try:
+                        print(f"尝试重置设备 {get_device_name(device)} 的ADB连接...")
+                        if ":" in device.serial:  # 无线设备
+                            subprocess.run(['adb', 'disconnect', device.serial], check=False)
+                            time.sleep(1)
+                            subprocess.run(['adb', 'connect', device.serial], check=False)
+                        else:  # USB设备
+                            subprocess.run(['adb', '-s', device.serial, 'reconnect'], check=False)
+                        time.sleep(2)
+                    except Exception as reset_err:
+                        print(f"重置ADB连接失败: {reset_err}")
+                        
+                raise  # 重新抛出异常，让外部处理
+                
             # 检测屏幕变化和UI状态
             has_changed = detect_screen_change(device.serial, frame)
             
             # 只有在屏幕变化或没有之前的帧时才执行完整分析
             if has_changed or device.serial not in prev_frames:
                 # 使用YOLO模型预测
-                results = model.predict(frame, conf=0.4, verbose=False)
+                frame_for_detection = cv2.resize(frame, (640, 640))
+                results_for_detection = model.predict(source=frame_for_detection, device=DEVICE, imgsz=640, conf=0.6)
                 
                 # 分析界面状态
-                current_state = analyze_ui_state(device.serial, frame, results)
+                current_state = analyze_ui_state(device.serial, frame, results_for_detection)
                 
                 # 提取界面元素
-                elements = extract_ui_elements(frame, results)
+                elements = extract_ui_elements(frame, results_for_detection)
                 
                 # 更新设备状态
                 if device.serial in device_states:
@@ -523,22 +687,61 @@ def capture_and_analyze_device(device, screenshot_queue):
                         device_states[device.serial]["action_queue"].put(action)
                 
                 # 将带有分析结果的帧放入队列
-                screenshot_queue.put((device.serial, frame, results))
+                try:
+                    screenshot_queue.put((device.serial, frame, results_for_detection), block=False)
+                except queue.Full:
+                    # 队列满了，尝试再次清理后添加
+                    try:
+                        screenshot_queue.get_nowait()
+                        screenshot_queue.put((device.serial, frame, results_for_detection), block=False)
+                    except:
+                        pass  # 如果仍然失败，放弃这一帧
             else:
                 # 如果屏幕没有变化，只传递帧，不包含分析结果
-                screenshot_queue.put((device.serial, frame, None))
+                try:
+                    screenshot_queue.put((device.serial, frame, None), block=False)
+                except queue.Full:
+                    pass  # 队列满了，放弃这一帧
             
             # 处理设备的动作队列
             if device.serial in device_states and not device_states[device.serial]["action_queue"].empty():
-                action = device_states[device.serial]["action_queue"].get(block=False)
-                execute_action(device, action)
+                try:
+                    action = device_states[device.serial]["action_queue"].get(block=False)
+                    execute_action(device, action)
+                except queue.Empty:
+                    pass  # 队列可能在检查和获取之间变空
+                except Exception as action_err:
+                    print(f"执行设备 {get_device_name(device)} 动作失败: {action_err}")
             
-        except queue.Full:
-            # 队列满了，可能处理速度跟不上，略过
-            pass
+            # 成功获取和处理一帧，重置错误计数
+            if error_count > 0:
+                print(f"设备 {get_device_name(device)} 恢复正常")
+            error_count = 0
+            consecutive_errors = 0
+            
+        except RuntimeError as e:
+            print(f"设备 {get_device_name(device)} 连接丢失，终止捕获线程")
+            break  # 退出循环终止线程
         except Exception as e:
-            print(f"获取设备 {get_device_name(device)} 截图失败: {e}")
-            time.sleep(0.5)  # 错误后稍等长一点再重试
+            # 修改错误处理逻辑，限制最大错误次数
+            error_count += 1
+            consecutive_errors += 1
+            current_time = time.time()
+            
+            # 控制错误输出频率
+            if current_time - last_error_time > 5:
+                print(f"设备 {get_device_name(device)} 捕获异常 ({error_count}/20): {str(e)[:100]}")
+                last_error_time = current_time
+                
+            # 只有在连续错误超过阈值时才退出线程
+            if consecutive_errors > 10 or error_count > 20:
+                print(f"设备 {get_device_name(device)} 达到最大错误次数，停止捕获线程")
+                print(f"连续错误: {consecutive_errors}，总错误: {error_count}")
+                break
+                
+            # 根据错误次数动态调整等待时间
+            wait_time = min(0.5 * consecutive_errors, 5.0)
+            time.sleep(wait_time)
 
 # 添加窗口尺寸初始化函数
 def init_window_size(device_serial):
@@ -561,6 +764,71 @@ def get_window_size(window_name):
     except:
         return None
 
+# 添加设备监控线程
+def device_monitor_thread():
+    """增强版设备监控线程"""
+    last_check_time = time.time()
+    adb_restart_time = time.time() - 300  # 初始化为5分钟前，允许立即重启
+    
+    while True:
+        try:
+            # 动态更新设备列表
+            global devices
+            current_devices = adb.device_list()
+            active_serials = [d.serial for d in current_devices]
+            
+            # 移除已断开设备
+            for d in devices[:]:
+                if d.serial not in active_serials:
+                    print(f"设备 {get_device_name(d)} 已断开，移出设备列表")
+                    devices.remove(d)
+                    
+                    # 清理相关资源
+                    if d.serial in device_states:
+                        del device_states[d.serial]
+                    if d.serial in prev_frames:
+                        del prev_frames[d.serial]
+                        
+                    # 关闭对应窗口
+                    try:
+                        if d.serial in windows:
+                            cv2.destroyWindow(windows[d.serial])
+                    except Exception as win_err:
+                        print(f"关闭窗口失败: {win_err}")
+            
+            # 实现健康检查逻辑
+            current_time = time.time()
+            if current_time - last_check_time > 30:  # 每30秒执行一次健康检查
+                last_check_time = current_time
+                print("执行设备健康检查...")
+                
+                # 检查每个设备的健康状态
+                unhealthy_devices = 0
+                for device in devices:
+                    try:
+                        # 简单的健康检查
+                        if not check_device_health(device):
+                            print(f"设备 {get_device_name(device)} 健康检查失败")
+                            unhealthy_devices += 1
+                    except Exception as health_err:
+                        print(f"设备 {get_device_name(device)} 健康检查异常: {health_err}")
+                        unhealthy_devices += 1
+                
+                # 如果所有设备都不健康，尝试重启ADB
+                if unhealthy_devices == len(devices) and devices and current_time - adb_restart_time > 300:
+                    print("所有设备健康检查失败，尝试重启ADB服务...")
+                    try:
+                        subprocess.run(['adb', 'kill-server'], check=False)
+                        time.sleep(2)
+                        subprocess.run(['adb', 'start-server'], check=False)
+                        adb_restart_time = current_time
+                    except Exception as adb_err:
+                        print(f"重启ADB服务失败: {adb_err}")
+            
+        except Exception as e:
+            print(f"设备监控线程异常: {e}")
+            time.sleep(10)
+
 # 解析命令行参数
 parser = argparse.ArgumentParser(description="Record game operation script")
 parser.add_argument("--record", action="store_true", help="Enable recording mode")
@@ -572,17 +840,45 @@ args = parser.parse_args()
 
 # 自动连接 ADB 设备
 try:
+    # 先尝试重启ADB服务以确保良好的连接状态
+    try:
+        print("启动前重置ADB服务...")
+        subprocess.run(['adb', 'kill-server'], check=False)
+        time.sleep(1)
+        subprocess.run(['adb', 'start-server'], check=False)
+        time.sleep(2)
+    except Exception as adb_err:
+        print(f"ADB服务重置失败，但将继续尝试: {adb_err}")
+    
     devices = adb.device_list()
     if not devices:
         raise Exception("未检测到 ADB 设备，请检查连接和 USB 调试")
         
     # 获取设备信息和分辨率
     device_names = {}
+    healthy_devices = []
+    
+    print("检查设备连接状态...")
     for d in devices:
-        device_names[d.serial] = get_device_name(d)
-        # 在这里get_device_name函数已经将分辨率存入了device_resolutions字典
-        # 初始化设备状态
-        init_device_state(d.serial)
+        try:
+            # 测试设备连接
+            if check_device_health(d):
+                device_names[d.serial] = get_device_name(d)
+                # 在这里get_device_name函数已经将分辨率存入了device_resolutions字典
+                
+                # 初始化设备状态
+                init_device_state(d.serial)
+                healthy_devices.append(d)
+            else:
+                print(f"设备 {d.serial} 连接不稳定，已排除")
+        except Exception as dev_err:
+            print(f"设备 {d.serial} 初始化失败: {dev_err}")
+    
+    # 更新设备列表为健康设备
+    devices = healthy_devices
+    
+    if not devices:
+        raise Exception("所有检测到的设备都无法正常通信，请检查连接和权限")
     
     # 设置主设备
     if args.main_device:
@@ -596,17 +892,25 @@ try:
     # 设置一机多控模式
     multi_devices_control = args.multi_devices_control
     
-    print(f"已连接设备: {[device_names[d.serial] for d in devices]}")
+    print(f"已连接可用设备: {[device_names[d.serial] for d in devices]}")
     print(f"主设备: {device_names[main_device.serial]}" + (" [Main]" if multi_devices_control else ""))
     if multi_devices_control:
         print("已启用一机多控功能: 主设备的操作将同步到所有设备")
         print("设备分辨率信息:")
         for serial, res in device_resolutions.items():
-            device = next(d for d in devices if d.serial == serial)
-            print(f"  - {device_names[serial]}: {res['resolution_str']}")
+            if serial in [d.serial for d in devices]:  # 只显示活跃设备
+                device = next(d for d in devices if d.serial == serial)
+                print(f"  - {device_names[serial]}: {res['resolution_str']}")
     
+    # 添加自动交互模式状态
+    AUTO_INTERACTION = args.auto_interaction
     if AUTO_INTERACTION:
         print("已启用自动交互功能: 将自动处理常见界面事件")
+        
+    # 强制设置较小的截图队列大小，防止内存溢出
+    screenshot_queue = queue.Queue(maxsize=5 * len(devices))  # 每个设备5帧
+    print(f"截图队列大小: {5 * len(devices)}")
+    
 except Exception as e:
     print(f"ADB 初始化失败: {e}")
     sys.exit(1)
@@ -614,7 +918,7 @@ except Exception as e:
 # 加载模型
 try:
     # 使用相对路径加载模型
-    model_path = os.path.join(PROJECT_ROOT, "datasets", "train", "weights", "best.pt")
+    model_path = os.path.join(PROJECT_ROOT, "datasets", "train", "weights", "best_20250507_173412.pt")
     if not os.path.exists(model_path):
         # 尝试备用路径
         alternate_model_path = os.path.join(PROJECT_ROOT, "..", "GameAI", "outputs", "train", "weights", "best.pt")
@@ -680,11 +984,40 @@ for d in devices:
 frame_buffers = {d.serial: None for d in devices}
 results_buffers = {d.serial: None for d in devices}
 
+# 启动设备监控线程
+monitor_thread = Thread(target=device_monitor_thread, daemon=True)
+monitor_thread.start()
+
+# 初始化主循环心跳检测时间戳
+last_heartbeat = time.time()
+
 while True:
     try:
-        serial, frame, results = screenshot_queue.get(timeout=1)
+        # 增加主循环心跳检测
+        if time.time() - last_heartbeat > 5:
+            print("主循环运行中...")
+            last_heartbeat = time.time()
+            
+        # 修改队列获取逻辑，增加超时处理
+        try:
+            serial, frame, results = screenshot_queue.get(timeout=5)
+        except queue.Empty:
+            # 检查设备线程是否存活
+            alive_threads = [t.is_alive() for t in threads]
+            if not any(alive_threads):
+                print("所有设备线程已停止，退出主循环")
+                break
+            continue
+            
         frame_for_detection = cv2.resize(frame, (640, 640))
-        results_for_detection = model.predict(source=frame_for_detection, device="mps", imgsz=640, conf=0.6)
+        
+        try:
+            # 使用try/except包装模型预测，防止模型错误导致整个程序崩溃
+            results_for_detection = model.predict(source=frame_for_detection, device=DEVICE, imgsz=640, conf=0.6)
+        except Exception as model_err:
+            print(f"模型预测失败: {model_err}")
+            results_for_detection = None
+            # 继续执行，使用空结果
 
         # 检查并更新窗口大小
         window_name = windows[serial]
@@ -693,59 +1026,126 @@ while True:
             USER_WINDOW_SIZES[serial] = current_size
         
         # 使用当前窗口大小显示
-        display_frame = cv2.resize(frame, USER_WINDOW_SIZES[serial])
+        try:
+            display_frame = cv2.resize(frame, USER_WINDOW_SIZES[serial])
+        except Exception as resize_err:
+            print(f"调整图像大小失败: {resize_err}")
+            # 使用原始帧
+            display_frame = frame
         
         # 更新缓冲区
         frame_buffers[serial] = display_frame
         results_buffers[serial] = results_for_detection
 
-        annotated_frame = display_frame.copy()
-        if results_for_detection:
-            # 使用当前显示尺寸计算检测框
-            display_w, display_h = USER_WINDOW_SIZES[serial]
-            
-            for box in results_for_detection[0].boxes:
-                x, y, w, h = box.xywh[0].tolist()
-                # 转换检测框坐标到显示尺寸
-                x = x * display_w/640
-                y = y * display_h/640
-                w = w * display_w/640
-                h = h * display_h/640
+        try:
+            annotated_frame = display_frame.copy()
+            if results_for_detection:
+                # 使用当前显示尺寸计算检测框
+                display_w, display_h = USER_WINDOW_SIZES[serial]
                 
-                cls_id = int(box.cls.item())
-                conf = box.conf.item()
-                cv2.rectangle(annotated_frame,
-                              (int(x - w/2), int(y - h/2)),
-                              (int(x + w/2), int(y + h/2)),
-                              (0, 255, 0), 2)
-                cv2.putText(annotated_frame, f"{model.names[cls_id]} {conf:.2f}",
-                            (int(x - w/2), int(y - h/2 - 10)),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                for box in results_for_detection[0].boxes:
+                    x, y, w, h = box.xywh[0].tolist()
+                    # 转换检测框坐标到显示尺寸
+                    x = x * display_w/640
+                    y = y * display_h/640
+                    w = w * display_w/640
+                    h = h * display_h/640
+                    
+                    cls_id = int(box.cls.item())
+                    conf = box.conf.item()
+                    cv2.rectangle(annotated_frame,
+                                (int(x - w/2), int(y - h/2)),
+                                (int(x + w/2), int(y + h/2)),
+                                (0, 255, 0), 2)
+                    cv2.putText(annotated_frame, f"{model.names[cls_id]} {conf:.2f}",
+                                (int(x - w/2), int(y - h/2 - 10)),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+        except Exception as annotate_err:
+            print(f"标注图像失败: {annotate_err}")
+            # 使用未标注的帧
+            annotated_frame = display_frame
 
-        cv2.imshow(windows[serial], annotated_frame)
-        cv2.setMouseCallback(windows[serial], on_mouse, param={"serial": serial, "frame": frame, "results": results_for_detection})
+        try:
+            cv2.imshow(windows[serial], annotated_frame)
+            cv2.setMouseCallback(windows[serial], on_mouse, param={"serial": serial, "frame": frame, "results": results_for_detection})
+        except Exception as display_err:
+            print(f"显示图像失败: {display_err}")
+            # 尝试重新创建窗口
+            try:
+                cv2.destroyWindow(windows[serial])
+                cv2.namedWindow(windows[serial], cv2.WINDOW_NORMAL)
+                cv2.resizeWindow(windows[serial], *WINDOW_SIZES[serial])
+                cv2.imshow(windows[serial], display_frame)
+                cv2.setMouseCallback(windows[serial], on_mouse, param={"serial": serial, "frame": frame, "results": results_for_detection})
+            except:
+                pass  # 如果重建窗口失败，忽略本次显示
 
         key = cv2.waitKey(50) & 0xFF
         if key == ord("q"):
             print("退出程序")
             break
-    except queue.Empty:
-        for serial in windows:
-            if frame_buffers[serial] is not None:
-                cv2.imshow(windows[serial], frame_buffers[serial])
-        continue
     except Exception as e:
-        print(f"主循环异常: {traceback.format_exc()}")
-        break
+        print(f"主循环异常: {str(e)[:200]}")  # 截断过长错误信息
+        traceback.print_exc(limit=1)  # 仅打印最后一级堆栈
+        time.sleep(1)  # 防止错误循环
+        
+        # 检查是否所有设备都已断开
+        if not devices:
+            print("所有设备已断开，退出程序")
+            break
 
 # 修改后的结束逻辑
-if is_recording and script["steps"]:  # 录制模式且有记录时保存
-    with open(save_path, "w", encoding="utf-8") as f:
-        json.dump(script, f, indent=4, ensure_ascii=False)
-    print(f"程序结束，最终脚本保存至: {save_path}")
-elif is_recording:  # 录制模式但没记录
-    print("程序结束，录制模式未记录任何操作，未生成 JSON")
-else:  # 非录制模式
-    print("程序结束，非录制模式，未生成 JSON")
+try:
+    if is_recording and script["steps"]:  # 录制模式且有记录时保存
+        with open(save_path, "w", encoding="utf-8") as f:
+            json.dump(script, f, indent=4, ensure_ascii=False)
+        print(f"程序结束，最终脚本保存至: {save_path}")
+    elif is_recording:  # 录制模式但没记录
+        print("程序结束，录制模式未记录任何操作，未生成 JSON")
+    else:  # 非录制模式
+        print("程序结束，非录制模式，未生成 JSON")
+
+    # 执行资源释放
+    print("正在释放资源...")
+    
+    # 清理所有线程
+    try:
+        # 向所有队列写入退出信号，确保线程可以安全退出
+        for _ in range(len(devices)):
+            try:
+                screenshot_queue.put(None, block=False)
+            except:
+                pass
+    except:
+        pass
+        
+    # 释放设备连接
+    for device in devices:
+        try:
+            # 断开无线设备连接
+            if ":" in device.serial:
+                subprocess.run(['adb', 'disconnect', device.serial], check=False)
+        except:
+            pass
+            
+    # 清空所有队列
+    try:
+        while not screenshot_queue.empty():
+            screenshot_queue.get_nowait()
+    except:
+        pass
+        
+    # 释放OpenCV资源
+    for serial in windows:
+        try:
+            # 尝试关闭特定窗口
+            cv2.destroyWindow(windows[serial])
+        except:
+            pass
+
+finally:
+    # 确保窗口被关闭
+    cv2.destroyAllWindows()
+    print("程序已安全退出")
 
 cv2.destroyAllWindows()

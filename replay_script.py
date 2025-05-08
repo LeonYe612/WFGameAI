@@ -2121,7 +2121,7 @@ def main():
         exit(1)
 
     # 加载YOLO模型
-    model = YOLO("datasets/train/weights/best.pt")
+    model = YOLO("datasets/train/weights/best_20250430_110130.pt")
 
     try:
         success = replay_steps(scripts, show_screens=args.show_screens)

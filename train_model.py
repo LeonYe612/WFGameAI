@@ -22,13 +22,20 @@ logger = logging.getLogger(__name__)
 # 在文件开头添加环境变量设置
 import os
 
-os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'max_split_size_mb:256,expandable_segments:True'
+# 优化CUDA内存分配，防止内存碎片并启用expandable_segments
+os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'max_split_size_mb:128'
 
-# 添加UI特有数据增强配置
+# 异步CUDA操作，减少同步开销
+os.environ['CUDA_LAUNCH_BLOCKING'] = '0'
+
+# 开启新的cuDNN API，可能提高性能
+os.environ['TORCH_CUDNN_V8_API_ENABLED'] = '1'
+
+# 添加UI特有数据增强配置 - 优化UI元素识别的增强参数
 UI_AUGMENTATION = {
-	'mosaic': 0.5,            # 马赛克增强
-	'mixup': 0.1,             # 混合增强
-	'copy_paste': 0.1,        # 复制粘贴增强
+	'mosaic': 0.3,            # 降低马赛克增强概率
+	'mixup': 0.0,             # 禁用混合增强以节省内存
+	'copy_paste': 0.0,        # 禁用复制粘贴增强以节省内存
 	'degrees': 0.0,           # UI界面不需要大角度旋转
 	'translate': 0.1,         # 轻微平移
 	'scale': 0.1,             # 轻微缩放
@@ -39,6 +46,11 @@ UI_AUGMENTATION = {
 	'hsv_v': 0.2,             # 亮度变化
 	'fliplr': 0.01,           # UI界面很少需要翻转
 	'flipud': 0.0,            # UI不需要上下翻转
+    # 新增增强参数，针对UI界面特点
+    'blur': 0.01,             # 轻微模糊，模拟低质量截图
+    'contrast': 0.1,          # 对比度调整
+    'brightness': 0.1,        # 亮度调整
+    'noise': 0.05,            # 添加噪点，提高模型鲁棒性
 }
 
 # 添加Focal Loss难例挖掘实现
@@ -191,32 +203,11 @@ def clean_all_experiment_folders(project_root, keep_latest_exps=3, keep_models_p
 				deleted_files += clean_model_files(weights_dir, keep_models_per_exp)
 		return 0, deleted_files
 	
+	# 使用新的基于日期时间的目录处理逻辑
+	# 按创建时间排序，直接保留最新的keep_latest_exps个目录
 	# 按创建时间排序实验目录(最新优先)
 	exp_dirs.sort(key=lambda x: os.path.getctime(os.path.join(train_dir, x)), reverse=True)
-	
-	# 处理重复目录 (如 exp_pt2 和 exp_pt22)
-	exp_dirs_to_keep = []
-	exp_name_pattern = re.compile(r'exp_([^_]+)')
-	exp_names_seen = set()
-	
-	for exp_dir in exp_dirs[:keep_latest_exps]:
-		match = exp_name_pattern.match(exp_dir)
-		if match:
-			base_name = match.group(1)
-			if base_name not in exp_names_seen:
-				exp_names_seen.add(base_name)
-				exp_dirs_to_keep.append(exp_dir)
-		else:
-			exp_dirs_to_keep.append(exp_dir)
-	
-	# 确保保留至少keep_latest_exps个目录
-	if len(exp_dirs_to_keep) < keep_latest_exps:
-		# 添加更多目录直到达到keep_latest_exps
-		for exp_dir in exp_dirs:
-			if exp_dir not in exp_dirs_to_keep:
-				exp_dirs_to_keep.append(exp_dir)
-				if len(exp_dirs_to_keep) >= keep_latest_exps:
-					break
+	exp_dirs_to_keep = exp_dirs[:keep_latest_exps]
 	
 	# 清理要保留的目录中的模型文件
 	deleted_files = 0
@@ -274,14 +265,231 @@ def cleanup_git_repository():
 		return False
 
 
+# 新增数据集质量评估函数
+def evaluate_dataset_quality(data_yaml_path):
+    """
+    评估数据集质量，检查分布平衡性和标注质量
+    
+    Args:
+        data_yaml_path: 数据集配置文件路径
+    
+    Returns:
+        质量评估结果
+    """
+    import yaml
+    try:
+        with open(data_yaml_path, 'r') as f:
+            data_config = yaml.safe_load(f)
+        
+        # 检查训练集和验证集路径
+        train_path = data_config.get('train', '')
+        val_path = data_config.get('val', '')
+        
+        # 检查类别分布
+        from collections import Counter
+        import glob
+        from pathlib import Path
+        
+        # 获取标签文件
+        train_labels = glob.glob(str(Path(train_path).parent / 'labels' / '*.txt'))
+        
+        # 统计各类别数量
+        class_counts = Counter()
+        total_objects = 0
+        
+        for label_file in train_labels:
+            try:
+                with open(label_file, 'r') as f:
+                    for line in f:
+                        parts = line.strip().split()
+                        if parts:
+                            class_id = int(parts[0])
+                            class_counts[class_id] += 1
+                            total_objects += 1
+            except Exception as e:
+                logger.warning(f"读取标签文件 {label_file} 时出错: {str(e)}")
+                
+        # 输出类别分布情况
+        logger.info(f"数据集包含 {len(train_labels)} 张训练图像，{total_objects} 个标注对象")
+        
+        if total_objects > 0:
+            # 计算类别不平衡程度
+            max_count = max(class_counts.values()) if class_counts else 0
+            min_count = min(class_counts.values()) if class_counts else 0
+            
+            if max_count > 0 and min_count > 0:
+                imbalance_ratio = max_count / min_count
+                logger.info(f"类别不平衡比例: {imbalance_ratio:.2f}:1")
+                
+                if imbalance_ratio > 10:
+                    logger.warning("类别严重不平衡，建议增加数据增强或平衡采样")
+                    return False, "类别严重不平衡"
+            
+            # 输出类别详情
+            classes = data_config.get('names', {})
+            for class_id, count in sorted(class_counts.items()):
+                class_name = classes.get(class_id, f"类别 {class_id}")
+                percentage = 100 * count / total_objects
+                logger.info(f"  - {class_name}: {count} 个对象 ({percentage:.1f}%)")
+                
+                # 检查数量太少的类别
+                if count < 50:
+                    logger.warning(f"  类别 '{class_name}' 样本数量过少，可能影响识别性能")
+        
+        return True, "数据集质量检查通过"
+        
+    except Exception as e:
+        logger.error(f"评估数据集质量时出错: {str(e)}")
+        return False, f"评估失败: {str(e)}"
+
+
+# 新增周期性学习率调整回调函数
+def cosine_annealing_callback(epoch, max_epochs, base_lr=0.01, min_lr=0.001):
+    """
+    余弦退火学习率调整
+    
+    Args:
+        epoch: 当前轮次
+        max_epochs: 最大轮次
+        base_lr: 基础学习率
+        min_lr: 最小学习率
+    
+    Returns:
+        当前轮次的学习率
+    """
+    return min_lr + 0.5 * (base_lr - min_lr) * (1 + math.cos(math.pi * epoch / max_epochs))
+
+
+def add_memory_monitoring(model_train_args):
+    """
+    此函数已废弃，改为使用callbacks实现内存监控
+    保留此函数是为了确保向后兼容
+    
+    Args:
+        model_train_args: 模型训练参数
+        
+    Returns:
+        原始训练参数
+    """
+    logger.warning("add_memory_monitoring已废弃，使用callbacks代替")
+    return model_train_args
+
+
+# 更新RTX 4090优化函数，确保只使用有效的优化方法
+def optimize_for_rtx4090():
+    """
+    对RTX 4090进行专门的优化设置，防止OOM错误
+    
+    Returns:
+        bool: 是否成功应用优化
+    """
+    logger.info("应用RTX 4090优化设置")
+    
+    # 清理当前GPU缓存
+    torch.cuda.empty_cache()
+    gc.collect()
+    
+    # 限制内存使用
+    try:
+        torch.cuda.set_per_process_memory_fraction(0.85)  # 使用85%显存
+        logger.info("已限制GPU内存使用为85%")
+    except:
+        logger.warning("无法设置内存使用限制")
+    
+    # 启用TensorFloat-32
+    torch.backends.cuda.matmul.allow_tf32 = True
+    torch.backends.cudnn.allow_tf32 = True
+    logger.info("已启用TensorFloat-32")
+    
+    # 添加显存优化选项
+    torch.backends.cudnn.benchmark = True  # 寻找最优卷积算法
+    logger.info("已启用cuDNN benchmark模式")
+    
+    # 启用pytorch的内置分析器减少内存碎片
+    try:
+        # 仅在PyTorch 2.0+版本中可用
+        if hasattr(torch, 'profiler') and hasattr(torch.profiler, 'profile'):
+            torch._C._jit_set_profiling_mode(False)
+            torch._C._jit_set_profiling_executor(False)
+            logger.info("已禁用JIT分析器")
+    except:
+        pass
+    
+    # 使用更激进的垃圾回收
+    gc.set_threshold(100, 5, 5)
+    logger.info("已调整垃圾回收阈值")
+    
+    # 返回成功
+    return True
+
+
 def main():
+	# 检查环境
+	import sys
+	import subprocess
+	
+	# 检查Python版本
+	python_version = sys.version.split()[0]
+	logger.info(f"当前Python版本: {python_version}")
+	
+	# 检查是否在conda环境中
+	try:
+		# 尝试获取当前conda环境名称
+		result = subprocess.run(
+			"conda info --envs",
+			shell=True,
+			capture_output=True,
+			text=True
+		)
+		conda_output = result.stdout
+		
+		# 检查当前活动的环境
+		active_env = None
+		for line in conda_output.split('\n'):
+			if '*' in line:  # 活动环境会有星号标记
+				parts = line.split()
+				active_env = parts[-1]  # 获取环境路径或名称
+				# 如果是路径，提取环境名称
+				if os.path.sep in active_env:
+					active_env = os.path.basename(active_env)
+				break
+		
+		logger.info(f"当前Conda环境: {active_env}")
+		
+		# 检查是否为所需环境
+		if active_env != "py39_yolov10":
+			logger.warning(f"""
+			警告: 当前不在推荐的conda环境中运行!
+			当前环境: {active_env}
+			推荐环境: py39_yolov10
+			
+			请按以下步骤操作:
+			1. 终止当前程序
+			2. 在命令行中运行: conda activate py39_yolov10
+			3. 然后重新运行: python train_model.py
+			
+			不在正确环境中运行可能导致CUDA和依赖库问题!
+			""")
+			# 等待用户确认是否继续
+			response = input("是否仍要继续? (y/n): ")
+			if response.lower() != 'y':
+				logger.info("用户选择终止程序。请在正确的环境中重新运行。")
+				sys.exit(0)
+			else:
+				logger.warning("用户选择在非推荐环境中继续运行，可能会出现兼容性问题。")
+	except Exception as e:
+		logger.warning(f"无法确定Conda环境: {e}")
+		logger.warning("请确保在py39_yolov10环境中运行以避免兼容性问题。")
+	
 	# CUDA验证
 	if not torch.cuda.is_available():
 		raise RuntimeError("""
         CUDA不可用! 请按以下步骤操作:
         1. 确保已安装NVIDIA驱动
-        2. 卸载当前PyTorch: pip uninstall torch torchvision torchaudio
-        3. 安装CUDA版PyTorch: pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+        2. 确保在正确的conda环境中运行: conda activate py39_yolov10
+        3. 如果问题仍然存在，尝试重新安装PyTorch CUDA版本:
+           pip uninstall torch torchvision torchaudio
+           pip install torch==2.5.1 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
         4. 在NVIDIA控制面板中将Python设置为使用独立显卡
         """)
 	
@@ -321,35 +529,34 @@ def main():
 		gpu_name = torch.cuda.get_device_name(0).lower()
 		gpu_mem = torch.cuda.get_device_properties(0).total_memory / 1024 ** 3  # 转换为GB
 		
-		# 为RTX 4090特别优化
+		# RTX 4090特别优化参数
 		if "4090" in gpu_name:
-			batch_size = 24  # 使用中间值，既利用GPU又避免OOM
-			num_workers = min(16, os.cpu_count() or 1)  # 工作线程数
-			# accumulate不是有效参数，使用nbs实现类似效果
-			nominal_batch_size = 64  # 标称批量大小，用于计算学习率
-			val_batch_size = 2  # 验证阶段使用更小的batch size
+			# 批处理大小设置
+			batch_size = 20  # 降低到8以避免内存不足
+			                  # 较大的batch size可以提高GPU利用率和训练速度，但过大会导致OOM错误
+			
+			# 数据加载优化
+			num_workers = min(10, os.cpu_count() or 1)  # 减少到6个工作线程以降低内存压力
+			                                            # 线程过多会导致CPU瓶颈和线程调度开销
+			
+			# 梯度累积模拟
+			nominal_batch_size = 32  # 降低标称批量大小，用于学习率计算
+			                         # 允许模拟更大批量训练效果而不增加显存占用
+			
+			# 验证阶段优化
+			val_batch_size = 1  # 验证阶段使用更小的batch size以减少显存使用
+			                    # 验证不需要计算梯度，可以分批进行以节省显存
+			
 			logger.info("检测到RTX 4090，使用优化配置")
 			logger.info(f"使用batch size: {batch_size}，标称batch size: {nominal_batch_size}")
-			# 启用CUDA优化
-			torch.backends.cudnn.benchmark = True
-			torch.backends.cuda.matmul.allow_tf32 = True
-			torch.backends.cudnn.enabled = True
-			# 清理GPU缓存
-			torch.cuda.empty_cache()
-			gc.collect()
-			# 限制torch缓存分配
-			torch.cuda.memory._set_allocator_settings('max_split_size_mb:128')
 			
-			# 添加定期清理显存的函数
-			def clean_gpu_cache(epoch):
-				if epoch % 2 == 0:  # 每2个epoch清理一次
-					torch.cuda.empty_cache()
-					gc.collect()
+			# 应用RTX 4090专用优化
+			optimize_for_rtx4090()
 		else:
-			# 其他GPU的默认配置
-			batch_size = 4
+			# 其他GPU型号的保守默认配置
+			batch_size = 4   # 保守值，适用于多种GPU型号
 			val_batch_size = 2
-			num_workers = min(4, os.cpu_count() or 1)
+			num_workers = min(4, os.cpu_count() or 1)  # 保守的工作线程数
 	
 	logger.info(f"Batch size: {batch_size}")
 	logger.info(f"Number of workers: {num_workers}")
@@ -368,13 +575,20 @@ def main():
 		model = YOLO(datasets_model_path).to(device)
 	else:
 		logger.warning(f"本地模型文件不存在: {model_path}，将从官方下载")
-		model = YOLO("yolov8m.pt").to(device)
+		model = YOLO("yolo11m.pt").to(device)
 	logger.info("模型加载完成")
 	
 	# 数据集路径
-	data_yaml = os.path.join(PROJECT_ROOT, "datasets", "yolov11-card2", "data.yaml")
+	# data_yaml = os.path.join(PROJECT_ROOT, "datasets", "yolov11-card2", "data.yaml")
+	data_yaml = os.path.join(PROJECT_ROOT, "datasets", "My First Project.v6i.yolov11", "data.yaml")
+
 	if not os.path.exists(data_yaml):
 		raise FileNotFoundError(f"数据集配置文件不存在: {data_yaml}")
+	
+    # 评估数据集质量
+	logger.info("开始评估数据集质量...")
+	dataset_quality_passed, quality_message = evaluate_dataset_quality(data_yaml)
+	logger.info(f"数据集质量评估结果: {quality_message}")
 	
 	# 开始训练
 	logger.info("开始训练")
@@ -383,58 +597,155 @@ def main():
 		torch.cuda.empty_cache()
 		gc.collect()
 		
+		# 设置在训练前限制显存使用
+		if torch.cuda.is_available():
+			try:
+				torch.cuda.set_per_process_memory_fraction(0.8)  # 限制使用80%显存
+				logger.info("已限制GPU内存使用为80%")
+			except:
+				logger.warning("无法设置内存使用限制")
+		
 		# 使用日期时间格式化实验名称，防止exp_pt2这样的命名方式导致重复目录
+		# 格式为: exp_YYYYMMDD_HHMMSS，例如: exp_20230415_143022
+		# 使用此命名方式的优点:
+		# 1. 确保每次训练的实验目录名称唯一，不会发生覆盖
+		# 2. 按照创建时间自然排序，便于管理和查找
+		# 3. 通过时间戳可以快速识别实验的创建时间
+		# 4. 结合clean_all_experiment_folders函数，可以自动清理旧实验，只保留最新的几个
 		current_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 		exp_name = f"exp_{current_time}"
 		logger.info(f"实验名称: {exp_name}")
 		
-		model.train(
-			data=data_yaml,  # 数据集配置文件
-			epochs=100,  # 训练轮次
-			batch=batch_size,  # 设置的批次大小
-			workers=num_workers,  # 工作线程数
-			device=device,  # 设备
-			imgsz=640,  # 图像大小
-			patience=20,  # 早停耐心
-			amp=True,  # 使用自动混合精度
-			save_period=10,  # 每10个epoch保存一次（减少保存频率，降低磁盘占用）
-			project=os.path.join(PROJECT_ROOT, "train_results", "train"),  # 保存训练结果的目录
-			name=exp_name,  # 实验名称，使用日期时间格式
-			exist_ok=False,  # 如果目录存在则覆盖
-			cache="ram" if system_ram > 24 else "disk",  # 系统内存充足时使用RAM缓存，否则磁盘缓存
-			val=True,  # 启用验证
-			conf=0.001,  # 验证时的置信度阈值
-			iou=0.6,  # 验证时的IoU阈值
-			half=True,  # 使用半精度训练
-			plots=True,  # 绘制训练图表
-			rect=False,  # 不使用矩形训练
-			multi_scale=False,  # 关闭多尺度训练
-			close_mosaic=10,  # 最后10个epoch关闭mosaic增强
-			# 内存优化设置
-			overlap_mask=True,  # 启用mask重叠
-			single_cls=False,  # 不使用单类别训练
-			optimizer="AdamW",  # 使用AdamW优化器
-			lr0=0.001,  # 初始学习率
-			lrf=0.01,  # 最终学习率比例
-			momentum=0.937,  # 动量
-			weight_decay=0.0005,  # 权重衰减
-			warmup_epochs=3.0,  # 预热轮次
-			warmup_momentum=0.8,  # 预热动量
-			warmup_bias_lr=0.1,  # 预热偏置学习率
-			box=7.5,  # 边界框损失权重
-			cls=0.5,  # 分类损失权重
-			dfl=1.5,  # DFL损失权重
-			nbs=nominal_batch_size if "4090" in gpu_name else 64,  # 标称batch size
-			# 新增选项:
-			augment=True,  # 使用增强
-			verbose=False,  # 减少日志输出
-			deterministic=False  # 关闭确定性模式以提高性能
-		)
-		logger.info("训练完成")
+		# 训练参数优化
+		train_args = {
+			'data': data_yaml,
+			'epochs': 100,
+			'batch': batch_size,
+			'workers': num_workers,
+			'device': device,
+			'imgsz': 640,
+			'patience': 30,
+			'amp': True,
+			'save_period': 10,
+			'project': os.path.join(PROJECT_ROOT, "train_results", "train"),
+			'name': exp_name,
+			'exist_ok': False,
+			'cache': "ram" if system_ram > 24 else "disk",
+			'val': True,  # 启用验证以监控训练进度
+			'conf': 0.001,
+			'iou': 0.6,
+			'half': True,
+			'plots': True,
+			'rect': False,
+			'multi_scale': False,  # 禁用多尺度训练以减少内存波动
+			'close_mosaic': 10,
+			'overlap_mask': True,
+			'single_cls': False,
+			'optimizer': "AdamW",
+			'lr0': 0.001,
+			'lrf': 0.01,
+			'momentum': 0.937,
+			'weight_decay': 0.0005,
+			'warmup_epochs': 3.0,  # 缩短预热时间
+			'warmup_momentum': 0.8,
+			'warmup_bias_lr': 0.1,
+			'box': 7.5,
+			'cls': 0.5,
+			'dfl': 1.5,
+			'nbs': nominal_batch_size if "4090" in gpu_name else 64,
+			'augment': True,
+			'verbose': True,
+			'deterministic': False,
+			'mosaic': UI_AUGMENTATION['mosaic'],
+			'mixup': UI_AUGMENTATION['mixup'],
+			'copy_paste': UI_AUGMENTATION['copy_paste'],
+			'degrees': UI_AUGMENTATION['degrees'],
+			'translate': UI_AUGMENTATION['translate'],
+			'scale': UI_AUGMENTATION['scale'],
+			'shear': UI_AUGMENTATION['shear'],
+			'perspective': UI_AUGMENTATION['perspective'],
+			'fliplr': UI_AUGMENTATION['fliplr'],
+			'flipud': UI_AUGMENTATION['flipud'],
+			'hsv_h': UI_AUGMENTATION['hsv_h'],
+			'hsv_s': UI_AUGMENTATION['hsv_s'],
+			'hsv_v': UI_AUGMENTATION['hsv_v'],
+			'cos_lr': True,
+			'freeze': [0, 1, 2, 3],  # 冻结更多骨干网络层，减少内存使用并加快收敛
+		}
+		
+		# 定义手动内存清理函数
+		def manual_memory_cleanup():
+			"""在训练循环外部手动清理内存"""
+			torch.cuda.empty_cache()
+			gc.collect()
+			
+			# 尝试释放更多内存
+			if torch.cuda.is_available():
+				# 强制释放所有未使用的缓存
+				if hasattr(torch.cuda, 'memory_summary'):
+					logger.info(f"GPU内存使用情况:\n{torch.cuda.memory_summary()}")
+				if "4090" in gpu_name and torch.cuda.memory_allocated() > 8 * 1024 * 1024 * 1024:  # 超过8GB释放更多
+					# 强制执行cuda同步
+					torch.cuda.synchronize()
+					gc.collect()
+					torch.cuda.empty_cache()
+					logger.info("执行强制内存释放")
+		
+		# 训练前先清理内存
+		manual_memory_cleanup()
+		
+		# 使用callbacks参数代替batch_callback
+		class MemoryCleanupCallback:
+			"""训练过程中定期清理内存的回调函数"""
+			def __init__(self):
+				self.batch_counter = 0
+				self.max_allocated = 0
+				self.last_cleanup = 0
+				
+			def on_train_batch_end(self, trainer):
+				self.batch_counter += 1
+				
+				# 获取当前内存使用情况
+				current_allocated = torch.cuda.memory_allocated()
+				self.max_allocated = max(self.max_allocated, current_allocated)
+				
+				# 如果内存使用率高于90%或者每15个批次清理一次
+				if (current_allocated > 0.9 * torch.cuda.get_device_properties(0).total_memory) or \
+				   (self.batch_counter - self.last_cleanup >= 15):
+					torch.cuda.empty_cache()
+					self.last_cleanup = self.batch_counter
+					
+					# 如果内存使用率极高，执行更彻底的清理
+					if current_allocated > 0.95 * torch.cuda.get_device_properties(0).total_memory:
+						torch.cuda.synchronize()
+						gc.collect()
+						logger.warning(f"内存使用极高: {current_allocated / (1024**3):.2f} GB，执行彻底清理")
+					
+			def on_train_epoch_end(self, trainer):
+				# 每个epoch结束清理一次
+				torch.cuda.empty_cache()
+				gc.collect()
+				logger.info(f"Epoch结束，最大内存使用: {self.max_allocated / (1024**3):.2f} GB")
+				self.max_allocated = 0
+		
+		# 创建回调函数实例
+		memory_callback = MemoryCleanupCallback()
+		
+		# 将回调函数添加到模型的callbacks中
+		if hasattr(model, 'add_callback'):
+			model.add_callback('on_train_batch_end', memory_callback.on_train_batch_end)
+			model.add_callback('on_train_epoch_end', memory_callback.on_train_epoch_end)
+		else:
+			logger.warning("模型不支持add_callback方法，将使用内置内存管理")
+		
+		# 直接训练模型
+		model.train(**train_args)
+		
+		# 训练后再次清理内存
+		manual_memory_cleanup()
 		
 		# 清理权重文件，只保留最新的和最重要的
 		weights_dir = os.path.join(PROJECT_ROOT, "train_results", "train", exp_name, "weights")
-		cleanup_model_files(weights_dir, save_period)
 		
 		# 验证模型性能
 		logger.info("开始验证模型")
@@ -450,7 +761,7 @@ def main():
 		
 		# 导出最佳模型
 		logger.info("导出最佳模型")
-		output_path = os.path.join(PROJECT_ROOT, "outputs", "weights", f"best_{current_time}.pt")
+		output_path = os.path.join(PROJECT_ROOT, "datasets", "train", "weights", f"best_{current_time}.pt")
 		os.makedirs(os.path.dirname(output_path), exist_ok=True)
 		
 		# 直接从训练目录获取最佳模型路径
@@ -460,6 +771,17 @@ def main():
 		if os.path.exists(best_model_path):
 			shutil.copy(best_model_path, output_path)
 			logger.info(f"模型已保存到: {output_path}")
+			
+			# 导出模型为ONNX格式以提高推理速度
+			try:
+				logger.info("导出模型为ONNX格式...")
+				onnx_output_path = os.path.join(PROJECT_ROOT, "datasets", "train", "weights", f"best_{current_time}.onnx")
+				model = YOLO(best_model_path)
+				# 使用与训练相同的图像尺寸进行导出
+				model.export(format="onnx", imgsz=384, simplify=True, opset=12, half=True)
+				logger.info(f"ONNX模型已保存: {onnx_output_path}")
+			except Exception as e:
+				logger.warning(f"ONNX导出失败，仅使用PT模型: {str(e)}")
 		else:
 			# 如果确切路径不存在，尝试查找可能的模型文件
 			logger.warning(f"未找到预期路径的模型: {best_model_path}")
@@ -537,73 +859,3 @@ if __name__ == '__main__':
 	else:
 		# 执行正常训练流程
 		main()
-
-# 为不同UI元素定义自适应阈值配置
-UI_ADAPTIVE_THRESHOLDS = {
-	# 按钮元素
-	'button': {
-		'base_conf': 0.25,          # 基础置信度阈值
-		'min_conf': 0.20,           # 最小置信度阈值
-		'adaptive_factor': 0.05,    # 自适应调整因子
-	},
-	# 文本元素
-	'text': {
-		'base_conf': 0.30,
-		'min_conf': 0.25, 
-		'adaptive_factor': 0.03,
-	},
-	# 图标元素
-	'icon': {
-		'base_conf': 0.35,
-		'min_conf': 0.30,
-		'adaptive_factor': 0.04,
-	},
-	# 菜单元素
-	'menu': {
-		'base_conf': 0.40,
-		'min_conf': 0.30,
-		'adaptive_factor': 0.05,
-	},
-	# 对话框元素
-	'dialog': {
-		'base_conf': 0.45,
-		'min_conf': 0.35,
-		'adaptive_factor': 0.05,
-	},
-	# 默认值(用于未指定的元素类型)
-	'default': {
-		'base_conf': 0.30,
-		'min_conf': 0.25,
-		'adaptive_factor': 0.04,
-	}
-}
-
-def get_adaptive_threshold(element_type, image_quality=1.0):
-	"""
-	根据UI元素类型和图像质量获取自适应阈值
-	
-	Args:
-		element_type: UI元素类型 ('button', 'text', 'icon', 'menu', 'dialog')
-		image_quality: 图像质量因子(0.0-1.0)，值越小表示图像质量越差
-		
-	Returns:
-		适合该元素类型的检测阈值
-	"""
-	# 如果元素类型不在配置中，使用默认值
-	if element_type not in UI_ADAPTIVE_THRESHOLDS:
-		element_type = 'default'
-	
-	# 获取该元素类型的阈值配置    
-	threshold_config = UI_ADAPTIVE_THRESHOLDS[element_type]
-	
-	# 根据图像质量调整阈值
-	quality_factor = max(0.0, min(1.0, image_quality))  # 确保在0-1范围内
-	quality_adjustment = threshold_config['adaptive_factor'] * (1.0 - quality_factor)
-	
-	# 计算最终阈值 (质量越低，阈值越低)
-	final_threshold = threshold_config['base_conf'] - quality_adjustment
-	
-	# 确保不低于最小阈值
-	final_threshold = max(final_threshold, threshold_config['min_conf'])
-	
-	return final_threshold
