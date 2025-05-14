@@ -1,18 +1,122 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
+================================
+Description:
 脚本管理应用的序列化器
+Author: WFGame AI Team
+CreateDate: 2024-05-15
+Version: 1.0
+===============================
 """
 
 from rest_framework import serializers
-from .models import ScriptCategory, Script, ScriptVersion
+from django.utils.translation import gettext_lazy as _
+
+from .models import Script, ScriptCategory, ScriptExecution, ScriptVersion
 
 
 class ScriptCategorySerializer(serializers.ModelSerializer):
-    """脚本分类序列化器"""
+    """
+    脚本分类序列化器
+    """
+    scripts_count = serializers.SerializerMethodField()
     
     class Meta:
         model = ScriptCategory
-        fields = ['id', 'name', 'description', 'parent', 'created_at', 'updated_at']
-        read_only_fields = ['created_at', 'updated_at']
+        fields = ['id', 'name', 'description', 'scripts_count', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at']
+    
+    def get_scripts_count(self, obj):
+        """获取该分类下的脚本数量"""
+        return obj.scripts.count()
+
+
+class ScriptCreateSerializer(serializers.ModelSerializer):
+    """
+    创建脚本序列化器
+    """
+    class Meta:
+        model = Script
+        fields = [
+            'id', 'name', 'type', 'category', 'content', 'description', 
+            'is_active', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'author', 'execution_count', 'created_at', 'updated_at']
+    
+    def validate_name(self, value):
+        """验证脚本名称唯一性"""
+        if Script.objects.filter(name=value).exists():
+            raise serializers.ValidationError(_("同名脚本已存在"))
+        return value
+
+
+class ScriptUpdateSerializer(serializers.ModelSerializer):
+    """
+    更新脚本序列化器
+    """
+    class Meta:
+        model = Script
+        fields = [
+            'id', 'name', 'type', 'category', 'content', 'description', 
+            'is_active', 'updated_at'
+        ]
+        read_only_fields = ['id', 'author', 'execution_count', 'created_at', 'updated_at']
+    
+    def validate_name(self, value):
+        """验证脚本名称唯一性（排除当前实例）"""
+        if Script.objects.filter(name=value).exclude(id=self.instance.id).exists():
+            raise serializers.ValidationError(_("同名脚本已存在"))
+        return value
+
+
+class ScriptSerializer(serializers.ModelSerializer):
+    """
+    脚本详情序列化器
+    """
+    category_name = serializers.ReadOnlyField(source='category.name')
+    author_name = serializers.ReadOnlyField(source='author.username')
+    type_display = serializers.SerializerMethodField()
+    executions_count = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Script
+        fields = [
+            'id', 'name', 'type', 'type_display', 'category', 'category_name', 
+            'content', 'description', 'author', 'author_name', 'is_active', 
+            'execution_count', 'executions_count', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+    
+    def get_type_display(self, obj):
+        """获取脚本类型的显示名称"""
+        return obj.get_type_display()
+    
+    def get_executions_count(self, obj):
+        """获取该脚本的执行记录数量"""
+        return obj.executions.count()
+
+
+class ScriptExecutionSerializer(serializers.ModelSerializer):
+    """
+    脚本执行记录序列化器
+    """
+    script_name = serializers.ReadOnlyField(source='script.name')
+    executed_by_name = serializers.ReadOnlyField(source='executed_by.username')
+    status_display = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = ScriptExecution
+        fields = [
+            'id', 'script', 'script_name', 'status', 'status_display', 
+            'start_time', 'end_time', 'execution_time', 'result', 'error_message', 
+            'executed_by', 'executed_by_name', 'created_at'
+        ]
+        read_only_fields = ['id', 'created_at']
+    
+    def get_status_display(self, obj):
+        """获取执行状态的显示名称"""
+        return obj.get_status_display()
 
 
 class ScriptVersionSerializer(serializers.ModelSerializer):

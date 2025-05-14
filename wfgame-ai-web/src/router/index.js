@@ -1,120 +1,120 @@
-import { createRouter, createWebHashHistory } from 'vue-router'
+/**
+ * 路由配置
+ * @file src/router/index.js
+ * @author WFGame AI Team
+ * @date 2024-05-15
+ */
+
+import { createRouter, createWebHistory } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 
 // 路由配置
 const routes = [
   {
+    path: '/',
+    name: 'Home',
+    component: () => import('@/views/dashboard/Dashboard.vue'),
+    meta: {
+      title: '控制台',
+      requiresAuth: true
+    }
+  },
+  {
     path: '/login',
     name: 'Login',
     component: () => import('@/views/auth/Login.vue'),
-    meta: { title: '登录', requiresAuth: false }
-  },
-  {
-    path: '/',
-    redirect: '/dashboard',
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/dashboard',
-    name: 'Dashboard',
-    component: () => import('@/views/dashboard/Dashboard.vue'),
-    meta: { title: '仪表盘', requiresAuth: true }
+    meta: {
+      title: '登录',
+      requiresAuth: false
+    }
   },
   {
     path: '/scripts',
-    name: 'Scripts',
-    component: () => import('@/views/scripts/ScriptList.vue'),
-    meta: { title: '脚本管理', requiresAuth: true }
-  },
-  {
-    path: '/scripts/new',
-    name: 'ScriptNew',
-    component: () => import('@/views/scripts/ScriptEdit.vue'),
-    meta: { title: '新建脚本', requiresAuth: true }
+    name: 'ScriptsList',
+    component: () => import('@/views/scripts/ScriptsList.vue'),
+    meta: {
+      title: '脚本管理',
+      requiresAuth: true
+    }
   },
   {
     path: '/scripts/:id',
     name: 'ScriptDetail',
     component: () => import('@/views/scripts/ScriptDetail.vue'),
-    meta: { title: '脚本详情', requiresAuth: true }
+    meta: {
+      title: '脚本详情',
+      requiresAuth: true
+    }
   },
   {
     path: '/scripts/:id/edit',
     name: 'ScriptEdit',
-    component: () => import('@/views/scripts/ScriptEdit.vue'),
-    meta: { title: '编辑脚本', requiresAuth: true }
-  },
-  {
-    path: '/tasks',
-    name: 'Tasks',
-    component: () => import('@/views/tasks/TaskList.vue'),
-    meta: { title: '测试任务', requiresAuth: true }
-  },
-  {
-    path: '/tasks/new',
-    name: 'TaskNew',
-    component: () => import('@/views/tasks/TaskEdit.vue'),
-    meta: { title: '新建任务', requiresAuth: true }
-  },
-  {
-    path: '/tasks/:id',
-    name: 'TaskDetail',
-    component: () => import('@/views/tasks/TaskDetail.vue'),
-    meta: { title: '任务详情', requiresAuth: true }
+    component: () => import('@/views/scripts/ScriptDetail.vue'),
+    meta: {
+      title: '编辑脚本',
+      requiresAuth: true,
+      isEdit: true
+    }
   },
   {
     path: '/devices',
-    name: 'Devices',
-    component: () => import('@/views/devices/DeviceList.vue'),
-    meta: { title: '设备管理', requiresAuth: true }
+    name: 'DevicesList',
+    component: () => import('@/views/devices/DevicesList.vue'),
+    meta: {
+      title: '设备管理',
+      requiresAuth: true
+    }
   },
   {
-    path: '/devices/:id',
-    name: 'DeviceDetail',
-    component: () => import('@/views/devices/DeviceDetail.vue'),
-    meta: { title: '设备详情', requiresAuth: true }
+    path: '/tasks',
+    name: 'TasksList',
+    component: () => import('@/views/tasks/TasksList.vue'),
+    meta: {
+      title: '任务管理',
+      requiresAuth: true
+    }
   },
   {
     path: '/reports',
-    name: 'Reports',
-    component: () => import('@/views/reports/ReportList.vue'),
-    meta: { title: '报告中心', requiresAuth: true }
+    name: 'ReportsList',
+    component: () => import('@/views/reports/ReportsList.vue'),
+    meta: {
+      title: '测试报告',
+      requiresAuth: true
+    }
   },
   {
-    path: '/reports/:id',
-    name: 'ReportDetail',
-    component: () => import('@/views/reports/ReportDetail.vue'),
-    meta: { title: '报告详情', requiresAuth: true }
-  },
-  {
-    path: '/data',
-    name: 'Data',
-    component: () => import('@/views/data/DataList.vue'),
-    meta: { title: '数据驱动', requiresAuth: true }
+    path: '/executions/:id',
+    name: 'ExecutionDetail',
+    component: () => import('@/views/executions/ExecutionDetail.vue'),
+    meta: {
+      title: '执行详情',
+      requiresAuth: true
+    }
   },
   {
     path: '/settings',
     name: 'Settings',
     component: () => import('@/views/settings/Settings.vue'),
-    meta: { title: '系统设置', requiresAuth: true }
-  },
-  {
-    path: '/profile',
-    name: 'Profile',
-    component: () => import('@/views/auth/Profile.vue'),
-    meta: { title: '个人资料', requiresAuth: true }
+    meta: {
+      title: '系统设置',
+      requiresAuth: true
+    }
   },
   {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     component: () => import('@/views/NotFound.vue'),
-    meta: { title: '页面不存在', requiresAuth: false }
+    meta: {
+      title: '页面未找到',
+      requiresAuth: false
+    }
   }
 ]
 
 // 创建路由
 const router = createRouter({
-  history: createWebHashHistory(),
+  history: createWebHistory(),
   routes
 })
 

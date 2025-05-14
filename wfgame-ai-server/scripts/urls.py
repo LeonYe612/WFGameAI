@@ -1,5 +1,13 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
-脚本管理应用URL配置
+================================
+Description:
+脚本管理应用的URL配置
+Author: WFGame AI Team
+CreateDate: 2024-05-15
+Version: 1.0
+===============================
 """
 
 from django.urls import path, include
@@ -11,16 +19,14 @@ from . import views
 router = DefaultRouter()
 router.register(r'categories', views.ScriptCategoryViewSet)
 router.register(r'scripts', views.ScriptViewSet)
-router.register(r'versions', views.ScriptVersionViewSet)
+router.register(r'executions', views.ScriptExecutionViewSet)
 
-# 应用的URL模式
 urlpatterns = [
-    # API路由
+    # 使用自动生成的路由
     path('', include(router.urls)),
     
-    # 自定义操作
-    path('scripts/<int:pk>/clone/', views.CloneScriptView.as_view(), name='script-clone'),
-    path('scripts/<int:pk>/export/', views.ExportScriptView.as_view(), name='script-export'),
-    path('scripts/import/', views.ImportScriptView.as_view(), name='script-import'),
-    path('scripts/<int:pk>/rollback/<str:version>/', views.RollbackScriptView.as_view(), name='script-rollback'),
+    # 自定义API路径
+    path('scripts/<int:pk>/execute/', views.ScriptViewSet.as_view({'post': 'execute'}), name='script-execute'),
+    path('scripts/<int:pk>/executions/', views.ScriptViewSet.as_view({'get': 'executions'}), name='script-executions'),
+    path('scripts/<int:pk>/toggle-active/', views.ScriptViewSet.as_view({'post': 'toggle_active'}), name='script-toggle-active'),
 ] 

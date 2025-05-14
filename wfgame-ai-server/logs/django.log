@@ -1,0 +1,27 @@
+INFO 2025-05-14 18:15:42,012 autoreload 57084 97888 Watching for file changes with StatReloader
+INFO 2025-05-14 18:19:25,491 autoreload 91168 43252 Watching for file changes with StatReloader
+INFO 2025-05-14 18:29:10,251 autoreload 104956 52588 Watching for file changes with StatReloader
+INFO 2025-05-14 18:29:50,274 autoreload 89376 35188 Watching for file changes with StatReloader
+INFO 2025-05-14 18:30:31,979 autoreload 69344 86492 Watching for file changes with StatReloader
+INFO 2025-05-14 18:30:47,108 autoreload 73808 94536 Watching for file changes with StatReloader
+INFO 2025-05-14 18:31:07,470 autoreload 73808 94536 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\views.py changed, reloading.
+INFO 2025-05-14 18:31:07,960 autoreload 27612 105804 Watching for file changes with StatReloader
+INFO 2025-05-14 18:31:12,695 autoreload 27612 105804 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\views.py changed, reloading.
+INFO 2025-05-14 18:31:13,183 autoreload 92644 77248 Watching for file changes with StatReloader
+WARNING 2025-05-14 18:31:39,401 base 92644 89996 Session data corrupted
+INFO 2025-05-14 18:31:39,410 basehttp 92644 89996 "GET /api/docs/ HTTP/1.1" 200 2238
+INFO 2025-05-14 18:31:39,419 basehttp 92644 74004 "GET /static/drf-yasg/swagger-ui-dist/swagger-ui.css HTTP/1.1" 304 0
+INFO 2025-05-14 18:31:39,420 basehttp 92644 89996 "GET /static/drf-yasg/style.css HTTP/1.1" 304 0
+INFO 2025-05-14 18:31:39,421 basehttp 92644 74004 "GET /static/drf-yasg/swagger-ui-dist/swagger-ui-bundle.js HTTP/1.1" 304 0
+INFO 2025-05-14 18:31:39,421 basehttp 92644 89996 "GET /static/drf-yasg/swagger-ui-dist/swagger-ui-standalone-preset.js HTTP/1.1" 304 0
+INFO 2025-05-14 18:31:39,422 basehttp 92644 74004 "GET /static/drf-yasg/insQ.min.js HTTP/1.1" 304 0
+INFO 2025-05-14 18:31:39,423 basehttp 92644 89996 "GET /static/drf-yasg/immutable.min.js HTTP/1.1" 304 0
+INFO 2025-05-14 18:31:39,423 basehttp 92644 74004 "GET /static/drf-yasg/swagger-ui-init.js HTTP/1.1" 304 0
+WARNING 2025-05-14 18:31:39,507 base 92644 74004 Session data corrupted
+INFO 2025-05-14 18:31:39,552 basehttp 92644 74004 "GET /api/docs/?format=openapi HTTP/1.1" 200 24352
+INFO 2025-05-14 18:31:39,552 basehttp 92644 89996 "GET /static/drf-yasg/swagger-ui-dist/favicon-32x32.png HTTP/1.1" 304 0
+INFO 2025-05-14 18:31:41,765 basehttp 92644 89996 "GET / HTTP/1.1" 200 9707
+INFO 2025-05-14 18:31:43,742 basehttp 92644 89996 "GET /pages/dashboard.html HTTP/1.1" 200 8245
+INFO 2025-05-14 18:31:51,730 basehttp 92644 89996 "GET /pages/devices.html HTTP/1.1" 200 10075
+INFO 2025-05-14 18:31:53,047 basehttp 92644 89996 "GET /pages/scripts.html HTTP/1.1" 200 9816
+INFO 2025-05-14 18:31:53,799 basehttp 92644 89996 "GET /pages/tasks.html HTTP/1.1" 200 9541

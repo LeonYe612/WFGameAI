@@ -1,10 +1,13 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
-ASGI配置
-
-它暴露了ASGI可调用对象作为模块级变量 ``application``。
-
-更多信息请参考
-https://docs.djangoproject.com/en/4.2/howto/deployment/asgi/
+================================
+Description:
+Django ASGI服务器配置
+Author: WFGame AI Team
+CreateDate: 2024-05-15
+Version: 1.0
+===============================
 """
 
 import os

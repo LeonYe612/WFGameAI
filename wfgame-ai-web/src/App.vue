@@ -1,373 +1,280 @@
+<!--
+  主应用组件
+  @file src/App.vue
+  @author WFGame AI Team
+  @date 2024-05-15
+-->
 <template>
-  <div class="app-container">
-    <!-- 加载状态 -->
-    <div class="loading-container" v-if="loading">
-      <el-icon class="loading-icon" :size="48"><Loading /></el-icon>
-      <div class="loading-text">加载中...</div>
-    </div>
-    
-    <!-- 应用主体 -->
-    <div class="app-layout" v-else>
+  <div id="app" :class="{'sidebar-collapsed': sidebarCollapsed}">
+    <el-container v-if="isLoggedIn">
       <!-- 侧边栏 -->
-      <div class="sidebar">
-        <!-- Logo -->
+      <el-aside :width="sidebarCollapsed ? '64px' : '240px'" class="sidebar">
         <div class="logo">
-          <router-link to="/">
-            <img src="@/assets/logo.png" alt="WFGame AI" />
-            <h1>WFGame AI</h1>
-          </router-link>
+          <img src="@/assets/logo.png" alt="Logo" width="40" />
+          <h1 v-show="!sidebarCollapsed">WFGame AI</h1>
         </div>
         
         <!-- 导航菜单 -->
         <el-menu
-          :default-active="activeMenuItem"
-          class="main-menu"
+          :default-active="activeMenu"
+          class="sidebar-menu"
           router
-          background-color="#001428"
-          text-color="#e6e6e6"
-          active-text-color="#409EFF">
-          
-          <el-menu-item index="/dashboard">
-            <el-icon><Dashboard /></el-icon>
-            <span>仪表盘</span>
-          </el-menu-item>
-          
-          <el-menu-item index="/scripts">
-            <el-icon><Document /></el-icon>
-            <span>脚本管理</span>
-          </el-menu-item>
-          
-          <el-menu-item index="/tasks">
-            <el-icon><List /></el-icon>
-            <span>测试任务</span>
+          background-color="#304156"
+          text-color="#bfcbd9"
+          active-text-color="#409EFF"
+          :collapse="sidebarCollapsed"
+        >
+          <el-menu-item index="/">
+            <i class="el-icon-s-home"></i>
+            <span slot="title">控制台</span>
           </el-menu-item>
           
           <el-menu-item index="/devices">
-            <el-icon><Cellphone /></el-icon>
-            <span>设备管理</span>
+            <i class="el-icon-mobile-phone"></i>
+            <span slot="title">设备管理</span>
+          </el-menu-item>
+          
+          <el-menu-item index="/scripts">
+            <i class="el-icon-s-order"></i>
+            <span slot="title">脚本管理</span>
+          </el-menu-item>
+          
+          <el-menu-item index="/tasks">
+            <i class="el-icon-s-operation"></i>
+            <span slot="title">任务管理</span>
           </el-menu-item>
           
           <el-menu-item index="/reports">
-            <el-icon><DocumentCopy /></el-icon>
-            <span>报告中心</span>
-          </el-menu-item>
-          
-          <el-menu-item index="/data">
-            <el-icon><DataAnalysis /></el-icon>
-            <span>数据驱动</span>
+            <i class="el-icon-s-data"></i>
+            <span slot="title">测试报告</span>
           </el-menu-item>
           
           <el-menu-item index="/settings">
-            <el-icon><Setting /></el-icon>
-            <span>系统设置</span>
+            <i class="el-icon-setting"></i>
+            <span slot="title">系统设置</span>
           </el-menu-item>
         </el-menu>
-        
-        <!-- 用户信息 -->
-        <div class="user-info">
-          <el-avatar :size="36" src="https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png"></el-avatar>
-          <div class="user-details">
-            <div class="username">{{ userStore.username }}</div>
-            <div class="role">{{ userStore.role }}</div>
-          </div>
-        </div>
-      </div>
+      </el-aside>
       
-      <!-- 主内容区 -->
-      <div class="main-content">
+      <!-- 主内容区域 -->
+      <el-container class="main-container">
         <!-- 头部导航 -->
-        <header class="header">
-          <div class="breadcrumb">
-            <el-breadcrumb separator="/">
-              <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
-              <el-breadcrumb-item v-for="(item, index) in breadcrumbItems" :key="index">{{ item }}</el-breadcrumb-item>
-            </el-breadcrumb>
+        <el-header height="60px" class="header">
+          <div class="header-left">
+            <i 
+              :class="sidebarCollapsed ? 'el-icon-s-unfold' : 'el-icon-s-fold'"
+              class="sidebar-toggle" 
+              @click="toggleSidebar"
+            ></i>
           </div>
           
-          <div class="header-actions">
-            <!-- 通知中心 -->
-            <el-dropdown trigger="click" @command="handleNotificationCommand">
-              <el-badge :value="unreadCount" :max="99" class="notification-badge">
-                <el-button type="primary" plain circle>
-                  <el-icon><Bell /></el-icon>
-                </el-button>
-              </el-badge>
+          <div class="header-right">
+            <el-dropdown @command="handleCommand">
+              <span class="user-dropdown">
+                {{ username }}
+                <i class="el-icon-arrow-down"></i>
+              </span>
               <template #dropdown>
                 <el-dropdown-menu>
-                  <el-dropdown-item v-for="(notification, index) in notifications" :key="index" :command="notification.id">
-                    {{ notification.title }}
-                  </el-dropdown-item>
-                  <el-dropdown-item divided command="viewAll">查看全部通知</el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
-            
-            <!-- 用户菜单 -->
-            <el-dropdown trigger="click" @command="handleUserCommand">
-              <el-button plain>
-                {{ userStore.username }}
-                <el-icon><ArrowDown /></el-icon>
-              </el-button>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item command="profile">个人资料</el-dropdown-item>
-                  <el-dropdown-item command="settings">系统设置</el-dropdown-item>
-                  <el-dropdown-item divided command="logout">退出登录</el-dropdown-item>
+                  <el-dropdown-item command="profile">个人中心</el-dropdown-item>
+                  <el-dropdown-item command="logout">退出登录</el-dropdown-item>
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
           </div>
-        </header>
+        </el-header>
         
-        <!-- 页面内容 -->
-        <main class="page-container">
+        <!-- 内容区域 -->
+        <el-main>
           <router-view v-slot="{ Component }">
-            <transition name="fade" mode="out-in">
-              <keep-alive>
-                <component :is="Component" />
-              </keep-alive>
-            </transition>
+            <keep-alive :include="cachedViews">
+              <component :is="Component" :key="$route.fullPath" />
+            </keep-alive>
           </router-view>
-        </main>
-      </div>
-    </div>
+        </el-main>
+      </el-container>
+    </el-container>
+    
+    <!-- 登录页 -->
+    <router-view v-if="!isLoggedIn" />
   </div>
 </template>
 
-<script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
-import { useUserStore } from '@/stores/user'
-import { 
-  Dashboard, Document, List, Cellphone, DocumentCopy, 
-  DataAnalysis, Setting, Bell, Loading, ArrowDown 
-} from '@element-plus/icons-vue'
-
-// 加载状态
-const loading = ref(true)
-
-// 用户状态
-const userStore = useUserStore()
-
-// 路由
-const route = useRoute()
-
-// 活动菜单项
-const activeMenuItem = computed(() => route.path)
-
-// 面包屑导航
-const breadcrumbItems = computed(() => {
-  const items = []
-  if (route.meta.title) items.push(route.meta.title)
-  return items
-})
-
-// 通知
-const notifications = ref([
-  { id: 1, title: '测试任务完成', read: false },
-  { id: 2, title: '设备状态变更', read: false },
-  { id: 3, title: '系统更新提醒', read: true }
-])
-const unreadCount = computed(() => {
-  return notifications.value.filter(item => !item.read).length
-})
-
-// 方法
-const handleNotificationCommand = (command) => {
-  if (command === 'viewAll') {
-    // 查看全部通知
-    console.log('查看全部通知')
-  } else {
-    // 查看特定通知
-    const notification = notifications.value.find(item => item.id === command)
-    if (notification) {
-      notification.read = true
-      console.log(`查看通知: ${notification.title}`)
+<script>
+export default {
+  name: 'App',
+  
+  data() {
+    return {
+      isLoggedIn: true, // 临时设为true以便开发与调试
+      username: '管理员',
+      cachedViews: ['ScriptsList', 'DevicesList', 'TasksList'],
+      sidebarCollapsed: false
+    };
+  },
+  
+  computed: {
+    activeMenu() {
+      // 获取当前路由路径
+      return this.$route.path;
+    }
+  },
+  
+  created() {
+    // 检查是否已登录
+    const token = localStorage.getItem('token');
+    
+    // 开发模式下，可以暂时跳过登录检查
+    if (process.env.NODE_ENV === 'development') {
+      this.isLoggedIn = true;
+    } else {
+      this.isLoggedIn = !!token;
+      
+      // 如果未登录，且当前路由需要登录，则重定向到登录页
+      if (!this.isLoggedIn && this.$route.meta.requiresAuth) {
+        this.$router.push('/login');
+      }
+    }
+  },
+  
+  methods: {
+    // 处理下拉菜单命令
+    handleCommand(command) {
+      if (command === 'logout') {
+        this.logout();
+      } else if (command === 'profile') {
+        this.$router.push('/profile');
+      }
+    },
+    
+    // 退出登录
+    logout() {
+      localStorage.removeItem('token');
+      this.isLoggedIn = false;
+      this.$router.push('/login');
+    },
+    
+    // 切换侧边栏
+    toggleSidebar() {
+      this.sidebarCollapsed = !this.sidebarCollapsed;
+      
+      // 在DOM更新后执行
+      this.$nextTick(() => {
+        window.dispatchEvent(new Event('resize'));
+      });
     }
   }
-}
-
-const handleUserCommand = (command) => {
-  switch (command) {
-    case 'profile':
-      console.log('查看个人资料')
-      break
-    case 'settings':
-      console.log('系统设置')
-      break
-    case 'logout':
-      userStore.logout()
-      break
-  }
-}
-
-// 生命周期
-onMounted(() => {
-  // 模拟加载过程
-  setTimeout(() => {
-    loading.value = false
-  }, 1000)
-})
+};
 </script>
 
 <style lang="scss">
-// 全局样式
-body {
+html, body {
   margin: 0;
   padding: 0;
-  font-family: 'stheitimedium', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  color: #333;
-  background-color: #f5f7fa;
-}
-
-// App容器
-.app-container {
-  height: 100vh;
-  width: 100vw;
-  overflow: hidden;
-}
-
-// 加载状态
-.loading-container {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
   height: 100%;
-  
-  .loading-icon {
-    animation: rotate 1.5s linear infinite;
-    color: #409EFF;
-  }
-  
-  .loading-text {
-    margin-top: 16px;
-    font-size: 18px;
-    color: #606266;
-  }
+  font-family: "stheitimedium", "Microsoft YaHei", "微软雅黑", sans-serif;
 }
 
-@keyframes rotate {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-// 应用布局
-.app-layout {
-  display: flex;
+#app {
   height: 100%;
 }
 
-// 侧边栏
 .sidebar {
-  width: 220px;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  background-color: #001428;
+  background-color: #304156;
   color: #fff;
+  height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 1001;
+  transition: width 0.3s;
+  overflow-y: auto;
+  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
   
   .logo {
     height: 60px;
-    padding: 0 16px;
+    padding: 0 20px;
     display: flex;
     align-items: center;
-    
-    a {
-      display: flex;
-      align-items: center;
-      text-decoration: none;
-      color: #fff;
-    }
-    
-    img {
-      width: 32px;
-      height: 32px;
-      margin-right: 8px;
-    }
+    background-color: #2b3649;
+    overflow: hidden;
     
     h1 {
-      margin: 0;
+      color: #fff;
       font-size: 18px;
+      margin: 0 0 0 12px;
       font-weight: 600;
+      white-space: nowrap;
     }
   }
   
-  .main-menu {
-    flex: 1;
+  .sidebar-menu {
     border-right: none;
-  }
-  
-  .user-info {
-    height: 64px;
-    padding: 0 16px;
-    display: flex;
-    align-items: center;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
     
-    .user-details {
-      margin-left: 12px;
-      
-      .username {
-        font-size: 14px;
-        color: #e6e6e6;
-      }
-      
-      .role {
-        font-size: 12px;
-        color: #909399;
-      }
+    &.el-menu--collapse {
+      width: 64px;
     }
   }
 }
 
-// 主内容区
-.main-content {
-  flex: 1;
+.main-container {
+  min-height: 100vh;
+  background-color: #f0f2f5;
+  position: relative;
+  transition: margin-left 0.3s;
+  margin-left: 240px;
+}
+
+.header {
+  background-color: #fff;
+  border-bottom: 1px solid #e6e6e6;
+  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
   display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
   
-  .header {
-    height: 60px;
+  .header-left {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 0 24px;
-    background-color: #fff;
-    box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
     
-    .breadcrumb {
+    .sidebar-toggle {
+      font-size: 20px;
+      cursor: pointer;
+      color: #606266;
       
+      &:hover {
+        color: #409EFF;
+      }
     }
+  }
+  
+  .header-right {
+    display: flex;
+    align-items: center;
     
-    .header-actions {
+    .user-dropdown {
+      cursor: pointer;
+      color: #606266;
       display: flex;
       align-items: center;
+      gap: 5px;
       
-      .notification-badge {
-        margin-right: 16px;
+      &:hover {
+        color: #409EFF;
       }
     }
   }
-  
-  .page-container {
-    flex: 1;
-    padding: 24px;
-    overflow: auto;
+}
+
+// 当侧边栏折叠时
+.sidebar-collapsed {
+  .main-container {
+    margin-left: 64px;
   }
-}
-
-// 页面过渡动画
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.2s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
 }
 </style> 

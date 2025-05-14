@@ -29,9 +29,9 @@ schema_view = get_schema_view(
 api_v1_patterns = [
     # 已实现的应用
     path('devices/', include('devices.urls')),
+    path('scripts/', include('scripts.urls')),
     
     # 尚未实现的应用
-    # path('scripts/', include('scripts.urls')),
     # path('tasks/', include('tasks.urls')),
     # path('reports/', include('reports.urls')),
     # path('data/', include('data_source.urls')),

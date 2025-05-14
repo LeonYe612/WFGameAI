@@ -1,22 +1,30 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
-Django settings for wfgame_ai_server project.
+================================
+Description:
+Django设置文件
+Author: WFGame AI Team
+CreateDate: 2024-05-15
+Version: 1.0
+===============================
 """
 
 import os
 from pathlib import Path
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+# 构建路径
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-wfgame-ai-test-platform-secret-key-example'
+# 安全设置
+SECRET_KEY = 'django-insecure-j383h4uyi2#4jh23@#$hjk23h4jk23h4jk@#$2h3'
 
-# SECURITY WARNING: don't run with debug turned on in production!
+# 调试模式
 DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
-# Application definition
+# 应用定义
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -26,19 +34,15 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     # 第三方应用
     'rest_framework',
-    'rest_framework.authtoken',
-    'corsheaders',
     'drf_yasg',
-    'django_filters',
-    'channels',
-    # 自定义应用 - 已完成的应用
-    'devices.apps.DevicesConfig',
-    # 需要实现的应用 - 暂时注释掉
-    # 'scripts.apps.ScriptsConfig',
-    # 'tasks.apps.TasksConfig',
-    # 'reports.apps.ReportsConfig',
-    # 'data_source.apps.DataSourceConfig',
-    # 'users.apps.UsersConfig',
+    'corsheaders',
+    # 本地应用
+    'devices',
+    'scripts',
+    'users',
+    'tasks',
+    'reports',
+    'data_source',
 ]
 
 MIDDLEWARE = [
@@ -57,7 +61,7 @@ ROOT_URLCONF = 'wfgame_ai_server.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -71,9 +75,8 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'wfgame_ai_server.wsgi.application'
-ASGI_APPLICATION = 'wfgame_ai_server.asgi.application'
 
-# 数据库配置
+# 数据库
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -81,7 +84,7 @@ DATABASES = {
     }
 }
 
-# 密码验证
+# 密码校验
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -102,67 +105,95 @@ LANGUAGE_CODE = 'zh-hans'
 TIME_ZONE = 'Asia/Shanghai'
 USE_I18N = True
 USE_L10N = True
-USE_TZ = True
+USE_TZ = False
 
-# 静态文件配置
+# 静态文件设置
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'staticfiles'),
+    os.path.join(BASE_DIR, 'static'),
 ]
 
-# 媒体文件配置
+# 媒体文件设置
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-# 默认主键字段类型
+# 默认主键类型
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# CORS配置
-CORS_ALLOW_ALL_ORIGINS = True
-CORS_ALLOW_CREDENTIALS = True
-
-# REST Framework配置
+# REST Framework设置
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.TokenAuthentication',
-        'rest_framework.authentication.SessionAuthentication',
-    ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
+    ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 20,
+    'PAGE_SIZE': 10,
+    'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.coreapi.AutoSchema',
     'DEFAULT_FILTER_BACKENDS': [
         'django_filters.rest_framework.DjangoFilterBackend',
-        'rest_framework.filters.SearchFilter',
-        'rest_framework.filters.OrderingFilter',
     ],
-    'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.coreapi.AutoSchema',
 }
 
-# Swagger配置
-SWAGGER_SETTINGS = {
-    'SECURITY_DEFINITIONS': {
-        'Token': {
-            'type': 'apiKey',
-            'name': 'Authorization',
-            'in': 'header'
-        }
+# CORS设置
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+
+# 日志配置
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs/django.log'),
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'scripts': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'devices': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
     },
 }
 
-# Celery配置 - 暂时注释掉以简化开发环境
-# CELERY_BROKER_URL = 'redis://localhost:6379/0'
-# CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
-# CELERY_ACCEPT_CONTENT = ['json']
-# CELERY_TASK_SERIALIZER = 'json'
-# CELERY_RESULT_SERIALIZER = 'json'
-# CELERY_TIMEZONE = 'Asia/Shanghai'
+# 确保logs目录存在
+os.makedirs(os.path.join(BASE_DIR, 'logs'), exist_ok=True)
 
-# Channels配置 - 使用内存Channel Layer替代Redis
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels.layers.InMemoryChannelLayer',
-    },
-} 
+# 应用版本
+VERSION = '1.0.0'
+
+# YOLO模型设置
+YOLO_MODEL_PATH = os.path.join(BASE_DIR.parent, 'yolo11m.pt')
+YOLO_CONFIDENCE_THRESHOLD = 0.5 
