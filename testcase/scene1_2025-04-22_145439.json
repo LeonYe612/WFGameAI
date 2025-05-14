@@ -1,0 +1,43 @@
+{
+    "steps": [
+        {
+            "step": 1,
+            "class": "operation-close",
+            "confidence": 0.903904378414154,
+            "timestamp": "2025-04-22 14:54:46.437250",
+            "remark": "启动游戏后先有一个公告弹窗，点击关闭"
+        },
+        {
+            "step": 2,
+            "class": "system-notices",
+            "confidence": 0.9300945997238159,
+            "timestamp": "2025-04-22 14:54:54.598859",
+            "remark": "系统弹窗"
+        },
+        {
+            "step": 3,
+            "class": "operation-close",
+            "confidence": 0.9400804042816162,
+            "timestamp": "2025-04-22 14:55:00.201688",
+            "remark": "关闭弹窗"
+        },
+        {
+            "step": 4,
+            "class": "unknown",
+            "confidence": 0.0,
+            "relative_x": 0.6509259259259259,
+            "relative_y": 0.808130081300813,
+            "timestamp": "2025-04-22 14:55:06.262944",
+            "remark": "未识别按钮"
+        },
+        {
+            "step": 5,
+            "class": "unknown",
+            "confidence": 0.0,
+            "relative_x": 0.16111111111111112,
+            "relative_y": 0.4300813008130081,
+            "timestamp": "2025-04-22 14:55:12.235057",
+            "remark": "未识别按钮"
+        }
+    ]
+}

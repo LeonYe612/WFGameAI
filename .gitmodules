@@ -1,0 +1,3 @@
+[submodule "external/honeydou"]
+	path = external/honeydou
+	url = http://172.28.133.134:8096/hbuker/honeydou-atp-master-django.git

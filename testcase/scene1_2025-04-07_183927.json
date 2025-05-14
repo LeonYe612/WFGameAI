@@ -1,0 +1,105 @@
+{
+    "steps": [
+        {
+            "step": 1,
+            "class": "system-protocol-box",
+            "confidence": 0.8341127038002014,
+            "timestamp": "2025-04-07 18:39:41.800939",
+            "remark": ""
+        },
+        {
+            "step": 2,
+            "class": "system-protocol-box",
+            "confidence": 0.7540833353996277,
+            "timestamp": "2025-04-07 18:39:53.434118",
+            "remark": ""
+        },
+        {
+            "step": 3,
+            "class": "system-notices",
+            "confidence": 0.9437808990478516,
+            "timestamp": "2025-04-07 18:40:05.178251",
+            "remark": ""
+        },
+        {
+            "step": 4,
+            "class": "operation-close",
+            "confidence": 0.9356675744056702,
+            "timestamp": "2025-04-07 18:40:12.664292",
+            "remark": ""
+        },
+        {
+            "step": 5,
+            "class": "system-cleanUpCache",
+            "confidence": 0.7135645747184753,
+            "timestamp": "2025-04-07 18:40:19.816964",
+            "remark": ""
+        },
+        {
+            "step": 6,
+            "class": "operation-close",
+            "confidence": 0.9918168187141418,
+            "timestamp": "2025-04-07 18:40:26.911667",
+            "remark": ""
+        },
+        {
+            "step": 7,
+            "class": "unknown",
+            "confidence": 0.0,
+            "relative_x": 0.649074074074074,
+            "relative_y": 0.8097560975609757,
+            "timestamp": "2025-04-07 18:40:36.187977",
+            "remark": "未识别按钮"
+        },
+        {
+            "step": 8,
+            "class": "unknown",
+            "confidence": 0.0,
+            "relative_x": 0.19166666666666668,
+            "relative_y": 0.42560975609756097,
+            "timestamp": "2025-04-07 18:40:42.389540",
+            "remark": "未识别按钮"
+        },
+        {
+            "step": 9,
+            "class": "unknown",
+            "confidence": 0.0,
+            "relative_x": 0.18796296296296297,
+            "relative_y": 0.5857723577235773,
+            "timestamp": "2025-04-07 18:40:47.955986",
+            "remark": "未识别按钮"
+        },
+        {
+            "step": 10,
+            "class": "unknown",
+            "confidence": 0.0,
+            "relative_x": 0.19814814814814816,
+            "relative_y": 0.2658536585365854,
+            "timestamp": "2025-04-07 18:40:53.802169",
+            "remark": "未识别按钮"
+        },
+        {
+            "step": 11,
+            "class": "operation-close",
+            "confidence": 0.8658312559127808,
+            "timestamp": "2025-04-07 18:40:58.184419",
+            "remark": ""
+        },
+        {
+            "step": 12,
+            "class": "unknown",
+            "confidence": 0.0,
+            "relative_x": 0.6537037037037037,
+            "relative_y": 0.8089430894308943,
+            "timestamp": "2025-04-07 18:41:04.993075",
+            "remark": "未识别按钮"
+        },
+        {
+            "step": 13,
+            "class": "operation-close",
+            "confidence": 0.8734847903251648,
+            "timestamp": "2025-04-07 18:41:11.098561",
+            "remark": ""
+        }
+    ]
+}

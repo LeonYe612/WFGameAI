@@ -1,0 +1,8 @@
+datasets/My First Project*
+datasets/yolov11-card2/
+outputs/WFGameAI-reports/
+external/
+*.pt
+*.png
+*.jpg
+*.jpege

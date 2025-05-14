@@ -1,0 +1,76 @@
+/* 仪表盘组件样式 */
+.stat-card {
+    background-color: #fff;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    height: 100%;
+}
+
+.stat-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+    font-size: 24px;
+    color: #fff;
+}
+
+.stat-icon.primary {
+    background-color: var(--primary-color);
+}
+
+.stat-icon.success {
+    background-color: var(--success-color);
+}
+
+.stat-icon.info {
+    background-color: var(--info-color);
+}
+
+.stat-icon.warning {
+    background-color: var(--warning-color);
+}
+
+.stat-content {
+    flex: 1;
+}
+
+.stat-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: #333;
+    margin: 0;
+}
+
+.stat-label {
+    font-size: 14px;
+    color: #666;
+    margin: 0;
+}
+
+.stat-trend {
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    margin-top: 5px;
+}
+
+.stat-trend.up {
+    color: #4caf50;
+}
+
+.stat-trend.down {
+    color: #f44336;
+}
+
+/* 图表容器 */
+.chart-container {
+    height: 300px;
+    width: 100%;
+} 
