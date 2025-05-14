@@ -1,0 +1,106 @@
+/* 
+  WFGame AI自动化测试平台样式变量文件
+*/
+
+// 颜色变量
+$primary-color: #409EFF;
+$success-color: #67C23A;
+$warning-color: #E6A23C;
+$danger-color: #F56C6C;
+$info-color: #909399;
+
+$primary-light: mix(white, $primary-color, 20%);
+$success-light: mix(white, $success-color, 20%);
+$warning-light: mix(white, $warning-color, 20%);
+$danger-light: mix(white, $danger-color, 20%);
+$info-light: mix(white, $info-color, 20%);
+
+$primary-dark: mix(black, $primary-color, 20%);
+$success-dark: mix(black, $success-color, 20%);
+$warning-dark: mix(black, $warning-color, 20%);
+$danger-dark: mix(black, $danger-color, 20%);
+$info-dark: mix(black, $info-color, 20%);
+
+// 文本颜色
+$text-primary: #303133;
+$text-regular: #606266;
+$text-secondary: #909399;
+$text-placeholder: #C0C4CC;
+
+// 边框颜色
+$border-color: #DCDFE6;
+$border-light: #E4E7ED;
+$border-lighter: #EBEEF5;
+$border-extra-light: #F2F6FC;
+
+// 背景颜色
+$background-color: #F5F7FA;
+
+// 字体族
+$font-family: 'stheitimedium', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+
+// 字体大小
+$font-size-xs: 12px;
+$font-size-sm: 13px;
+$font-size-base: 14px;
+$font-size-lg: 16px;
+$font-size-xl: 18px;
+$font-size-2xl: 20px;
+$font-size-3xl: 24px;
+$font-size-4xl: 28px;
+$font-size-5xl: 32px;
+
+// 字体粗细
+$font-weight-light: 300;
+$font-weight-normal: 400;
+$font-weight-medium: 500;
+$font-weight-bold: 700;
+
+// 行高
+$line-height-tight: 1.25;
+$line-height-snug: 1.375;
+$line-height-normal: 1.5;
+$line-height-relaxed: 1.625;
+$line-height-loose: 2;
+
+// 边距
+$spacing-0: 0;
+$spacing-1: 4px;
+$spacing-2: 8px;
+$spacing-3: 16px;
+$spacing-4: 24px;
+$spacing-5: 32px;
+$spacing-6: 48px;
+$spacing-7: 64px;
+$spacing-8: 80px;
+$spacing-9: 96px;
+$spacing-10: 128px;
+
+// 圆角
+$border-radius-none: 0;
+$border-radius-sm: 2px;
+$border-radius: 4px;
+$border-radius-lg: 8px;
+$border-radius-xl: 12px;
+$border-radius-full: 9999px;
+
+// 阴影
+$box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+$box-shadow-sm: 0 2px 8px 0 rgba(0, 0, 0, 0.05);
+$box-shadow-lg: 0 4px 16px 0 rgba(0, 0, 0, 0.15);
+
+// 过渡时间
+$transition-fast: 0.2s;
+$transition-normal: 0.3s;
+$transition-slow: 0.5s;
+
+// 断点
+$breakpoint-sm: 768px;
+$breakpoint-md: 992px;
+$breakpoint-lg: 1200px;
+$breakpoint-xl: 1400px;
+
+// 布局
+$sidebar-width: 220px;
+$header-height: 60px;
+$footer-height: 60px; 
