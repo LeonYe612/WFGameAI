@@ -2,7 +2,7 @@ datasets/My First Project*
 datasets/yolov11-card2/
 outputs/WFGameAI-reports/
 external/
+train_results/
 *.pt
 *.png
 *.jpg
-*.jpege
