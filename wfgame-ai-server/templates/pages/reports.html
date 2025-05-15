@@ -38,6 +38,18 @@
             transform: translateY(-5px);
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
+        #reportsContainer {
+            min-height: 300px;
+        }
+        .loading {
+            text-align: center;
+            padding: 50px 0;
+        }
+        .no-reports {
+            text-align: center;
+            padding: 50px 0;
+            color: #666;
+        }
     </style>
 </head>
 <body>
@@ -83,8 +95,8 @@
                     <p class="text-muted">查看和分析测试结果报告</p>
                 </div>
                 <div>
-                    <button class="btn btn-primary me-2"><i class="fas fa-download"></i> 导出报告</button>
-                    <button class="btn btn-success"><i class="fas fa-plus"></i> 创建报告</button>
+                    <button class="btn btn-primary me-2" id="refreshReports"><i class="fas fa-sync-alt"></i> 刷新报告</button>
+                    <button class="btn btn-success" onclick="window.location.href='/automation/'"><i class="fas fa-plus"></i> 创建新测试</button>
                 </div>
             </div>
             <div class="col-12">
@@ -101,13 +113,13 @@
             </div>
             <div class="col-md-3">
                 <div class="form-floating">
-                    <select class="form-select" id="reportTypeFilter">
-                        <option value="all" selected>所有类型</option>
-                        <option value="daily">每日报告</option>
-                        <option value="weekly">周报</option>
-                        <option value="custom">自定义报告</option>
+                    <select class="form-select" id="successRateFilter">
+                        <option value="all" selected>所有通过率</option>
+                        <option value="high">高通过率 (90%+)</option>
+                        <option value="medium">中等通过率 (70-90%)</option>
+                        <option value="low">低通过率 (<70%)</option>
                     </select>
-                    <label for="reportTypeFilter">报告类型</label>
+                    <label for="successRateFilter">通过率筛选</label>
                 </div>
             </div>
             <div class="col-md-3">
@@ -118,84 +130,12 @@
             </div>
         </div>
 
-        <div class="row">
-            <div class="col-md-4">
-                <div class="card report-card">
-                    <div class="card-body">
-                        <h5 class="card-title">每日登录测试报告</h5>
-                        <h6 class="card-subtitle mb-2 text-muted">2025-05-14</h6>
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <span class="badge bg-success">通过率: 98%</span>
-                            <span><i class="fas fa-mobile-alt"></i> 3台设备</span>
-                        </div>
-                        <div class="progress mb-3">
-                            <div class="progress-bar bg-success" role="progressbar" style="width: 98%"></div>
-                            <div class="progress-bar bg-danger" role="progressbar" style="width: 2%"></div>
-                        </div>
-                        <div class="d-flex justify-content-between">
-                            <small class="text-muted">创建者: admin</small>
-                            <small class="text-muted">耗时: 1小时15分</small>
-                        </div>
-                        <hr>
-                        <div class="d-flex">
-                            <button class="btn btn-sm btn-outline-primary me-2"><i class="fas fa-eye"></i> 查看</button>
-                            <button class="btn btn-sm btn-outline-secondary me-2"><i class="fas fa-download"></i> 下载</button>
-                            <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i> 删除</button>
-                        </div>
-                    </div>
+        <div class="row" id="reportsContainer">
+            <div class="col-12 loading">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">加载中...</span>
                 </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card report-card">
-                    <div class="card-body">
-                        <h5 class="card-title">战斗界面测试报告</h5>
-                        <h6 class="card-subtitle mb-2 text-muted">2025-05-13</h6>
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <span class="badge bg-warning">通过率: 85%</span>
-                            <span><i class="fas fa-mobile-alt"></i> 2台设备</span>
-                        </div>
-                        <div class="progress mb-3">
-                            <div class="progress-bar bg-success" role="progressbar" style="width: 85%"></div>
-                            <div class="progress-bar bg-danger" role="progressbar" style="width: 15%"></div>
-                        </div>
-                        <div class="d-flex justify-content-between">
-                            <small class="text-muted">创建者: tester</small>
-                            <small class="text-muted">耗时: 45分钟</small>
-                        </div>
-                        <hr>
-                        <div class="d-flex">
-                            <button class="btn btn-sm btn-outline-primary me-2"><i class="fas fa-eye"></i> 查看</button>
-                            <button class="btn btn-sm btn-outline-secondary me-2"><i class="fas fa-download"></i> 下载</button>
-                            <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i> 删除</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card report-card">
-                    <div class="card-body">
-                        <h5 class="card-title">周末回归测试报告</h5>
-                        <h6 class="card-subtitle mb-2 text-muted">2025-05-12</h6>
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <span class="badge bg-danger">通过率: 76%</span>
-                            <span><i class="fas fa-mobile-alt"></i> 5台设备</span>
-                        </div>
-                        <div class="progress mb-3">
-                            <div class="progress-bar bg-success" role="progressbar" style="width: 76%"></div>
-                            <div class="progress-bar bg-danger" role="progressbar" style="width: 24%"></div>
-                        </div>
-                        <div class="d-flex justify-content-between">
-                            <small class="text-muted">创建者: system</small>
-                            <small class="text-muted">耗时: 3小时20分</small>
-                        </div>
-                        <hr>
-                        <div class="d-flex">
-                            <button class="btn btn-sm btn-outline-primary me-2"><i class="fas fa-eye"></i> 查看</button>
-                            <button class="btn btn-sm btn-outline-secondary me-2"><i class="fas fa-download"></i> 下载</button>
-                            <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i> 删除</button>
-                        </div>
-                    </div>
-                </div>
+                <p class="mt-2">加载报告中...</p>
             </div>
         </div>
 
@@ -204,6 +144,206 @@
         </div>
     </div>
 
+    <!-- 确认删除模态框 -->
+    <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteModalLabel">确认删除</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    确定要删除这个报告吗？此操作不可撤销。
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-danger" id="confirmDelete">删除</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 存储报告数据
+        let allReports = [];
+        let deleteReportId = null;
+        const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+
+        // 获取报告列表
+        function fetchReports() {
+            // 显示加载状态
+            document.getElementById('reportsContainer').innerHTML = `
+                <div class="col-12 loading">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">加载中...</span>
+                    </div>
+                    <p class="mt-2">加载报告中...</p>
+                </div>
+            `;
+
+            // 发起API请求
+            fetch('/api/v1/reports/list/')
+                .then(response => response.json())
+                .then(data => {
+                    allReports = data.reports;
+                    renderReports(allReports);
+                })
+                .catch(error => {
+                    console.error('获取报告失败:', error);
+                    document.getElementById('reportsContainer').innerHTML = `
+                        <div class="col-12 text-center text-danger">
+                            <p><i class="fas fa-exclamation-triangle fa-3x mb-3"></i></p>
+                            <p>加载报告时出错，请稍后重试。</p>
+                        </div>
+                    `;
+                });
+        }
+
+        // 渲染报告列表
+        function renderReports(reports) {
+            const container = document.getElementById('reportsContainer');
+            
+            if (reports.length === 0) {
+                container.innerHTML = `
+                    <div class="col-12 no-reports">
+                        <p><i class="fas fa-folder-open fa-3x mb-3"></i></p>
+                        <p>没有找到测试报告</p>
+                        <button class="btn btn-primary mt-3" onclick="window.location.href='/automation/'">
+                            <i class="fas fa-plus"></i> 创建新测试
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            reports.forEach(report => {
+                // 根据成功率确定徽章颜色
+                let badgeClass = 'bg-success';
+                if (report.success_rate < 70) {
+                    badgeClass = 'bg-danger';
+                } else if (report.success_rate < 90) {
+                    badgeClass = 'bg-warning';
+                }
+
+                html += `
+                    <div class="col-md-4 mb-4">
+                        <div class="card report-card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">${report.title}</h5>
+                                <h6 class="card-subtitle mb-2 text-muted">${report.date}</h6>
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <span class="badge ${badgeClass}">通过率: ${report.success_rate.toFixed(0)}%</span>
+                                    <span><i class="fas fa-mobile-alt"></i> ${report.device_count}台设备</span>
+                                </div>
+                                <div class="progress mb-3">
+                                    <div class="progress-bar bg-success" role="progressbar" style="width: ${report.success_rate}%"></div>
+                                    <div class="progress-bar bg-danger" role="progressbar" style="width: ${100 - report.success_rate}%"></div>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <small class="text-muted">创建者: ${report.creator}</small>
+                                </div>
+                                <hr>
+                                <div class="d-flex">
+                                    <a href="/api/v1/reports/view/${report.id}/" class="btn btn-sm btn-outline-primary me-2">
+                                        <i class="fas fa-eye"></i> 查看
+                                    </a>
+                                    <a href="${report.url}" target="_blank" class="btn btn-sm btn-outline-secondary me-2">
+                                        <i class="fas fa-external-link-alt"></i> 新窗口
+                                    </a>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="prepareDelete('${report.id}')">
+                                        <i class="fas fa-trash"></i> 删除
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // 搜索和筛选报告
+        function filterReports() {
+            const searchText = document.getElementById('searchReport').value.toLowerCase();
+            const successRateFilter = document.getElementById('successRateFilter').value;
+            const dateFilter = document.getElementById('reportDateFilter').value;
+            
+            let filtered = [...allReports];
+            
+            // 搜索过滤
+            if (searchText) {
+                filtered = filtered.filter(report => 
+                    report.title.toLowerCase().includes(searchText)
+                );
+            }
+            
+            // 成功率过滤
+            if (successRateFilter !== 'all') {
+                if (successRateFilter === 'high') {
+                    filtered = filtered.filter(report => report.success_rate >= 90);
+                } else if (successRateFilter === 'medium') {
+                    filtered = filtered.filter(report => report.success_rate >= 70 && report.success_rate < 90);
+                } else if (successRateFilter === 'low') {
+                    filtered = filtered.filter(report => report.success_rate < 70);
+                }
+            }
+            
+            // 日期过滤
+            if (dateFilter) {
+                const filterDate = new Date(dateFilter);
+                filtered = filtered.filter(report => {
+                    const reportDate = new Date(report.date);
+                    return reportDate.toDateString() === filterDate.toDateString();
+                });
+            }
+            
+            renderReports(filtered);
+        }
+
+        // 准备删除报告
+        function prepareDelete(reportId) {
+            deleteReportId = reportId;
+            deleteModal.show();
+        }
+
+        // 确认删除报告
+        function deleteReport() {
+            if (!deleteReportId) return;
+            
+            fetch(`/api/v1/reports/delete/${deleteReportId}/`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // 从列表中移除被删除的报告
+                    allReports = allReports.filter(report => report.id !== deleteReportId);
+                    renderReports(allReports);
+                    deleteModal.hide();
+                } else {
+                    alert(data.error || '删除报告失败');
+                }
+            })
+            .catch(error => {
+                console.error('删除报告失败:', error);
+                alert('删除报告失败，请稍后重试');
+            });
+        }
+
+        // 页面加载时获取报告
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchReports();
+            
+            // 设置事件处理程序
+            document.getElementById('searchReport').addEventListener('input', filterReports);
+            document.getElementById('successRateFilter').addEventListener('change', filterReports);
+            document.getElementById('reportDateFilter').addEventListener('change', filterReports);
+            document.getElementById('refreshReports').addEventListener('click', fetchReports);
+            document.getElementById('confirmDelete').addEventListener('click', deleteReport);
+        });
+    </script>
 </body>
 </html> 

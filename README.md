@@ -215,6 +215,14 @@ WFGame AI自动化测试框架基于honeydou自动化测试平台构建，采用
 - **2023-05-28**: 集成honeydou自动化测试平台
 - **2023-05-28**: 更新README文档，更详细描述项目架构和实施路线
 
+## 数据库
+[DBMysql] # 数据库配置信息
+HOST=127.0.0.1
+USERNAME=root
+PASSWD=qa123456
+DBNAME=gogotest_data
+
+
 ## 联系方式
 
 - 项目维护者：WFGameAI团队

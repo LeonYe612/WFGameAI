@@ -14,6 +14,7 @@ import os
 from django.db import models
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
+from django.contrib.auth.models import User
 
 
 class ScriptCategory(models.Model):
@@ -22,10 +23,10 @@ class ScriptCategory(models.Model):
     
     用于对测试脚本进行分类管理，如登录流程、战斗流程、UI测试等
     """
-    name = models.CharField(_('分类名称'), max_length=100)
-    description = models.TextField(_('分类描述'), blank=True)
+    name = models.CharField(_('分类名称'), max_length=100, unique=True)
+    description = models.TextField(_('分类描述'), blank=True, null=True)
     parent = models.ForeignKey('self', verbose_name=_('父分类'), 
-                              on_delete=models.CASCADE, 
+                              on_delete=models.SET_NULL, 
                               null=True, blank=True, 
                               related_name='children')
     created_at = models.DateTimeField(_('创建时间'), auto_now_add=True)
@@ -82,6 +83,51 @@ class Script(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class ScriptFile(models.Model):
+    """
+    脚本文件模型
+    
+    用于存储上传的脚本文件信息
+    """
+    STATUS_CHOICES = (
+        ('active', _('可用')),
+        ('archived', _('已归档')),
+    )
+    
+    filename = models.CharField(_('文件名'), max_length=255)
+    file_path = models.CharField(_('文件路径'), max_length=500)
+    file_size = models.IntegerField(_('文件大小'), default=0)
+    step_count = models.IntegerField(_('步骤数量'), default=0)
+    type = models.CharField(_('脚本类型'), max_length=20, choices=Script.TYPE_CHOICES, default='manual')
+    category = models.ForeignKey(ScriptCategory, 
+                                verbose_name=_('所属分类'), 
+                                on_delete=models.SET_NULL, 
+                                null=True, 
+                                blank=True,
+                                related_name='script_files')
+    description = models.TextField(_('文件描述'), blank=True)
+    status = models.CharField(_('状态'), max_length=20, choices=STATUS_CHOICES, default='active')
+    uploaded_by = models.ForeignKey(settings.AUTH_USER_MODEL, 
+                             verbose_name=_('上传者'), 
+                             on_delete=models.SET_NULL, 
+                             null=True, 
+                             related_name='uploaded_scripts')
+    created_at = models.DateTimeField(_('创建时间'), auto_now_add=True)
+    updated_at = models.DateTimeField(_('更新时间'), auto_now=True)
+    
+    class Meta:
+        verbose_name = _('脚本文件')
+        verbose_name_plural = _('脚本文件')
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['filename']),
+            models.Index(fields=['status']),
+        ]
+    
+    def __str__(self):
+        return self.filename
 
 
 class ScriptExecution(models.Model):
@@ -146,4 +192,54 @@ class ScriptVersion(models.Model):
         unique_together = [['script', 'version']]
 
     def __str__(self):
-        return f"{self.script.name} v{self.version}" 
+        return f"{self.script.name} v{self.version}"
+
+
+class SystemConfig(models.Model):
+    """系统配置模型，用于存储全局设置"""
+    KEY_CHOICES = (
+        ('python_path', 'Python解释器路径'),
+        ('device_timeout', '设备连接超时(秒)'),
+        ('ui_confidence', 'UI识别置信度'),
+        ('yolo_model_path', 'YOLO模型路径'),
+        ('default_loop_count', '默认循环次数'),
+        ('default_wait_timeout', '默认等待超时(秒)'),
+        ('report_keep_days', '报告保留天数'),
+    )
+    
+    key = models.CharField('键名', max_length=50, choices=KEY_CHOICES, unique=True)
+    value = models.TextField('值', blank=True, null=True)
+    description = models.TextField('描述', blank=True, null=True)
+    last_modified_by = models.ForeignKey(User, verbose_name='最后修改人', on_delete=models.SET_NULL, blank=True, null=True)
+    created_at = models.DateTimeField('创建时间', auto_now_add=True)
+    updated_at = models.DateTimeField('更新时间', auto_now=True)
+    
+    class Meta:
+        verbose_name = '系统配置'
+        verbose_name_plural = '系统配置'
+        ordering = ['key']
+    
+    def __str__(self):
+        return f"{self.get_key_display()} ({self.key})"
+    
+    @classmethod
+    def get_value(cls, key, default=None):
+        """获取配置值，如果不存在则返回默认值"""
+        try:
+            config = cls.objects.get(key=key)
+            return config.value
+        except cls.DoesNotExist:
+            return default
+    
+    @classmethod
+    def set_value(cls, key, value, user=None, description=None):
+        """设置或更新配置值"""
+        config, created = cls.objects.update_or_create(
+            key=key,
+            defaults={
+                'value': value,
+                'last_modified_by': user,
+                'description': description or '',
+            }
+        )
+        return config 

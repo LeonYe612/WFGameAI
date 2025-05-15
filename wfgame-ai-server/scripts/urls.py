@@ -12,21 +12,44 @@ Version: 1.0
 
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-
-from . import views
+from .views import (
+    ScriptCategoryViewSet,
+    ScriptViewSet,
+    ScriptVersionViewSet,
+    ScriptExecutionViewSet,
+    get_devices,
+    get_scripts,
+    get_reports,
+    get_latest_report,
+    record_script,
+    replay_script,
+    debug_script,
+    start_record,
+    import_script
+)
 
 # 创建路由器并注册视图集
 router = DefaultRouter()
-router.register(r'categories', views.ScriptCategoryViewSet)
-router.register(r'scripts', views.ScriptViewSet)
-router.register(r'executions', views.ScriptExecutionViewSet)
+router.register(r'categories', ScriptCategoryViewSet)
+router.register(r'scripts', ScriptViewSet)
+router.register(r'history', ScriptVersionViewSet)
+router.register(r'executions', ScriptExecutionViewSet)
 
+# API URL配置
 urlpatterns = [
-    # 使用自动生成的路由
+    # 包含路由器生成的URL
     path('', include(router.urls)),
     
-    # 自定义API路径
-    path('scripts/<int:pk>/execute/', views.ScriptViewSet.as_view({'post': 'execute'}), name='script-execute'),
-    path('scripts/<int:pk>/executions/', views.ScriptViewSet.as_view({'get': 'executions'}), name='script-executions'),
-    path('scripts/<int:pk>/toggle-active/', views.ScriptViewSet.as_view({'post': 'toggle_active'}), name='script-toggle-active'),
+    # 自定义API端点
+    path('devices/', get_devices, name='get-devices'),
+    path('list/', get_scripts, name='get-scripts'),
+    path('reports/', get_reports, name='get-reports'),
+    path('latest-report/', get_latest_report, name='get-latest-report'),
+    path('record/', record_script, name='record-script'),
+    path('replay/', replay_script, name='replay-script'),
+    
+    # 新增API端点
+    path('debug/', debug_script, name='debug-script'),
+    path('start-record/', start_record, name='start-record'),
+    path('import/', import_script, name='import-script'),
 ] 

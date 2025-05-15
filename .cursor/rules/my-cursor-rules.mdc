@@ -5,6 +5,12 @@ alwaysApply: true
 ---
 # WFGame AI 自动化测试框架代码规范
 
+## ai-server 服务启动命令
+- python .\start_wfgame_ai.py
+
+## python目录
+- F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe
+
 ## 注意事项
 - 训练模型时仅需支持Windows（CUDA）。不用支持Mac（MPS）系统（模型训练完全在Windows上进行）。
 - 分析后直接在原文件内改动代码

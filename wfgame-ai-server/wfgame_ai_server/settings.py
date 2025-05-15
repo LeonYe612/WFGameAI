@@ -50,7 +50,7 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    # 'django.middleware.csrf.CsrfViewMiddleware',  # 暂时注释掉CSRF中间件，仅用于测试环境
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -76,11 +76,24 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'wfgame_ai_server.wsgi.application'
 
-# 数据库
+# 数据库配置
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
+    },
+    # 生产环境数据库配置，暂时注释掉
+    'mysql': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'gogotest_data',
+        'USER': 'root',
+        'PASSWORD': 'qa123456',
+        'HOST': '172.28.133.134',
+        'PORT': '3306',
+        'OPTIONS': {
+            'charset': 'utf8mb4',
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+        },
     }
 }
 
@@ -111,8 +124,14 @@ USE_TZ = False
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [
+    # 静态文件目录
     os.path.join(BASE_DIR, 'static'),
+    # 报告目录
+    ('reports', os.path.join(os.path.dirname(BASE_DIR), 'outputs', 'WFGameAI-reports', 'ui_reports')),
 ]
+
+# 确保静态文件目录存在
+os.makedirs(os.path.join(BASE_DIR, 'static'), exist_ok=True)
 
 # 媒体文件设置
 MEDIA_URL = '/media/'
@@ -124,7 +143,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # REST Framework设置
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
+        'rest_framework.permissions.AllowAny',
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.SessionAuthentication',
@@ -190,6 +209,13 @@ LOGGING = {
 
 # 确保logs目录存在
 os.makedirs(os.path.join(BASE_DIR, 'logs'), exist_ok=True)
+
+# Session配置
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+SESSION_COOKIE_AGE = 86400  # 1天
+SESSION_SAVE_EVERY_REQUEST = True
+SESSION_COOKIE_SECURE = False
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 
 # 应用版本
 VERSION = '1.0.0'

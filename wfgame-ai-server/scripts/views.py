@@ -15,16 +15,29 @@ from datetime import datetime
 
 import json
 import uuid
+import os
+import subprocess
+import glob
+import re
+import threading
+import sys
+import platform
+import signal
+
 from django.shortcuts import get_object_or_404
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.db import transaction
 from django.utils.translation import gettext_lazy as _
+from django.views.decorators.csrf import csrf_exempt
+from django.conf import settings
 
 from rest_framework import viewsets, status, views, permissions
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 
-from .models import ScriptCategory, Script, ScriptVersion, ScriptExecution
+from .models import (
+    ScriptCategory, Script, ScriptVersion, ScriptExecution, ScriptFile, SystemConfig
+)
 from .serializers import (
     ScriptCategorySerializer,
     ScriptListSerializer,
@@ -34,11 +47,625 @@ from .serializers import (
     ScriptExecutionSerializer,
     ScriptCreateSerializer,
     ScriptUpdateSerializer,
-    ScriptSerializer
+    ScriptSerializer,
+    ScriptFileSerializer
 )
 
 logger = logging.getLogger(__name__)
 
+# 定义脚本路径和报告路径
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+TESTCASE_DIR = os.path.join(os.path.dirname(BASE_DIR), "testcase")
+REPORTS_DIR = os.path.join(os.path.dirname(BASE_DIR), "outputs", "WFGameAI-reports")
+UI_REPORTS_DIR = os.path.join(REPORTS_DIR, "ui_reports")
+
+# 从数据库加载Python解释器路径
+def get_persistent_python_path():
+    """从数据库加载Python解释器路径"""
+    try:
+        python_path = SystemConfig.get_value('python_path')
+        if python_path:
+            # 验证路径是否仍然有效
+            if os.path.exists(python_path):
+                logger.info(f"从数据库加载Python路径: {python_path}")
+                return python_path
+    except Exception as e:
+        logger.error(f"加载Python路径时出错: {e}")
+    
+    # 如果没有设置或路径无效，返回默认值
+    logger.info(f"使用默认Python路径: {sys.executable}")
+    return sys.executable
+
+# 存储当前使用的Python环境路径
+CURRENT_PYTHON_ENV = {"path": get_persistent_python_path(), "initialized": True}
+
+# 用于管理子进程的全局变量
+CHILD_PROCESSES = {}
+
+# 初始化时，设置进程结束的处理函数
+def cleanup_processes():
+    """清理所有子进程"""
+    for pid, process in list(CHILD_PROCESSES.items()):
+        try:
+            if process.poll() is None:  # 进程仍在运行
+                process.terminate()
+                logger.info(f"已终止进程: {pid}")
+        except Exception as e:
+            logger.error(f"终止进程 {pid} 时出错: {e}")
+    
+    CHILD_PROCESSES.clear()
+
+# 确保在退出时清理进程
+import atexit
+atexit.register(cleanup_processes)
+
+# 处理Windows下的SIGTERM信号
+if platform.system() == "Windows":
+    def handle_windows_signal(sig, frame):
+        logger.info(f"接收到信号: {sig}")
+        cleanup_processes()
+        sys.exit(0)
+    
+    # Windows下的信号处理
+    try:
+        import win32api
+        win32api.SetConsoleCtrlHandler(lambda sig: handle_windows_signal(sig, None), True)
+    except ImportError:
+        logger.warning("无法导入win32api，Windows下可能无法正确处理信号")
+else:
+    # Unix系统的信号处理
+    signal.signal(signal.SIGTERM, lambda sig, frame: handle_windows_signal(sig, frame))
+
+@api_view(['GET'])
+@csrf_exempt
+@permission_classes([permissions.AllowAny])
+def get_devices(request):
+    """获取已连接的设备列表"""
+    try:
+        result = subprocess.run(['adb', 'devices'], capture_output=True, text=True, check=True)
+        lines = result.stdout.strip().split('\n')[1:]  # 跳过标题行
+        devices = []
+        
+        for line in lines:
+            if line.strip():
+                parts = line.strip().split('\t')
+                if len(parts) == 2:
+                    serial, status = parts
+                    if status == 'device':  # 只添加已连接的设备
+                        # 获取设备信息
+                        brand = subprocess.run(['adb', '-s', serial, 'shell', 'getprop', 'ro.product.brand'], 
+                                              capture_output=True, text=True).stdout.strip()
+                        model = subprocess.run(['adb', '-s', serial, 'shell', 'getprop', 'ro.product.model'], 
+                                              capture_output=True, text=True).stdout.strip()
+                        devices.append({
+                            'serial': serial,
+                            'brand': brand,
+                            'model': model,
+                            'name': f"{brand}-{model}"
+                        })
+        
+        return Response({'devices': devices})
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
+
+@api_view(['GET'])
+@csrf_exempt
+@permission_classes([permissions.AllowAny])
+def get_scripts(request):
+    """获取可用的测试脚本列表"""
+    try:
+        # 从数据库中获取脚本文件列表
+        script_files = ScriptFile.objects.filter(status='active').order_by('-created_at')
+        
+        scripts = []
+        for script_file in script_files:
+            scripts.append({
+                'filename': script_file.filename,
+                'path': script_file.file_path,
+                'created': script_file.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                'step_count': script_file.step_count,
+                'category': script_file.category.name if script_file.category else '未分类',
+                'type': script_file.get_type_display(),
+                'description': script_file.description
+            })
+        
+        # 如果数据库中没有记录，则尝试从文件系统获取
+        if not scripts:
+            # 确保目录存在
+            os.makedirs(TESTCASE_DIR, exist_ok=True)
+            
+            # 获取所有JSON脚本文件
+            for script_file in glob.glob(os.path.join(TESTCASE_DIR, "*.json")):
+                filename = os.path.basename(script_file)
+                created_time = datetime.fromtimestamp(os.path.getctime(script_file))
+                
+                # 读取脚本内容获取步骤数
+                try:
+                    with open(script_file, 'r', encoding='utf-8') as f:
+                        script_data = json.load(f)
+                        step_count = len(script_data.get('steps', []))
+                except:
+                    step_count = 0
+                    
+                scripts.append({
+                    'filename': filename,
+                    'path': script_file,
+                    'created': created_time.strftime('%Y-%m-%d %H:%M:%S'),
+                    'step_count': step_count,
+                    'category': '未分类',
+                    'type': '未知',
+                    'description': ''
+                })
+            
+            # 按创建时间排序，最新的在前面
+            scripts.sort(key=lambda x: x['created'], reverse=True)
+        
+        return Response({'scripts': scripts})
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
+
+@api_view(['GET'])
+@csrf_exempt
+@permission_classes([permissions.AllowAny])
+def get_reports(request):
+    """获取已生成的测试报告列表"""
+    try:
+        # 确保目录存在
+        os.makedirs(UI_REPORTS_DIR, exist_ok=True)
+        
+        # 获取所有HTML报告文件
+        reports = []
+        for report_file in glob.glob(os.path.join(UI_REPORTS_DIR, "*.html")):
+            filename = os.path.basename(report_file)
+            # 跳过latest_report.html，这只是一个快捷方式
+            if filename == 'latest_report.html':
+                continue
+                
+            created_time = datetime.fromtimestamp(os.path.getctime(report_file))
+            reports.append({
+                'filename': filename,
+                'path': report_file,
+                'created': created_time.strftime('%Y-%m-%d %H:%M:%S'),
+                'url': f'/static/reports/{filename}'
+            })
+        
+        # 按创建时间排序，最新的在前面
+        reports.sort(key=lambda x: x['created'], reverse=True)
+        
+        # 检查是否有latest_report.html
+        latest_report_path = os.path.join(UI_REPORTS_DIR, "latest_report.html")
+        has_latest = os.path.exists(latest_report_path)
+        
+        return Response({
+            'reports': reports, 
+            'latest_url': '/static/reports/latest_report.html' if has_latest else None
+        })
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
+
+@api_view(['POST'])
+@csrf_exempt
+def record_script(request):
+    """启动脚本录制"""
+    try:
+        data = request.data
+        record_mode = data.get('record_mode', 'standard')  # standard or enhanced
+        device_serial = data.get('device_serial')
+        
+        cmd = ['python', os.path.join(os.path.dirname(BASE_DIR), 'record_script.py')]
+        
+        # 根据模式添加参数
+        if record_mode == 'enhanced':
+            cmd.append('--record-no-match')
+        else:
+            cmd.append('--record')
+            
+        # 如果指定了设备，添加指定设备参数
+        if device_serial:
+            cmd.extend(['--main-device', device_serial])
+        
+        # 使用subprocess启动录制进程
+        process = subprocess.Popen(cmd, 
+                                  stdout=subprocess.PIPE, 
+                                  stderr=subprocess.PIPE,
+                                  text=True)
+        
+        # 这里不等待进程完成，立即返回
+        return Response({
+            'status': 'started',
+            'message': '录制进程已启动，请在设备上操作应用。按下Ctrl+C或关闭命令窗口停止录制。',
+            'pid': process.pid
+        })
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
+
+@api_view(['POST'])
+@csrf_exempt
+@permission_classes([permissions.AllowAny])
+def replay_script(request):
+    """回放指定的测试脚本"""
+    try:
+        data = json.loads(request.body)
+        
+        # 检查脚本参数，兼容scripts数组和script_path参数
+        script_configs = data.get('scripts', [])
+        if not script_configs and data.get('script_path'):
+            # 兼容旧版API，将script_path转换为scripts数组
+            script_configs = [{
+                'path': data.get('script_path'),
+                'loop_count': data.get('loop_count'),
+                'max_duration': data.get('max_duration')
+            }]
+        
+        # 检查是否指定了脚本
+        if not script_configs:
+            return JsonResponse({
+                'success': False,
+                'message': '未提供脚本路径'
+            }, status=400)
+        
+        # 检查脚本文件是否存在
+        for config in script_configs:
+            script_path = config.get('path')
+            if not script_path:
+                return JsonResponse({
+                    'success': False,
+                    'message': '脚本配置中缺少path参数'
+                }, status=400)
+            
+            # 检查文件是否存在
+            if not os.path.exists(script_path):
+                return JsonResponse({
+                    'success': False,
+                    'message': f'脚本文件不存在: {script_path}'
+                }, status=404)
+        
+        # 获取工作目录
+        work_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        project_dir = os.path.dirname(work_dir)
+        
+        # 直接从数据库获取最新的Python环境设置而不是使用缓存变量
+        python_exec = SystemConfig.get_value('python_path', default=sys.executable)
+        
+        # 检查路径是否有效
+        if not os.path.exists(python_exec):
+            python_exec = sys.executable
+            logger.warning(f"配置的Python路径无效，使用默认路径: {python_exec}")
+        
+        logger.info(f"使用Python环境: {python_exec}")
+        
+        # 组装命令
+        replay_script_path = os.path.join(project_dir, "replay_script.py")
+        cmd = [
+            python_exec,
+            replay_script_path
+        ]
+        
+        # 添加显示屏幕参数
+        if data.get('show_screens'):
+            cmd.append("--show-screens")
+        
+        # 添加脚本参数
+        for config in script_configs:
+            script_path = config.get('path')
+            cmd.extend(["--script", script_path])
+            
+            # 添加循环次数
+            loop_count = config.get('loop_count')
+            if loop_count:
+                cmd.extend(["--loop-count", str(loop_count)])
+            
+            # 添加最大持续时间
+            max_duration = config.get('max_duration')
+            if max_duration:
+                cmd.extend(["--max-duration", str(max_duration)])
+        
+        # 日志输出
+        logger.info(f"执行回放命令，工作目录: {project_dir}")
+        logger.info(f"命令: {' '.join(cmd)}")
+        
+        # 启动回放进程
+        process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            cwd=project_dir,
+            text=True,
+            encoding='utf-8',
+            errors='replace'
+        )
+        
+        # 存储进程对象，以便后续管理
+        CHILD_PROCESSES[process.pid] = process
+        
+        # 创建线程读取输出，避免缓冲区满
+        def read_output(stream, log_func):
+            for line in iter(stream.readline, ''):
+                if line:
+                    log_func(f"回放输出: {line.strip()}")
+            stream.close()
+        
+        # 启动输出读取线程
+        stdout_thread = threading.Thread(target=read_output, args=(process.stdout, logger.info))
+        stderr_thread = threading.Thread(target=read_output, args=(process.stderr, logger.error))
+        stdout_thread.daemon = True
+        stderr_thread.daemon = True
+        stdout_thread.start()
+        stderr_thread.start()
+        
+        # 等待进程完成，设置超时避免无限等待
+        try:
+            process.wait(timeout=1)  # 短暂等待，不阻塞响应
+        except subprocess.TimeoutExpired:
+            # 进程仍在运行，这是正常的
+            pass
+        
+        # 获取最新生成的报告URL
+        report_url = ""
+        try:
+            # 查找最新的报告目录
+            report_dirs = []
+            for device_dir in os.listdir(UI_REPORTS_DIR):
+                device_path = os.path.join(UI_REPORTS_DIR, device_dir)
+                if os.path.isdir(device_path):
+                    for report_dir in os.listdir(device_path):
+                        report_path = os.path.join(device_path, report_dir)
+                        if os.path.isdir(report_path):
+                            report_dirs.append((report_path, os.path.getmtime(report_path)))
+            
+            # 按修改时间排序，获取最新的报告
+            if report_dirs:
+                report_dirs.sort(key=lambda x: x[1], reverse=True)
+                latest_report_dir = report_dirs[0][0]
+                
+                # 构建报告URL
+                relative_path = os.path.relpath(latest_report_dir, os.path.dirname(project_dir))
+                report_url = f"/static/{relative_path.replace(os.path.sep, '/')}/index.html"
+        except Exception as e:
+            logger.error(f"获取报告URL失败: {e}")
+        
+        # 返回播放成功响应
+        return JsonResponse({
+            'success': True,
+            'message': '成功启动脚本回放',
+            'process_id': process.pid,
+            'command': ' '.join(cmd),  # 添加命令行
+            'report_url': report_url
+        })
+    except Exception as e:
+        error_msg = str(e)
+        logger.error(f"回放脚本时出错: {error_msg}")
+        
+        return JsonResponse({
+            'success': False,
+            'message': f'回放脚本失败: {error_msg}'
+        }, status=500)
+
+@api_view(['GET'])
+@csrf_exempt
+@permission_classes([permissions.AllowAny])
+def get_latest_report(request):
+    """获取最新的测试报告"""
+    try:
+        latest_report_path = os.path.join(UI_REPORTS_DIR, "latest_report.html")
+        if os.path.exists(latest_report_path):
+            # 提取报告创建时间
+            created_time = datetime.fromtimestamp(os.path.getctime(latest_report_path))
+            
+            return Response({
+                'filename': 'latest_report.html',
+                'path': latest_report_path,
+                'created': created_time.strftime('%Y-%m-%d %H:%M:%S'),
+                'url': '/static/reports/latest_report.html'
+            })
+        else:
+            return Response({'error': '未找到最新报告'}, status=404)
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
+
+@api_view(['POST'])
+@csrf_exempt
+@permission_classes([permissions.AllowAny])
+def debug_script(request):
+    """
+    执行自定义脚本命令
+    """
+    try:
+        # 获取项目根目录
+        project_root = settings.BASE_DIR.parent
+        
+        # 获取命令参数
+        data = json.loads(request.body)
+        cmd = data.get('command', "python record_script.py")
+        
+        # 打印调试信息
+        print(f"执行命令: {cmd}")
+        print(f"工作目录: {project_root}")
+        
+        # 使用subprocess启动新进程
+        process = subprocess.Popen(
+            cmd,
+            cwd=project_root,  # 设置工作目录
+            shell=True,  # 在Windows上需要设置为True
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        
+        # 返回成功响应
+        return JsonResponse({
+            'success': True,
+            'message': '命令已启动，请查看命令行窗口获取输出'
+        })
+    except Exception as e:
+        error_msg = str(e)
+        # 确保错误消息不为空
+        if not error_msg:
+            error_msg = "未知错误，请检查命令行输出"
+        
+        print(f"执行命令错误: {error_msg}")
+        
+        return JsonResponse({
+            'success': False,
+            'message': f'启动命令失败: {error_msg}'
+        }, status=500)
+
+@api_view(['POST'])
+@csrf_exempt
+@permission_classes([permissions.AllowAny])
+def start_record(request):
+    """
+    开始录制 - 执行record_script.py --record
+    """
+    try:
+        # 获取项目根目录
+        project_root = settings.BASE_DIR.parent
+        
+        # 构建命令（对于Windows使用单个字符串）
+        cmd = "python record_script.py --record"
+        
+        # 打印调试信息
+        print(f"执行命令: {cmd}")
+        print(f"工作目录: {project_root}")
+        
+        # 使用subprocess启动新进程
+        process = subprocess.Popen(
+            cmd,
+            cwd=project_root,  # 设置工作目录
+            shell=True,  # 在Windows上需要设置为True
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        
+        # 返回成功响应
+        return JsonResponse({
+            'success': True,
+            'message': '录制已启动，请查看命令行窗口获取输出'
+        })
+    except Exception as e:
+        error_msg = str(e)
+        # 确保错误消息不为空
+        if not error_msg:
+            error_msg = "未知错误，请检查命令行输出"
+        
+        print(f"录制脚本错误: {error_msg}")
+            
+        return JsonResponse({
+            'success': False,
+            'message': f'启动录制失败: {error_msg}'
+        }, status=500)
+
+@api_view(['POST'])
+@csrf_exempt
+@permission_classes([permissions.AllowAny])
+def import_script(request):
+    """
+    导入脚本JSON文件
+    """
+    if 'file' not in request.FILES:
+        return JsonResponse({
+            'success': False,
+            'message': '没有提供文件'
+        }, status=400)
+    
+    try:
+        uploaded_file = request.FILES['file']
+        
+        # 检查文件扩展名
+        if not uploaded_file.name.endswith('.json'):
+            return JsonResponse({
+                'success': False,
+                'message': '只支持JSON文件'
+            }, status=400)
+        
+        # 检查是否是有效的JSON和获取步骤数
+        try:
+            content = uploaded_file.read()
+            uploaded_file.seek(0)  # 重置文件指针
+            json_content = json.loads(content.decode('utf-8'))
+            step_count = len(json_content.get('steps', []))
+        except json.JSONDecodeError:
+            return JsonResponse({
+                'success': False,
+                'message': '无效的JSON文件'
+            }, status=400)
+        
+        # 保存文件到testcase目录
+        target_dir = os.path.join(settings.BASE_DIR.parent, 'testcase')
+        
+        # 确保目录存在
+        os.makedirs(target_dir, exist_ok=True)
+        
+        # 构建文件保存路径
+        file_path = os.path.join(target_dir, uploaded_file.name)
+        
+        # 如果文件已存在，添加时间戳避免覆盖
+        if os.path.exists(file_path):
+            name, ext = os.path.splitext(uploaded_file.name)
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            new_name = f"{name}_{timestamp}{ext}"
+            file_path = os.path.join(target_dir, new_name)
+            filename = new_name
+        else:
+            filename = uploaded_file.name
+        
+        # 写入文件
+        with open(file_path, 'wb') as f:
+            f.write(content)
+        
+        # 获取文件大小
+        file_size = os.path.getsize(file_path)
+        
+        # 确定脚本类型（基于文件内容判断）
+        script_type = 'manual'  # 默认为手动
+        
+        # 尝试获取当前用户
+        try:
+            user = request.user if request.user.is_authenticated else None
+        except:
+            user = None
+            
+        # 尝试从请求数据中获取分类和描述
+        category_id = request.POST.get('category')
+        description = request.POST.get('description', '')
+        
+        # 获取分类
+        category = None
+        if category_id:
+            try:
+                category = ScriptCategory.objects.get(id=category_id)
+            except:
+                pass
+        
+        # 保存到数据库
+        script_file = ScriptFile.objects.create(
+            filename=filename,
+            file_path=file_path,
+            file_size=file_size,
+            step_count=step_count,
+            type=script_type,
+            category=category,
+            description=description,
+            uploaded_by=user
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'文件已保存到: {os.path.basename(file_path)}',
+            'file_path': file_path,
+            'file_name': os.path.basename(file_path),
+            'script_id': script_file.id
+        })
+    except Exception as e:
+        error_msg = str(e)
+        if not error_msg:
+            error_msg = "未知错误"
+            
+        print(f"导入脚本错误: {error_msg}")
+        
+        return JsonResponse({
+            'success': False,
+            'message': f'导入脚本失败: {error_msg}'
+        }, status=500)
 
 class ScriptCategoryViewSet(viewsets.ModelViewSet):
     """
@@ -354,3 +981,333 @@ class ScriptExecutionViewSet(viewsets.ReadOnlyModelViewSet):
             queryset = queryset.filter(created_at__lte=end_date)
             
         return queryset 
+
+@api_view(['GET'])
+@csrf_exempt
+@permission_classes([permissions.AllowAny])
+def get_python_envs(request):
+    """获取系统中所有可用的Python环境"""
+    try:
+        envs = []
+        
+        # 当前Python环境信息
+        current_env = {
+            "name": "当前环境",
+            "path": sys.executable,
+            "version": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
+            "active": True,
+            "packages": []
+        }
+        
+        # 获取当前环境已安装的包
+        try:
+            pip_freeze = subprocess.run([sys.executable, "-m", "pip", "freeze"], 
+                                      capture_output=True, text=True, check=True)
+            packages = pip_freeze.stdout.strip().split('\n')
+            current_env["packages"] = packages
+        except Exception as e:
+            print(f"获取当前环境包列表失败: {e}")
+        
+        envs.append(current_env)
+        
+        # 检测操作系统
+        is_windows = platform.system() == "Windows"
+        
+        # 查找系统中的Python环境
+        found_paths = []
+        
+        # 1. 查找全局Python
+        if is_windows:
+            # Windows下查找全局Python路径
+            potential_paths = [
+                r"C:\Python*",
+                r"C:\Program Files\Python*",
+                r"C:\Users\*\AppData\Local\Programs\Python\Python*"
+            ]
+            
+            for pattern in potential_paths:
+                for path in glob.glob(pattern):
+                    python_exe = os.path.join(path, "python.exe")
+                    if os.path.exists(python_exe) and python_exe != sys.executable:
+                        found_paths.append(python_exe)
+        else:
+            # Mac/Linux下查找全局Python路径
+            try:
+                which_python3 = subprocess.run(["which", "python3"], 
+                                             capture_output=True, text=True, check=True)
+                python3_path = which_python3.stdout.strip()
+                
+                if python3_path and python3_path != sys.executable:
+                    found_paths.append(python3_path)
+            except Exception as e:
+                print(f"查找全局Python路径失败: {e}")
+        
+        # 2. 查找Anaconda/Miniconda环境 - 增强对Conda环境的检测
+        conda_env_paths = []
+        
+        # 首先尝试运行conda info命令
+        try:
+            # 查找可能的conda可执行文件
+            conda_executables = ['conda', 'conda.exe']
+            conda_path = None
+            
+            # 尝试在PATH中找到conda
+            for conda_exe in conda_executables:
+                try:
+                    if is_windows:
+                        conda_proc = subprocess.run(['where', conda_exe], 
+                                                   capture_output=True, text=True, check=True)
+                    else:
+                        conda_proc = subprocess.run(['which', conda_exe], 
+                                                   capture_output=True, text=True, check=True)
+                    
+                    conda_paths = conda_proc.stdout.strip().split('\n')
+                    if conda_paths and conda_paths[0]:
+                        conda_path = conda_paths[0]
+                        break
+                except subprocess.CalledProcessError:
+                    continue
+            
+            if conda_path:
+                # 使用conda env list获取所有环境
+                conda_env_proc = subprocess.run([conda_path, 'env', 'list', '--json'], 
+                                              capture_output=True, text=True, timeout=5)
+                
+                if conda_env_proc.returncode == 0:
+                    try:
+                        conda_envs_data = json.loads(conda_env_proc.stdout)
+                        for env in conda_envs_data.get('envs', []):
+                            if is_windows:
+                                python_exe = os.path.join(env, "python.exe")
+                            else:
+                                python_exe = os.path.join(env, "bin", "python")
+                            
+                            if os.path.exists(python_exe) and python_exe != sys.executable:
+                                conda_env_paths.append(python_exe)
+                    except json.JSONDecodeError:
+                        print("无法解析conda env list输出")
+        except Exception as e:
+            print(f"使用conda命令获取环境列表失败: {e}")
+        
+        # 如果conda命令失败，回退到原来的目录查找方法
+        if not conda_env_paths:
+            if is_windows:
+                # Windows下查找Anaconda/Miniconda环境
+                potential_anaconda_paths = [
+                    r"C:\ProgramData\Anaconda*",
+                    r"C:\ProgramData\Miniconda*",
+                    r"C:\Users\*\Anaconda*",
+                    r"C:\Users\*\Miniconda*",
+                    r"C:\Users\*\AppData\Local\Continuum\anaconda*",
+                    r"C:\Users\*\AppData\Local\Continuum\miniconda*"
+                ]
+                
+                for pattern in potential_anaconda_paths:
+                    for base_path in glob.glob(pattern):
+                        # 检查环境目录
+                        envs_dir = os.path.join(base_path, "envs")
+                        if os.path.exists(envs_dir) and os.path.isdir(envs_dir):
+                            for env_dir in os.listdir(envs_dir):
+                                python_exe = os.path.join(envs_dir, env_dir, "python.exe")
+                                if os.path.exists(python_exe) and python_exe != sys.executable:
+                                    conda_env_paths.append(python_exe)
+                        
+                        # 检查base环境
+                        base_python = os.path.join(base_path, "python.exe")
+                        if os.path.exists(base_python) and base_python != sys.executable:
+                            conda_env_paths.append(base_python)
+            else:
+                # Mac/Linux下查找Anaconda/Miniconda环境
+                home_dir = os.path.expanduser("~")
+                potential_anaconda_paths = [
+                    os.path.join(home_dir, "anaconda3"),
+                    os.path.join(home_dir, "miniconda3"),
+                    os.path.join(home_dir, ".conda")
+                ]
+                
+                for base_path in potential_anaconda_paths:
+                    if os.path.exists(base_path) and os.path.isdir(base_path):
+                        # 检查环境目录
+                        envs_dir = os.path.join(base_path, "envs")
+                        if os.path.exists(envs_dir) and os.path.isdir(envs_dir):
+                            for env_dir in os.listdir(envs_dir):
+                                python_bin = os.path.join(envs_dir, env_dir, "bin", "python")
+                                if os.path.exists(python_bin) and python_bin != sys.executable:
+                                    conda_env_paths.append(python_bin)
+                        
+                        # 检查base环境
+                        base_python = os.path.join(base_path, "bin", "python")
+                        if os.path.exists(base_python) and base_python != sys.executable:
+                            conda_env_paths.append(base_python)
+        
+        # 合并所有找到的路径
+        found_paths.extend(conda_env_paths)
+        
+        # 取消重复路径
+        found_paths = list(set(found_paths))
+        
+        # 获取每个Python环境的版本信息
+        for python_path in found_paths:
+            try:
+                # 获取版本信息
+                version_cmd = [python_path, "-c", "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}')"]
+                version_proc = subprocess.run(version_cmd, capture_output=True, text=True, timeout=3)
+                version = version_proc.stdout.strip() if version_proc.returncode == 0 else "未知"
+                
+                # 尝试获取环境名称
+                name = "Python环境"
+                
+                # 检查是否为conda环境
+                try:
+                    conda_info_cmd = [python_path, "-c", 
+                                     "import os, sys; print(os.environ.get('CONDA_DEFAULT_ENV') or os.path.basename(os.path.dirname(os.path.dirname(sys.executable)))) if 'conda' in sys.version or 'Continuum' in sys.version else print('non-conda')"]
+                    conda_info_proc = subprocess.run(conda_info_cmd, capture_output=True, text=True, timeout=3)
+                    
+                    env_name = conda_info_proc.stdout.strip()
+                    if env_name and env_name != 'non-conda':
+                        name = f"Conda: {env_name}"
+                except Exception:
+                    # 回退到从路径提取名称
+                    if "anaconda" in python_path.lower() or "miniconda" in python_path.lower() or "conda" in python_path.lower():
+                        name_parts = python_path.split(os.sep)
+                        # 尝试从路径中提取环境名称
+                        if "envs" in name_parts:
+                            env_index = name_parts.index("envs")
+                            if env_index + 1 < len(name_parts):
+                                name = f"Conda: {name_parts[env_index + 1]}"
+                        else:
+                            # 可能是base环境
+                            if "anaconda" in python_path.lower():
+                                name = "Conda: Anaconda Base"
+                            elif "miniconda" in python_path.lower():
+                                name = "Conda: Miniconda Base"
+                            else:
+                                name = "Conda: Base"
+                
+                # 获取已安装的包
+                packages = []
+                try:
+                    pip_cmd = [python_path, "-m", "pip", "freeze"]
+                    pip_proc = subprocess.run(pip_cmd, capture_output=True, text=True, timeout=5)
+                    if pip_proc.returncode == 0:
+                        packages = pip_proc.stdout.strip().split('\n')
+                except Exception as e:
+                    print(f"获取环境 {python_path} 的包列表失败: {e}")
+                
+                # 检查是否有常用包
+                has_pytorch = any('torch==' in pkg for pkg in packages)
+                has_airtest = any('airtest==' in pkg for pkg in packages)
+                has_yolo = any(('yolo' in pkg.lower() and '==' in pkg) for pkg in packages)
+                
+                # 添加常用包标记
+                features = []
+                if has_pytorch:
+                    features.append("PyTorch")
+                if has_airtest:
+                    features.append("Airtest")
+                if has_yolo:
+                    features.append("YOLO")
+                
+                # 添加到环境列表
+                envs.append({
+                    "name": name,
+                    "path": python_path,
+                    "version": version,
+                    "active": python_path == CURRENT_PYTHON_ENV.get("path", ""),
+                    "packages": packages,
+                    "features": features
+                })
+            except Exception as e:
+                print(f"获取环境 {python_path} 信息失败: {e}")
+        
+        return JsonResponse({
+            'success': True,
+            'envs': envs
+        })
+    except Exception as e:
+        error_msg = str(e)
+        print(f"检测Python环境失败: {error_msg}")
+        
+        return JsonResponse({
+            'success': False,
+            'message': f'检测Python环境失败: {error_msg}'
+        }, status=500)
+
+@api_view(['POST'])
+@csrf_exempt
+@permission_classes([permissions.AllowAny])
+def switch_python_env(request):
+    """切换当前使用的Python环境"""
+    try:
+        data = json.loads(request.body)
+        new_env_path = data.get('path')
+        
+        if not new_env_path:
+            return JsonResponse({
+                'success': False,
+                'message': '未提供Python环境路径'
+            }, status=400)
+        
+        # 检查路径是否存在
+        if not os.path.exists(new_env_path):
+            return JsonResponse({
+                'success': False,
+                'message': f'Python环境路径不存在: {new_env_path}'
+            }, status=400)
+        
+        # 验证是否为有效的Python解释器
+        try:
+            check_proc = subprocess.run([new_env_path, "--version"], 
+                                      capture_output=True, text=True, timeout=3)
+            if check_proc.returncode != 0:
+                return JsonResponse({
+                    'success': False,
+                    'message': f'无效的Python解释器: {new_env_path}'
+                }, status=400)
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'验证Python解释器失败: {str(e)}'
+            }, status=400)
+        
+        # 保存新的Python环境路径到全局变量
+        CURRENT_PYTHON_ENV["path"] = new_env_path
+        CURRENT_PYTHON_ENV["initialized"] = True
+        
+        # 保存到数据库，确保持久化存储
+        user = request.user if request.user.is_authenticated else None
+        SystemConfig.set_value(
+            key='python_path',
+            value=new_env_path,
+            user=user,
+            description=f'Python解释器路径设置于 {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}'
+        )
+        
+        # 获取环境名称
+        env_name = "未知环境"
+        try:
+            conda_info_cmd = [new_env_path, "-c", 
+                             "import os, sys; print(os.environ.get('CONDA_DEFAULT_ENV') or os.path.basename(os.path.dirname(os.path.dirname(sys.executable)))) if 'conda' in sys.version or 'Continuum' in sys.version else print(sys.executable)"]
+            conda_info_proc = subprocess.run(conda_info_cmd, capture_output=True, text=True, timeout=3)
+            
+            env_name = conda_info_proc.stdout.strip()
+        except Exception:
+            # 如果获取名称失败，使用路径
+            env_name = new_env_path
+        
+        # 记录日志，确保设置已保存
+        logger.info(f"已切换Python解释器路径并持久化保存: {new_env_path}")
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'已切换到Python环境: {env_name}',
+            'path': new_env_path
+        })
+    except Exception as e:
+        error_msg = str(e)
+        logger.error(f"切换Python环境失败: {error_msg}")
+        
+        return JsonResponse({
+            'success': False,
+            'message': f'切换Python环境失败: {error_msg}'
+        }, status=500) 

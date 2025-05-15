@@ -13,7 +13,7 @@ Version: 1.0
 from rest_framework import serializers
 from django.utils.translation import gettext_lazy as _
 
-from .models import Script, ScriptCategory, ScriptExecution, ScriptVersion
+from .models import Script, ScriptCategory, ScriptExecution, ScriptVersion, ScriptFile
 
 
 class ScriptCategorySerializer(serializers.ModelSerializer):
@@ -30,6 +30,34 @@ class ScriptCategorySerializer(serializers.ModelSerializer):
     def get_scripts_count(self, obj):
         """获取该分类下的脚本数量"""
         return obj.scripts.count()
+
+
+class ScriptFileSerializer(serializers.ModelSerializer):
+    """
+    脚本文件序列化器
+    """
+    category_name = serializers.ReadOnlyField(source='category.name')
+    uploaded_by_name = serializers.ReadOnlyField(source='uploaded_by.username')
+    type_display = serializers.SerializerMethodField()
+    status_display = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = ScriptFile
+        fields = [
+            'id', 'filename', 'file_path', 'file_size', 'step_count', 
+            'type', 'type_display', 'category', 'category_name', 
+            'description', 'status', 'status_display', 'uploaded_by', 
+            'uploaded_by_name', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+    
+    def get_type_display(self, obj):
+        """获取脚本类型的显示名称"""
+        return obj.get_type_display()
+    
+    def get_status_display(self, obj):
+        """获取状态的显示名称"""
+        return obj.get_status_display()
 
 
 class ScriptCreateSerializer(serializers.ModelSerializer):

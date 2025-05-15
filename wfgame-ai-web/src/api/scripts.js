@@ -7,6 +7,11 @@
 
 import axios from 'axios';
 
+// 配置axios默认请求头，添加CSRF令牌支持
+axios.defaults.xsrfCookieName = 'csrftoken';
+axios.defaults.xsrfHeaderName = 'X-CSRFToken';
+axios.defaults.withCredentials = true;
+
 // API基础路径
 const BASE_URL = '/api/v1/scripts';
 
@@ -227,7 +232,7 @@ export const importScript = (file, category) => {
     formData.append('category', category)
   }
   
-  return axios.post('/api/v1/scripts/scripts/import/', formData, {
+  return axios.post('/api/v1/scripts/import/', formData, {
     headers: {
       'Content-Type': 'multipart/form-data'
     }
