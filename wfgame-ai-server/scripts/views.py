@@ -71,59 +71,48 @@ def load_config():
     # 配置文件路径
     config_path = os.path.join(server_dir, "config.ini")
     
-    if os.path.exists(config_path):
-        try:
-            config.read(config_path, encoding='utf-8')
-            logger.info(f"已加载配置文件: {config_path}")
-            
-            # 如果配置文件中没有设置项目根目录，则根据当前文件位置计算
-            if 'paths' not in config or 'project_root' not in config['paths']:
-                project_root = os.path.dirname(server_dir)
-                if 'paths' not in config:
-                    config['paths'] = {}
-                config['paths']['project_root'] = project_root
-                logger.info(f"配置文件中未设置project_root，已自动计算: {project_root}")
-            
-            # 如果配置文件中关键路径缺失，则自动计算
-            if 'paths' in config:
-                paths = config['paths']
-                project_root = paths.get('project_root', os.path.dirname(server_dir))
-                
-                # 确保服务器目录存在
-                if 'server_dir' not in paths:
-                    paths['server_dir'] = server_dir
-                    logger.info(f"配置文件中未设置server_dir，已自动计算: {server_dir}")
-                
-                # 确保测试用例目录存在
-                if 'testcase_dir' not in paths:
-                    paths['testcase_dir'] = os.path.join(server_dir, "testcase")
-                    logger.info(f"配置文件中未设置testcase_dir，已自动计算: {paths['testcase_dir']}")
-                
-                # 确保脚本目录存在
-                if 'scripts_dir' not in paths:
-                    paths['scripts_dir'] = os.path.join(server_dir, "scripts")
-                    logger.info(f"配置文件中未设置scripts_dir，已自动计算: {paths['scripts_dir']}")
-                
-                # 确保报告目录存在
-                if 'reports_dir' not in paths:
-                    paths['reports_dir'] = os.path.join(project_root, "outputs", "WFGameAI-reports")
-                    logger.info(f"配置文件中未设置reports_dir，已自动计算: {paths['reports_dir']}")
-                
-                if 'ui_reports_dir' not in paths:
-                    paths['ui_reports_dir'] = os.path.join(paths['reports_dir'], "ui_reports")
-                    logger.info(f"配置文件中未设置ui_reports_dir，已自动计算: {paths['ui_reports_dir']}")
-        except Exception as e:
-            logger.error(f"读取配置文件失败: {e}")
-            # 使用默认配置
-            config = create_default_config(server_dir)
-    else:
-        logger.warning(f"配置文件不存在: {config_path}，将使用默认配置")
-        # 使用默认配置
-        config = create_default_config(server_dir)
+    config.read(config_path, encoding='utf-8')
+    logger.info(f"已加载配置文件: {config_path}")
+    
+    # 如果配置文件中没有设置项目根目录，则根据当前文件位置计算
+    if 'paths' not in config or 'project_root' not in config['paths']:
+        project_root = os.path.dirname(server_dir)
+        if 'paths' not in config:
+            config['paths'] = {}
+        config['paths']['project_root'] = project_root
+        logger.info(f"配置文件中未设置project_root，已自动计算: {project_root}")
+    
+    # 如果配置文件中关键路径缺失，则自动计算
+    if 'paths' in config:
+        paths = config['paths']
+        project_root = paths.get('project_root', os.path.dirname(server_dir))
+        
+        # 确保服务器目录存在
+        if 'server_dir' not in paths:
+            paths['server_dir'] = server_dir
+            logger.info(f"配置文件中未设置server_dir，已自动计算: {server_dir}")
+        
+        # 确保测试用例目录存在
+        if 'testcase_dir' not in paths:
+            paths['testcase_dir'] = os.path.join(server_dir, "testcase")
+            logger.info(f"配置文件中未设置testcase_dir，已自动计算: {paths['testcase_dir']}")
+        
+        # 确保脚本目录存在
+        if 'scripts_dir' not in paths:
+            paths['scripts_dir'] = os.path.join(server_dir, "scripts")
+            logger.info(f"配置文件中未设置scripts_dir，已自动计算: {paths['scripts_dir']}")
+        
+        # 确保报告目录存在
+        if 'reports_dir' not in paths:
+            paths['reports_dir'] = os.path.join(project_root, "outputs", "WFGameAI-reports")
+            logger.info(f"配置文件中未设置reports_dir，已自动计算: {paths['reports_dir']}")
+        
+        if 'ui_reports_dir' not in paths:
+            paths['ui_reports_dir'] = os.path.join(paths['reports_dir'], "ui_reports")
+            logger.info(f"配置文件中未设置ui_reports_dir，已自动计算: {paths['ui_reports_dir']}")
         
     return config
 
-def create_default_config(server_dir):
     """
     创建默认配置
     

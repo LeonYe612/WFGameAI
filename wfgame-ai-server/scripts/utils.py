@@ -8,11 +8,14 @@ Author: Honey Dou
 ===============================
 """
 
+import logging
 import os
 import sys
 import shutil
 import time
 import glob
+
+logger = logging.getLogger(__name__)
 
 def update_best_model(base_dir):
     """
@@ -163,7 +166,7 @@ def load_yolo_model(base_dir, model_class, specific_model=None, exit_on_failure=
     """
     # 设置模型目录
     weights_dir = os.path.join(base_dir, "datasets", "train", "weights")
-    os.makedirs(weights_dir, exist_ok=True)
+    print(f"模型目录: {weights_dir}") # C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\datasets\train\weights 
 
     # 搜索模型文件
     if specific_model:
@@ -196,7 +199,7 @@ def load_yolo_model(base_dir, model_class, specific_model=None, exit_on_failure=
                     print(f"使用最新的模型: {latest_model}")
                     model_path = latest_model
                 else:
-                    print(f"未找到任何.pt模型文件")
+                    print(f"未找到任何.pt模型文件...")
                     if exit_on_failure:
                         sys.exit(1)
                     return None

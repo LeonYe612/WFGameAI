@@ -566,7 +566,7 @@
                 };
                 
                 // 发送回放请求
-                fetch('/api/v1/scripts/replay/', {
+                fetch('/api/scripts/replay/', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -656,7 +656,7 @@
                         formData.append('description', importScriptDescription.value);
                     }
                     
-                    fetch('/api/v1/scripts/import/', {
+                    fetch('/api/scripts/import/', {
                         method: 'POST',
                         body: formData
                     })
@@ -740,7 +740,7 @@
             
             // 执行命令
             function executeCommand(command) {
-                fetch('/api/v1/scripts/debug/', {
+                fetch('/api/scripts/debug/', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -823,6 +823,9 @@
                     if (data.scripts && Array.isArray(data.scripts)) {
                         scripts = data.scripts;
                         updateScriptsTable(scripts);
+                        
+                        // 同时更新脚本选择下拉列表
+                        updateScriptDropdowns(scripts);
                     } else {
                         showToast('获取脚本列表失败', 'error');
                     }
@@ -882,6 +885,32 @@
                 }).join('');
                 
                 scriptsList.innerHTML = rows;
+            }
+            
+            // 更新脚本下拉选择列表
+            function updateScriptDropdowns(scripts) {
+                const scriptSelects = document.querySelectorAll('.script-select');
+                
+                scriptSelects.forEach(select => {
+                    // 保存当前选中的值
+                    const currentValue = select.value;
+                    
+                    // 清空现有选项
+                    select.innerHTML = '<option value="">请选择脚本...</option>';
+                    
+                    // 添加新选项
+                    scripts.forEach(script => {
+                        const option = document.createElement('option');
+                        option.value = script.path;
+                        option.textContent = `${script.filename} (${script.step_count || 0}步)`;
+                        select.appendChild(option);
+                    });
+                    
+                    // 如果之前有选中值，尝试恢复
+                    if (currentValue) {
+                        select.value = currentValue;
+                    }
+                });
             }
             
             // 添加脚本选择事件监听
@@ -972,23 +1001,35 @@
         function replayScript(path) {
             const modal = new bootstrap.Modal(document.getElementById('replayModal'));
             
-            // 选择第一个脚本选择器
+            // 确保脚本加载完成
+            modal.show();
+            
+            // 选择第一个脚本选择器并设置选中项
             const scriptSelect = document.querySelector('.script-select');
             if (scriptSelect) {
-                // 查找包含该路径的选项并选中它
-                for (let i = 0; i < scriptSelect.options.length; i++) {
-                    if (scriptSelect.options[i].value === path) {
-                        scriptSelect.selectedIndex = i;
-                        break;
-                    }
-                }
+                console.log("将选择脚本:", path);
+                console.log("可用选项:", Array.from(scriptSelect.options).map(o => o.value));
                 
-                // 触发change事件更新命令预览
-                const event = new Event('change');
-                scriptSelect.dispatchEvent(event);
+                // 等待下拉框加载完成
+                setTimeout(() => {
+                    // 清空现有选项
+                    if (scripts && scripts.length > 0) {
+                        // 设置选中值
+                        scriptSelect.value = path;
+                        
+                        // 如果没有找到匹配的选项，检查是否需要更新下拉列表
+                        if (scriptSelect.value !== path) {
+                            console.log("未找到匹配选项，更新下拉列表");
+                            updateScriptDropdowns(scripts);
+                            scriptSelect.value = path;
+                        }
+                        
+                        // 触发change事件更新命令预览
+                        const event = new Event('change');
+                        scriptSelect.dispatchEvent(event);
+                    }
+                }, 100);
             }
-            
-            modal.show();
         }
         
         // 编辑脚本
