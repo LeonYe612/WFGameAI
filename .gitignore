@@ -6,3 +6,4 @@ train_results/
 *.pt
 *.png
 *.jpg
+*.log

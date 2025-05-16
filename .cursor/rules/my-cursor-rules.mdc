@@ -8,6 +8,9 @@ alwaysApply: true
 ## ai-server 服务启动命令
 - python .\start_wfgame_ai.py
 
+## 项目统一使用请求方法
+- 全部使用post
+
 ## python目录
 - F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe
 

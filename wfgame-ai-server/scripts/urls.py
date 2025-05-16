@@ -25,7 +25,10 @@ from .views import (
     replay_script,
     debug_script,
     start_record,
-    import_script
+    import_script,
+    edit_script,
+    get_python_envs,
+    switch_python_env
 )
 
 # 创建路由器并注册视图集
@@ -52,4 +55,10 @@ urlpatterns = [
     path('debug/', debug_script, name='debug-script'),
     path('start-record/', start_record, name='start-record'),
     path('import/', import_script, name='import-script'),
+    path('edit/', edit_script, name='edit-script'),
+    path('edit/<path:script_path>/', edit_script, name='edit-script-with-path'),
+    
+    # Python环境管理
+    path('python-envs/', get_python_envs, name='get-python-envs'),
+    path('switch-python-env/', switch_python_env, name='switch-python-env'),
 ] 

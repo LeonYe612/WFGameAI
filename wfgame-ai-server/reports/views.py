@@ -29,10 +29,10 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REPORTS_DIR = os.path.join(os.path.dirname(BASE_DIR), "outputs", "WFGameAI-reports")
 UI_REPORTS_DIR = os.path.join(REPORTS_DIR, "ui_reports")
 
-@api_view(['GET'])
+@api_view(['POST'])
 @csrf_exempt
 @permission_classes([permissions.AllowAny])
-def report_list(request):
+def get_report_list(request):
     """获取已生成的测试报告列表"""
     try:
         # 确保目录存在
@@ -177,4 +177,45 @@ def report_delete(request, report_id):
             return JsonResponse({'success': False, 'error': '报告文件不存在'}, status=404)
     except Exception as e:
         logger.error(f"删除报告失败: {e}")
-        return JsonResponse({'success': False, 'error': str(e)}, status=500) 
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+@api_view(['POST'])
+@csrf_exempt
+@permission_classes([permissions.AllowAny])
+def get_device_performance(request, device_id=None):
+    """获取设备性能数据"""
+    try:
+        # 从请求体中获取device_id
+        data = json.loads(request.body)
+        device_id = data.get('device_id', device_id)
+        
+        if not device_id:
+            return JsonResponse({'error': '未提供设备ID'}, status=400)
+        
+        # 获取性能日志文件路径
+        performance_dir = os.path.join(REPORTS_DIR, "device_reports", device_id)
+        
+        if not os.path.exists(performance_dir):
+            return JsonResponse({'error': f'未找到设备{device_id}的性能日志'}, status=404)
+        
+        # 获取性能日志文件
+        performance_files = glob.glob(os.path.join(performance_dir, "performance_*.json"))
+        
+        if not performance_files:
+            return JsonResponse({'error': f'未找到设备{device_id}的性能日志文件'}, status=404)
+        
+        # 按修改时间排序，最新的在前面
+        performance_files.sort(key=lambda x: os.path.getmtime(x), reverse=True)
+        
+        # 读取最新的性能日志文件
+        with open(performance_files[0], 'r', encoding='utf-8') as f:
+            performance_data = json.load(f)
+        
+        # 返回性能数据
+        return JsonResponse({
+            'device_id': device_id,
+            'performance': performance_data
+        })
+    except Exception as e:
+        logger.error(f"获取设备性能数据失败: {e}")
+        return JsonResponse({'error': str(e)}, status=500) 

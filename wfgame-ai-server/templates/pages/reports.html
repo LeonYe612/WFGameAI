@@ -172,44 +172,38 @@
 
         // 获取报告列表
         function fetchReports() {
-            // 显示加载状态
-            document.getElementById('reportsContainer').innerHTML = `
-                <div class="col-12 loading">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">加载中...</span>
+            fetch('/api/reports/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                allReports = data.reports;
+                renderReports(allReports);
+            })
+            .catch(error => {
+                console.error('获取报告失败:', error);
+                document.getElementById('reportsContainer').innerHTML = `
+                    <div class="col-12 text-center text-danger">
+                        <p><i class="fas fa-exclamation-triangle fa-3x mb-3"></i></p>
+                        <p>加载报告时出错，请稍后重试。</p>
                     </div>
-                    <p class="mt-2">加载报告中...</p>
-                </div>
-            `;
-
-            // 发起API请求
-            fetch('/api/v1/reports/list/')
-                .then(response => response.json())
-                .then(data => {
-                    allReports = data.reports;
-                    renderReports(allReports);
-                })
-                .catch(error => {
-                    console.error('获取报告失败:', error);
-                    document.getElementById('reportsContainer').innerHTML = `
-                        <div class="col-12 text-center text-danger">
-                            <p><i class="fas fa-exclamation-triangle fa-3x mb-3"></i></p>
-                            <p>加载报告时出错，请稍后重试。</p>
-                        </div>
-                    `;
-                });
+                `;
+            });
         }
 
         // 渲染报告列表
         function renderReports(reports) {
             const container = document.getElementById('reportsContainer');
             
-            if (reports.length === 0) {
+            if (!reports || reports.length === 0) {
                 container.innerHTML = `
-                    <div class="col-12 no-reports">
+                    <div class="col-12 text-center no-reports">
                         <p><i class="fas fa-folder-open fa-3x mb-3"></i></p>
                         <p>没有找到测试报告</p>
-                        <button class="btn btn-primary mt-3" onclick="window.location.href='/automation/'">
+                        <button class="btn btn-primary mt-3" onclick="window.location.href='/pages/automation'">
                             <i class="fas fa-plus"></i> 创建新测试
                         </button>
                     </div>
@@ -219,11 +213,14 @@
 
             let html = '';
             reports.forEach(report => {
+                // 报告可能没有success_rate字段，默认为0
+                const successRate = report.success_rate !== undefined ? report.success_rate : 0;
+                
                 // 根据成功率确定徽章颜色
                 let badgeClass = 'bg-success';
-                if (report.success_rate < 70) {
+                if (successRate < 70) {
                     badgeClass = 'bg-danger';
-                } else if (report.success_rate < 90) {
+                } else if (successRate < 90) {
                     badgeClass = 'bg-warning';
                 }
 
@@ -231,28 +228,25 @@
                     <div class="col-md-4 mb-4">
                         <div class="card report-card h-100">
                             <div class="card-body">
-                                <h5 class="card-title">${report.title}</h5>
-                                <h6 class="card-subtitle mb-2 text-muted">${report.date}</h6>
+                                <h5 class="card-title">${report.title || '未命名报告'}</h5>
+                                <h6 class="card-subtitle mb-2 text-muted">${report.date || '未知日期'}</h6>
                                 <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <span class="badge ${badgeClass}">通过率: ${report.success_rate.toFixed(0)}%</span>
-                                    <span><i class="fas fa-mobile-alt"></i> ${report.device_count}台设备</span>
+                                    <span class="badge ${badgeClass}">通过率: ${successRate}%</span>
+                                    <span><i class="fas fa-mobile-alt"></i> ${report.device_count || 1}台设备</span>
                                 </div>
                                 <div class="progress mb-3">
-                                    <div class="progress-bar bg-success" role="progressbar" style="width: ${report.success_rate}%"></div>
-                                    <div class="progress-bar bg-danger" role="progressbar" style="width: ${100 - report.success_rate}%"></div>
+                                    <div class="progress-bar bg-success" role="progressbar" style="width: ${successRate}%"></div>
+                                    <div class="progress-bar bg-danger" role="progressbar" style="width: ${100 - successRate}%"></div>
                                 </div>
                                 <div class="d-flex justify-content-between">
-                                    <small class="text-muted">创建者: ${report.creator}</small>
+                                    <small class="text-muted">创建者: ${report.creator || 'System'}</small>
                                 </div>
                                 <hr>
                                 <div class="d-flex">
-                                    <a href="/api/v1/reports/view/${report.id}/" class="btn btn-sm btn-outline-primary me-2">
+                                    <a href="${report.url}" target="_blank" class="btn btn-sm btn-outline-primary me-2">
                                         <i class="fas fa-eye"></i> 查看
                                     </a>
-                                    <a href="${report.url}" target="_blank" class="btn btn-sm btn-outline-secondary me-2">
-                                        <i class="fas fa-external-link-alt"></i> 新窗口
-                                    </a>
-                                    <button class="btn btn-sm btn-outline-danger" onclick="prepareDelete('${report.id}')">
+                                    <button class="btn btn-sm btn-outline-danger" onclick="prepareDelete('${report.id || report.filename}')">
                                         <i class="fas fa-trash"></i> 删除
                                     </button>
                                 </div>
@@ -313,14 +307,20 @@
         function deleteReport() {
             if (!deleteReportId) return;
             
-            fetch(`/api/v1/reports/delete/${deleteReportId}/`, {
-                method: 'POST'
+            fetch(`/api/reports/delete/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    id: deleteReportId
+                })
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
                     // 从列表中移除被删除的报告
-                    allReports = allReports.filter(report => report.id !== deleteReportId);
+                    allReports = allReports.filter(report => (report.id !== deleteReportId && report.filename !== deleteReportId));
                     renderReports(allReports);
                     deleteModal.hide();
                 } else {

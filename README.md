@@ -37,21 +37,46 @@ cd WFGameAI
 pip install -r requirements.txt
 ```
 
-2. **模型训练**
+2. **工作目录信息**
+```bash
+# Python 工作目录
+F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe
+
+# 调试、录制、回放的脚本存放目录
+WFGameAI\wfgame-ai-server\scripts
+
+# testcase 保存目录
+WFGameAI\wfgame-ai-server\testcase
+
+```
+
+3. **wfgame-ai-server 启动命令**
+```bash
+python start_wfgame_ai.py
+```
+
+4. **模型训练**
 ```bash
 python train_model.py
 ```
 
-3. **录制测试**
+5. **调试模式**
 ```bash
-# 基础录制（仅记录匹配按钮）
+# 只在PC屏幕展示识别结果
+python record_script.py
+```
+
+6. **录制模式**
+```bash
+# 情况1：基础录制（仅记录匹配按钮）
 python record_script.py --record
 
-# 增强录制（记录所有点击，未识别到的目标记录为unknown）
+# 情况2：增强录制（记录所有点击，未识别到的目标记录为unknown）
 python record_script.py --record-no-match
 ```
 
-4. **回放测试**
+
+7. **回放模式**
 ```bash
 # 参数说明
 - --show-screens： 展示设备框，实时显示设备屏幕
@@ -65,6 +90,10 @@ python replay_script.py --show-screens --script testcase/scene1_nologin_steps_20
 python replay_script.py --show-screens --script testcase/scene1_nologin_steps_2025-04-07.json --loop-count 1 --script testcase/scene2_guide_steps_2025-04-07.json --max-duration 30
 python replay_script.py --show-screens --script testcase/scene1_login_steps_2025-04-07.json --loop-count 1 --script testcase/scene2_guide_steps_2025-04-07.json --max-duration 30
 ```
+
+
+
+
 
 ## Web平台（基于honeydou）
 
@@ -169,44 +198,7 @@ WFGame AI自动化测试框架基于honeydou自动化测试平台构建，采用
 ## 项目结构
 
 ```
-/WFGameAI/
-├── README.md     
-├── external/                                      # 引入外部GIT仓库                          
-│   └── honeydou/                                  # WF自动化测试平台仓库代码（Django+VUE）
-├── datasets/                                      # 训练数据集目录
-│   ├── models/                                    # 模型存储目录
-│   ├── templates/                                 # 模板目录
-│   ├── train/                                     # 训练目录
-│   │   └── weights/                               # 权重存储目录
-│   └── yolov11-card2/                             # YOLO模型训练数据集
-│       ├── test/                                  # 测试集
-│       ├── train/                                 # 训练集
-│       └── valid/                                 # 验证集
-├── docs/                                          # 文档目录
-│   ├── README_honeydou.md                         # honeydou平台文档
-│   ├── WFGameAI_实施进度跟踪.md                     # 项目进度跟踪
-│   ├── AI 自动化测试框架实施路线图-【精简】.md         # 实施路线图（精简版）
-│   ├── AI 自动化测试框架实施路线图 -【详细】.md        # 实施路线图（详细版）
-│   └── WFGameAI_开发文档.md                        # 开发文档
-├── outputs/                                       # 输出目录
-│   └── WFGameAI-reports/                          # 项目报告根目录
-│       ├── ui_reports/                            # 汇总报告目录
-│       │   ├── summary_report_[timestamp].html    # 汇总报告HTML
-│       │   └── latest_report.html                 # 最新报告快捷方式
-│       └── ui_run/                                # 运行代码目录
-│           └── WFGameAI.air/                      # 项目目录
-│               └── log/                           # 设备报告目录
-│                   └── [device]_[timestamp]/      # 设备目录
-├── scripts/                                       # 脚本目录
-├── templates/                                     # 模板文件目录
-├── testcase/                                      # 测试用例目录
-├── record_script.py                               # 录制脚本
-├── replay_script.py                               # 回放脚本
-├── train_model.py                                 # 模型训练
-├── fix_static_path.py                             # 修复静态资源路径
-├── generate_annotations.py                        # 生成标注
-├── generate_report.py                             # 生成报告
-└── ui_explore.py                                  # UI探索工具
+
 ```
 
 ## 最新更新
@@ -222,8 +214,3 @@ USERNAME=root
 PASSWD=qa123456
 DBNAME=gogotest_data
 
-
-## 联系方式
-
-- 项目维护者：WFGameAI团队
-- 邮箱：[contact@example.com]
