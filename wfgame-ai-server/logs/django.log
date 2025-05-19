@@ -5964,3 +5964,76 @@ INFO 2025-05-19 15:43:11,839 basehttp 92556 74940 "GET /static/ui_run/WFGameAI.a
 INFO 2025-05-19 15:43:11,841 basehttp 92556 81512 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07/static//image/success.svg HTTP/1.1" 200 1156
 INFO 2025-05-19 15:43:13,982 basehttp 92556 81512 "GET /static/reports/summary_report_2025-05-19-15-19-37.html HTTP/1.1" 304 0
 WARNING 2025-05-19 15:43:15,167 basehttp 92556 81512 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-19-15-19-28/log.html HTTP/1.1" 404 1990
+INFO 2025-05-19 15:47:44,136 basehttp 92556 74940 "POST /api/reports/ HTTP/1.1" 200 1339
+INFO 2025-05-19 15:48:32,258 basehttp 92556 74940 "GET /pages/scripts.html HTTP/1.1" 200 62899
+INFO 2025-05-19 15:48:32,287 basehttp 92556 74940 "POST /api/scripts/ HTTP/1.1" 200 2748
+INFO 2025-05-19 15:48:42,205 basehttp 92556 74940 "GET /pages/devices.html HTTP/1.1" 200 12579
+INFO 2025-05-19 15:54:52,976 basehttp 92556 48484 "GET /pages/devices.html HTTP/1.1" 200 12579
+INFO 2025-05-19 15:55:24,051 basehttp 92556 48484 "GET /pages/dashboard.html HTTP/1.1" 200 8245
+INFO 2025-05-19 15:55:25,567 basehttp 92556 48484 "GET /pages/devices.html HTTP/1.1" 200 12579
+WARNING 2025-05-19 15:56:19,423 log 92556 48484 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-19 15:56:19,423 basehttp 92556 48484 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4668
+INFO 2025-05-19 15:56:24,859 basehttp 92556 48484 "GET /pages/scripts.html HTTP/1.1" 200 62899
+WARNING 2025-05-19 15:56:24,876 log 92556 48484 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-19 15:56:24,876 basehttp 92556 48484 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4668
+INFO 2025-05-19 15:56:24,881 basehttp 92556 48484 "POST /api/scripts/ HTTP/1.1" 200 2748
+INFO 2025-05-19 15:56:26,560 basehttp 92556 48484 "GET /pages/devices.html HTTP/1.1" 200 12579
+WARNING 2025-05-19 15:56:26,573 log 92556 48484 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-19 15:56:26,574 basehttp 92556 48484 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4668
+INFO 2025-05-19 15:57:38,894 basehttp 92556 48484 "GET /pages/devices.html HTTP/1.1" 200 12579
+WARNING 2025-05-19 15:57:38,903 log 92556 48484 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-19 15:57:38,904 basehttp 92556 48484 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4668
+INFO 2025-05-19 15:58:13,699 basehttp 92556 48484 "GET / HTTP/1.1" 200 9707
+WARNING 2025-05-19 15:58:13,716 log 92556 48484 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-19 15:58:13,716 basehttp 92556 48484 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4668
+INFO 2025-05-19 15:58:15,579 basehttp 92556 48484 "GET /pages/devices.html HTTP/1.1" 200 12579
+WARNING 2025-05-19 15:58:15,594 log 92556 48484 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-19 15:58:15,594 basehttp 92556 48484 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4668
+INFO 2025-05-19 15:59:27,836 views 92556 80128 接收到信号: 2
+INFO 2025-05-19 16:10:19,924 autoreload 70936 60052 Watching for file changes with StatReloader
+INFO 2025-05-19 16:10:20,152 views 70936 60052 已加载配置文件: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\config.ini
+INFO 2025-05-19 16:10:20,153 views 70936 60052 已加载路径配置: PYTHON_PATH=F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe, TESTCASE_DIR=C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase
+INFO 2025-05-19 16:10:20,153 views 70936 60052 使用配置文件中的Python路径: F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe
+INFO 2025-05-19 16:10:27,033 basehttp 70936 34060 "GET /pages/devices.html HTTP/1.1" 200 12579
+WARNING 2025-05-19 16:10:27,046 log 70936 34060 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-19 16:10:27,047 basehttp 70936 34060 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4795
+ERROR 2025-05-19 16:10:39,815 log 70936 34060 Internal Server Error: /api/docs/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 220, in _get_response
+    response = response.render()
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 114, in render
+    self.content = self.rendered_content
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 90, in rendered_content
+    template = self.resolve_template(self.template_name)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 72, in resolve_template
+    return select_template(template, using=self.using)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\loader.py", line 47, in select_template
+    raise TemplateDoesNotExist(", ".join(template_name_list), chain=chain)
+django.template.exceptions.TemplateDoesNotExist: swagger-ui.html
+ERROR 2025-05-19 16:10:39,816 basehttp 70936 34060 "GET /api/docs/ HTTP/1.1" 500 96937
+INFO 2025-05-19 16:19:02,651 basehttp 70936 79768 "GET /pages/devices.html HTTP/1.1" 200 12579
+WARNING 2025-05-19 16:19:02,668 log 70936 79768 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-19 16:19:02,668 basehttp 70936 79768 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4795
+INFO 2025-05-19 16:19:30,490 basehttp 70936 79768 "GET /pages/devices.html HTTP/1.1" 200 12579
+WARNING 2025-05-19 16:19:30,504 log 70936 79768 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-19 16:19:30,505 basehttp 70936 79768 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4795
+WARNING 2025-05-19 16:21:13,335 log 70936 79768 Method Not Allowed: /api/devices/
+WARNING 2025-05-19 16:21:13,336 basehttp 70936 79768 "GET /api/devices/?format=json HTTP/1.1" 405 45
+WARNING 2025-05-19 16:21:13,352 log 70936 79768 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-19 16:21:13,352 basehttp 70936 79768 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4795
+INFO 2025-05-19 16:22:59,595 autoreload 70936 60052 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\views.py changed, reloading.
+INFO 2025-05-19 16:23:00,129 autoreload 60352 82700 Watching for file changes with StatReloader
+INFO 2025-05-19 16:23:00,357 views 60352 82700 已加载配置文件: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\config.ini
+INFO 2025-05-19 16:23:00,358 views 60352 82700 已加载路径配置: PYTHON_PATH=F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe, TESTCASE_DIR=C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase
+INFO 2025-05-19 16:23:00,359 views 60352 82700 使用配置文件中的Python路径: F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe
+INFO 2025-05-19 16:23:17,548 autoreload 60352 82700 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\views.py changed, reloading.
+INFO 2025-05-19 16:23:18,007 autoreload 10336 34968 Watching for file changes with StatReloader
+INFO 2025-05-19 16:23:18,233 views 10336 34968 已加载配置文件: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\config.ini
+INFO 2025-05-19 16:23:18,234 views 10336 34968 已加载路径配置: PYTHON_PATH=F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe, TESTCASE_DIR=C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase
+INFO 2025-05-19 16:23:18,234 views 10336 34968 使用配置文件中的Python路径: F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe
+WARNING 2025-05-19 16:23:23,024 log 10336 90768 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-19 16:23:23,024 basehttp 10336 90768 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4795
+WARNING 2025-05-19 16:23:23,024 log 10336 90768 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-19 16:23:23,024 basehttp 10336 90768 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4795

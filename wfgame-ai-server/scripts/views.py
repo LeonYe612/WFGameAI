@@ -284,8 +284,7 @@ else:
     # Unix系统的信号处理
     signal.signal(signal.SIGTERM, lambda sig, frame: handle_windows_signal(sig, frame))
 
-@api_view(['POST'])
-@csrf_exempt
+@api_view(['GET'])
 @permission_classes([permissions.AllowAny])
 def get_devices(request):
     """获取已连接的设备列表"""
@@ -293,7 +292,6 @@ def get_devices(request):
         result = subprocess.run(['adb', 'devices'], capture_output=True, text=True, check=True)
         lines = result.stdout.strip().split('\n')[1:]  # 跳过标题行
         devices = []
-        
         for line in lines:
             if line.strip():
                 parts = line.strip().split('\t')
@@ -311,7 +309,6 @@ def get_devices(request):
                             'model': model,
                             'name': f"{brand}-{model}"
                         })
-        
         return Response({'devices': devices})
     except Exception as e:
         return Response({'error': str(e)}, status=500)

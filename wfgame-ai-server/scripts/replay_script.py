@@ -1782,7 +1782,7 @@ def run_summary(data):
         except Exception as sync_e:
             print(f"报告同步到静态目录失败: {sync_e}")
         # --- end ---
-
+        
         return summary_report_path
     except Exception as e:
         print(f"汇总报告生成失败: {e}")
