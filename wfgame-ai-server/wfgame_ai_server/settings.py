@@ -122,16 +122,11 @@ USE_TZ = False
 
 # 静态文件设置
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [
-    # 静态文件目录
-    os.path.join(BASE_DIR, 'static'),
-    # 报告目录
-    ('reports', os.path.join(os.path.dirname(BASE_DIR), 'outputs', 'WFGameAI-reports', 'ui_reports')),
+    os.path.join(BASE_DIR, 'staticfiles'),
 ]
-
-# 确保静态文件目录存在
-os.makedirs(os.path.join(BASE_DIR, 'static'), exist_ok=True)
+# 注释掉或删除 STATIC_ROOT
+# STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # 媒体文件设置
 MEDIA_URL = '/media/'

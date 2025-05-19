@@ -817,8 +817,8 @@
                         'Content-Type': 'application/json',
                     }
                 })
-                .then(response => response.json())
-                .then(data => {
+                    .then(response => response.json())
+                    .then(data => {
                     hideLoading();
                     if (data.scripts && Array.isArray(data.scripts)) {
                         scripts = data.scripts;
@@ -828,13 +828,13 @@
                         updateScriptDropdowns(scripts);
                     } else {
                         showToast('获取脚本列表失败', 'error');
-                    }
-                })
-                .catch(error => {
+                        }
+                    })
+                    .catch(error => {
                     hideLoading();
                     console.error('Error:', error);
                     showToast('获取脚本列表失败: ' + error, 'error');
-                });
+                    });
             }
             
             // 更新脚本表格
@@ -1022,12 +1022,12 @@
                             console.log("未找到匹配选项，更新下拉列表");
                             updateScriptDropdowns(scripts);
                             scriptSelect.value = path;
-                        }
-                        
-                        // 触发change事件更新命令预览
-                        const event = new Event('change');
-                        scriptSelect.dispatchEvent(event);
-                    }
+                }
+                
+                // 触发change事件更新命令预览
+                const event = new Event('change');
+                scriptSelect.dispatchEvent(event);
+            }
                 }, 100);
             }
         }

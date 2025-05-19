@@ -12,7 +12,11 @@ WFGame AI 自动化测试框架是一个基于YOLO11m计算机视觉的游戏UI�
 - **数据驱动测试**：支持数据与脚本分离，通过Excel/数据库导入测试数据
 - **完整的测试流程**：包含录制、回放、报告生成等全流程功能
 - **智能报告系统**：生成详细的HTML测试报告，支持多设备汇总
-- **平台兼容**：支持Windows（CUDA）。不用支持Mac（MPS）系统（模型训练完全在Windows上进行）。
+- **三种测试模式**：
+    - 固定场景模式：预设流程自动化遍历
+    - UI深度遍历模式：智能探索未知界面
+    - 路径全量遍历模式：自动验证所有可能路径
+- **平台兼容**：支持Windows（CUDA）。模型训练完全在Windows上进行，Mac（MPS）系统仅用于执行测试。
 
 ## 环境要求
 
@@ -20,6 +24,7 @@ WFGame AI 自动化测试框架是一个基于YOLO11m计算机视觉的游戏UI�
 - PyTorch（Windows: CUDA支持，Mac: MPS支持）
 - Ultralytics YOLO
 - OpenCV
+- Airtest
 - Django 3.2+（Web平台）
 - MySQL 5.7+（数据存储）
 - Redis 7.2+（缓存）
@@ -39,15 +44,11 @@ pip install -r requirements.txt
 
 2. **工作目录信息**
 ```bash
-# Python 工作目录
-F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe
-
 # 调试、录制、回放的脚本存放目录
-WFGameAI\wfgame-ai-server\scripts
+WFGameAI/wfgame-ai-server/scripts
 
 # testcase 保存目录
-WFGameAI\wfgame-ai-server\testcase
-
+WFGameAI/wfgame-ai-server/testcase
 ```
 
 3. **wfgame-ai-server 启动命令**
@@ -63,37 +64,33 @@ python train_model.py
 5. **调试模式**
 ```bash
 # 只在PC屏幕展示识别结果
-python record_script.py
+python wfgame-ai-server/scripts/record_script.py
 ```
 
 6. **录制模式**
 ```bash
 # 情况1：基础录制（仅记录匹配按钮）
-python record_script.py --record
+python wfgame-ai-server/scripts/record_script.py --record
 
 # 情况2：增强录制（记录所有点击，未识别到的目标记录为unknown）
-python record_script.py --record-no-match
+python wfgame-ai-server/scripts/record_script.py --record-no-match
 ```
-
 
 7. **回放模式**
 ```bash
 # 参数说明
-- --show-screens： 展示设备框，实时显示设备屏幕
-- --script：指定脚本。如果为多个，则分别在脚本前添加
-- --loop-count 1：该脚本循环次数1次
-- --max-duration 30：该脚本执行时间30秒
-# 单脚本回放 ()
-python replay_script.py --show-screens --script testcase/scene1_nologin_steps_2025-04-07.json --loop-count 1
+# --show-screens： 展示设备框，实时显示设备屏幕
+# --script：指定脚本。如果为多个，则分别在脚本前添加
+# --loop-count 1：该脚本循环次数1次
+# --max-duration 30：该脚本执行时间30秒
+
+# 单脚本回放
+python wfgame-ai-server/scripts/replay_script.py --show-screens --script testcase/scene1_nologin_steps_2025-04-07.json --loop-count 1
 
 # 多脚本顺序回放（此命令下，第一个脚本执行1次结束后再继续执行第2个脚本30秒）
-python replay_script.py --show-screens --script testcase/scene1_nologin_steps_2025-04-07.json --loop-count 1 --script testcase/scene2_guide_steps_2025-04-07.json --max-duration 30
-python replay_script.py --show-screens --script testcase/scene1_login_steps_2025-04-07.json --loop-count 1 --script testcase/scene2_guide_steps_2025-04-07.json --max-duration 30
+python wfgame-ai-server/scripts/replay_script.py --show-screens --script testcase/scene1_nologin_steps_2025-04-07.json --loop-count 1 --script testcase/scene2_guide_steps_2025-04-07.json --max-duration 30
+python wfgame-ai-server/scripts/replay_script.py --show-screens --script testcase/scene1_login_steps_2025-04-07.json --loop-count 1 --script testcase/scene2_guide_steps_2025-04-07.json --max-duration 30
 ```
-
-
-
-
 
 ## Web平台（基于honeydou）
 
@@ -110,25 +107,27 @@ WFGame AI自动化测试框架基于honeydou自动化测试平台构建，采用
 
 项目分为四个主要阶段实施：
 
-1. **阶段一：构建AI核心引擎与平台基础**
-   - 开发AI视觉引擎：利用YOLO11m替代传统图像识别
-   - 构建完整B/S架构平台：集成脚本管理、任务调度等功能
-   - 确保固定场景脚本稳定回放
+1. **阶段一：构建AI核心引擎与平台基础** - **70%**
+   - ✅ 开发AI视觉引擎：利用YOLO11m替代传统图像识别
+   - ✅ 实现基本的多设备管理（adbutils）
+   - ❌ 构建完整B/S架构平台：集成脚本管理、任务调度等功能
+   - ✅ 确保固定场景脚本稳定回放
 
-2. **阶段二：引入数据驱动与赋能团队**
-   - 构建数据驱动框架：实现数据与脚本分离
-   - 提升平台易用性：开发低代码界面
-   - 培训功能测试团队（22人）
+2. **阶段二：引入数据驱动与赋能团队** - **30%**
+   - ✅ 实现基本的资源管理和清理功能
+   - ❌ 构建数据驱动框架：实现数据与脚本分离
+   - ❌ 提升平台易用性：开发低代码界面
+   - ❌ 培训功能测试团队（22人）
 
-3. **阶段三：集成智能优化与线上监控**
-   - 实施智能测试选择：基于代码变更和历史数据筛选用例
-   - 部署线上自动化监控：对生产/预发环境进行监控
-   - 探索AI异常检测
+3. **阶段三：集成智能优化与线上监控** - **0%**
+   - ❌ 实施智能测试选择：基于代码变更和历史数据筛选用例
+   - ❌ 部署线上自动化监控：对生产/预发环境进行监控
+   - ❌ 探索AI异常检测
 
-4. **阶段四：持续探索AI深度应用**
-   - 研究AI辅助生成：探索生成测试数据/用例
-   - 深化路径遍历应用：UI深度遍历和场景路径全遍历
-   - 开发AI辅助探索测试工具
+4. **阶段四：持续探索AI深度应用** - **0%**
+   - ❌ 研究AI辅助生成：探索生成测试数据/用例
+   - ❌ 深化路径遍历应用：UI深度遍历和场景路径全遍历
+   - ❌ 开发AI辅助探索测试工具
 
 当前实施进度请参考[实施进度跟踪文档](docs/WFGameAI_实施进度跟踪.md)。
 
@@ -198,19 +197,44 @@ WFGame AI自动化测试框架基于honeydou自动化测试平台构建，采用
 ## 项目结构
 
 ```
-
+WFGameAI/
+├── datasets/                  # 数据集目录
+│   ├── preprocessed/          # 预处理后的数据
+│   └── templates/             # 报告模板
+├── docs/                      # 文档目录
+│   ├── README_honeydou.md     # honeydou平台文档
+│   └── WFGameAI_实施进度跟踪.md # 实施进度跟踪文档
+├── scripts/                   # 脚本目录
+│   ├── generate_annotations.py # 生成标注工具
+│   ├── generate_report.py     # 报告生成工具
+│   ├── json_gen.py            # JSON生成工具
+│   └── record_script.py       # 录制脚本工具
+├── templates/                 # 模板目录
+│   └── summary_template.html  # 汇总报告模板
+├── wfgame-ai-server/          # 服务器端
+│   ├── devices/               # 设备管理模块
+│   ├── reports/               # 报告管理模块
+│   ├── scripts/               # 脚本管理模块
+│   │   ├── record_script.py   # 录制脚本
+│   │   └── replay_script.py   # 回放脚本
+│   ├── testcase/              # 测试用例目录
+│   └── wfgame_ai_server/      # 服务器核心
+├── wfgame-ai-web/             # 前端Web界面
+│   ├── css/                   # 样式文件
+│   ├── js/                    # JavaScript文件
+│   ├── pages/                 # 页面文件
+│   └── src/                   # Vue源代码
+├── requirements.txt           # 依赖列表
+├── start_wfgame_ai.py         # 启动脚本
+└── train_model.py             # 模型训练脚本
 ```
 
-## 最新更新
+## 数据库配置
 
-- **2023-05-28**: 添加项目实施进度跟踪文档
-- **2023-05-28**: 集成honeydou自动化测试平台
-- **2023-05-28**: 更新README文档，更详细描述项目架构和实施路线
-
-## 数据库
+```ini
 [DBMysql] # 数据库配置信息
 HOST=127.0.0.1
 USERNAME=root
 PASSWD=qa123456
 DBNAME=gogotest_data
-
+```

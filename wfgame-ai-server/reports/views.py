@@ -177,7 +177,7 @@ def report_delete(request, report_id):
             return JsonResponse({'success': False, 'error': '报告文件不存在'}, status=404)
     except Exception as e:
         logger.error(f"删除报告失败: {e}")
-        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+        return JsonResponse({'success': False, 'error': str(e)}, status=500) 
 
 @api_view(['POST'])
 @csrf_exempt

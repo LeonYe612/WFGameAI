@@ -1638,11 +1638,42 @@ $(document).ready(function() {{
                 print(f"修复HTML路径失败: {e}")
                 traceback.print_exc()
 
+        # --- 新增：同步设备报告到staticfiles/ui_run/WFGameAI.air/log/ ---
+        try:
+            sync_device_report_to_staticfiles(report_dir)
+        except Exception as sync_e:
+            print(f"设备报告同步到静态目录失败: {sync_e}")
+        # --- end ---
+
         return True, test_passed
     except Exception as e:
         print(f"生成HTML报告失败: {str(e)}")
         traceback.print_exc()
         return False, False
+
+
+def sync_device_report_to_staticfiles(device_report_dir):
+    """
+    同步单个设备报告目录到staticfiles/ui_run/WFGameAI.air/log/下，保证Web端可访问。
+    Args:
+        device_report_dir (str): 设备报告目录的绝对路径
+    Returns:
+        None
+    """
+    import shutil
+    static_ui_run_dir = os.path.join(os.path.dirname(__file__), "..", "staticfiles", "ui_run", "WFGameAI.air", "log")
+    device_dir_name = os.path.basename(device_report_dir)
+    dst_dir = os.path.join(static_ui_run_dir, device_dir_name)
+    os.makedirs(dst_dir, exist_ok=True)
+    # 递归复制整个设备报告目录
+    for item in os.listdir(device_report_dir):
+        s = os.path.join(device_report_dir, item)
+        d = os.path.join(dst_dir, item)
+        if os.path.isdir(s):
+            shutil.copytree(s, d, dirs_exist_ok=True)
+        else:
+            shutil.copy2(s, d)
+    print(f"设备报告已同步到静态目录: {dst_dir}")
 
 
 # 生成汇总报告
@@ -1738,7 +1769,20 @@ def run_summary(data):
         
         print(f"汇总报告已生成: {summary_report_path}")
         print(f"最新报告快捷方式: {latest_report_path}")
-        
+
+        # --- 新增：自动同步到Django静态目录，便于Web访问 ---
+        try:
+            static_reports_dir = os.path.join(os.path.dirname(__file__), "..", "staticfiles", "reports")
+            os.makedirs(static_reports_dir, exist_ok=True)
+            # 复制汇总报告
+            shutil.copy2(summary_report_path, os.path.join(static_reports_dir, os.path.basename(summary_report_path)))
+            # 复制latest_report.html
+            shutil.copy2(latest_report_path, os.path.join(static_reports_dir, "latest_report.html"))
+            print(f"报告已同步到静态目录: {static_reports_dir}")
+        except Exception as sync_e:
+            print(f"报告同步到静态目录失败: {sync_e}")
+        # --- end ---
+
         return summary_report_path
     except Exception as e:
         print(f"汇总报告生成失败: {e}")

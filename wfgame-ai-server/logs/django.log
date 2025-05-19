@@ -5164,3 +5164,803 @@ ERROR 2025-05-16 18:56:06,477 views 61260 28336 回放输出: with os.scandir(src) a
 INFO 2025-05-16 18:56:06,477 views 61260 17548 回放输出: run函数将执行 1 个脚本:
 INFO 2025-05-16 18:56:06,477 views 61260 17548 回放输出: 1. C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json
 ERROR 2025-05-16 18:56:06,477 views 61260 28336 回放输出: 
+ERROR 2025-05-16 18:56:06,477 views 61260 28336 回放输出: [18:56:01][ERROR]<airtest.report.report> Traceback (most recent call last):
+INFO 2025-05-16 18:56:08,620 views 61260 17548 回放输出: 设备: OnePlus-KB2000-1080x2400, 脚本: [{'path': 'C:\\Users\\Administrator\\PycharmProjects\\WFGameAI\\wfgame-ai-server\\testcase\\scene1_nologin_steps_2025-04-07.json', 'loop_count': 1}], 日志目录: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-16-18-55-51
+ERROR 2025-05-16 18:56:08,620 views 61260 28336 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\report.py", line 398, in copy_tree
+INFO 2025-05-16 18:56:08,620 views 61260 17548 回放输出: show_screens: True, loop_count: 1
+ERROR 2025-05-16 18:56:08,620 views 61260 28336 回放输出: shutil.copytree(src, dst, ignore=ignore)
+INFO 2025-05-16 18:56:08,620 views 61260 17548 回放输出: 开始回放设备: OnePlus-KB2000-1080x2400, 脚本: [{'path': 'C:\\Users\\Administrator\\PycharmProjects\\WFGameAI\\wfgame-ai-server\\testcase\\scene1_nologin_steps_2025-04-07.json', 'loop_count': 1}]
+ERROR 2025-05-16 18:56:08,620 views 61260 28336 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\shutil.py", line 566, in copytree
+INFO 2025-05-16 18:56:08,620 views 61260 17548 回放输出: 设备: HUAWEI-JAD-AL00-1228x2700, 脚本: [{'path': 'C:\\Users\\Administrator\\PycharmProjects\\WFGameAI\\wfgame-ai-server\\testcase\\scene1_nologin_steps_2025-04-07.json', 'loop_count': 1}], 日志目录: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-16-18-55-51
+ERROR 2025-05-16 18:56:08,620 views 61260 28336 回放输出: with os.scandir(src) as itr:
+INFO 2025-05-16 18:56:08,620 views 61260 17548 回放输出: show_screens: True, loop_count: 1
+INFO 2025-05-16 18:56:08,621 views 61260 17548 回放输出: 开始回放设备: HUAWEI-JAD-AL00-1228x2700, 脚本: [{'path': 'C:\\Users\\Administrator\\PycharmProjects\\WFGameAI\\wfgame-ai-server\\testcase\\scene1_nologin_steps_2025-04-07.json', 'loop_count': 1}]
+ERROR 2025-05-16 18:56:10,835 views 61260 28336 回放输出: 
+INFO 2025-05-16 18:56:10,835 views 61260 17548 回放输出: 保存初始截图: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-16-18-55-51\1747392951985.jpg
+ERROR 2025-05-16 18:56:10,835 views 61260 28336 回放输出: [18:56:01][INFO]<airtest.report.report> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-16-18-55-51\script.log\log.html
+INFO 2025-05-16 18:56:10,835 views 61260 17548 回放输出: 开始执行脚本: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json, 循环次数: 1, 最大执行时间: None秒
+INFO 2025-05-16 18:56:10,835 views 61260 17548 回放输出: 第 1/1 次循环
+INFO 2025-05-16 18:56:10,835 views 61260 17548 回放输出: 按顺序执行步骤，共 3 个步骤
+INFO 2025-05-16 18:56:10,835 views 61260 17548 回放输出: 执行步骤 1/3: operation-close, 备注: 启动游戏后先有一个公告弹窗，点击关闭
+INFO 2025-05-16 18:56:10,835 views 61260 17548 回放输出: 保存初始截图: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-16-18-55-51\1747392951983.jpg
+INFO 2025-05-16 18:56:10,835 views 61260 17548 回放输出: 开始执行脚本: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json, 循环次数: 1, 最大执行时间: None秒
+INFO 2025-05-16 18:56:10,835 views 61260 17548 回放输出: 第 1/1 次循环
+INFO 2025-05-16 18:56:10,835 views 61260 17548 回放输出: 按顺序执行步骤，共 3 个步骤
+INFO 2025-05-16 18:56:10,835 views 61260 17548 回放输出: 执行步骤 1/3: operation-close, 备注: 启动游戏后先有一个公告弹窗，点击关闭
+INFO 2025-05-16 18:56:10,835 views 61260 17548 回放输出: 保存截图: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-16-18-55-51\1747392953050.jpg
+INFO 2025-05-16 18:56:10,835 views 61260 17548 回放输出: 保存截图: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-16-18-55-51\1747392953798.jpg
+INFO 2025-05-16 18:56:10,835 views 61260 17548 回放输出: 设备 HUAWEI-JAD-AL00-1228x2700 执行步骤 1: operation-close，点击位置: (1144, 603)
+INFO 2025-05-16 18:56:10,835 views 61260 17548 回放输出: 设备 OnePlus-KB2000-1080x2400 执行步骤 1: operation-close，点击位置: (1007, 548)
+INFO 2025-05-16 18:56:10,835 views 61260 17548 回放输出: 执行步骤 2/3: system-cleanUpCache, 备注: 打开清理缓存弹窗
+INFO 2025-05-16 18:56:10,835 views 61260 17548 回放输出: 执行步骤 2/3: system-cleanUpCache, 备注: 打开清理缓存弹窗
+INFO 2025-05-16 18:56:10,835 views 61260 17548 回放输出: 保存截图: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-16-18-55-51\1747392956518.jpg
+INFO 2025-05-16 18:56:12,852 views 61260 17548 回放输出: 保存截图: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-16-18-55-51\1747392956131.jpg
+INFO 2025-05-16 18:56:12,852 views 61260 17548 回放输出: 设备 HUAWEI-JAD-AL00-1228x2700 执行步骤 2: system-cleanUpCache，点击位置: (1125, 417)
+INFO 2025-05-16 18:56:12,852 views 61260 17548 回放输出: 设备 OnePlus-KB2000-1080x2400 执行步骤 2: system-cleanUpCache，点击位置: (989, 367)
+INFO 2025-05-16 18:56:12,852 views 61260 17548 回放输出: 执行步骤 3/3: operation-close, 备注: 关闭清理缓存弹窗
+INFO 2025-05-16 18:56:12,852 views 61260 17548 回放输出: 执行步骤 3/3: operation-close, 备注: 关闭清理缓存弹窗
+INFO 2025-05-16 18:56:12,852 views 61260 17548 回放输出: 保存截图: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-16-18-55-51\1747392959064.jpg
+INFO 2025-05-16 18:56:12,852 views 61260 17548 回放输出: 保存截图: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-16-18-55-51\1747392959034.jpg
+INFO 2025-05-16 18:56:12,852 views 61260 17548 回放输出: 设备 OnePlus-KB2000-1080x2400 执行步骤 3: operation-close，点击位置: (336, 1414)
+INFO 2025-05-16 18:56:12,852 views 61260 17548 回放输出: 设备 HUAWEI-JAD-AL00-1228x2700 执行步骤 3: operation-close，点击位置: (382, 1595)
+INFO 2025-05-16 18:56:12,852 views 61260 17548 回放输出: 已完成执行 3 个步骤
+INFO 2025-05-16 18:56:12,852 views 61260 17548 回放输出: 完成脚本 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json，执行步骤数: 0，总步骤数: 3
+INFO 2025-05-16 18:56:12,852 views 61260 17548 回放输出: 设备 OnePlus-KB2000-1080x2400 回放完成，完成总步骤数: 3
+INFO 2025-05-16 18:56:12,852 views 61260 17548 回放输出: 检查并修复日志文件JSON格式...
+INFO 2025-05-16 18:56:12,852 views 61260 17548 回放输出: JSON格式修复完成: 总行数 9, 有效行数 9, 修复 0 行
+INFO 2025-05-16 18:56:12,852 views 61260 17548 回放输出: 处理脚本文件 1: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json
+INFO 2025-05-16 18:56:12,852 views 61260 17548 回放输出: 已合并 1 个脚本文件到: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-16-18-55-51\script.py
+INFO 2025-05-16 18:56:12,852 views 61260 17548 回放输出: 复制CSS资源: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\css -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-16-18-55-51\static\css
+INFO 2025-05-16 18:56:12,852 views 61260 17548 回放输出: 复制JS资源: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\js -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-16-18-55-51\static\js
+INFO 2025-05-16 18:56:12,852 views 61260 17548 回放输出: 已完成执行 3 个步骤
+INFO 2025-05-16 18:56:12,852 views 61260 17548 回放输出: 完成脚本 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json，执行步骤数: 0，总步骤数: 3
+INFO 2025-05-16 18:56:12,853 views 61260 17548 回放输出: 设备 HUAWEI-JAD-AL00-1228x2700 回放完成，完成总步骤数: 3
+INFO 2025-05-16 18:56:12,853 views 61260 17548 回放输出: 复制image资源: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\image -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-16-18-55-51\static\image
+INFO 2025-05-16 18:56:12,853 views 61260 17548 回放输出: 复制字体资源: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\fonts -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-16-18-55-51\static\fonts
+INFO 2025-05-16 18:56:14,365 views 61260 17548 回放输出: 复制模板文件: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\log_template.html -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-16-18-55-51
+INFO 2025-05-16 18:56:14,365 views 61260 17548 回放输出: 复制模板文件: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-16-18-55-51\log_template.html
+INFO 2025-05-16 18:56:14,365 views 61260 17548 回放输出: report_html_file: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-16-18-55-51\log.html
+INFO 2025-05-16 18:56:14,365 views 61260 17548 回放输出: script_log_html_file: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-16-18-55-51\script.log\log.html
+INFO 2025-05-16 18:56:14,365 views 61260 17548 回放输出: HTML报告生成成功: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-16-18-55-51\script.log\log.html
+INFO 2025-05-16 18:56:14,365 views 61260 17548 回放输出: 复制报告: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-16-18-55-51\script.log\log.html -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-16-18-55-51\log.html
+INFO 2025-05-16 18:56:14,365 views 61260 17548 回放输出: 无法解析data对象: (unicode error) 'unicodeescape' codec can't decode bytes in position 2-3: truncated \UXXXXXXXX escape (<unknown>, line 1)
+INFO 2025-05-16 18:56:14,365 views 61260 17548 回放输出: HTML路径和显示修复成功: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-16-18-55-51\log.html
+INFO 2025-05-16 18:56:14,365 views 61260 17548 回放输出: 设备 OnePlus-KB2000-1080x2400 报告目录: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-16-18-55-51
+INFO 2025-05-16 18:56:14,365 views 61260 17548 回放输出: 设备 OnePlus-KB2000-1080x2400 报告路径: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-16-18-55-51\log.html
+INFO 2025-05-16 18:56:14,365 views 61260 17548 回放输出: 设备 OnePlus-KB2000-1080x2400 测试成功且全部通过
+INFO 2025-05-16 18:56:14,365 views 61260 17548 回放输出: 检查并修复日志文件JSON格式...
+INFO 2025-05-16 18:56:14,365 views 61260 17548 回放输出: JSON格式修复完成: 总行数 9, 有效行数 9, 修复 0 行
+INFO 2025-05-16 18:56:14,365 views 61260 17548 回放输出: 处理脚本文件 1: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json
+INFO 2025-05-16 18:56:14,365 views 61260 17548 回放输出: 已合并 1 个脚本文件到: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-16-18-55-51\script.py
+INFO 2025-05-16 18:56:14,365 views 61260 17548 回放输出: 复制CSS资源: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\css -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-16-18-55-51\static\css
+INFO 2025-05-16 18:56:14,365 views 61260 17548 回放输出: 复制JS资源: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\js -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-16-18-55-51\static\js
+INFO 2025-05-16 18:56:15,463 views 61260 17548 回放输出: 复制image资源: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\image -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-16-18-55-51\static\image
+INFO 2025-05-16 18:56:15,463 views 61260 17548 回放输出: 复制字体资源: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\fonts -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-16-18-55-51\static\fonts
+INFO 2025-05-16 18:56:15,463 views 61260 17548 回放输出: 复制模板文件: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\log_template.html -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-16-18-55-51
+INFO 2025-05-16 18:56:15,463 views 61260 17548 回放输出: 复制模板文件: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-16-18-55-51\log_template.html
+INFO 2025-05-16 18:56:15,463 views 61260 17548 回放输出: report_html_file: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-16-18-55-51\log.html
+INFO 2025-05-16 18:56:15,463 views 61260 17548 回放输出: script_log_html_file: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-16-18-55-51\script.log\log.html
+INFO 2025-05-16 18:56:15,463 views 61260 17548 回放输出: HTML报告生成成功: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-16-18-55-51\script.log\log.html
+INFO 2025-05-16 18:56:15,463 views 61260 17548 回放输出: 复制报告: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-16-18-55-51\script.log\log.html -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-16-18-55-51\log.html
+INFO 2025-05-16 18:56:15,463 views 61260 17548 回放输出: 无法解析data对象: (unicode error) 'unicodeescape' codec can't decode bytes in position 2-3: truncated \UXXXXXXXX escape (<unknown>, line 1)
+INFO 2025-05-16 18:56:15,463 views 61260 17548 回放输出: HTML路径和显示修复成功: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-16-18-55-51\log.html
+INFO 2025-05-16 18:56:15,463 views 61260 17548 回放输出: 设备 HUAWEI-JAD-AL00-1228x2700 报告目录: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-16-18-55-51
+INFO 2025-05-16 18:56:15,463 views 61260 17548 回放输出: 设备 HUAWEI-JAD-AL00-1228x2700 报告路径: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-16-18-55-51\log.html
+INFO 2025-05-16 18:56:15,463 views 61260 17548 回放输出: 设备 HUAWEI-JAD-AL00-1228x2700 测试成功且全部通过
+INFO 2025-05-16 18:56:15,463 views 61260 17548 回放输出: 开始生成汇总报告，成功率: 2/2，通过率: 2/2
+INFO 2025-05-16 18:56:15,463 views 61260 17548 回放输出: 设备 OnePlus-KB2000-1080x2400 报告路径: ../ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-16-18-55-51/log.html
+INFO 2025-05-16 18:56:15,463 views 61260 17548 回放输出: 设备 HUAWEI-JAD-AL00-1228x2700 报告路径: ../ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-16-18-55-51/log.html
+INFO 2025-05-16 18:56:15,464 views 61260 17548 回放输出: 汇总报告已生成: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_reports\summary_report_2025-05-16-18-56-01.html
+INFO 2025-05-16 18:56:16,232 views 61260 17548 回放输出: 最新报告快捷方式: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_reports\latest_report.html
+INFO 2025-05-16 18:56:16,232 views 61260 17548 回放输出: 执行结果: 成功 2/2，全部通过 2/2, 报告地址: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_reports\summary_report_2025-05-16-18-56-01.html
+INFO 2025-05-16 18:56:16,232 views 61260 17548 回放输出: 回放成功
+INFO 2025-05-16 18:56:24,659 basehttp 61260 84948 "GET /pages/reports.html HTTP/1.1" 200 15250
+INFO 2025-05-16 18:56:24,673 basehttp 61260 84948 "POST /api/reports/ HTTP/1.1" 200 2107
+INFO 2025-05-16 18:56:27,468 basehttp 61260 84948 "POST /api/reports/ HTTP/1.1" 200 2107
+INFO 2025-05-16 18:56:51,848 basehttp 61260 84948 "POST /api/reports/ HTTP/1.1" 200 2107
+INFO 2025-05-16 19:03:33,041 views 61260 17800 接收到信号: 0
+INFO 2025-05-19 13:32:17,174 autoreload 85544 78520 Watching for file changes with StatReloader
+INFO 2025-05-19 13:32:17,401 views 85544 78520 已加载配置文件: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\config.ini
+INFO 2025-05-19 13:32:17,402 views 85544 78520 已加载路径配置: PYTHON_PATH=F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe, TESTCASE_DIR=C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase
+INFO 2025-05-19 13:32:17,402 views 85544 78520 使用配置文件中的Python路径: F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe
+INFO 2025-05-19 13:32:20,606 basehttp 85544 46308 "GET /pages/dashboard.html HTTP/1.1" 200 8245
+INFO 2025-05-19 13:32:22,502 basehttp 85544 46308 "GET /pages/reports.html HTTP/1.1" 200 15250
+INFO 2025-05-19 13:32:22,511 basehttp 85544 46308 "POST /api/reports/ HTTP/1.1" 200 2107
+INFO 2025-05-19 13:32:23,878 basehttp 85544 46308 "GET /static/reports/summary_report_2025-05-16-10-29-05.html HTTP/1.1" 304 0
+WARNING 2025-05-19 13:32:25,746 basehttp 85544 46308 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-16-10-28-56/log.html HTTP/1.1" 404 2094
+ERROR 2025-05-19 13:32:37,086 log 85544 47884 Internal Server Error: /api/docs/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 220, in _get_response
+    response = response.render()
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 114, in render
+    self.content = self.rendered_content
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 90, in rendered_content
+    template = self.resolve_template(self.template_name)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 72, in resolve_template
+    return select_template(template, using=self.using)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\loader.py", line 47, in select_template
+    raise TemplateDoesNotExist(", ".join(template_name_list), chain=chain)
+django.template.exceptions.TemplateDoesNotExist: swagger-ui.html
+ERROR 2025-05-19 13:32:37,087 basehttp 85544 47884 "GET /api/docs/ HTTP/1.1" 500 97152
+INFO 2025-05-19 13:33:39,559 basehttp 85544 47884 "GET /static/reports/summary_report_2025-05-16-10-29-05.html HTTP/1.1" 200 11438
+INFO 2025-05-19 13:33:50,804 basehttp 85544 47884 "GET /static/reports/summary_report_2025-05-16-10-29-05.html HTTP/1.1" 304 0
+WARNING 2025-05-19 13:33:53,419 basehttp 85544 47884 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-16-10-28-56/log.html HTTP/1.1" 404 2094
+INFO 2025-05-19 13:46:31,029 basehttp 85544 64964 "GET /static/reports/summary_report_2025-05-16-10-29-05.html HTTP/1.1" 304 0
+INFO 2025-05-19 13:51:20,025 autoreload 85544 78520 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\wfgame_ai_server\urls.py changed, reloading.
+INFO 2025-05-19 13:51:20,514 autoreload 77188 47328 Watching for file changes with StatReloader
+INFO 2025-05-19 13:51:20,730 views 77188 47328 已加载配置文件: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\config.ini
+INFO 2025-05-19 13:51:20,730 views 77188 47328 已加载路径配置: PYTHON_PATH=F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe, TESTCASE_DIR=C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase
+INFO 2025-05-19 13:51:20,730 views 77188 47328 使用配置文件中的Python路径: F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe
+INFO 2025-05-19 13:59:11,246 autoreload 77188 47328 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\wfgame_ai_server\settings.py changed, reloading.
+INFO 2025-05-19 13:59:11,784 autoreload 76980 84348 Watching for file changes with StatReloader
+INFO 2025-05-19 13:59:12,008 views 76980 84348 已加载配置文件: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\config.ini
+INFO 2025-05-19 13:59:12,008 views 76980 84348 已加载路径配置: PYTHON_PATH=F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe, TESTCASE_DIR=C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase
+INFO 2025-05-19 13:59:12,008 views 76980 84348 使用配置文件中的Python路径: F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe
+INFO 2025-05-19 14:04:11,619 autoreload 76980 84348 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\reports\views.py changed, reloading.
+INFO 2025-05-19 14:04:12,216 autoreload 45864 77272 Watching for file changes with StatReloader
+INFO 2025-05-19 14:04:12,438 views 45864 77272 已加载配置文件: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\config.ini
+INFO 2025-05-19 14:04:12,438 views 45864 77272 已加载路径配置: PYTHON_PATH=F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe, TESTCASE_DIR=C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase
+INFO 2025-05-19 14:04:12,438 views 45864 77272 使用配置文件中的Python路径: F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe
+INFO 2025-05-19 14:46:24,443 views 45864 36424 接收到信号: 2
+INFO 2025-05-19 15:02:37,861 autoreload 43328 74476 Watching for file changes with StatReloader
+INFO 2025-05-19 15:02:38,087 views 43328 74476 已加载配置文件: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\config.ini
+INFO 2025-05-19 15:02:38,088 views 43328 74476 已加载路径配置: PYTHON_PATH=F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe, TESTCASE_DIR=C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase
+INFO 2025-05-19 15:02:38,088 views 43328 74476 使用配置文件中的Python路径: F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe
+INFO 2025-05-19 15:02:50,573 basehttp 43328 91620 "GET /pages/reports.html HTTP/1.1" 200 15250
+INFO 2025-05-19 15:02:50,584 basehttp 43328 91620 "POST /api/reports/ HTTP/1.1" 200 382
+WARNING 2025-05-19 15:02:55,565 basehttp 43328 91620 "GET /static/reports/summary_report_2025-05-16-18-56-01.html HTTP/1.1" 404 1900
+ERROR 2025-05-19 15:02:57,802 log 43328 83416 Internal Server Error: /api/docs/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 220, in _get_response
+    response = response.render()
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 114, in render
+    self.content = self.rendered_content
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 90, in rendered_content
+    template = self.resolve_template(self.template_name)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 72, in resolve_template
+    return select_template(template, using=self.using)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\loader.py", line 47, in select_template
+    raise TemplateDoesNotExist(", ".join(template_name_list), chain=chain)
+django.template.exceptions.TemplateDoesNotExist: swagger-ui.html
+ERROR 2025-05-19 15:02:57,803 basehttp 43328 83416 "GET /api/docs/ HTTP/1.1" 500 97152
+INFO 2025-05-19 15:03:00,343 basehttp 43328 83416 "GET /pages/scripts.html HTTP/1.1" 200 62899
+INFO 2025-05-19 15:03:00,357 basehttp 43328 83416 "POST /api/scripts/ HTTP/1.1" 200 2748
+INFO 2025-05-19 15:03:11,172 views 43328 83416 使用配置文件中的Python路径: F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe
+INFO 2025-05-19 15:03:11,172 views 43328 83416 使用Python环境: F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe
+INFO 2025-05-19 15:03:11,172 views 43328 83416 执行回放命令: F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\replay_script.py --show-screens --script C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json --loop-count 1
+INFO 2025-05-19 15:03:12,213 basehttp 43328 83416 "POST /api/scripts/replay/ HTTP/1.1" 200 447
+ERROR 2025-05-19 15:03:13,910 views 43328 63792 回放输出: [15:03:13][DEBUG]<airtest.core.android.adb> F:\QA\Software\adb\platform-tools\adb.exe -s 5c41023b wait-for-device
+ERROR 2025-05-19 15:03:14,313 views 43328 63792 回放输出: [15:03:14][DEBUG]<airtest.core.android.adb> F:\QA\Software\adb\platform-tools\adb.exe -s 5c41023b shell getprop ro.build.version.sdk
+ERROR 2025-05-19 15:03:14,441 views 43328 63792 回放输出: [15:03:14][DEBUG]<airtest.core.android.adb> F:\QA\Software\adb\platform-tools\adb.exe -s 5c41023b shell getprop ro.product.brand
+ERROR 2025-05-19 15:03:14,553 views 43328 63792 回放输出: [15:03:14][DEBUG]<airtest.core.android.adb> F:\QA\Software\adb\platform-tools\adb.exe -s 5c41023b shell getprop ro.product.model
+ERROR 2025-05-19 15:03:14,659 views 43328 63792 回放输出: [15:03:14][DEBUG]<airtest.core.android.adb> F:\QA\Software\adb\platform-tools\adb.exe -s 5c41023b shell wm size
+ERROR 2025-05-19 15:03:14,823 views 43328 63792 回放输出: [15:03:14][DEBUG]<airtest.core.android.adb> F:\QA\Software\adb\platform-tools\adb.exe -s CWM0222215003786 wait-for-device
+ERROR 2025-05-19 15:03:14,936 views 43328 63792 回放输出: [15:03:14][DEBUG]<airtest.core.android.adb> F:\QA\Software\adb\platform-tools\adb.exe -s CWM0222215003786 shell getprop ro.build.version.sdk
+ERROR 2025-05-19 15:03:15,089 views 43328 63792 回放输出: [15:03:15][DEBUG]<airtest.core.android.adb> F:\QA\Software\adb\platform-tools\adb.exe -s CWM0222215003786 shell getprop ro.product.brand
+ERROR 2025-05-19 15:03:15,261 views 43328 63792 回放输出: [15:03:15][DEBUG]<airtest.core.android.adb> F:\QA\Software\adb\platform-tools\adb.exe -s CWM0222215003786 shell getprop ro.product.model
+ERROR 2025-05-19 15:03:15,410 views 43328 63792 回放输出: [15:03:15][DEBUG]<airtest.core.android.adb> F:\QA\Software\adb\platform-tools\adb.exe -s CWM0222215003786 shell wm size
+ERROR 2025-05-19 15:03:15,616 views 43328 63792 回放输出: [15:03:15][INFO]<airtest.core.api> {'msg': 'Start replay', 'success': True}
+ERROR 2025-05-19 15:03:24,282 views 43328 63792 回放输出: [15:03:24][ERROR]<airtest.report.report> Traceback (most recent call last):
+ERROR 2025-05-19 15:03:24,282 views 43328 63792 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\report.py", line 398, in copy_tree
+ERROR 2025-05-19 15:03:24,282 views 43328 63792 回放输出: shutil.copytree(src, dst, ignore=ignore)
+ERROR 2025-05-19 15:03:24,282 views 43328 63792 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\shutil.py", line 566, in copytree
+ERROR 2025-05-19 15:03:24,282 views 43328 63792 回放输出: with os.scandir(src) as itr:
+ERROR 2025-05-19 15:03:24,283 views 43328 63792 回放输出: 
+ERROR 2025-05-19 15:03:24,283 views 43328 63792 回放输出: [15:03:24][ERROR]<airtest.report.report> Traceback (most recent call last):
+ERROR 2025-05-19 15:03:24,283 views 43328 63792 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\report.py", line 398, in copy_tree
+ERROR 2025-05-19 15:03:24,283 views 43328 63792 回放输出: shutil.copytree(src, dst, ignore=ignore)
+ERROR 2025-05-19 15:03:24,283 views 43328 63792 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\shutil.py", line 566, in copytree
+ERROR 2025-05-19 15:03:24,283 views 43328 63792 回放输出: with os.scandir(src) as itr:
+ERROR 2025-05-19 15:03:24,284 views 43328 63792 回放输出: 
+ERROR 2025-05-19 15:03:24,284 views 43328 63792 回放输出: [15:03:24][ERROR]<airtest.report.report> Traceback (most recent call last):
+ERROR 2025-05-19 15:03:24,284 views 43328 63792 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\report.py", line 398, in copy_tree
+ERROR 2025-05-19 15:03:24,284 views 43328 63792 回放输出: shutil.copytree(src, dst, ignore=ignore)
+ERROR 2025-05-19 15:03:24,321 views 43328 63792 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\shutil.py", line 566, in copytree
+ERROR 2025-05-19 15:03:24,321 views 43328 63792 回放输出: with os.scandir(src) as itr:
+ERROR 2025-05-19 15:03:24,321 views 43328 63792 回放输出: 
+ERROR 2025-05-19 15:03:24,321 views 43328 63792 回放输出: [15:03:24][ERROR]<airtest.report.report> Traceback (most recent call last):
+ERROR 2025-05-19 15:03:24,321 views 43328 63792 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\report.py", line 398, in copy_tree
+ERROR 2025-05-19 15:03:24,321 views 43328 63792 回放输出: shutil.copytree(src, dst, ignore=ignore)
+ERROR 2025-05-19 15:03:24,321 views 43328 63792 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\shutil.py", line 566, in copytree
+ERROR 2025-05-19 15:03:24,321 views 43328 63792 回放输出: with os.scandir(src) as itr:
+ERROR 2025-05-19 15:03:24,321 views 43328 63792 回放输出: 
+ERROR 2025-05-19 15:03:24,321 views 43328 63792 回放输出: [15:03:24][INFO]<airtest.report.report> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-03-15\script.log\log.html
+ERROR 2025-05-19 15:03:24,494 views 43328 63792 回放输出: [15:03:24][ERROR]<airtest.report.report> Traceback (most recent call last):
+ERROR 2025-05-19 15:03:24,494 views 43328 63792 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\report.py", line 398, in copy_tree
+ERROR 2025-05-19 15:03:24,494 views 43328 63792 回放输出: shutil.copytree(src, dst, ignore=ignore)
+INFO 2025-05-19 15:03:25,239 views 43328 57004 回放输出: 解析命令行参数结果:
+ERROR 2025-05-19 15:03:26,669 views 43328 63792 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\shutil.py", line 566, in copytree
+INFO 2025-05-19 15:03:26,669 views 43328 57004 回放输出: 脚本 1: {'path': 'C:\\Users\\Administrator\\PycharmProjects\\WFGameAI\\wfgame-ai-server\\testcase\\scene1_nologin_steps_2025-04-07.json', 'loop_count': 1}
+ERROR 2025-05-19 15:03:26,669 views 43328 63792 回放输出: with os.scandir(src) as itr:
+INFO 2025-05-19 15:03:26,669 views 43328 57004 回放输出: 模型目录: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\datasets\train\weights
+INFO 2025-05-19 15:03:26,669 views 43328 57004 回放输出: 找到best.pt模型: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\datasets\train\weights\best.pt
+ERROR 2025-05-19 15:03:26,669 views 43328 63792 回放输出: 
+INFO 2025-05-19 15:03:26,670 views 43328 57004 回放输出: 将模型移至设备: cuda
+ERROR 2025-05-19 15:03:26,670 views 43328 63792 回放输出: [15:03:24][ERROR]<airtest.report.report> Traceback (most recent call last):
+INFO 2025-05-19 15:03:26,670 views 43328 57004 回放输出: 模型加载成功: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\datasets\train\weights\best.pt
+ERROR 2025-05-19 15:03:26,670 views 43328 63792 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\report.py", line 398, in copy_tree
+INFO 2025-05-19 15:03:26,670 views 43328 57004 回放输出: 准备执行用户指定的 1 个脚本...
+ERROR 2025-05-19 15:03:26,670 views 43328 63792 回放输出: shutil.copytree(src, dst, ignore=ignore)
+INFO 2025-05-19 15:03:26,670 views 43328 57004 回放输出: 添加脚本: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json
+ERROR 2025-05-19 15:03:26,670 views 43328 63792 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\shutil.py", line 566, in copytree
+INFO 2025-05-19 15:03:26,670 views 43328 57004 回放输出: 最终将执行 1 个脚本:
+ERROR 2025-05-19 15:03:26,670 views 43328 63792 回放输出: with os.scandir(src) as itr:
+INFO 2025-05-19 15:03:26,670 views 43328 57004 回放输出: 1. C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json (循环次数: 1)
+INFO 2025-05-19 15:03:26,670 views 43328 57004 回放输出: 设备 OnePlus-KB2000-1080x2400 连接成功
+ERROR 2025-05-19 15:03:29,203 views 43328 63792 回放输出: 
+INFO 2025-05-19 15:03:29,204 views 43328 57004 回放输出: 设备 HUAWEI-JAD-AL00-1228x2700 连接成功
+ERROR 2025-05-19 15:03:29,204 views 43328 63792 回放输出: [15:03:24][ERROR]<airtest.report.report> Traceback (most recent call last):
+INFO 2025-05-19 15:03:29,204 views 43328 57004 回放输出: 加载脚本: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json
+ERROR 2025-05-19 15:03:29,204 views 43328 63792 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\report.py", line 398, in copy_tree
+INFO 2025-05-19 15:03:29,204 views 43328 57004 回放输出: 检测到 2 个设备: ['OnePlus-KB2000-1080x2400', 'HUAWEI-JAD-AL00-1228x2700']
+ERROR 2025-05-19 15:03:29,204 views 43328 63792 回放输出: shutil.copytree(src, dst, ignore=ignore)
+INFO 2025-05-19 15:03:29,204 views 43328 57004 回放输出: 开始回放
+ERROR 2025-05-19 15:03:29,204 views 43328 63792 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\shutil.py", line 566, in copytree
+INFO 2025-05-19 15:03:29,204 views 43328 57004 回放输出: 清理日志目录: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs/device_reports
+ERROR 2025-05-19 15:03:29,204 views 43328 63792 回放输出: with os.scandir(src) as itr:
+INFO 2025-05-19 15:03:29,204 views 43328 57004 回放输出: run函数将执行 1 个脚本:
+INFO 2025-05-19 15:03:29,204 views 43328 57004 回放输出: 1. C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json
+ERROR 2025-05-19 15:03:29,205 views 43328 63792 回放输出: 
+ERROR 2025-05-19 15:03:29,205 views 43328 63792 回放输出: [15:03:24][ERROR]<airtest.report.report> Traceback (most recent call last):
+ERROR 2025-05-19 15:03:31,095 views 43328 63792 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\report.py", line 398, in copy_tree
+INFO 2025-05-19 15:03:31,095 views 43328 57004 回放输出: 设备: OnePlus-KB2000-1080x2400, 脚本: [{'path': 'C:\\Users\\Administrator\\PycharmProjects\\WFGameAI\\wfgame-ai-server\\testcase\\scene1_nologin_steps_2025-04-07.json', 'loop_count': 1}], 日志目录: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-03-15
+ERROR 2025-05-19 15:03:31,095 views 43328 63792 回放输出: shutil.copytree(src, dst, ignore=ignore)
+INFO 2025-05-19 15:03:31,095 views 43328 57004 回放输出: show_screens: True, loop_count: 1
+ERROR 2025-05-19 15:03:31,095 views 43328 63792 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\shutil.py", line 566, in copytree
+INFO 2025-05-19 15:03:31,095 views 43328 57004 回放输出: 开始回放设备: OnePlus-KB2000-1080x2400, 脚本: [{'path': 'C:\\Users\\Administrator\\PycharmProjects\\WFGameAI\\wfgame-ai-server\\testcase\\scene1_nologin_steps_2025-04-07.json', 'loop_count': 1}]
+ERROR 2025-05-19 15:03:31,095 views 43328 63792 回放输出: with os.scandir(src) as itr:
+INFO 2025-05-19 15:03:31,095 views 43328 57004 回放输出: 设备: HUAWEI-JAD-AL00-1228x2700, 脚本: [{'path': 'C:\\Users\\Administrator\\PycharmProjects\\WFGameAI\\wfgame-ai-server\\testcase\\scene1_nologin_steps_2025-04-07.json', 'loop_count': 1}], 日志目录: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-03-15
+INFO 2025-05-19 15:03:31,110 views 43328 57004 回放输出: show_screens: True, loop_count: 1
+INFO 2025-05-19 15:03:31,110 views 43328 57004 回放输出: 开始回放设备: HUAWEI-JAD-AL00-1228x2700, 脚本: [{'path': 'C:\\Users\\Administrator\\PycharmProjects\\WFGameAI\\wfgame-ai-server\\testcase\\scene1_nologin_steps_2025-04-07.json', 'loop_count': 1}]
+INFO 2025-05-19 15:03:31,110 views 43328 57004 回放输出: 保存初始截图: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-03-15\1747638195622.jpg
+ERROR 2025-05-19 15:03:33,641 views 43328 63792 回放输出: 
+INFO 2025-05-19 15:03:33,641 views 43328 57004 回放输出: 开始执行脚本: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json, 循环次数: 1, 最大执行时间: None秒
+ERROR 2025-05-19 15:03:33,641 views 43328 63792 回放输出: [15:03:24][INFO]<airtest.report.report> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-03-15\script.log\log.html
+INFO 2025-05-19 15:03:33,641 views 43328 57004 回放输出: 第 1/1 次循环
+INFO 2025-05-19 15:03:33,641 views 43328 57004 回放输出: 按顺序执行步骤，共 3 个步骤
+INFO 2025-05-19 15:03:33,641 views 43328 57004 回放输出: 执行步骤 1/3: operation-close, 备注: 启动游戏后先有一个公告弹窗，点击关闭
+INFO 2025-05-19 15:03:33,641 views 43328 57004 回放输出: 保存截图: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-03-15\1747638196429.jpg
+INFO 2025-05-19 15:03:33,641 views 43328 57004 回放输出: 保存初始截图: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-03-15\1747638195621.jpg
+INFO 2025-05-19 15:03:33,641 views 43328 57004 回放输出: 开始执行脚本: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json, 循环次数: 1, 最大执行时间: None秒
+INFO 2025-05-19 15:03:33,641 views 43328 57004 回放输出: 第 1/1 次循环
+INFO 2025-05-19 15:03:33,641 views 43328 57004 回放输出: 按顺序执行步骤，共 3 个步骤
+INFO 2025-05-19 15:03:33,641 views 43328 57004 回放输出: 执行步骤 1/3: operation-close, 备注: 启动游戏后先有一个公告弹窗，点击关闭
+INFO 2025-05-19 15:03:33,641 views 43328 57004 回放输出: 未检测到目标 operation-close，跳过此步骤
+INFO 2025-05-19 15:03:33,641 views 43328 57004 回放输出: 已记录步骤 1 失败: 启动游戏后先有一个公告弹窗，点击关闭
+INFO 2025-05-19 15:03:33,641 views 43328 57004 回放输出: 保存截图: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-03-15\1747638197009.jpg
+INFO 2025-05-19 15:03:33,641 views 43328 57004 回放输出: 未检测到目标 operation-close，跳过此步骤
+INFO 2025-05-19 15:03:33,641 views 43328 57004 回放输出: 已记录步骤 1 失败: 启动游戏后先有一个公告弹窗，点击关闭
+INFO 2025-05-19 15:03:33,641 views 43328 57004 回放输出: 执行步骤 2/3: system-cleanUpCache, 备注: 打开清理缓存弹窗
+INFO 2025-05-19 15:03:33,641 views 43328 57004 回放输出: 保存截图: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-03-15\1747638198400.jpg
+INFO 2025-05-19 15:03:33,641 views 43328 57004 回放输出: 执行步骤 2/3: system-cleanUpCache, 备注: 打开清理缓存弹窗
+INFO 2025-05-19 15:03:33,641 views 43328 57004 回放输出: 未检测到目标 system-cleanUpCache，跳过此步骤
+INFO 2025-05-19 15:03:35,571 views 43328 57004 回放输出: 已记录步骤 2 失败: 打开清理缓存弹窗
+INFO 2025-05-19 15:03:35,571 views 43328 57004 回放输出: 执行步骤 3/3: operation-close, 备注: 关闭清理缓存弹窗
+INFO 2025-05-19 15:03:35,571 views 43328 57004 回放输出: 保存截图: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-03-15\1747638199415.jpg
+INFO 2025-05-19 15:03:35,571 views 43328 57004 回放输出: 未检测到目标 operation-close，跳过此步骤
+INFO 2025-05-19 15:03:35,571 views 43328 57004 回放输出: 已记录步骤 3 失败: 关闭清理缓存弹窗
+INFO 2025-05-19 15:03:35,571 views 43328 57004 回放输出: 保存截图: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-03-15\1747638198899.jpg
+INFO 2025-05-19 15:03:35,571 views 43328 57004 回放输出: 未检测到目标 system-cleanUpCache，跳过此步骤
+INFO 2025-05-19 15:03:35,571 views 43328 57004 回放输出: 已记录步骤 2 失败: 打开清理缓存弹窗
+INFO 2025-05-19 15:03:35,571 views 43328 57004 回放输出: 已完成执行 3 个步骤
+INFO 2025-05-19 15:03:35,571 views 43328 57004 回放输出: 完成脚本 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json，执行步骤数: 0，总步骤数: 3
+INFO 2025-05-19 15:03:35,571 views 43328 57004 回放输出: 设备 HUAWEI-JAD-AL00-1228x2700 未执行任何步骤，添加默认操作以确保报告不为空
+INFO 2025-05-19 15:03:35,571 views 43328 57004 回放输出: 执行步骤 3/3: operation-close, 备注: 关闭清理缓存弹窗
+INFO 2025-05-19 15:03:35,571 views 43328 57004 回放输出: 设备 HUAWEI-JAD-AL00-1228x2700 回放完成，完成总步骤数: 3
+INFO 2025-05-19 15:03:35,571 views 43328 57004 回放输出: 保存截图: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-03-15\1747638200789.jpg
+INFO 2025-05-19 15:03:35,571 views 43328 57004 回放输出: 未检测到目标 operation-close，跳过此步骤
+INFO 2025-05-19 15:03:35,571 views 43328 57004 回放输出: 已记录步骤 3 失败: 关闭清理缓存弹窗
+INFO 2025-05-19 15:03:35,571 views 43328 57004 回放输出: 已完成执行 3 个步骤
+INFO 2025-05-19 15:03:35,571 views 43328 57004 回放输出: 完成脚本 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json，执行步骤数: 0，总步骤数: 3
+INFO 2025-05-19 15:03:35,571 views 43328 57004 回放输出: 设备 OnePlus-KB2000-1080x2400 未执行任何步骤，添加默认操作以确保报告不为空
+INFO 2025-05-19 15:03:35,571 views 43328 57004 回放输出: 设备 OnePlus-KB2000-1080x2400 回放完成，完成总步骤数: 3
+INFO 2025-05-19 15:03:35,571 views 43328 57004 回放输出: 检测到失败的断言步骤: 步骤1失败: 未检测到目标 operation-close
+INFO 2025-05-19 15:03:35,571 views 43328 57004 回放输出: 启动游戏后先有一个公告弹窗，点击关闭
+INFO 2025-05-19 15:03:35,571 views 43328 57004 回放输出: 检查并修复日志文件JSON格式...
+INFO 2025-05-19 15:03:35,571 views 43328 57004 回放输出: JSON格式修复完成: 总行数 14, 有效行数 14, 修复 0 行
+INFO 2025-05-19 15:03:35,571 views 43328 57004 回放输出: 处理脚本文件 1: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json
+INFO 2025-05-19 15:03:35,571 views 43328 57004 回放输出: 已合并 1 个脚本文件到: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-03-15\script.py
+INFO 2025-05-19 15:03:35,571 views 43328 57004 回放输出: 复制CSS资源: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\css -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-03-15\static\css
+INFO 2025-05-19 15:03:35,571 views 43328 57004 回放输出: 复制JS资源: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\js -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-03-15\static\js
+INFO 2025-05-19 15:03:37,258 views 43328 57004 回放输出: 复制image资源: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\image -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-03-15\static\image
+INFO 2025-05-19 15:03:37,258 views 43328 57004 回放输出: 复制字体资源: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\fonts -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-03-15\static\fonts
+INFO 2025-05-19 15:03:37,258 views 43328 57004 回放输出: 复制模板文件: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\log_template.html -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-03-15
+INFO 2025-05-19 15:03:37,258 views 43328 57004 回放输出: 复制模板文件: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-03-15\log_template.html
+INFO 2025-05-19 15:03:37,258 views 43328 57004 回放输出: report_html_file: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-03-15\log.html
+INFO 2025-05-19 15:03:37,258 views 43328 57004 回放输出: script_log_html_file: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-03-15\script.log\log.html
+INFO 2025-05-19 15:03:37,258 views 43328 57004 回放输出: HTML报告生成成功: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-03-15\script.log\log.html
+INFO 2025-05-19 15:03:37,258 views 43328 57004 回放输出: 复制报告: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-03-15\script.log\log.html -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-03-15\log.html
+INFO 2025-05-19 15:03:37,258 views 43328 57004 回放输出: 无法解析data对象: (unicode error) 'unicodeescape' codec can't decode bytes in position 2-3: truncated \UXXXXXXXX escape (<unknown>, line 1)
+INFO 2025-05-19 15:03:37,258 views 43328 57004 回放输出: HTML路径和显示修复成功: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-03-15\log.html
+INFO 2025-05-19 15:03:37,258 views 43328 57004 回放输出: 设备 OnePlus-KB2000-1080x2400 报告目录: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-03-15
+INFO 2025-05-19 15:03:37,258 views 43328 57004 回放输出: 设备 OnePlus-KB2000-1080x2400 报告路径: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-03-15\log.html
+INFO 2025-05-19 15:03:37,258 views 43328 57004 回放输出: 设备 OnePlus-KB2000-1080x2400 测试成功但有断言失败
+INFO 2025-05-19 15:03:37,258 views 43328 57004 回放输出: 检测到失败的断言步骤: 步骤1失败: 未检测到目标 operation-close
+INFO 2025-05-19 15:03:37,258 views 43328 57004 回放输出: 启动游戏后先有一个公告弹窗，点击关闭
+INFO 2025-05-19 15:03:37,258 views 43328 57004 回放输出: 检查并修复日志文件JSON格式...
+INFO 2025-05-19 15:03:37,258 views 43328 57004 回放输出: JSON格式修复完成: 总行数 14, 有效行数 14, 修复 0 行
+INFO 2025-05-19 15:03:37,258 views 43328 57004 回放输出: 处理脚本文件 1: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json
+INFO 2025-05-19 15:03:38,612 views 43328 57004 回放输出: 已合并 1 个脚本文件到: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-03-15\script.py
+INFO 2025-05-19 15:03:38,612 views 43328 57004 回放输出: 复制CSS资源: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\css -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-03-15\static\css
+INFO 2025-05-19 15:03:38,612 views 43328 57004 回放输出: 复制JS资源: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\js -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-03-15\static\js
+INFO 2025-05-19 15:03:38,612 views 43328 57004 回放输出: 复制image资源: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\image -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-03-15\static\image
+INFO 2025-05-19 15:03:38,612 views 43328 57004 回放输出: 复制字体资源: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\fonts -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-03-15\static\fonts
+INFO 2025-05-19 15:03:38,612 views 43328 57004 回放输出: 复制模板文件: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\log_template.html -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-03-15
+INFO 2025-05-19 15:03:38,612 views 43328 57004 回放输出: 复制模板文件: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-03-15\log_template.html
+INFO 2025-05-19 15:03:38,612 views 43328 57004 回放输出: report_html_file: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-03-15\log.html
+INFO 2025-05-19 15:03:38,612 views 43328 57004 回放输出: script_log_html_file: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-03-15\script.log\log.html
+INFO 2025-05-19 15:03:38,612 views 43328 57004 回放输出: HTML报告生成成功: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-03-15\script.log\log.html
+INFO 2025-05-19 15:03:38,612 views 43328 57004 回放输出: 复制报告: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-03-15\script.log\log.html -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-03-15\log.html
+INFO 2025-05-19 15:03:38,613 views 43328 57004 回放输出: 无法解析data对象: (unicode error) 'unicodeescape' codec can't decode bytes in position 2-3: truncated \UXXXXXXXX escape (<unknown>, line 1)
+INFO 2025-05-19 15:03:38,613 views 43328 57004 回放输出: HTML路径和显示修复成功: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-03-15\log.html
+INFO 2025-05-19 15:03:38,613 views 43328 57004 回放输出: 设备 HUAWEI-JAD-AL00-1228x2700 报告目录: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-03-15
+INFO 2025-05-19 15:03:39,454 views 43328 57004 回放输出: 设备 HUAWEI-JAD-AL00-1228x2700 报告路径: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-03-15\log.html
+INFO 2025-05-19 15:03:39,454 views 43328 57004 回放输出: 设备 HUAWEI-JAD-AL00-1228x2700 测试成功但有断言失败
+INFO 2025-05-19 15:03:39,454 views 43328 57004 回放输出: 开始生成汇总报告，成功率: 2/2，通过率: 0/2
+INFO 2025-05-19 15:03:39,454 views 43328 57004 回放输出: 设备 OnePlus-KB2000-1080x2400 报告路径: ../ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-19-15-03-15/log.html
+INFO 2025-05-19 15:03:39,454 views 43328 57004 回放输出: 设备 HUAWEI-JAD-AL00-1228x2700 报告路径: ../ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-03-15/log.html
+INFO 2025-05-19 15:03:39,454 views 43328 57004 回放输出: 汇总报告已生成: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_reports\summary_report_2025-05-19-15-03-24.html
+INFO 2025-05-19 15:03:39,454 views 43328 57004 回放输出: 最新报告快捷方式: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_reports\latest_report.html
+INFO 2025-05-19 15:03:39,454 views 43328 57004 回放输出: 执行结果: 成功 2/2，全部通过 0/2, 报告地址: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_reports\summary_report_2025-05-19-15-03-24.html
+INFO 2025-05-19 15:03:39,454 views 43328 57004 回放输出: 回放成功
+INFO 2025-05-19 15:04:05,184 basehttp 43328 83416 "GET /pages/reports.html HTTP/1.1" 200 15250
+INFO 2025-05-19 15:04:05,195 basehttp 43328 83416 "POST /api/reports/ HTTP/1.1" 200 701
+WARNING 2025-05-19 15:04:07,880 basehttp 43328 83416 "GET /static/reports/summary_report_2025-05-19-15-03-24.html HTTP/1.1" 404 1900
+WARNING 2025-05-19 15:05:08,625 basehttp 43328 100460 "GET /static/reports/summary_report_2025-05-19-15-03-24.html HTTP/1.1" 404 1900
+INFO 2025-05-19 15:19:16,541 basehttp 43328 80912 "GET /pages/scripts.html HTTP/1.1" 200 62899
+INFO 2025-05-19 15:19:16,574 basehttp 43328 80912 "POST /api/scripts/ HTTP/1.1" 200 2748
+INFO 2025-05-19 15:19:24,796 views 43328 80912 使用配置文件中的Python路径: F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe
+INFO 2025-05-19 15:19:24,797 views 43328 80912 使用Python环境: F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe
+INFO 2025-05-19 15:19:24,797 views 43328 80912 执行回放命令: F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\replay_script.py --show-screens --script C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json --loop-count 1
+INFO 2025-05-19 15:19:25,838 basehttp 43328 80912 "POST /api/scripts/replay/ HTTP/1.1" 200 447
+ERROR 2025-05-19 15:19:27,340 views 43328 46960 回放输出: [15:19:27][DEBUG]<airtest.core.android.adb> F:\QA\Software\adb\platform-tools\adb.exe -s 5c41023b wait-for-device
+ERROR 2025-05-19 15:19:27,453 views 43328 46960 回放输出: [15:19:27][DEBUG]<airtest.core.android.adb> F:\QA\Software\adb\platform-tools\adb.exe -s 5c41023b shell getprop ro.build.version.sdk
+ERROR 2025-05-19 15:19:27,584 views 43328 46960 回放输出: [15:19:27][DEBUG]<airtest.core.android.adb> F:\QA\Software\adb\platform-tools\adb.exe -s 5c41023b shell getprop ro.product.brand
+ERROR 2025-05-19 15:19:27,699 views 43328 46960 回放输出: [15:19:27][DEBUG]<airtest.core.android.adb> F:\QA\Software\adb\platform-tools\adb.exe -s 5c41023b shell getprop ro.product.model
+ERROR 2025-05-19 15:19:27,830 views 43328 46960 回放输出: [15:19:27][DEBUG]<airtest.core.android.adb> F:\QA\Software\adb\platform-tools\adb.exe -s 5c41023b shell wm size
+ERROR 2025-05-19 15:19:27,976 views 43328 46960 回放输出: [15:19:27][DEBUG]<airtest.core.android.adb> F:\QA\Software\adb\platform-tools\adb.exe -s CWM0222215003786 wait-for-device
+ERROR 2025-05-19 15:19:28,076 views 43328 46960 回放输出: [15:19:28][DEBUG]<airtest.core.android.adb> F:\QA\Software\adb\platform-tools\adb.exe -s CWM0222215003786 shell getprop ro.build.version.sdk
+ERROR 2025-05-19 15:19:28,228 views 43328 46960 回放输出: [15:19:28][DEBUG]<airtest.core.android.adb> F:\QA\Software\adb\platform-tools\adb.exe -s CWM0222215003786 shell getprop ro.product.brand
+ERROR 2025-05-19 15:19:28,374 views 43328 46960 回放输出: [15:19:28][DEBUG]<airtest.core.android.adb> F:\QA\Software\adb\platform-tools\adb.exe -s CWM0222215003786 shell getprop ro.product.model
+ERROR 2025-05-19 15:19:28,708 views 43328 46960 回放输出: [15:19:28][DEBUG]<airtest.core.android.adb> F:\QA\Software\adb\platform-tools\adb.exe -s CWM0222215003786 shell wm size
+ERROR 2025-05-19 15:19:28,909 views 43328 46960 回放输出: [15:19:28][INFO]<airtest.core.api> {'msg': 'Start replay', 'success': True}
+ERROR 2025-05-19 15:19:37,743 views 43328 46960 回放输出: [15:19:37][ERROR]<airtest.report.report> Traceback (most recent call last):
+ERROR 2025-05-19 15:19:37,743 views 43328 46960 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\report.py", line 398, in copy_tree
+ERROR 2025-05-19 15:19:37,743 views 43328 46960 回放输出: shutil.copytree(src, dst, ignore=ignore)
+ERROR 2025-05-19 15:19:37,743 views 43328 46960 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\shutil.py", line 566, in copytree
+ERROR 2025-05-19 15:19:37,743 views 43328 46960 回放输出: with os.scandir(src) as itr:
+ERROR 2025-05-19 15:19:37,743 views 43328 46960 回放输出: 
+ERROR 2025-05-19 15:19:37,743 views 43328 46960 回放输出: [15:19:37][ERROR]<airtest.report.report> Traceback (most recent call last):
+ERROR 2025-05-19 15:19:37,743 views 43328 46960 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\report.py", line 398, in copy_tree
+ERROR 2025-05-19 15:19:37,743 views 43328 46960 回放输出: shutil.copytree(src, dst, ignore=ignore)
+ERROR 2025-05-19 15:19:37,743 views 43328 46960 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\shutil.py", line 566, in copytree
+ERROR 2025-05-19 15:19:37,743 views 43328 46960 回放输出: with os.scandir(src) as itr:
+ERROR 2025-05-19 15:19:37,743 views 43328 46960 回放输出: 
+ERROR 2025-05-19 15:19:37,743 views 43328 46960 回放输出: [15:19:37][ERROR]<airtest.report.report> Traceback (most recent call last):
+ERROR 2025-05-19 15:19:37,743 views 43328 46960 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\report.py", line 398, in copy_tree
+ERROR 2025-05-19 15:19:37,743 views 43328 46960 回放输出: shutil.copytree(src, dst, ignore=ignore)
+ERROR 2025-05-19 15:19:37,805 views 43328 46960 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\shutil.py", line 566, in copytree
+ERROR 2025-05-19 15:19:37,805 views 43328 46960 回放输出: with os.scandir(src) as itr:
+ERROR 2025-05-19 15:19:37,805 views 43328 46960 回放输出: 
+ERROR 2025-05-19 15:19:37,805 views 43328 46960 回放输出: [15:19:37][ERROR]<airtest.report.report> Traceback (most recent call last):
+ERROR 2025-05-19 15:19:37,805 views 43328 46960 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\report.py", line 398, in copy_tree
+ERROR 2025-05-19 15:19:37,805 views 43328 46960 回放输出: shutil.copytree(src, dst, ignore=ignore)
+ERROR 2025-05-19 15:19:37,805 views 43328 46960 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\shutil.py", line 566, in copytree
+ERROR 2025-05-19 15:19:37,805 views 43328 46960 回放输出: with os.scandir(src) as itr:
+ERROR 2025-05-19 15:19:37,806 views 43328 46960 回放输出: 
+ERROR 2025-05-19 15:19:37,806 views 43328 46960 回放输出: [15:19:37][INFO]<airtest.report.report> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-19-28\script.log\log.html
+ERROR 2025-05-19 15:19:37,987 views 43328 46960 回放输出: [15:19:37][ERROR]<airtest.report.report> Traceback (most recent call last):
+ERROR 2025-05-19 15:19:37,987 views 43328 46960 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\report.py", line 398, in copy_tree
+ERROR 2025-05-19 15:19:37,987 views 43328 46960 回放输出: shutil.copytree(src, dst, ignore=ignore)
+INFO 2025-05-19 15:19:38,517 views 43328 91004 回放输出: 解析命令行参数结果:
+ERROR 2025-05-19 15:19:40,233 views 43328 46960 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\shutil.py", line 566, in copytree
+INFO 2025-05-19 15:19:40,233 views 43328 91004 回放输出: 脚本 1: {'path': 'C:\\Users\\Administrator\\PycharmProjects\\WFGameAI\\wfgame-ai-server\\testcase\\scene1_nologin_steps_2025-04-07.json', 'loop_count': 1}
+ERROR 2025-05-19 15:19:40,233 views 43328 46960 回放输出: with os.scandir(src) as itr:
+INFO 2025-05-19 15:19:40,233 views 43328 91004 回放输出: 模型目录: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\datasets\train\weights
+INFO 2025-05-19 15:19:40,233 views 43328 91004 回放输出: 找到best.pt模型: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\datasets\train\weights\best.pt
+ERROR 2025-05-19 15:19:40,234 views 43328 46960 回放输出: 
+INFO 2025-05-19 15:19:40,234 views 43328 91004 回放输出: 将模型移至设备: cuda
+INFO 2025-05-19 15:19:40,234 views 43328 91004 回放输出: 模型加载成功: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\datasets\train\weights\best.pt
+ERROR 2025-05-19 15:19:40,234 views 43328 46960 回放输出: [15:19:37][ERROR]<airtest.report.report> Traceback (most recent call last):
+INFO 2025-05-19 15:19:40,234 views 43328 91004 回放输出: 准备执行用户指定的 1 个脚本...
+ERROR 2025-05-19 15:19:40,234 views 43328 46960 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\report.py", line 398, in copy_tree
+INFO 2025-05-19 15:19:40,234 views 43328 91004 回放输出: 添加脚本: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json
+ERROR 2025-05-19 15:19:40,234 views 43328 46960 回放输出: shutil.copytree(src, dst, ignore=ignore)
+INFO 2025-05-19 15:19:40,234 views 43328 91004 回放输出: 最终将执行 1 个脚本:
+ERROR 2025-05-19 15:19:40,234 views 43328 46960 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\shutil.py", line 566, in copytree
+INFO 2025-05-19 15:19:40,234 views 43328 91004 回放输出: 1. C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json (循环次数: 1)
+ERROR 2025-05-19 15:19:40,234 views 43328 46960 回放输出: with os.scandir(src) as itr:
+INFO 2025-05-19 15:19:40,234 views 43328 91004 回放输出: 设备 OnePlus-KB2000-1080x2400 连接成功
+INFO 2025-05-19 15:19:40,235 views 43328 91004 回放输出: 设备 HUAWEI-JAD-AL00-1228x2700 连接成功
+ERROR 2025-05-19 15:19:42,812 views 43328 46960 回放输出: 
+INFO 2025-05-19 15:19:42,812 views 43328 91004 回放输出: 加载脚本: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json
+ERROR 2025-05-19 15:19:42,812 views 43328 46960 回放输出: [15:19:37][ERROR]<airtest.report.report> Traceback (most recent call last):
+INFO 2025-05-19 15:19:42,812 views 43328 91004 回放输出: 检测到 2 个设备: ['OnePlus-KB2000-1080x2400', 'HUAWEI-JAD-AL00-1228x2700']
+ERROR 2025-05-19 15:19:42,812 views 43328 46960 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\report.py", line 398, in copy_tree
+INFO 2025-05-19 15:19:42,812 views 43328 91004 回放输出: 开始回放
+ERROR 2025-05-19 15:19:42,812 views 43328 46960 回放输出: shutil.copytree(src, dst, ignore=ignore)
+INFO 2025-05-19 15:19:42,812 views 43328 91004 回放输出: 清理日志目录: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs/device_reports
+ERROR 2025-05-19 15:19:42,812 views 43328 46960 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\shutil.py", line 566, in copytree
+INFO 2025-05-19 15:19:42,812 views 43328 91004 回放输出: run函数将执行 1 个脚本:
+ERROR 2025-05-19 15:19:42,812 views 43328 46960 回放输出: with os.scandir(src) as itr:
+INFO 2025-05-19 15:19:42,812 views 43328 91004 回放输出: 1. C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json
+ERROR 2025-05-19 15:19:42,812 views 43328 46960 回放输出: 
+ERROR 2025-05-19 15:19:45,064 views 43328 46960 回放输出: [15:19:37][ERROR]<airtest.report.report> Traceback (most recent call last):
+INFO 2025-05-19 15:19:45,064 views 43328 91004 回放输出: 设备: OnePlus-KB2000-1080x2400, 脚本: [{'path': 'C:\\Users\\Administrator\\PycharmProjects\\WFGameAI\\wfgame-ai-server\\testcase\\scene1_nologin_steps_2025-04-07.json', 'loop_count': 1}], 日志目录: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-19-28
+ERROR 2025-05-19 15:19:45,064 views 43328 46960 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\report.py", line 398, in copy_tree
+INFO 2025-05-19 15:19:45,064 views 43328 91004 回放输出: show_screens: True, loop_count: 1
+ERROR 2025-05-19 15:19:45,064 views 43328 46960 回放输出: shutil.copytree(src, dst, ignore=ignore)
+INFO 2025-05-19 15:19:45,064 views 43328 91004 回放输出: 开始回放设备: OnePlus-KB2000-1080x2400, 脚本: [{'path': 'C:\\Users\\Administrator\\PycharmProjects\\WFGameAI\\wfgame-ai-server\\testcase\\scene1_nologin_steps_2025-04-07.json', 'loop_count': 1}]
+ERROR 2025-05-19 15:19:45,064 views 43328 46960 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\shutil.py", line 566, in copytree
+INFO 2025-05-19 15:19:45,064 views 43328 91004 回放输出: 设备: HUAWEI-JAD-AL00-1228x2700, 脚本: [{'path': 'C:\\Users\\Administrator\\PycharmProjects\\WFGameAI\\wfgame-ai-server\\testcase\\scene1_nologin_steps_2025-04-07.json', 'loop_count': 1}], 日志目录: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-19-28
+ERROR 2025-05-19 15:19:45,064 views 43328 46960 回放输出: with os.scandir(src) as itr:
+INFO 2025-05-19 15:19:45,064 views 43328 91004 回放输出: show_screens: True, loop_count: 1
+INFO 2025-05-19 15:19:45,064 views 43328 91004 回放输出: 开始回放设备: HUAWEI-JAD-AL00-1228x2700, 脚本: [{'path': 'C:\\Users\\Administrator\\PycharmProjects\\WFGameAI\\wfgame-ai-server\\testcase\\scene1_nologin_steps_2025-04-07.json', 'loop_count': 1}]
+ERROR 2025-05-19 15:19:47,451 views 43328 46960 回放输出: 
+INFO 2025-05-19 15:19:47,451 views 43328 91004 回放输出: 保存初始截图: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-19-28\1747639168915.jpg
+ERROR 2025-05-19 15:19:47,451 views 43328 46960 回放输出: [15:19:37][INFO]<airtest.report.report> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-19-28\script.log\log.html
+INFO 2025-05-19 15:19:47,451 views 43328 91004 回放输出: 开始执行脚本: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json, 循环次数: 1, 最大执行时间: None秒
+INFO 2025-05-19 15:19:47,451 views 43328 91004 回放输出: 第 1/1 次循环
+INFO 2025-05-19 15:19:47,451 views 43328 91004 回放输出: 按顺序执行步骤，共 3 个步骤
+INFO 2025-05-19 15:19:47,451 views 43328 91004 回放输出: 执行步骤 1/3: operation-close, 备注: 启动游戏后先有一个公告弹窗，点击关闭
+INFO 2025-05-19 15:19:47,451 views 43328 91004 回放输出: 保存截图: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-19-28\1747639169352.jpg
+INFO 2025-05-19 15:19:47,451 views 43328 91004 回放输出: 保存初始截图: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-19-28\1747639168913.jpg
+INFO 2025-05-19 15:19:47,451 views 43328 91004 回放输出: 开始执行脚本: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json, 循环次数: 1, 最大执行时间: None秒
+INFO 2025-05-19 15:19:47,451 views 43328 91004 回放输出: 第 1/1 次循环
+INFO 2025-05-19 15:19:47,451 views 43328 91004 回放输出: 按顺序执行步骤，共 3 个步骤
+INFO 2025-05-19 15:19:47,451 views 43328 91004 回放输出: 执行步骤 1/3: operation-close, 备注: 启动游戏后先有一个公告弹窗，点击关闭
+INFO 2025-05-19 15:19:47,451 views 43328 91004 回放输出: 未检测到目标 operation-close，跳过此步骤
+INFO 2025-05-19 15:19:47,451 views 43328 91004 回放输出: 已记录步骤 1 失败: 启动游戏后先有一个公告弹窗，点击关闭
+INFO 2025-05-19 15:19:47,451 views 43328 91004 回放输出: 执行步骤 2/3: system-cleanUpCache, 备注: 打开清理缓存弹窗
+INFO 2025-05-19 15:19:47,451 views 43328 91004 回放输出: 保存截图: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-19-28\1747639170307.jpg
+INFO 2025-05-19 15:19:47,451 views 43328 91004 回放输出: 未检测到目标 operation-close，跳过此步骤
+INFO 2025-05-19 15:19:47,451 views 43328 91004 回放输出: 已记录步骤 1 失败: 启动游戏后先有一个公告弹窗，点击关闭
+INFO 2025-05-19 15:19:47,451 views 43328 91004 回放输出: 保存截图: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-19-28\1747639171352.jpg
+INFO 2025-05-19 15:19:47,451 views 43328 91004 回放输出: 未检测到目标 system-cleanUpCache，跳过此步骤
+INFO 2025-05-19 15:19:49,419 views 43328 91004 回放输出: 已记录步骤 2 失败: 打开清理缓存弹窗
+INFO 2025-05-19 15:19:49,419 views 43328 91004 回放输出: 执行步骤 2/3: system-cleanUpCache, 备注: 打开清理缓存弹窗
+INFO 2025-05-19 15:19:49,420 views 43328 91004 回放输出: 执行步骤 3/3: operation-close, 备注: 关闭清理缓存弹窗
+INFO 2025-05-19 15:19:49,420 views 43328 91004 回放输出: 保存截图: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-19-28\1747639172367.jpg
+INFO 2025-05-19 15:19:49,420 views 43328 91004 回放输出: 未检测到目标 operation-close，跳过此步骤
+INFO 2025-05-19 15:19:49,420 views 43328 91004 回放输出: 已记录步骤 3 失败: 关闭清理缓存弹窗
+INFO 2025-05-19 15:19:49,420 views 43328 91004 回放输出: 已完成执行 3 个步骤
+INFO 2025-05-19 15:19:49,420 views 43328 91004 回放输出: 完成脚本 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json，执行步骤数: 0，总步骤数: 3
+INFO 2025-05-19 15:19:49,420 views 43328 91004 回放输出: 设备 HUAWEI-JAD-AL00-1228x2700 未执行任何步骤，添加默认操作以确保报告不为空
+INFO 2025-05-19 15:19:49,420 views 43328 91004 回放输出: 保存截图: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-19-28\1747639172217.jpg
+INFO 2025-05-19 15:19:49,420 views 43328 91004 回放输出: 未检测到目标 system-cleanUpCache，跳过此步骤
+INFO 2025-05-19 15:19:49,420 views 43328 91004 回放输出: 已记录步骤 2 失败: 打开清理缓存弹窗
+INFO 2025-05-19 15:19:49,420 views 43328 91004 回放输出: 设备 HUAWEI-JAD-AL00-1228x2700 回放完成，完成总步骤数: 3
+INFO 2025-05-19 15:19:49,420 views 43328 91004 回放输出: 执行步骤 3/3: operation-close, 备注: 关闭清理缓存弹窗
+INFO 2025-05-19 15:19:49,420 views 43328 91004 回放输出: 保存截图: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-19-28\1747639174109.jpg
+INFO 2025-05-19 15:19:49,420 views 43328 91004 回放输出: 未检测到目标 operation-close，跳过此步骤
+INFO 2025-05-19 15:19:49,420 views 43328 91004 回放输出: 已记录步骤 3 失败: 关闭清理缓存弹窗
+INFO 2025-05-19 15:19:49,420 views 43328 91004 回放输出: 已完成执行 3 个步骤
+INFO 2025-05-19 15:19:49,420 views 43328 91004 回放输出: 完成脚本 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json，执行步骤数: 0，总步骤数: 3
+INFO 2025-05-19 15:19:49,420 views 43328 91004 回放输出: 设备 OnePlus-KB2000-1080x2400 未执行任何步骤，添加默认操作以确保报告不为空
+INFO 2025-05-19 15:19:49,420 views 43328 91004 回放输出: 设备 OnePlus-KB2000-1080x2400 回放完成，完成总步骤数: 3
+INFO 2025-05-19 15:19:49,420 views 43328 91004 回放输出: 检测到失败的断言步骤: 步骤1失败: 未检测到目标 operation-close
+INFO 2025-05-19 15:19:49,420 views 43328 91004 回放输出: 启动游戏后先有一个公告弹窗，点击关闭
+INFO 2025-05-19 15:19:49,420 views 43328 91004 回放输出: 检查并修复日志文件JSON格式...
+INFO 2025-05-19 15:19:49,420 views 43328 91004 回放输出: JSON格式修复完成: 总行数 14, 有效行数 14, 修复 0 行
+INFO 2025-05-19 15:19:49,420 views 43328 91004 回放输出: 处理脚本文件 1: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json
+INFO 2025-05-19 15:19:49,420 views 43328 91004 回放输出: 已合并 1 个脚本文件到: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-19-28\script.py
+INFO 2025-05-19 15:19:49,420 views 43328 91004 回放输出: 复制CSS资源: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\css -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-19-28\static\css
+INFO 2025-05-19 15:19:49,420 views 43328 91004 回放输出: 复制JS资源: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\js -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-19-28\static\js
+INFO 2025-05-19 15:19:50,939 views 43328 91004 回放输出: 复制image资源: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\image -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-19-28\static\image
+INFO 2025-05-19 15:19:50,939 views 43328 91004 回放输出: 复制字体资源: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\fonts -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-19-28\static\fonts
+INFO 2025-05-19 15:19:50,939 views 43328 91004 回放输出: 复制模板文件: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\log_template.html -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-19-28
+INFO 2025-05-19 15:19:50,939 views 43328 91004 回放输出: 复制模板文件: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-19-28\log_template.html
+INFO 2025-05-19 15:19:50,939 views 43328 91004 回放输出: report_html_file: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-19-28\log.html
+INFO 2025-05-19 15:19:50,939 views 43328 91004 回放输出: script_log_html_file: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-19-28\script.log\log.html
+INFO 2025-05-19 15:19:50,939 views 43328 91004 回放输出: HTML报告生成成功: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-19-28\script.log\log.html
+INFO 2025-05-19 15:19:50,939 views 43328 91004 回放输出: 复制报告: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-19-28\script.log\log.html -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-19-28\log.html
+INFO 2025-05-19 15:19:50,939 views 43328 91004 回放输出: 无法解析data对象: (unicode error) 'unicodeescape' codec can't decode bytes in position 2-3: truncated \UXXXXXXXX escape (<unknown>, line 1)
+INFO 2025-05-19 15:19:50,939 views 43328 91004 回放输出: HTML路径和显示修复成功: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-19-28\log.html
+INFO 2025-05-19 15:19:50,939 views 43328 91004 回放输出: 设备 OnePlus-KB2000-1080x2400 报告目录: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-19-28
+INFO 2025-05-19 15:19:50,939 views 43328 91004 回放输出: 设备 OnePlus-KB2000-1080x2400 报告路径: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-19-28\log.html
+INFO 2025-05-19 15:19:50,939 views 43328 91004 回放输出: 设备 OnePlus-KB2000-1080x2400 测试成功但有断言失败
+INFO 2025-05-19 15:19:50,939 views 43328 91004 回放输出: 检测到失败的断言步骤: 步骤1失败: 未检测到目标 operation-close
+INFO 2025-05-19 15:19:50,939 views 43328 91004 回放输出: 启动游戏后先有一个公告弹窗，点击关闭
+INFO 2025-05-19 15:19:50,939 views 43328 91004 回放输出: 检查并修复日志文件JSON格式...
+INFO 2025-05-19 15:19:50,939 views 43328 91004 回放输出: JSON格式修复完成: 总行数 14, 有效行数 14, 修复 0 行
+INFO 2025-05-19 15:19:50,939 views 43328 91004 回放输出: 处理脚本文件 1: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json
+INFO 2025-05-19 15:19:52,314 views 43328 91004 回放输出: 已合并 1 个脚本文件到: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-19-28\script.py
+INFO 2025-05-19 15:19:52,314 views 43328 91004 回放输出: 复制CSS资源: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\css -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-19-28\static\css
+INFO 2025-05-19 15:19:52,314 views 43328 91004 回放输出: 复制JS资源: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\js -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-19-28\static\js
+INFO 2025-05-19 15:19:52,320 views 43328 91004 回放输出: 复制image资源: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\image -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-19-28\static\image
+INFO 2025-05-19 15:19:52,320 views 43328 91004 回放输出: 复制字体资源: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\fonts -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-19-28\static\fonts
+INFO 2025-05-19 15:19:52,320 views 43328 91004 回放输出: 复制模板文件: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\log_template.html -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-19-28
+INFO 2025-05-19 15:19:52,320 views 43328 91004 回放输出: 复制模板文件: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-19-28\log_template.html
+INFO 2025-05-19 15:19:52,320 views 43328 91004 回放输出: report_html_file: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-19-28\log.html
+INFO 2025-05-19 15:19:52,320 views 43328 91004 回放输出: script_log_html_file: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-19-28\script.log\log.html
+INFO 2025-05-19 15:19:52,320 views 43328 91004 回放输出: HTML报告生成成功: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-19-28\script.log\log.html
+INFO 2025-05-19 15:19:52,320 views 43328 91004 回放输出: 复制报告: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-19-28\script.log\log.html -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-19-28\log.html
+INFO 2025-05-19 15:19:52,320 views 43328 91004 回放输出: 无法解析data对象: (unicode error) 'unicodeescape' codec can't decode bytes in position 2-3: truncated \UXXXXXXXX escape (<unknown>, line 1)
+INFO 2025-05-19 15:19:52,320 views 43328 91004 回放输出: HTML路径和显示修复成功: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-19-28\log.html
+INFO 2025-05-19 15:19:52,320 views 43328 91004 回放输出: 设备 HUAWEI-JAD-AL00-1228x2700 报告目录: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-19-28
+INFO 2025-05-19 15:19:53,160 views 43328 91004 回放输出: 设备 HUAWEI-JAD-AL00-1228x2700 报告路径: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-19-28\log.html
+INFO 2025-05-19 15:19:53,160 views 43328 91004 回放输出: 设备 HUAWEI-JAD-AL00-1228x2700 测试成功但有断言失败
+INFO 2025-05-19 15:19:53,160 views 43328 91004 回放输出: 开始生成汇总报告，成功率: 2/2，通过率: 0/2
+INFO 2025-05-19 15:19:53,160 views 43328 91004 回放输出: 设备 OnePlus-KB2000-1080x2400 报告路径: ../ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-19-15-19-28/log.html
+INFO 2025-05-19 15:19:53,160 views 43328 91004 回放输出: 设备 HUAWEI-JAD-AL00-1228x2700 报告路径: ../ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-19-28/log.html
+INFO 2025-05-19 15:19:53,160 views 43328 91004 回放输出: 汇总报告已生成: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_reports\summary_report_2025-05-19-15-19-37.html
+INFO 2025-05-19 15:19:53,160 views 43328 91004 回放输出: 最新报告快捷方式: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_reports\latest_report.html
+INFO 2025-05-19 15:19:53,160 views 43328 91004 回放输出: 报告已同步到静态目录: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\..\staticfiles\reports
+INFO 2025-05-19 15:19:53,160 views 43328 91004 回放输出: 执行结果: 成功 2/2，全部通过 0/2, 报告地址: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_reports\summary_report_2025-05-19-15-19-37.html
+INFO 2025-05-19 15:19:53,160 views 43328 91004 回放输出: 回放成功
+INFO 2025-05-19 15:20:00,450 basehttp 43328 80912 "GET /pages/reports.html HTTP/1.1" 200 15250
+INFO 2025-05-19 15:20:00,460 basehttp 43328 80912 "POST /api/reports/ HTTP/1.1" 200 1020
+WARNING 2025-05-19 15:20:02,448 basehttp 43328 80912 "GET /static/reports/summary_report_2025-05-19-15-19-37.html HTTP/1.1" 404 1900
+INFO 2025-05-19 15:20:12,003 basehttp 43328 41840 "POST /api/reports/ HTTP/1.1" 200 1020
+WARNING 2025-05-19 15:20:13,719 basehttp 43328 41840 "GET /static/reports/summary_report_2025-05-19-15-03-24.html HTTP/1.1" 404 1900
+INFO 2025-05-19 15:20:20,168 basehttp 43328 84416 "GET / HTTP/1.1" 200 9707
+INFO 2025-05-19 15:20:22,960 basehttp 43328 84416 "GET /pages/reports.html HTTP/1.1" 200 15250
+INFO 2025-05-19 15:20:22,971 basehttp 43328 84416 "POST /api/reports/ HTTP/1.1" 200 1020
+WARNING 2025-05-19 15:20:24,871 basehttp 43328 84416 "GET /static/reports/summary_report_2025-05-19-15-19-37.html HTTP/1.1" 404 1900
+INFO 2025-05-19 15:22:45,471 autoreload 43328 74476 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\wfgame_ai_server\settings.py changed, reloading.
+INFO 2025-05-19 15:22:45,982 autoreload 36284 76232 Watching for file changes with StatReloader
+INFO 2025-05-19 15:22:46,207 views 36284 76232 已加载配置文件: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\config.ini
+INFO 2025-05-19 15:22:46,208 views 36284 76232 已加载路径配置: PYTHON_PATH=F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe, TESTCASE_DIR=C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase
+INFO 2025-05-19 15:22:46,208 views 36284 76232 使用配置文件中的Python路径: F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe
+INFO 2025-05-19 15:22:52,811 autoreload 36284 76232 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\wfgame_ai_server\settings.py changed, reloading.
+INFO 2025-05-19 15:22:53,320 autoreload 47428 41076 Watching for file changes with StatReloader
+INFO 2025-05-19 15:22:53,534 views 47428 41076 已加载配置文件: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\config.ini
+INFO 2025-05-19 15:22:53,535 views 47428 41076 已加载路径配置: PYTHON_PATH=F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe, TESTCASE_DIR=C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase
+INFO 2025-05-19 15:22:53,535 views 47428 41076 使用配置文件中的Python路径: F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe
+INFO 2025-05-19 15:30:42,400 views 47428 80048 接收到信号: 0
+INFO 2025-05-19 15:32:11,575 autoreload 49548 44536 Watching for file changes with StatReloader
+INFO 2025-05-19 15:32:11,801 views 49548 44536 已加载配置文件: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\config.ini
+INFO 2025-05-19 15:32:11,802 views 49548 44536 已加载路径配置: PYTHON_PATH=F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe, TESTCASE_DIR=C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase
+INFO 2025-05-19 15:32:11,802 views 49548 44536 使用配置文件中的Python路径: F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe
+INFO 2025-05-19 15:33:45,762 autoreload 49548 44536 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\wfgame_ai_server\settings.py changed, reloading.
+INFO 2025-05-19 15:33:46,279 autoreload 3280 76296 Watching for file changes with StatReloader
+INFO 2025-05-19 15:33:46,495 views 3280 76296 已加载配置文件: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\config.ini
+INFO 2025-05-19 15:33:46,496 views 3280 76296 已加载路径配置: PYTHON_PATH=F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe, TESTCASE_DIR=C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase
+INFO 2025-05-19 15:33:46,496 views 3280 76296 使用配置文件中的Python路径: F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe
+INFO 2025-05-19 15:33:52,041 autoreload 3280 76296 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\wfgame_ai_server\settings.py changed, reloading.
+INFO 2025-05-19 15:33:52,506 autoreload 92556 49936 Watching for file changes with StatReloader
+INFO 2025-05-19 15:33:52,719 views 92556 49936 已加载配置文件: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\config.ini
+INFO 2025-05-19 15:33:52,720 views 92556 49936 已加载路径配置: PYTHON_PATH=F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe, TESTCASE_DIR=C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase
+INFO 2025-05-19 15:33:52,720 views 92556 49936 使用配置文件中的Python路径: F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe
+INFO 2025-05-19 15:34:00,999 basehttp 92556 75172 "GET / HTTP/1.1" 200 9707
+INFO 2025-05-19 15:34:03,786 basehttp 92556 75172 "GET /pages/reports.html HTTP/1.1" 200 15250
+INFO 2025-05-19 15:34:03,797 basehttp 92556 75172 "POST /api/reports/ HTTP/1.1" 200 1020
+INFO 2025-05-19 15:34:05,710 basehttp 92556 75172 "GET /static/reports/summary_report_2025-05-19-15-19-37.html HTTP/1.1" 200 2569
+WARNING 2025-05-19 15:34:08,184 basehttp 92556 75172 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-19-15-19-28/log.html HTTP/1.1" 404 1990
+INFO 2025-05-19 15:37:25,382 basehttp 92556 47696 "GET /pages/reports.html HTTP/1.1" 200 15250
+INFO 2025-05-19 15:37:25,394 basehttp 92556 47696 "POST /api/reports/ HTTP/1.1" 200 1020
+INFO 2025-05-19 15:37:28,725 basehttp 92556 47696 "POST /api/reports/ HTTP/1.1" 200 1020
+INFO 2025-05-19 15:37:30,045 basehttp 92556 47696 "GET /pages/scripts.html HTTP/1.1" 200 62899
+INFO 2025-05-19 15:37:30,061 basehttp 92556 47696 "POST /api/scripts/ HTTP/1.1" 200 2748
+INFO 2025-05-19 15:40:04,411 views 92556 47696 使用配置文件中的Python路径: F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe
+INFO 2025-05-19 15:40:04,411 views 92556 47696 使用Python环境: F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe
+INFO 2025-05-19 15:40:04,411 views 92556 47696 执行回放命令: F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\replay_script.py --show-screens --script C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json --loop-count 1
+INFO 2025-05-19 15:40:05,430 basehttp 92556 47696 "POST /api/scripts/replay/ HTTP/1.1" 200 448
+ERROR 2025-05-19 15:40:07,022 views 92556 100548 回放输出: [15:40:07][DEBUG]<airtest.core.android.adb> F:\QA\Software\adb\platform-tools\adb.exe -s 5c41023b wait-for-device
+ERROR 2025-05-19 15:40:07,099 views 92556 100548 回放输出: [15:40:07][DEBUG]<airtest.core.android.adb> F:\QA\Software\adb\platform-tools\adb.exe -s 5c41023b shell getprop ro.build.version.sdk
+ERROR 2025-05-19 15:40:07,186 views 92556 100548 回放输出: [15:40:07][DEBUG]<airtest.core.android.adb> F:\QA\Software\adb\platform-tools\adb.exe -s 5c41023b shell getprop ro.product.brand
+ERROR 2025-05-19 15:40:07,271 views 92556 100548 回放输出: [15:40:07][DEBUG]<airtest.core.android.adb> F:\QA\Software\adb\platform-tools\adb.exe -s 5c41023b shell getprop ro.product.model
+ERROR 2025-05-19 15:40:07,353 views 92556 100548 回放输出: [15:40:07][DEBUG]<airtest.core.android.adb> F:\QA\Software\adb\platform-tools\adb.exe -s 5c41023b shell wm size
+ERROR 2025-05-19 15:40:07,460 views 92556 100548 回放输出: [15:40:07][DEBUG]<airtest.core.android.adb> F:\QA\Software\adb\platform-tools\adb.exe -s CWM0222215003786 wait-for-device
+ERROR 2025-05-19 15:40:07,534 views 92556 100548 回放输出: [15:40:07][DEBUG]<airtest.core.android.adb> F:\QA\Software\adb\platform-tools\adb.exe -s CWM0222215003786 shell getprop ro.build.version.sdk
+ERROR 2025-05-19 15:40:07,650 views 92556 100548 回放输出: [15:40:07][DEBUG]<airtest.core.android.adb> F:\QA\Software\adb\platform-tools\adb.exe -s CWM0222215003786 shell getprop ro.product.brand
+ERROR 2025-05-19 15:40:07,751 views 92556 100548 回放输出: [15:40:07][DEBUG]<airtest.core.android.adb> F:\QA\Software\adb\platform-tools\adb.exe -s CWM0222215003786 shell getprop ro.product.model
+ERROR 2025-05-19 15:40:07,844 views 92556 100548 回放输出: [15:40:07][DEBUG]<airtest.core.android.adb> F:\QA\Software\adb\platform-tools\adb.exe -s CWM0222215003786 shell wm size
+ERROR 2025-05-19 15:40:07,980 views 92556 100548 回放输出: [15:40:07][INFO]<airtest.core.api> {'msg': 'Start replay', 'success': True}
+ERROR 2025-05-19 15:40:17,344 views 92556 100548 回放输出: [15:40:17][ERROR]<airtest.report.report> Traceback (most recent call last):
+ERROR 2025-05-19 15:40:17,344 views 92556 100548 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\report.py", line 398, in copy_tree
+ERROR 2025-05-19 15:40:17,344 views 92556 100548 回放输出: shutil.copytree(src, dst, ignore=ignore)
+ERROR 2025-05-19 15:40:17,344 views 92556 100548 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\shutil.py", line 566, in copytree
+ERROR 2025-05-19 15:40:17,344 views 92556 100548 回放输出: with os.scandir(src) as itr:
+ERROR 2025-05-19 15:40:17,345 views 92556 100548 回放输出: 
+ERROR 2025-05-19 15:40:17,345 views 92556 100548 回放输出: [15:40:17][ERROR]<airtest.report.report> Traceback (most recent call last):
+ERROR 2025-05-19 15:40:17,346 views 92556 100548 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\report.py", line 398, in copy_tree
+ERROR 2025-05-19 15:40:17,346 views 92556 100548 回放输出: shutil.copytree(src, dst, ignore=ignore)
+ERROR 2025-05-19 15:40:17,346 views 92556 100548 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\shutil.py", line 566, in copytree
+ERROR 2025-05-19 15:40:17,346 views 92556 100548 回放输出: with os.scandir(src) as itr:
+ERROR 2025-05-19 15:40:17,346 views 92556 100548 回放输出: 
+ERROR 2025-05-19 15:40:17,346 views 92556 100548 回放输出: [15:40:17][ERROR]<airtest.report.report> Traceback (most recent call last):
+ERROR 2025-05-19 15:40:17,346 views 92556 100548 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\report.py", line 398, in copy_tree
+ERROR 2025-05-19 15:40:17,346 views 92556 100548 回放输出: shutil.copytree(src, dst, ignore=ignore)
+ERROR 2025-05-19 15:40:17,380 views 92556 100548 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\shutil.py", line 566, in copytree
+ERROR 2025-05-19 15:40:17,380 views 92556 100548 回放输出: with os.scandir(src) as itr:
+ERROR 2025-05-19 15:40:17,381 views 92556 100548 回放输出: 
+ERROR 2025-05-19 15:40:17,381 views 92556 100548 回放输出: [15:40:17][ERROR]<airtest.report.report> Traceback (most recent call last):
+ERROR 2025-05-19 15:40:17,381 views 92556 100548 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\report.py", line 398, in copy_tree
+ERROR 2025-05-19 15:40:17,381 views 92556 100548 回放输出: shutil.copytree(src, dst, ignore=ignore)
+ERROR 2025-05-19 15:40:17,381 views 92556 100548 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\shutil.py", line 566, in copytree
+ERROR 2025-05-19 15:40:17,381 views 92556 100548 回放输出: with os.scandir(src) as itr:
+ERROR 2025-05-19 15:40:17,381 views 92556 100548 回放输出: 
+ERROR 2025-05-19 15:40:17,381 views 92556 100548 回放输出: [15:40:17][INFO]<airtest.report.report> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-40-07\script.log\log.html
+ERROR 2025-05-19 15:40:17,747 views 92556 100548 回放输出: [15:40:17][ERROR]<airtest.report.report> Traceback (most recent call last):
+ERROR 2025-05-19 15:40:17,747 views 92556 100548 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\report.py", line 398, in copy_tree
+INFO 2025-05-19 15:40:18,098 views 92556 94400 回放输出: 解析命令行参数结果:
+ERROR 2025-05-19 15:40:19,164 views 92556 100548 回放输出: shutil.copytree(src, dst, ignore=ignore)
+INFO 2025-05-19 15:40:19,164 views 92556 94400 回放输出: 脚本 1: {'path': 'C:\\Users\\Administrator\\PycharmProjects\\WFGameAI\\wfgame-ai-server\\testcase\\scene1_nologin_steps_2025-04-07.json', 'loop_count': 1}
+ERROR 2025-05-19 15:40:19,164 views 92556 100548 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\shutil.py", line 566, in copytree
+INFO 2025-05-19 15:40:19,164 views 92556 94400 回放输出: 模型目录: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\datasets\train\weights
+ERROR 2025-05-19 15:40:19,164 views 92556 100548 回放输出: with os.scandir(src) as itr:
+INFO 2025-05-19 15:40:19,164 views 92556 94400 回放输出: 找到best.pt模型: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\datasets\train\weights\best.pt
+INFO 2025-05-19 15:40:19,164 views 92556 94400 回放输出: 将模型移至设备: cuda
+ERROR 2025-05-19 15:40:19,165 views 92556 100548 回放输出: 
+INFO 2025-05-19 15:40:19,165 views 92556 94400 回放输出: 模型加载成功: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\datasets\train\weights\best.pt
+ERROR 2025-05-19 15:40:19,165 views 92556 100548 回放输出: [15:40:17][ERROR]<airtest.report.report> Traceback (most recent call last):
+INFO 2025-05-19 15:40:19,165 views 92556 94400 回放输出: 准备执行用户指定的 1 个脚本...
+ERROR 2025-05-19 15:40:19,165 views 92556 100548 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\report.py", line 398, in copy_tree
+INFO 2025-05-19 15:40:19,165 views 92556 94400 回放输出: 添加脚本: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json
+ERROR 2025-05-19 15:40:19,165 views 92556 100548 回放输出: shutil.copytree(src, dst, ignore=ignore)
+INFO 2025-05-19 15:40:19,165 views 92556 94400 回放输出: 最终将执行 1 个脚本:
+ERROR 2025-05-19 15:40:19,165 views 92556 100548 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\shutil.py", line 566, in copytree
+INFO 2025-05-19 15:40:19,165 views 92556 94400 回放输出: 1. C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json (循环次数: 1)
+ERROR 2025-05-19 15:40:19,165 views 92556 100548 回放输出: with os.scandir(src) as itr:
+INFO 2025-05-19 15:40:19,165 views 92556 94400 回放输出: 设备 OnePlus-KB2000-1080x2400 连接成功
+INFO 2025-05-19 15:40:19,165 views 92556 94400 回放输出: 设备 HUAWEI-JAD-AL00-1228x2700 连接成功
+ERROR 2025-05-19 15:40:20,907 views 92556 100548 回放输出: 
+INFO 2025-05-19 15:40:20,908 views 92556 94400 回放输出: 加载脚本: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json
+ERROR 2025-05-19 15:40:20,908 views 92556 100548 回放输出: [15:40:17][ERROR]<airtest.report.report> Traceback (most recent call last):
+INFO 2025-05-19 15:40:20,908 views 92556 94400 回放输出: 检测到 2 个设备: ['OnePlus-KB2000-1080x2400', 'HUAWEI-JAD-AL00-1228x2700']
+ERROR 2025-05-19 15:40:20,908 views 92556 100548 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\report.py", line 398, in copy_tree
+INFO 2025-05-19 15:40:20,908 views 92556 94400 回放输出: 开始回放
+ERROR 2025-05-19 15:40:20,908 views 92556 100548 回放输出: shutil.copytree(src, dst, ignore=ignore)
+INFO 2025-05-19 15:40:20,908 views 92556 94400 回放输出: 清理日志目录: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs/device_reports
+ERROR 2025-05-19 15:40:20,908 views 92556 100548 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\shutil.py", line 566, in copytree
+INFO 2025-05-19 15:40:20,908 views 92556 94400 回放输出: run函数将执行 1 个脚本:
+ERROR 2025-05-19 15:40:20,908 views 92556 100548 回放输出: with os.scandir(src) as itr:
+INFO 2025-05-19 15:40:20,908 views 92556 94400 回放输出: 1. C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json
+ERROR 2025-05-19 15:40:20,909 views 92556 100548 回放输出: 
+ERROR 2025-05-19 15:40:22,348 views 92556 100548 回放输出: [15:40:17][ERROR]<airtest.report.report> Traceback (most recent call last):
+INFO 2025-05-19 15:40:22,348 views 92556 94400 回放输出: 设备: OnePlus-KB2000-1080x2400, 脚本: [{'path': 'C:\\Users\\Administrator\\PycharmProjects\\WFGameAI\\wfgame-ai-server\\testcase\\scene1_nologin_steps_2025-04-07.json', 'loop_count': 1}], 日志目录: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-40-07
+ERROR 2025-05-19 15:40:22,348 views 92556 100548 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\report.py", line 398, in copy_tree
+INFO 2025-05-19 15:40:22,348 views 92556 94400 回放输出: show_screens: True, loop_count: 1
+ERROR 2025-05-19 15:40:22,348 views 92556 100548 回放输出: shutil.copytree(src, dst, ignore=ignore)
+INFO 2025-05-19 15:40:22,348 views 92556 94400 回放输出: 开始回放设备: OnePlus-KB2000-1080x2400, 脚本: [{'path': 'C:\\Users\\Administrator\\PycharmProjects\\WFGameAI\\wfgame-ai-server\\testcase\\scene1_nologin_steps_2025-04-07.json', 'loop_count': 1}]
+ERROR 2025-05-19 15:40:22,349 views 92556 100548 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\shutil.py", line 566, in copytree
+INFO 2025-05-19 15:40:22,349 views 92556 94400 回放输出: 设备: HUAWEI-JAD-AL00-1228x2700, 脚本: [{'path': 'C:\\Users\\Administrator\\PycharmProjects\\WFGameAI\\wfgame-ai-server\\testcase\\scene1_nologin_steps_2025-04-07.json', 'loop_count': 1}], 日志目录: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07
+ERROR 2025-05-19 15:40:22,349 views 92556 100548 回放输出: with os.scandir(src) as itr:
+INFO 2025-05-19 15:40:22,349 views 92556 94400 回放输出: show_screens: True, loop_count: 1
+INFO 2025-05-19 15:40:22,349 views 92556 94400 回放输出: 开始回放设备: HUAWEI-JAD-AL00-1228x2700, 脚本: [{'path': 'C:\\Users\\Administrator\\PycharmProjects\\WFGameAI\\wfgame-ai-server\\testcase\\scene1_nologin_steps_2025-04-07.json', 'loop_count': 1}]
+ERROR 2025-05-19 15:40:24,270 views 92556 100548 回放输出: 
+INFO 2025-05-19 15:40:24,270 views 92556 94400 回放输出: 保存初始截图: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-40-07\1747640407984.jpg
+ERROR 2025-05-19 15:40:24,270 views 92556 100548 回放输出: [15:40:17][INFO]<airtest.report.report> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07\script.log\log.html
+INFO 2025-05-19 15:40:24,270 views 92556 94400 回放输出: 开始执行脚本: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json, 循环次数: 1, 最大执行时间: None秒
+INFO 2025-05-19 15:40:24,270 views 92556 94400 回放输出: 第 1/1 次循环
+INFO 2025-05-19 15:40:24,270 views 92556 94400 回放输出: 按顺序执行步骤，共 3 个步骤
+INFO 2025-05-19 15:40:24,270 views 92556 94400 回放输出: 执行步骤 1/3: operation-close, 备注: 启动游戏后先有一个公告弹窗，点击关闭
+INFO 2025-05-19 15:40:24,270 views 92556 94400 回放输出: 保存初始截图: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07\1747640407986.jpg
+INFO 2025-05-19 15:40:24,270 views 92556 94400 回放输出: 开始执行脚本: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json, 循环次数: 1, 最大执行时间: None秒
+INFO 2025-05-19 15:40:24,270 views 92556 94400 回放输出: 第 1/1 次循环
+INFO 2025-05-19 15:40:24,270 views 92556 94400 回放输出: 按顺序执行步骤，共 3 个步骤
+INFO 2025-05-19 15:40:24,270 views 92556 94400 回放输出: 执行步骤 1/3: operation-close, 备注: 启动游戏后先有一个公告弹窗，点击关闭
+INFO 2025-05-19 15:40:24,270 views 92556 94400 回放输出: 保存截图: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-40-07\1747640409084.jpg
+INFO 2025-05-19 15:40:24,270 views 92556 94400 回放输出: 保存截图: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07\1747640409632.jpg
+INFO 2025-05-19 15:40:24,270 views 92556 94400 回放输出: 设备 HUAWEI-JAD-AL00-1228x2700 执行步骤 1: operation-close，点击位置: (1144, 603)
+INFO 2025-05-19 15:40:24,270 views 92556 94400 回放输出: 设备 OnePlus-KB2000-1080x2400 执行步骤 1: operation-close，点击位置: (1007, 548)
+INFO 2025-05-19 15:40:24,270 views 92556 94400 回放输出: 执行步骤 2/3: system-cleanUpCache, 备注: 打开清理缓存弹窗
+INFO 2025-05-19 15:40:24,270 views 92556 94400 回放输出: 执行步骤 2/3: system-cleanUpCache, 备注: 打开清理缓存弹窗
+INFO 2025-05-19 15:40:24,270 views 92556 94400 回放输出: 保存截图: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-40-07\1747640412477.jpg
+INFO 2025-05-19 15:40:25,823 views 92556 94400 回放输出: 保存截图: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07\1747640411985.jpg
+INFO 2025-05-19 15:40:25,823 views 92556 94400 回放输出: 设备 HUAWEI-JAD-AL00-1228x2700 执行步骤 2: system-cleanUpCache，点击位置: (1125, 418)
+INFO 2025-05-19 15:40:25,823 views 92556 94400 回放输出: 设备 OnePlus-KB2000-1080x2400 执行步骤 2: system-cleanUpCache，点击位置: (990, 367)
+INFO 2025-05-19 15:40:25,823 views 92556 94400 回放输出: 执行步骤 3/3: operation-close, 备注: 关闭清理缓存弹窗
+INFO 2025-05-19 15:40:25,823 views 92556 94400 回放输出: 执行步骤 3/3: operation-close, 备注: 关闭清理缓存弹窗
+INFO 2025-05-19 15:40:25,823 views 92556 94400 回放输出: 保存截图: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07\1747640414610.jpg
+INFO 2025-05-19 15:40:25,823 views 92556 94400 回放输出: 保存截图: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-40-07\1747640415089.jpg
+INFO 2025-05-19 15:40:25,823 views 92556 94400 回放输出: 设备 HUAWEI-JAD-AL00-1228x2700 执行步骤 3: operation-close，点击位置: (382, 1595)
+INFO 2025-05-19 15:40:25,823 views 92556 94400 回放输出: 已完成执行 3 个步骤
+INFO 2025-05-19 15:40:25,823 views 92556 94400 回放输出: 完成脚本 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json，执行步骤数: 0，总步骤数: 3
+INFO 2025-05-19 15:40:25,823 views 92556 94400 回放输出: 设备 HUAWEI-JAD-AL00-1228x2700 回放完成，完成总步骤数: 3
+INFO 2025-05-19 15:40:25,823 views 92556 94400 回放输出: 设备 OnePlus-KB2000-1080x2400 执行步骤 3: operation-close，点击位置: (336, 1414)
+INFO 2025-05-19 15:40:25,823 views 92556 94400 回放输出: 已完成执行 3 个步骤
+INFO 2025-05-19 15:40:25,823 views 92556 94400 回放输出: 完成脚本 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json，执行步骤数: 0，总步骤数: 3
+INFO 2025-05-19 15:40:25,823 views 92556 94400 回放输出: 设备 OnePlus-KB2000-1080x2400 回放完成，完成总步骤数: 3
+INFO 2025-05-19 15:40:25,823 views 92556 94400 回放输出: 检查并修复日志文件JSON格式...
+INFO 2025-05-19 15:40:25,823 views 92556 94400 回放输出: JSON格式修复完成: 总行数 9, 有效行数 9, 修复 0 行
+INFO 2025-05-19 15:40:25,823 views 92556 94400 回放输出: 处理脚本文件 1: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json
+INFO 2025-05-19 15:40:25,823 views 92556 94400 回放输出: 已合并 1 个脚本文件到: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-40-07\script.py
+INFO 2025-05-19 15:40:25,823 views 92556 94400 回放输出: 复制CSS资源: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\css -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-40-07\static\css
+INFO 2025-05-19 15:40:25,823 views 92556 94400 回放输出: 复制JS资源: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\js -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-40-07\static\js
+INFO 2025-05-19 15:40:25,823 views 92556 94400 回放输出: 复制image资源: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\image -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-40-07\static\image
+INFO 2025-05-19 15:40:25,823 views 92556 94400 回放输出: 复制字体资源: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\fonts -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-40-07\static\fonts
+INFO 2025-05-19 15:40:27,070 views 92556 94400 回放输出: 复制模板文件: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\log_template.html -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-40-07
+INFO 2025-05-19 15:40:27,070 views 92556 94400 回放输出: 复制模板文件: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-40-07\log_template.html
+INFO 2025-05-19 15:40:27,070 views 92556 94400 回放输出: report_html_file: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-40-07\log.html
+INFO 2025-05-19 15:40:27,070 views 92556 94400 回放输出: script_log_html_file: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-40-07\script.log\log.html
+INFO 2025-05-19 15:40:27,070 views 92556 94400 回放输出: HTML报告生成成功: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-40-07\script.log\log.html
+INFO 2025-05-19 15:40:27,070 views 92556 94400 回放输出: 复制报告: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-40-07\script.log\log.html -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-40-07\log.html
+INFO 2025-05-19 15:40:27,070 views 92556 94400 回放输出: 无法解析data对象: (unicode error) 'unicodeescape' codec can't decode bytes in position 2-3: truncated \UXXXXXXXX escape (<unknown>, line 1)
+INFO 2025-05-19 15:40:27,070 views 92556 94400 回放输出: HTML路径和显示修复成功: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-40-07\log.html
+INFO 2025-05-19 15:40:27,070 views 92556 94400 回放输出: 设备报告已同步到静态目录: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\..\staticfiles\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-40-07
+INFO 2025-05-19 15:40:27,070 views 92556 94400 回放输出: 设备 OnePlus-KB2000-1080x2400 报告目录: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-40-07
+INFO 2025-05-19 15:40:27,070 views 92556 94400 回放输出: 设备 OnePlus-KB2000-1080x2400 报告路径: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-19-15-40-07\log.html
+INFO 2025-05-19 15:40:27,070 views 92556 94400 回放输出: 设备 OnePlus-KB2000-1080x2400 测试成功且全部通过
+INFO 2025-05-19 15:40:27,070 views 92556 94400 回放输出: 检查并修复日志文件JSON格式...
+INFO 2025-05-19 15:40:27,070 views 92556 94400 回放输出: JSON格式修复完成: 总行数 9, 有效行数 9, 修复 0 行
+INFO 2025-05-19 15:40:27,070 views 92556 94400 回放输出: 处理脚本文件 1: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json
+INFO 2025-05-19 15:40:27,070 views 92556 94400 回放输出: 已合并 1 个脚本文件到: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07\script.py
+INFO 2025-05-19 15:40:27,070 views 92556 94400 回放输出: 复制CSS资源: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\css -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07\static\css
+INFO 2025-05-19 15:40:27,909 views 92556 94400 回放输出: 复制JS资源: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\js -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07\static\js
+INFO 2025-05-19 15:40:27,909 views 92556 94400 回放输出: 复制image资源: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\image -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07\static\image
+INFO 2025-05-19 15:40:27,909 views 92556 94400 回放输出: 复制字体资源: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\fonts -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07\static\fonts
+INFO 2025-05-19 15:40:27,909 views 92556 94400 回放输出: 复制模板文件: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\log_template.html -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07
+INFO 2025-05-19 15:40:27,909 views 92556 94400 回放输出: 复制模板文件: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07\log_template.html
+INFO 2025-05-19 15:40:27,909 views 92556 94400 回放输出: report_html_file: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07\log.html
+INFO 2025-05-19 15:40:27,909 views 92556 94400 回放输出: script_log_html_file: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07\script.log\log.html
+INFO 2025-05-19 15:40:27,909 views 92556 94400 回放输出: HTML报告生成成功: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07\script.log\log.html
+INFO 2025-05-19 15:40:27,909 views 92556 94400 回放输出: 复制报告: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07\script.log\log.html -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07\log.html
+INFO 2025-05-19 15:40:27,909 views 92556 94400 回放输出: 无法解析data对象: (unicode error) 'unicodeescape' codec can't decode bytes in position 2-3: truncated \UXXXXXXXX escape (<unknown>, line 1)
+INFO 2025-05-19 15:40:27,910 views 92556 94400 回放输出: HTML路径和显示修复成功: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07\log.html
+INFO 2025-05-19 15:40:27,910 views 92556 94400 回放输出: 设备报告已同步到静态目录: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\..\staticfiles\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07
+INFO 2025-05-19 15:40:27,910 views 92556 94400 回放输出: 设备 HUAWEI-JAD-AL00-1228x2700 报告目录: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07
+INFO 2025-05-19 15:40:27,910 views 92556 94400 回放输出: 设备 HUAWEI-JAD-AL00-1228x2700 报告路径: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07\log.html
+INFO 2025-05-19 15:40:27,910 views 92556 94400 回放输出: 设备 HUAWEI-JAD-AL00-1228x2700 测试成功且全部通过
+INFO 2025-05-19 15:40:28,506 views 92556 94400 回放输出: 开始生成汇总报告，成功率: 2/2，通过率: 2/2
+INFO 2025-05-19 15:40:28,506 views 92556 94400 回放输出: 设备 OnePlus-KB2000-1080x2400 报告路径: ../ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-19-15-40-07/log.html
+INFO 2025-05-19 15:40:28,506 views 92556 94400 回放输出: 设备 HUAWEI-JAD-AL00-1228x2700 报告路径: ../ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07/log.html
+INFO 2025-05-19 15:40:28,506 views 92556 94400 回放输出: 汇总报告已生成: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_reports\summary_report_2025-05-19-15-40-17.html
+INFO 2025-05-19 15:40:28,506 views 92556 94400 回放输出: 最新报告快捷方式: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_reports\latest_report.html
+INFO 2025-05-19 15:40:28,506 views 92556 94400 回放输出: 报告已同步到静态目录: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\..\staticfiles\reports
+INFO 2025-05-19 15:40:28,506 views 92556 94400 回放输出: 执行结果: 成功 2/2，全部通过 2/2, 报告地址: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_reports\summary_report_2025-05-19-15-40-17.html
+INFO 2025-05-19 15:40:28,506 views 92556 94400 回放输出: 回放成功
+INFO 2025-05-19 15:40:46,582 basehttp 92556 47696 "GET /pages/reports.html HTTP/1.1" 200 15250
+INFO 2025-05-19 15:40:46,596 basehttp 92556 47696 "POST /api/reports/ HTTP/1.1" 200 1339
+INFO 2025-05-19 15:43:07,141 basehttp 92556 47696 "GET /static/reports/summary_report_2025-05-19-15-40-17.html HTTP/1.1" 200 2569
+INFO 2025-05-19 15:43:08,956 basehttp 92556 47696 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-19-15-40-07/log.html HTTP/1.1" 200 12369
+INFO 2025-05-19 15:43:08,974 basehttp 92556 47696 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-19-15-40-07/static//css/report.css HTTP/1.1" 200 18004
+INFO 2025-05-19 15:43:08,975 basehttp 92556 55012 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-19-15-40-07/static//js/jquery-1.10.2.min.js HTTP/1.1" 200 93111
+INFO 2025-05-19 15:43:08,976 basehttp 92556 47696 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-19-15-40-07/static//js/jquery-lang.js HTTP/1.1" 200 25588
+INFO 2025-05-19 15:43:08,976 basehttp 92556 55012 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-19-15-40-07/static//js/langpack/zh_CN.js HTTP/1.1" 200 2701
+INFO 2025-05-19 15:43:08,977 basehttp 92556 47696 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-19-15-40-07/static//js/lazyload.js HTTP/1.1" 200 5587
+INFO 2025-05-19 15:43:08,978 basehttp 92556 55012 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-19-15-40-07/static//image/download_log.svg HTTP/1.1" 200 2550
+INFO 2025-05-19 15:43:08,979 basehttp 92556 47696 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-19-15-40-07/static//image/copy.svg HTTP/1.1" 200 1013
+INFO 2025-05-19 15:43:08,981 basehttp 92556 47696 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-19-15-40-07/static//image/Airtest.png HTTP/1.1" 200 1947
+INFO 2025-05-19 15:43:08,982 basehttp 92556 55012 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-19-15-40-07/static//image/poco.png HTTP/1.1" 200 1385
+INFO 2025-05-19 15:43:08,984 basehttp 92556 47696 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-19-15-40-07/static//image/AirtestIDE.png HTTP/1.1" 200 3181
+INFO 2025-05-19 15:43:08,985 basehttp 92556 55012 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-19-15-40-07/static//css/monokai_sublime.min.css HTTP/1.1" 200 2017
+INFO 2025-05-19 15:43:08,986 basehttp 92556 55012 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-19-15-40-07/static//js/paging.js HTTP/1.1" 200 13030
+INFO 2025-05-19 15:43:08,987 basehttp 92556 47696 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-19-15-40-07/static//js/highlight.min.js HTTP/1.1" 200 184850
+INFO 2025-05-19 15:43:08,987 basehttp 92556 55012 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-19-15-40-07/static//js/report.js HTTP/1.1" 200 31059
+INFO 2025-05-19 15:43:08,988 basehttp 92556 47696 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-19-15-40-07/static//image/AirLab.png HTTP/1.1" 200 1954
+INFO 2025-05-19 15:43:08,990 basehttp 92556 55012 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-19-15-40-07/static//image/netease.png HTTP/1.1" 200 7949
+INFO 2025-05-19 15:43:08,990 basehttp 92556 47696 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-19-15-40-07/static//image/minimize.svg HTTP/1.1" 200 1031
+INFO 2025-05-19 15:43:08,991 basehttp 92556 55012 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-19-15-40-07/static//image/close.svg HTTP/1.1" 200 729
+INFO 2025-05-19 15:43:08,992 basehttp 92556 47696 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-19-15-40-07/static//image/maximize.svg HTTP/1.1" 200 1308
+INFO 2025-05-19 15:43:09,014 basehttp 92556 55012 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-19-15-40-07/log/1747640412477_small.jpg HTTP/1.1" 200 50991
+INFO 2025-05-19 15:43:09,015 basehttp 92556 47696 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-19-15-40-07/log/1747640409084_small.jpg HTTP/1.1" 200 41436
+INFO 2025-05-19 15:43:09,016 basehttp 92556 47696 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-19-15-40-07/static//image/step_success.svg HTTP/1.1" 200 1144
+INFO 2025-05-19 15:43:09,016 basehttp 92556 55012 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-19-15-40-07/log/1747640415089_small.jpg HTTP/1.1" 200 22034
+INFO 2025-05-19 15:43:09,018 basehttp 92556 55012 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-19-15-40-07/static//image/eye.svg HTTP/1.1" 200 1935
+INFO 2025-05-19 15:43:09,018 basehttp 92556 47696 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-19-15-40-07/static//image/time.svg HTTP/1.1" 200 820
+INFO 2025-05-19 15:43:09,019 basehttp 92556 55012 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-19-15-40-07/static//image/success.svg HTTP/1.1" 200 1156
+INFO 2025-05-19 15:43:11,773 basehttp 92556 55012 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07/log.html HTTP/1.1" 200 12378
+INFO 2025-05-19 15:43:11,786 basehttp 92556 55012 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07/static//css/report.css HTTP/1.1" 200 18004
+INFO 2025-05-19 15:43:11,787 basehttp 92556 74940 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07/static//js/lazyload.js HTTP/1.1" 200 5587
+INFO 2025-05-19 15:43:11,787 basehttp 92556 81512 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07/static//js/langpack/zh_CN.js HTTP/1.1" 200 2701
+INFO 2025-05-19 15:43:11,787 basehttp 92556 65168 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07/static//js/jquery-lang.js HTTP/1.1" 200 25588
+INFO 2025-05-19 15:43:11,788 basehttp 92556 47696 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07/static//js/jquery-1.10.2.min.js HTTP/1.1" 200 93111
+INFO 2025-05-19 15:43:11,790 basehttp 92556 65168 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07/static//image/copy.svg HTTP/1.1" 200 1013
+INFO 2025-05-19 15:43:11,790 basehttp 92556 47696 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07/static//image/download_log.svg HTTP/1.1" 200 2550
+INFO 2025-05-19 15:43:11,795 basehttp 92556 65168 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07/static//image/Airtest.png HTTP/1.1" 200 1947
+INFO 2025-05-19 15:43:11,796 basehttp 92556 47696 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07/static//image/poco.png HTTP/1.1" 200 1385
+INFO 2025-05-19 15:43:11,800 basehttp 92556 65168 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07/static//image/AirtestIDE.png HTTP/1.1" 200 3181
+INFO 2025-05-19 15:43:11,800 basehttp 92556 81512 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07/static//css/monokai_sublime.min.css HTTP/1.1" 200 2017
+INFO 2025-05-19 15:43:11,801 basehttp 92556 47696 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07/static//image/AirLab.png HTTP/1.1" 200 1954
+INFO 2025-05-19 15:43:11,802 basehttp 92556 55012 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07/static//js/paging.js HTTP/1.1" 200 13030
+INFO 2025-05-19 15:43:11,802 basehttp 92556 70948 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07/static//js/report.js HTTP/1.1" 200 31059
+INFO 2025-05-19 15:43:11,803 basehttp 92556 65168 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07/static//image/minimize.svg HTTP/1.1" 200 1031
+INFO 2025-05-19 15:43:11,803 basehttp 92556 81512 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07/static//image/netease.png HTTP/1.1" 200 7949
+INFO 2025-05-19 15:43:11,804 basehttp 92556 55012 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07/static//image/maximize.svg HTTP/1.1" 200 1308
+INFO 2025-05-19 15:43:11,804 basehttp 92556 47696 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07/static//image/close.svg HTTP/1.1" 200 729
+INFO 2025-05-19 15:43:11,804 basehttp 92556 74940 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07/static//js/highlight.min.js HTTP/1.1" 200 184850
+INFO 2025-05-19 15:43:11,837 basehttp 92556 81512 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07/static//image/step_success.svg HTTP/1.1" 200 1144
+INFO 2025-05-19 15:43:11,838 basehttp 92556 65168 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07/static//image/eye.svg HTTP/1.1" 200 1935
+INFO 2025-05-19 15:43:11,839 basehttp 92556 70948 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07/static//image/time.svg HTTP/1.1" 200 820
+INFO 2025-05-19 15:43:11,839 basehttp 92556 55012 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07/log/1747640414610_small.jpg HTTP/1.1" 200 26827
+INFO 2025-05-19 15:43:11,839 basehttp 92556 47696 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07/log/1747640411985_small.jpg HTTP/1.1" 200 60321
+INFO 2025-05-19 15:43:11,839 basehttp 92556 74940 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07/log/1747640409632_small.jpg HTTP/1.1" 200 50079
+INFO 2025-05-19 15:43:11,841 basehttp 92556 81512 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-19-15-40-07/static//image/success.svg HTTP/1.1" 200 1156
+INFO 2025-05-19 15:43:13,982 basehttp 92556 81512 "GET /static/reports/summary_report_2025-05-19-15-19-37.html HTTP/1.1" 304 0
+WARNING 2025-05-19 15:43:15,167 basehttp 92556 81512 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-19-15-19-28/log.html HTTP/1.1" 404 1990
