@@ -6,23 +6,22 @@
  */
 
 import axios from 'axios';
+import request from '@/utils/request'
 
 // API基础路径
 const BASE_URL = '/api/v1/devices';
 
 /**
  * 获取设备列表
- * @param {Object} params - 查询参数
- * @param {string} [params.status] - 设备状态 (online/offline/busy/error)
- * @param {string} [params.name] - 设备名称关键词
- * @returns {Promise} 返回请求Promise
+ * @param {Object} params - 查询参数，如{status: 'online'}
+ * @returns {Promise}
  */
 export function getDevices(params = {}) {
-  return axios({
-    url: `${BASE_URL}/`,
-    method: 'get',
-    params
-  });
+  return request({
+    url: '/api/devices/list/',
+    method: 'post',
+    data: params
+  })
 }
 
 /**

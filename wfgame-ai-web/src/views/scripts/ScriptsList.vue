@@ -62,6 +62,21 @@
       </el-row>
     </div>
 
+    <!-- 多选设备区块 -->
+    <div class="device-multiselect-bar" style="margin-bottom: 10px;">
+      <el-select v-model="selectedDevices" multiple placeholder="批量选择设备" style="width: 400px;">
+        <el-option
+          v-for="device in devices"
+          :key="device.id"
+          :label="device.name"
+          :value="device.id"
+        ></el-option>
+      </el-select>
+      <el-button type="primary" :disabled="selectedDevices.length === 0" style="margin-left: 10px;" @click="batchExecuteScript">
+        批量执行选中脚本
+      </el-button>
+    </div>
+
     <!-- 脚本列表 -->
     <el-table
       v-loading="loading"
@@ -264,7 +279,8 @@
         label-width="120px"
       >
         <el-form-item label="目标设备" prop="device">
-          <el-select v-model="executeForm.device" placeholder="请选择执行设备" style="width:100%">
+          <!-- 多选设备 -->
+          <el-select v-model="executeForm.device" multiple placeholder="请选择执行设备" style="width:100%">
             <el-option
               v-for="device in devices"
               :key="device.id"
@@ -284,7 +300,7 @@
       </el-form>
       <span slot="footer" class="dialog-footer">
         <el-button @click="executeDialogVisible = false">取 消</el-button>
-        <el-button type="primary" @click="confirmExecute" :loading="executeLoading">执 行</el-button>
+        <el-button type="primary" @click="confirmExecute" :loading="executeLoading">批量执 行</el-button>
       </span>
     </el-dialog>
   </div>
@@ -395,7 +411,9 @@ export default {
         device: [
           { required: true, message: '请选择执行设备', trigger: 'change' }
         ]
-      }
+      },
+      // 多选设备
+      selectedDevices: []
     };
   },
   
@@ -641,7 +659,7 @@ export default {
     executeScript(script) {
       this.currentScript = script;
       this.executeForm = {
-        device: '',
+        device: this.selectedDevices.length > 0 ? [...this.selectedDevices] : [], // 支持批量
         params: ''
       };
       this.executeDialogVisible = true;
@@ -651,16 +669,15 @@ export default {
     confirmExecute() {
       this.$refs.executeForm.validate(async (valid) => {
         if (!valid) return;
-        
         this.executeLoading = true;
-        
         try {
-          // 执行脚本
-          const response = await executeScript(this.currentScript.id);
-          this.$message.success('脚本执行已开始');
+          // 支持批量设备ID
+          const deviceIds = Array.isArray(this.executeForm.device) ? this.executeForm.device : [this.executeForm.device];
+          // TODO: 需后端支持批量执行API，参数为脚本ID和设备ID数组
+          const response = await executeScript(this.currentScript.id, { devices: deviceIds, params: this.executeForm.params });
+          this.$message.success('脚本批量执行已开始');
           this.executeDialogVisible = false;
-          
-          // 跳转到执行详情页面
+          // 跳转到执行详情页面（如有返回）
           if (response.data && response.data.id) {
             this.$router.push({
               name: 'ExecutionDetail',
@@ -668,8 +685,8 @@ export default {
             });
           }
         } catch (error) {
-          this.$message.error('执行脚本失败');
-          console.error('执行脚本失败:', error);
+          this.$message.error('批量执行脚本失败');
+          console.error('批量执行脚本失败:', error);
         } finally {
           this.executeLoading = false;
         }
@@ -679,6 +696,25 @@ export default {
     // 关闭对话框
     handleDialogClose() {
       this.dialogVisible = false;
+    },
+    
+    // 批量执行脚本（弹出批量执行对话框）
+    batchExecuteScript() {
+      if (this.selectedDevices.length === 0) {
+        this.$message.warning('请先选择设备');
+        return;
+      }
+      // 默认选择第一个脚本，实际可扩展为多脚本批量
+      if (this.scripts.length === 0) {
+        this.$message.warning('暂无可执行脚本');
+        return;
+      }
+      this.currentScript = this.scripts[0];
+      this.executeForm = {
+        device: [...this.selectedDevices],
+        params: ''
+      };
+      this.executeDialogVisible = true;
     }
   }
 };

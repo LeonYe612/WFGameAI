@@ -36,6 +36,14 @@ alwaysApply: true
    - 成功操作返回HTTP 200状态码
    - 前端调用API时必须设置Content-Type为application/json
 
+6. **回复与输出**
+   - 在思考之后直接在原文件内进行修改和实现我要的功能，不要只说而不改代码
+   - 如果遇到文件或文件夹缺失，允许直接创建
+
+7. **关于路径使用**
+    - 禁止使用绝对路径
+    - 公用的文件夹目录统一使用 WFGameAI\wfgame-ai-server\config.ini 文件进行管理
+
 ## 测试与监控
 
 1. **接口测试**

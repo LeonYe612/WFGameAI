@@ -64,51 +64,68 @@ class DeviceLogViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class ConnectDeviceView(views.APIView):
-    """连接设备"""
+    """连接设备（增强：连接前实时检测ADB状态并同步数据库）"""
     permission_classes = [AllowAny]  # 允许所有用户访问
     http_method_names = ['post']  # 只允许POST方法
     
     def post(self, request, pk):
         device = get_object_or_404(Device, pk=pk)
-        
-        # 检查设备是否已连接
+
+        # --- 增强：连接前实时检测ADB状态并同步数据库 ---
+        try:
+            adb_result = subprocess.run(['adb', 'devices'], capture_output=True, text=True)
+            adb_lines = adb_result.stdout.strip().split('\n')[1:]
+            adb_online_ids = set()
+            for line in adb_lines:
+                if not line.strip():
+                    continue
+                parts = line.split('\t')
+                if len(parts) >= 2 and parts[1].strip() == 'device':
+                    adb_online_ids.add(parts[0].strip())
+            # 如果设备实际未连接但数据库为online，自动修正
+            if device.device_id not in adb_online_ids and device.status == 'online':
+                device.status = 'offline'
+                device.save()
+            # 如果设备实际已连接但数据库为offline，自动修正
+            if device.device_id in adb_online_ids and device.status != 'online':
+                device.status = 'online'
+                device.last_online = timezone.now()
+                device.save()
+        except Exception as e:
+            # ADB检测异常时写日志但不中断主流程
+            DeviceLog.objects.create(
+                device=device,
+                level='warning',
+                message=f"连接前ADB检测异常: {str(e)}"
+            )
+
+        # 检查设备是否已连接（以数据库状态为准，已同步）
         if device.status == 'online':
             return Response(
                 {"detail": "设备已经处于连接状态"},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
         # 尝试连接设备
         try:
-            # 这里可以添加实际连接设备的代码
-            # 例如使用adbutils连接Android设备
-            
-            # 更新设备状态
+            # TODO: 这里可集成实际连接逻辑，如adb connect等，负责人: AI
             device.status = 'online'
             device.last_online = timezone.now()
             device.save()
-            
-            # 创建日志
             DeviceLog.objects.create(
                 device=device,
                 level='info',
                 message=f"设备 '{device.name}' 已连接"
             )
-            
-            # 返回成功响应
             return Response(
                 {"detail": "设备连接成功"},
                 status=status.HTTP_200_OK
             )
         except Exception as e:
-            # 创建错误日志
             DeviceLog.objects.create(
                 device=device,
                 level='error',
                 message=f"连接设备 '{device.name}' 失败: {str(e)}"
             )
-            
-            # 返回错误响应
             return Response(
                 {"detail": f"设备连接失败: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -116,49 +133,66 @@ class ConnectDeviceView(views.APIView):
 
 
 class DisconnectDeviceView(views.APIView):
-    """断开设备连接"""
+    """断开设备连接（增强：断开前实时检测ADB状态并同步数据库）"""
     permission_classes = [AllowAny]  # 允许所有用户访问
     http_method_names = ['post']  # 只允许POST方法
     
     def post(self, request, pk):
         device = get_object_or_404(Device, pk=pk)
-        
-        # 检查设备是否已连接
+
+        # --- 增强：断开前实时检测ADB状态并同步数据库 ---
+        try:
+            adb_result = subprocess.run(['adb', 'devices'], capture_output=True, text=True)
+            adb_lines = adb_result.stdout.strip().split('\n')[1:]
+            adb_online_ids = set()
+            for line in adb_lines:
+                if not line.strip():
+                    continue
+                parts = line.split('\t')
+                if len(parts) >= 2 and parts[1].strip() == 'device':
+                    adb_online_ids.add(parts[0].strip())
+            # 如果设备实际未连接但数据库为online，自动修正
+            if device.device_id not in adb_online_ids and device.status == 'online':
+                device.status = 'offline'
+                device.save()
+            # 如果设备实际已连接但数据库为offline，自动修正
+            if device.device_id in adb_online_ids and device.status != 'online':
+                device.status = 'online'
+                device.last_online = timezone.now()
+                device.save()
+        except Exception as e:
+            DeviceLog.objects.create(
+                device=device,
+                level='warning',
+                message=f"断开前ADB检测异常: {str(e)}"
+            )
+
+        # 检查设备是否已断开（以数据库状态为准，已同步）
         if device.status == 'offline':
             return Response(
                 {"detail": "设备已经处于断开状态"},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
         # 尝试断开设备连接
         try:
-            # 这里可以添加实际断开设备连接的代码
-            
-            # 更新设备状态
+            # TODO: 这里可集成实际断开逻辑，如adb disconnect等，负责人: AI
             device.status = 'offline'
             device.save()
-            
-            # 创建日志
             DeviceLog.objects.create(
                 device=device,
                 level='info',
                 message=f"设备 '{device.name}' 已断开连接"
             )
-            
-            # 返回成功响应
             return Response(
                 {"detail": "设备已断开连接"},
                 status=status.HTTP_200_OK
             )
         except Exception as e:
-            # 创建错误日志
             DeviceLog.objects.create(
                 device=device,
                 level='error',
                 message=f"断开设备 '{device.name}' 连接失败: {str(e)}"
             )
-            
-            # 返回错误响应
             return Response(
                 {"detail": f"断开设备连接失败: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -242,40 +276,30 @@ class ReleaseDeviceView(views.APIView):
 
 
 class ScanDevicesView(views.APIView):
-    """扫描设备"""
+    """扫描设备（增强：自动将未在ADB列表的设备状态设为offline）"""
     permission_classes = [AllowAny]  # 允许所有用户访问
     http_method_names = ['post']  # 只允许POST方法
     
     def post(self, request):
-        # 扫描Android设备
         try:
-            # 使用adb命令扫描设备
             result = subprocess.run(['adb', 'devices'], capture_output=True, text=True)
-            
             if result.returncode != 0:
                 return Response(
                     {"detail": "扫描设备失败", "error": result.stderr},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
-            
-            # 解析adb输出
             lines = result.stdout.strip().split('\n')
-            
-            # 跳过第一行（标题行）
             device_lines = lines[1:]
-            
-            # 处理每个设备
             devices_found = []
+            adb_ids = set()
             for line in device_lines:
                 if not line.strip():
                     continue
-                    
                 parts = line.split('\t')
                 if len(parts) >= 2:
                     device_id = parts[0].strip()
                     device_status = parts[1].strip()
-                    
-                    # 检查设备是否已存在
+                    adb_ids.add(device_id)
                     device, created = Device.objects.get_or_create(
                         device_id=device_id,
                         defaults={
@@ -283,7 +307,6 @@ class ScanDevicesView(views.APIView):
                             'status': 'online' if device_status == 'device' else 'offline'
                         }
                     )
-                    
                     # 如果设备已存在但状态不同，更新状态
                     if not created and (
                         (device_status == 'device' and device.status != 'online') or
@@ -291,7 +314,6 @@ class ScanDevicesView(views.APIView):
                     ):
                         device.status = 'online' if device_status == 'device' else 'offline'
                         device.save()
-                    
                     devices_found.append({
                         'id': device.id,
                         'device_id': device.device_id,
@@ -299,12 +321,21 @@ class ScanDevicesView(views.APIView):
                         'status': device.status,
                         'created': created
                     })
-            
+            # --- 增强：自动将数据库中未在ADB列表的设备状态设为offline ---
+            all_db_devices = Device.objects.all()
+            for db_device in all_db_devices:
+                if db_device.device_id not in adb_ids and db_device.status != 'offline':
+                    db_device.status = 'offline'
+                    db_device.save()
+                    DeviceLog.objects.create(
+                        device=db_device,
+                        level='info',
+                        message=f"扫描时自动将设备 '{db_device.name}' 状态设为离线"
+                    )
             return Response({
                 "detail": "扫描设备成功",
                 "devices_found": devices_found
             })
-        
         except Exception as e:
             return Response(
                 {"detail": "扫描设备失败", "error": str(e)},

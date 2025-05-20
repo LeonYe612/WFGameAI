@@ -6526,3 +6526,119 @@ WARNING 2025-05-20 11:25:07,310 basehttp 81292 70948 "GET /.well-known/appspecif
 INFO 2025-05-20 11:25:07,655 basehttp 81292 70948 "POST /api/devices/scan/ HTTP/1.1" 200 261
 WARNING 2025-05-20 11:25:12,288 log 81292 70948 Bad Request: /api/devices/2/connect/
 WARNING 2025-05-20 11:25:12,289 basehttp 81292 70948 "POST /api/devices/2/connect/ HTTP/1.1" 400 43
+INFO 2025-05-20 14:11:42,021 views 81292 89532 接收到信号: 2
+INFO 2025-05-20 14:38:49,781 autoreload 108276 33852 Watching for file changes with StatReloader
+INFO 2025-05-20 14:38:50,007 views 108276 33852 已加载配置文件: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\config.ini
+INFO 2025-05-20 14:38:50,008 views 108276 33852 已加载路径配置: PYTHON_PATH=F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe, TESTCASE_DIR=C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase
+INFO 2025-05-20 14:38:50,008 views 108276 33852 使用配置文件中的Python路径: F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe
+INFO 2025-05-20 14:38:53,863 basehttp 108276 51868 "POST /api/devices/scan/ HTTP/1.1" 200 261
+WARNING 2025-05-20 14:38:58,567 log 108276 51868 Bad Request: /api/devices/1/connect/
+WARNING 2025-05-20 14:38:58,567 basehttp 108276 51868 "POST /api/devices/1/connect/ HTTP/1.1" 400 43
+ERROR 2025-05-20 14:39:09,669 log 108276 51868 Internal Server Error: /api/docs/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 220, in _get_response
+    response = response.render()
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 114, in render
+    self.content = self.rendered_content
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 90, in rendered_content
+    template = self.resolve_template(self.template_name)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 72, in resolve_template
+    return select_template(template, using=self.using)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\loader.py", line 47, in select_template
+    raise TemplateDoesNotExist(", ".join(template_name_list), chain=chain)
+django.template.exceptions.TemplateDoesNotExist: swagger-ui.html
+ERROR 2025-05-20 14:39:09,670 basehttp 108276 51868 "GET /api/docs/ HTTP/1.1" 500 97410
+WARNING 2025-05-20 14:46:06,628 log 108276 98292 Bad Request: /api/devices/2/connect/
+WARNING 2025-05-20 14:46:06,629 basehttp 108276 98292 "POST /api/devices/2/connect/ HTTP/1.1" 400 43
+WARNING 2025-05-20 14:46:14,476 log 108276 98292 Method Not Allowed: /api/devices/2/connect/
+WARNING 2025-05-20 14:46:14,476 basehttp 108276 98292 "GET /api/devices/2/connect/ HTTP/1.1" 405 10598
+INFO 2025-05-20 14:46:14,696 basehttp 108276 36992 "GET /static/rest_framework/css/bootstrap-tweaks.css HTTP/1.1" 200 3426
+INFO 2025-05-20 14:46:14,697 basehttp 108276 98292 "GET /static/rest_framework/css/bootstrap.min.css HTTP/1.1" 200 121457
+INFO 2025-05-20 14:46:14,698 basehttp 108276 36992 "GET /static/rest_framework/css/prettify.css HTTP/1.1" 200 817
+INFO 2025-05-20 14:46:14,699 basehttp 108276 98292 "GET /static/rest_framework/css/default.css HTTP/1.1" 200 1152
+INFO 2025-05-20 14:46:14,699 basehttp 108276 36992 "GET /static/rest_framework/js/jquery-3.7.1.min.js HTTP/1.1" 200 87533
+INFO 2025-05-20 14:46:14,700 basehttp 108276 98292 "GET /static/rest_framework/js/ajax-form.js HTTP/1.1" 200 3796
+INFO 2025-05-20 14:46:14,701 basehttp 108276 36992 "GET /static/rest_framework/js/csrf.js HTTP/1.1" 200 1793
+INFO 2025-05-20 14:46:14,703 basehttp 108276 36992 "GET /static/rest_framework/js/prettify-min.js HTTP/1.1" 200 13632
+INFO 2025-05-20 14:46:14,704 basehttp 108276 98292 "GET /static/rest_framework/js/bootstrap.min.js HTTP/1.1" 200 39680
+INFO 2025-05-20 14:46:14,705 basehttp 108276 36992 "GET /static/rest_framework/js/default.js HTTP/1.1" 200 1268
+INFO 2025-05-20 14:46:14,705 basehttp 108276 98292 "GET /static/rest_framework/js/load-ajax-form.js HTTP/1.1" 200 59
+INFO 2025-05-20 14:46:14,707 basehttp 108276 36992 "GET /static/rest_framework/img/grid.png HTTP/1.1" 200 1458
+WARNING 2025-05-20 14:46:28,421 log 108276 36992 Method Not Allowed: /api/devices/1/connect/
+WARNING 2025-05-20 14:46:28,421 basehttp 108276 36992 "GET /api/devices/1/connect/ HTTP/1.1" 405 10598
+INFO 2025-05-20 14:48:20,423 basehttp 108276 36992 "GET /static/pages/devices.html HTTP/1.1" 200 5207
+INFO 2025-05-20 14:48:20,436 basehttp 108276 36992 "GET /static/js/pages/devices_vue.js HTTP/1.1" 304 0
+WARNING 2025-05-20 14:48:20,439 log 108276 98292 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 14:48:20,440 basehttp 108276 98292 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4770
+INFO 2025-05-20 14:48:20,716 basehttp 108276 98292 "POST /api/devices/scan/ HTTP/1.1" 200 261
+WARNING 2025-05-20 14:48:26,258 log 108276 98292 Bad Request: /api/devices/2/connect/
+WARNING 2025-05-20 14:48:26,258 basehttp 108276 98292 "POST /api/devices/2/connect/ HTTP/1.1" 400 43
+INFO 2025-05-20 15:08:02,271 basehttp 108276 49316 "POST /api/devices/scan/ HTTP/1.1" 200 261
+INFO 2025-05-20 15:08:50,894 basehttp 108276 49316 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-20 15:08:50,896 basehttp 108276 49316 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-05-20 15:09:07,612 basehttp 108276 49316 "GET /pages/tasks.html HTTP/1.1" 200 9541
+INFO 2025-05-20 15:09:09,379 basehttp 108276 49316 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-20 15:09:11,830 basehttp 108276 49316 "GET /pages/reports.html HTTP/1.1" 200 15250
+INFO 2025-05-20 15:09:11,845 basehttp 108276 49316 "POST /api/reports/ HTTP/1.1" 200 1339
+INFO 2025-05-20 15:09:13,031 basehttp 108276 49316 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-20 15:36:53,040 basehttp 108276 111128 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-05-20 15:36:54,968 basehttp 108276 111128 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-05-20 15:36:54,970 basehttp 108276 111128 "GET /static/pages/devices.html HTTP/1.1" 304 0
+INFO 2025-05-20 15:36:55,270 basehttp 108276 111128 "POST /api/devices/scan/ HTTP/1.1" 200 261
+INFO 2025-05-20 15:36:56,786 basehttp 108276 111128 "GET /pages/tasks.html HTTP/1.1" 200 9541
+INFO 2025-05-20 15:36:58,270 basehttp 108276 111128 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-20 15:36:59,621 basehttp 108276 111128 "GET /pages/reports.html HTTP/1.1" 200 15250
+INFO 2025-05-20 15:36:59,633 basehttp 108276 111128 "POST /api/reports/ HTTP/1.1" 200 1339
+INFO 2025-05-20 15:37:00,236 basehttp 108276 111128 "GET /pages/tasks.html HTTP/1.1" 200 9541
+INFO 2025-05-20 15:37:02,473 basehttp 108276 111128 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-20 15:37:05,607 basehttp 108276 111128 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-05-20 15:37:05,666 basehttp 108276 111128 "POST /api/devices/scan/ HTTP/1.1" 200 261
+INFO 2025-05-20 15:37:08,024 basehttp 108276 111128 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-20 15:37:09,424 basehttp 108276 111128 "GET /pages/tasks.html HTTP/1.1" 200 9541
+INFO 2025-05-20 15:37:11,775 basehttp 108276 111128 "GET /pages/reports.html HTTP/1.1" 200 15250
+INFO 2025-05-20 15:37:11,785 basehttp 108276 111128 "POST /api/reports/ HTTP/1.1" 200 1339
+INFO 2025-05-20 15:37:14,192 basehttp 108276 111128 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-05-20 15:37:14,250 basehttp 108276 111128 "POST /api/devices/scan/ HTTP/1.1" 200 261
+INFO 2025-05-20 15:37:16,597 basehttp 108276 111128 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-20 15:37:20,702 basehttp 108276 111128 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-20 15:37:34,961 basehttp 108276 111128 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-20 15:42:05,329 autoreload 75488 123656 Watching for file changes with StatReloader
+INFO 2025-05-20 15:42:05,545 views 75488 123656 已加载配置文件: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\config.ini
+INFO 2025-05-20 15:42:05,545 views 75488 123656 已加载路径配置: PYTHON_PATH=F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe, TESTCASE_DIR=C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase
+INFO 2025-05-20 15:42:05,545 views 75488 123656 使用配置文件中的Python路径: F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe
+INFO 2025-05-20 15:42:10,704 basehttp 75488 118808 "GET / HTTP/1.1" 200 9707
+INFO 2025-05-20 15:42:15,027 basehttp 75488 118808 "GET /pages/scripts.html HTTP/1.1" 302 0
+ERROR 2025-05-20 15:42:25,174 log 75488 118808 Internal Server Error: /api/docs/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 220, in _get_response
+    response = response.render()
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 114, in render
+    self.content = self.rendered_content
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 90, in rendered_content
+    template = self.resolve_template(self.template_name)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 72, in resolve_template
+    return select_template(template, using=self.using)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\loader.py", line 47, in select_template
+    raise TemplateDoesNotExist(", ".join(template_name_list), chain=chain)
+django.template.exceptions.TemplateDoesNotExist: swagger-ui.html
+ERROR 2025-05-20 15:42:25,175 basehttp 75488 118808 "GET /api/docs/ HTTP/1.1" 500 96973
+INFO 2025-05-20 15:43:37,836 basehttp 75488 118808 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-05-20 15:43:41,805 basehttp 75488 118808 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-05-20 15:43:51,354 basehttp 75488 118808 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-05-20 15:44:21,180 basehttp 75488 118808 "GET /static/pages/scripts.html HTTP/1.1" 200 10015
+INFO 2025-05-20 16:06:09,676 basehttp 75488 78328 "GET /static/pages/scripts.html HTTP/1.1" 200 10012
+INFO 2025-05-20 16:06:16,591 basehttp 75488 78328 "GET /static/pages/scripts.html HTTP/1.1" 200 64214
+INFO 2025-05-20 16:06:16,604 basehttp 75488 78328 "POST /api/scripts/ HTTP/1.1" 200 2748
+INFO 2025-05-20 16:06:57,154 basehttp 75488 78328 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-05-20 16:06:57,156 basehttp 75488 78328 "GET /static/pages/devices.html HTTP/1.1" 304 0
+INFO 2025-05-20 16:06:57,468 basehttp 75488 78328 "POST /api/devices/scan/ HTTP/1.1" 200 261
+INFO 2025-05-20 16:07:24,366 basehttp 75488 78328 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-20 16:07:24,368 basehttp 75488 78328 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-05-20 16:07:24,383 basehttp 75488 78328 "POST /api/scripts/ HTTP/1.1" 200 2748
+INFO 2025-05-20 16:07:27,380 basehttp 75488 78328 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-05-20 16:07:27,432 basehttp 75488 78328 "POST /api/devices/scan/ HTTP/1.1" 200 261
+INFO 2025-05-20 16:07:29,798 basehttp 75488 78328 "POST /api/devices/scan/ HTTP/1.1" 200 261
