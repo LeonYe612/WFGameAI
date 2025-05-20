@@ -3,7 +3,7 @@
 """
 ================================
 Description:
-Django设置文件
+Django主配置文件
 Author: WFGame AI Team
 CreateDate: 2024-05-15
 Version: 1.0
@@ -13,11 +13,11 @@ Version: 1.0
 import os
 from pathlib import Path
 
-# 构建路径
+# 构建路径，以项目目录为起点
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# 安全设置
-SECRET_KEY = 'django-insecure-j383h4uyi2#4jh23@#$hjk23h4jk23h4jk@#$2h3'
+# 密钥设置
+SECRET_KEY = 'django-insecure-key-for-development-only'
 
 # 调试模式
 DEBUG = True
@@ -125,8 +125,8 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'staticfiles'),
 ]
-# 注释掉或删除 STATIC_ROOT
-# STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+# 重要：在开发模式下不要设置STATIC_ROOT，否则Django无法提供staticfiles目录中的文件
+# STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # 已注释掉，确保开发模式下直接使用staticfiles目录
 
 # 媒体文件设置
 MEDIA_URL = '/media/'

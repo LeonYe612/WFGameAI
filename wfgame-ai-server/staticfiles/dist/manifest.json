@@ -1,0 +1,14 @@
+{
+  "src/pages/devices.css": {
+    "file": "assets/devices.css",
+    "src": "src/pages/devices.css"
+  },
+  "src/pages/devices.js": {
+    "css": [
+      "assets/devices.css"
+    ],
+    "file": "js/devices.js",
+    "isEntry": true,
+    "src": "src/pages/devices.js"
+  }
+}

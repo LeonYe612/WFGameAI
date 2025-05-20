@@ -284,34 +284,97 @@ else:
     # Unix系统的信号处理
     signal.signal(signal.SIGTERM, lambda sig, frame: handle_windows_signal(sig, frame))
 
-@api_view(['GET'])
+@api_view(['POST'])
+@csrf_exempt
 @permission_classes([permissions.AllowAny])
 def get_devices(request):
-    """获取已连接的设备列表"""
+    """
+    获取已连接的设备列表
+    
+    POST方法，返回通过adb devices获取的实际设备数据
+    
+    返回数据格式:
+    {
+        "devices": [
+            {
+                "serial": "设备序列号",
+                "brand": "设备品牌",
+                "model": "设备型号",
+                "name": "设备名称",
+                "status": "设备状态"
+            },
+            ...
+        ]
+    }
+    """
     try:
+        # 记录请求开始
+        logger.info("开始获取设备列表...")
+        
+        # 使用adb命令扫描设备
         result = subprocess.run(['adb', 'devices'], capture_output=True, text=True, check=True)
-        lines = result.stdout.strip().split('\n')[1:]  # 跳过标题行
+        
+        # 分析输出
+        lines = result.stdout.strip().split('\n')[1:]  # 跳过"List of devices attached"标题行
         devices = []
+        
+        # 记录原始输出用于调试
+        logger.info(f"ADB原始输出: {result.stdout}")
+        
         for line in lines:
-            if line.strip():
-                parts = line.strip().split('\t')
-                if len(parts) == 2:
-                    serial, status = parts
-                    if status == 'device':  # 只添加已连接的设备
-                        # 获取设备信息
-                        brand = subprocess.run(['adb', '-s', serial, 'shell', 'getprop', 'ro.product.brand'], 
-                                              capture_output=True, text=True).stdout.strip()
-                        model = subprocess.run(['adb', '-s', serial, 'shell', 'getprop', 'ro.product.model'], 
-                                              capture_output=True, text=True).stdout.strip()
-                        devices.append({
-                            'serial': serial,
-                            'brand': brand,
-                            'model': model,
-                            'name': f"{brand}-{model}"
-                        })
+            if not line.strip():
+                continue
+                
+            # 解析设备信息: 格式通常为 "serial\tstatus"
+            parts = line.strip().split('\t')
+            if len(parts) >= 2:
+                serial, status = parts
+                
+                # 只处理已连接的设备和未授权的设备
+                if status in ['device', 'unauthorized', 'offline']:
+                    device_info = {
+                        'serial': serial,
+                        'status': status,
+                        'brand': '',
+                        'model': '',
+                        'name': serial  # 默认使用序列号作为名称
+                    }
+                    
+                    # 如果设备已连接授权，获取更多设备信息
+                    if status == 'device':
+                        try:
+                            # 获取设备品牌
+                            brand_cmd = subprocess.run(
+                                ['adb', '-s', serial, 'shell', 'getprop', 'ro.product.brand'], 
+                                capture_output=True, text=True, timeout=5
+                            )
+                            device_info['brand'] = brand_cmd.stdout.strip()
+                            
+                            # 获取设备型号
+                            model_cmd = subprocess.run(
+                                ['adb', '-s', serial, 'shell', 'getprop', 'ro.product.model'], 
+                                capture_output=True, text=True, timeout=5
+                            )
+                            device_info['model'] = model_cmd.stdout.strip()
+                            
+                            # 设置完整名称
+                            if device_info['brand'] and device_info['model']:
+                                device_info['name'] = f"{device_info['brand']}-{device_info['model']}"
+                                
+                        except Exception as e:
+                            logger.warning(f"获取设备 {serial} 详情失败: {str(e)}")
+                    
+                    devices.append(device_info)
+        
+            # 记录找到的设备数量
+            logger.info(f"成功找到 {len(devices)} 台设备")
+        
+        # 返回设备列表
         return Response({'devices': devices})
     except Exception as e:
-        return Response({'error': str(e)}, status=500)
+        # 记录错误
+        logger.error(f"获取设备列表失败: {str(e)}", exc_info=True)
+        return Response({'error': str(e), 'devices': []}, status=500)
 
 @api_view(['POST'])
 @csrf_exempt
@@ -877,7 +940,7 @@ def replay_script(request):
                     'success': False,
                     'message': f'脚本文件不存在: {path_input}'
                 }, status=404)
-            
+        
             # 更新配置中的路径
             config['path'] = path_input
         
@@ -1364,7 +1427,7 @@ class ScriptCategoryViewSet(viewsets.ModelViewSet):
     """
     queryset = ScriptCategory.objects.all()
     serializer_class = ScriptCategorySerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]  # 允许所有用户访问
     
     def get_queryset(self):
         """
@@ -1396,7 +1459,7 @@ class ScriptViewSet(viewsets.ModelViewSet):
     """
     queryset = Script.objects.all()
     serializer_class = ScriptSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]  # 允许所有用户访问
     
     def get_serializer_class(self):
         """
@@ -1521,13 +1584,13 @@ class ScriptVersionViewSet(viewsets.ReadOnlyModelViewSet):
     """脚本版本视图集 - 只读"""
     queryset = ScriptVersion.objects.all()
     serializer_class = ScriptVersionSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]  # 允许所有用户访问
     filterset_fields = ['script']
 
 
 class CloneScriptView(views.APIView):
     """克隆脚本"""
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]  # 允许所有用户访问
     
     def post(self, request, pk):
         # 获取源脚本
@@ -1552,7 +1615,7 @@ class CloneScriptView(views.APIView):
 
 class ExportScriptView(views.APIView):
     """导出脚本为JSON文件"""
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]  # 允许所有用户访问
     
     def get(self, request, pk):
         script = get_object_or_404(Script, pk=pk)
@@ -1579,7 +1642,7 @@ class ExportScriptView(views.APIView):
 
 class ImportScriptView(views.APIView):
     """导入脚本"""
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]  # 允许所有用户访问
     
     def post(self, request):
         serializer = ScriptImportSerializer(data=request.data)
@@ -1615,7 +1678,7 @@ class ImportScriptView(views.APIView):
 
 class RollbackScriptView(views.APIView):
     """回滚脚本到指定版本"""
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]  # 允许所有用户访问
     
     def post(self, request, pk, version):
         script = get_object_or_404(Script, pk=pk)
@@ -1638,7 +1701,7 @@ class ScriptExecutionViewSet(viewsets.ReadOnlyModelViewSet):
     """
     queryset = ScriptExecution.objects.all()
     serializer_class = ScriptExecutionSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]  # 允许所有用户访问
     
     def get_queryset(self):
         """
@@ -1690,7 +1753,7 @@ def edit_script(request, script_path=None):
         
         if not filename:
             return JsonResponse({'success': False, 'message': '未提供文件名'}, status=400)
-            
+
         logger.info(f"Edit script request - filename: {filename}")
         
         # 构建完整路径 - 确保路径安全
@@ -1727,56 +1790,56 @@ def edit_script(request, script_path=None):
                         if content is None:
                             content = content_bytes.decode('latin1')
                             logger.warning(f"使用latin1作为回退编码")
-                
-                script_json_data = {}
-                try:
-                    script_json_data = json.loads(content)
-                    formatted_content = json.dumps(script_json_data, indent=2, ensure_ascii=False)
-                except json.JSONDecodeError:
-                    formatted_content = content
-                    logger.warning(f"Content of '{final_absolute_path}' is not valid JSON. Serving raw.")
-                
-                created_time = datetime.fromtimestamp(os.path.getctime(final_absolute_path))
-                modified_time = datetime.fromtimestamp(os.path.getmtime(final_absolute_path))
-                step_count = len(script_json_data.get('steps', [])) if isinstance(script_json_data, dict) else 0
-                
-                return JsonResponse({
-                    'success': True, 'filename': safe_filename, 'path': final_absolute_path,
-                    'content': formatted_content, 'created': created_time.strftime('%Y-%m-%d %H:%M:%S'),
-                    'modified': modified_time.strftime('%Y-%m-%d %H:%M:%S'), 'step_count': step_count
-                })
-            except FileNotFoundError:
-                logger.error(f"File not found: {final_absolute_path}")
-                return JsonResponse({'success': False, 'message': f'脚本文件不存在: {safe_filename}'}, status=404)
+                    
+                    script_json_data = {}
+                    try:
+                        script_json_data = json.loads(content)
+                        formatted_content = json.dumps(script_json_data, indent=2, ensure_ascii=False)
+                    except json.JSONDecodeError:
+                        formatted_content = content
+                        logger.warning(f"Content of '{final_absolute_path}' is not valid JSON. Serving raw.")
+                    
+                    created_time = datetime.fromtimestamp(os.path.getctime(final_absolute_path))
+                    modified_time = datetime.fromtimestamp(os.path.getmtime(final_absolute_path))
+                    step_count = len(script_json_data.get('steps', [])) if isinstance(script_json_data, dict) else 0
+                    
+                    return JsonResponse({
+                        'success': True, 'filename': safe_filename, 'path': final_absolute_path,
+                        'content': formatted_content, 'created': created_time.strftime('%Y-%m-%d %H:%M:%S'),
+                        'modified': modified_time.strftime('%Y-%m-%d %H:%M:%S'), 'step_count': step_count
+                    })
+                except FileNotFoundError:
+                    logger.error(f"File not found: {final_absolute_path}")
+                    return JsonResponse({'success': False, 'message': f'脚本文件不存在: {safe_filename}'}, status=404)
             except Exception as e_read:
                 logger.error(f"Error reading script file '{final_absolute_path}': {str(e_read)}")
                 return JsonResponse({'success': False, 'message': f'读取脚本文件失败: {str(e_read)}'}, status=500)
-        
+
         elif operation == 'write':
             # 更新文件内容
-            new_content_str = data.get('content')
-            if new_content_str is None:
-                return JsonResponse({'success': False, 'message': '未提供新的脚本内容'}, status=400)
+                new_content_str = data.get('content')
+                if new_content_str is None:
+                    return JsonResponse({'success': False, 'message': '未提供新的脚本内容'}, status=400)
             
             # 验证JSON格式
-            try:
-                json.loads(new_content_str)
-            except json.JSONDecodeError as e_json:
-                logger.error(f"Invalid JSON content: {str(e_json)}")
-                return JsonResponse({'success': False, 'message': f'无效的JSON格式: {str(e_json)}'}, status=400)
-            
+                try:
+                    json.loads(new_content_str)
+                except json.JSONDecodeError as e_json:
+                    logger.error(f"Invalid JSON content: {str(e_json)}")
+                    return JsonResponse({'success': False, 'message': f'无效的JSON格式: {str(e_json)}'}, status=400)
+                
             # 确保目录存在
-            os.makedirs(os.path.dirname(final_absolute_path), exist_ok=True)
-            
-            # 写入文件
-            with open(final_absolute_path, 'w', encoding='utf-8') as file:
-                file.write(new_content_str)
-            logger.info(f"Script updated successfully: {final_absolute_path}")
-            
-            return JsonResponse({
-                'success': True, 'message': '脚本已成功更新',
-                'modified': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            })
+                os.makedirs(os.path.dirname(final_absolute_path), exist_ok=True)
+                
+                # 写入文件
+                with open(final_absolute_path, 'w', encoding='utf-8') as file:
+                        file.write(new_content_str)
+                logger.info(f"Script updated successfully: {final_absolute_path}")
+                
+                return JsonResponse({
+                        'success': True, 'message': '脚本已成功更新',
+                        'modified': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    })
         else:
             # 不支持的操作类型
             return JsonResponse({'success': False, 'message': f'不支持的操作类型: {operation}'}, status=400)

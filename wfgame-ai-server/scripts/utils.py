@@ -166,7 +166,7 @@ def load_yolo_model(base_dir, model_class, specific_model=None, exit_on_failure=
     """
     # 设置模型目录
     weights_dir = os.path.join(base_dir, "datasets", "train", "weights")
-    print(f"模型目录: {weights_dir}") # C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\datasets\train\weights 
+    print(f"模型目录: {weights_dir}") # C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\datasets\train\weights
 
     # 搜索模型文件
     if specific_model:

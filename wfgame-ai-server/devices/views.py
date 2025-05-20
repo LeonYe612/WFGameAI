@@ -8,7 +8,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, status, views
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 
 from .models import DeviceType, Device, DeviceLog
 from .serializers import (
@@ -23,15 +23,17 @@ class DeviceTypeViewSet(viewsets.ModelViewSet):
     """设备类型视图集"""
     queryset = DeviceType.objects.all()
     serializer_class = DeviceTypeSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]  # 允许所有用户访问
+    http_method_names = ['post']  # 只允许POST方法
 
 
 class DeviceViewSet(viewsets.ModelViewSet):
     """设备视图集"""
     queryset = Device.objects.all()
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]  # 允许所有用户访问
     filterset_fields = ['status', 'type']
     search_fields = ['name', 'device_id', 'ip_address']
+    http_method_names = ['post']  # 只允许POST方法
     
     def get_serializer_class(self):
         """根据操作选择适当的序列化器"""
@@ -39,7 +41,7 @@ class DeviceViewSet(viewsets.ModelViewSet):
             return DeviceDetailSerializer
         return DeviceSerializer
     
-    @action(detail=True, methods=['get'])
+    @action(detail=True, methods=['post'])
     def logs(self, request, pk=None):
         """获取指定设备的日志"""
         device = self.get_object()
@@ -56,13 +58,15 @@ class DeviceLogViewSet(viewsets.ReadOnlyModelViewSet):
     """设备日志视图集 - 只读"""
     queryset = DeviceLog.objects.all()
     serializer_class = DeviceLogSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]  # 允许所有用户访问
     filterset_fields = ['device', 'level']
+    http_method_names = ['post']  # 只允许POST方法
 
 
 class ConnectDeviceView(views.APIView):
     """连接设备"""
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]  # 允许所有用户访问
+    http_method_names = ['post']  # 只允许POST方法
     
     def post(self, request, pk):
         device = get_object_or_404(Device, pk=pk)
@@ -113,7 +117,8 @@ class ConnectDeviceView(views.APIView):
 
 class DisconnectDeviceView(views.APIView):
     """断开设备连接"""
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]  # 允许所有用户访问
+    http_method_names = ['post']  # 只允许POST方法
     
     def post(self, request, pk):
         device = get_object_or_404(Device, pk=pk)
@@ -162,7 +167,8 @@ class DisconnectDeviceView(views.APIView):
 
 class ReserveDeviceView(views.APIView):
     """预约设备"""
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]  # 允许所有用户访问
+    http_method_names = ['post']  # 只允许POST方法
     
     def post(self, request, pk):
         device = get_object_or_404(Device, pk=pk)
@@ -176,14 +182,14 @@ class ReserveDeviceView(views.APIView):
         
         # 预约设备
         device.status = 'busy'
-        device.current_user = request.user
+        device.current_user = request.user if request.user.is_authenticated else None
         device.save()
         
         # 创建日志
         DeviceLog.objects.create(
             device=device,
             level='info',
-            message=f"设备 '{device.name}' 已被用户 '{request.user.username}' 预约"
+            message=f"设备 '{device.name}' 已被预约"
         )
         
         # 返回成功响应
@@ -195,7 +201,8 @@ class ReserveDeviceView(views.APIView):
 
 class ReleaseDeviceView(views.APIView):
     """释放设备"""
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]  # 允许所有用户访问
+    http_method_names = ['post']  # 只允许POST方法
     
     def post(self, request, pk):
         device = get_object_or_404(Device, pk=pk)
@@ -236,7 +243,8 @@ class ReleaseDeviceView(views.APIView):
 
 class ScanDevicesView(views.APIView):
     """扫描设备"""
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]  # 允许所有用户访问
+    http_method_names = ['post']  # 只允许POST方法
     
     def post(self, request):
         # 扫描Android设备
