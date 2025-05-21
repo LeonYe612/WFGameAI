@@ -1,0 +1,31 @@
+{
+    "folders": [
+        {
+            "path": "."
+        }
+    ],
+    "settings": {},
+    "extensions": {
+        "recommendations": [
+            "ms-python.python",
+            "ms-python.vscode-pylance",
+            "ms-toolsai.jupyter",
+            "njpwerner.autodocstring",
+            "visualstudioexptteam.vscodeintellicode",
+            "streetsidesoftware.code-spell-checker"
+        ]
+    },
+    "launch": {
+        "version": "0.2.0",
+        "configurations": [
+            {
+                "name": "启动AI Server",
+                "type": "python",
+                "request": "launch",
+                "program": "${workspaceFolder}/start_wfgame_ai.py",
+                "console": "integratedTerminal",
+                "justMyCode": true
+            }
+        ]
+    }
+}

@@ -1,0 +1,54 @@
+{
+    "editor.rulers": [120],
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
+    "editor.detectIndentation": false,
+    "files.trimTrailingWhitespace": true,
+    "python.linting.enabled": true,
+    "python.linting.pylintEnabled": true,
+    "python.linting.pylintArgs": [
+        "--max-line-length=120"
+    ],
+    "python.formatting.provider": "autopep8",
+    "python.formatting.autopep8Args": [
+        "--max-line-length=120"
+    ],
+    "workbench.startupEditor": "none",
+    "files.associations": {
+        "*.py": "python"
+    },
+    "markdown.preview.doubleClickToSwitchToEditor": false,
+    "workbench.colorCustomizations": {
+        "editorRuler.foreground": "#750000"
+    },
+    "workbench.colorTheme": "Default Dark+",
+    "python.analysis.typeCheckingMode": "basic",
+    "editor.codeActionsOnSave": {
+        "source.organizeImports": true
+    },
+    "[python]": {
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": true
+        }
+    },
+    "files.exclude": {
+        "**/__pycache__": true,
+        "**/.git": true,
+        "**/.DS_Store": true
+    },
+    "python.defaultInterpreterPath": "F:\\QA\\Software\\anaconda3\\envs\\py39_yolov10\\python.exe",
+    "workbench.panel.defaultLocation": "right",
+    "terminal.integrated.defaultProfile.windows": "PowerShell",
+    "terminal.integrated.profiles.windows": {
+        "PowerShell": {
+            "source": "PowerShell",
+            "icon": "terminal-powershell"
+        }
+    },
+    "workbench.editorAssociations": {
+        "*.ipynb": "jupyter-notebook"
+    },
+    "explorer.confirmDelete": false,
+    "explorer.confirmDragAndDrop": false
+}

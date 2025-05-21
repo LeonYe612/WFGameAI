@@ -88,7 +88,7 @@
         <div class="row mb-4">
             <div class="col-12 d-flex justify-content-between align-items-center">
                 <div>
-                    <h2><i class="fas fa-code"></i> 脚本管理</h2>
+                    <h2><i class="fas fa-code"></i> 脚本管理DIY</h2>
                     <p class="text-muted">管理测试脚本和录制新脚本</p>
                 </div>
                 <div>
@@ -262,23 +262,21 @@
                         <label for="pythonPath" class="form-label">Python路径</label>
                         <input type="text" class="form-control" id="pythonPath" value="F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe" readonly>
                         <div class="form-text text-danger">系统已锁定使用py39_yolov10环境，无法修改</div>
-                    </div>
-                    
-                    <div class="mb-3">
+                    </div>                    <div class="mb-3">
                         <label for="debugCmd" class="form-label">调试命令</label>
-                        <input type="text" class="form-control" id="debugCmd" value="record_script.py">
-                        <div class="form-text">默认为"record_script.py"</div>
+                        <input type="text" class="form-control" id="debugCmd" value="apps/scripts/record_script.py">
+                        <div class="form-text">默认为"apps/scripts/record_script.py"</div>
                     </div>
-                    
+
                     <div class="mb-3">
                         <label for="recordCmd" class="form-label">录制命令</label>
-                        <input type="text" class="form-control" id="recordCmd" value="record_script.py --record">
-                        <div class="form-text">默认为"record_script.py --record"</div>
+                        <input type="text" class="form-control" id="recordCmd" value="apps/scripts/record_script.py --record">
+                        <div class="form-text">默认为"apps/scripts/record_script.py --record"</div>
                     </div>
-                    
+
                     <div class="mb-3">
                         <label for="replayCmd" class="form-label">回放基础命令</label>
-                        <input type="text" class="form-control" id="replayCmd" value="replay_script.py --show-screens">
+                        <input type="text" class="form-control" id="replayCmd" value="apps/scripts/replay_script.py --show-screens">
                         <div class="form-text">默认为"replay_script.py --show-screens"</div>
                     </div>
                 </div>
@@ -307,7 +305,7 @@
                             </label>
                         </div>
                     </div>
-                    
+
                     <div id="scriptConfigsContainer">
                         <!-- 脚本配置部分 -->
                         <div class="card mb-3 script-config">
@@ -338,17 +336,17 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <button type="button" class="btn btn-outline-primary w-100" id="addScriptConfig">
                         <i class="fas fa-plus"></i> 添加另一个脚本
                     </button>
-                    
+
                     <div class="mt-3">
                         <div class="alert alert-info">
                             <i class="fas fa-info-circle"></i> 脚本将按顺序执行，前一个执行完成后再执行下一个
                         </div>
                     </div>
-                    
+
                     <div class="mt-3">
                         <label class="form-label">生成的命令预览</label>
                         <div class="card">
@@ -404,11 +402,16 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // 定义全局变量
+    <script>        document.addEventListener('DOMContentLoaded', function() {            // 定义全局变量
             let scripts = [];
-            
+            // 定义全局设置变量
+            let globalSettings = {
+                pythonPath: 'F:\\QA\\Software\\anaconda3\\envs\\py39_yolov10\\python.exe',
+                debugCmd: 'record_script.py',
+                recordCmd: 'record_script.py --record',
+                replayCmd: 'replay_script.py --show-screens'
+            };
+
             const debugBtn = document.getElementById('debugBtn');
             const recordBtn = document.getElementById('recordBtn');
             const replayBtn = document.getElementById('replayBtn');
@@ -430,53 +433,47 @@
             const importScriptCategory = document.getElementById('importScriptCategory');
             const importScriptDescription = document.getElementById('importScriptDescription');
             const scriptsList = document.getElementById('scriptsList');
-            
+
             // 加载设置
             loadSettings();
-            
+
             // 获取脚本列表
-            fetchScripts();
-            
-            // 调试按钮 - 执行 python record_script.py
+            fetchScripts();            // 调试按钮 - 执行 python record_script.py
             debugBtn.addEventListener('click', function() {
-                const settings = getSettings();
-                executeCommand(settings.pythonPath + ' ' + settings.debugCmd);
+                executeCommand(globalSettings.pythonPath + ' ' + globalSettings.debugCmd);
             });
-            
+
             // 录制按钮 - 执行 python record_script.py --record
             recordBtn.addEventListener('click', function() {
-                const settings = getSettings();
-                executeCommand(settings.pythonPath + ' ' + settings.recordCmd);
-            });
-            
-            // 保存设置
+                executeCommand(globalSettings.pythonPath + ' ' + globalSettings.recordCmd);
+            });            // 保存设置
             saveSettings.addEventListener('click', function() {
-                const pythonPath = document.getElementById('pythonPath').value.trim();
-                const debugCmd = document.getElementById('debugCmd').value.trim();
-                const recordCmd = document.getElementById('recordCmd').value.trim();
-                const replayCmd = document.getElementById('replayCmd').value.trim();
-                
-                const settings = {
-                    pythonPath,
-                    debugCmd,
-                    recordCmd,
-                    replayCmd
-                };
-                
-                localStorage.setItem('scriptSettings', JSON.stringify(settings));
-                
+                // 获取Python路径但强制使用正确的路径格式
+                const pythonPath = document.getElementById('pythonPath').value.trim();                // 更新全局设置
+                globalSettings.pythonPath = pythonPath;
+                globalSettings.debugCmd = 'record_script.py';
+                globalSettings.recordCmd = 'record_script.py --record';
+                globalSettings.replayCmd = 'replay_script.py --show-screens';
+
+                // 更新表单中的值以反映实际使用的设置
+                document.getElementById('debugCmd').value = globalSettings.debugCmd;
+                document.getElementById('recordCmd').value = globalSettings.recordCmd;
+                document.getElementById('replayCmd').value = globalSettings.replayCmd;
+
+                localStorage.setItem('scriptSettings', JSON.stringify(globalSettings));
+
                 // 关闭模态框
                 const modal = bootstrap.Modal.getInstance(document.getElementById('settingsModal'));
                 modal.hide();
-                
-                alert('设置已保存');
+
+                showToast('设置已保存', 'success');
             });
-            
+
             // 添加脚本配置
             addScriptConfig.addEventListener('click', function() {
                 const scriptConfigs = document.querySelectorAll('.script-config');
                 const newIndex = scriptConfigs.length + 1;
-                
+
                 const newScriptConfigHTML = `
                     <div class="card mb-3 script-config">
                         <div class="card-header d-flex justify-content-between align-items-center">
@@ -506,65 +503,65 @@
                         </div>
                     </div>
                 `;
-                
+
                 // 添加到容器
                 const tempDiv = document.createElement('div');
                 tempDiv.innerHTML = newScriptConfigHTML;
                 scriptConfigsContainer.appendChild(tempDiv.firstElementChild);
-                
+
                 // 重新添加事件监听
                 addRemoveScriptListeners();
                 addScriptSelectListeners();
-                
+
                 // 显示第一个脚本的删除按钮
                 if (newIndex === 2) {
                     document.querySelector('.script-config:first-child .remove-script').style.display = 'block';
                 }
-                
+
                 // 更新命令预览
                 updateCommandPreview();
             });
-            
+
             // 开始回放按钮
             startReplay.addEventListener('click', function() {
                 const scriptConfigs = [];
                 const scriptConfigElements = document.querySelectorAll('.script-config');
-                
+
                 let hasError = false;
-                
+
                 scriptConfigElements.forEach(configElement => {
                     const scriptSelect = configElement.querySelector('.script-select');
                     const loopCount = configElement.querySelector('.loop-count');
                     const maxDuration = configElement.querySelector('.max-duration');
-                    
+
                     if (!scriptSelect.value) {
                         alert('请选择脚本');
                         hasError = true;
                         return;
                     }
-                    
+
                     const config = {
                         path: scriptSelect.value,
                         loop_count: parseInt(loopCount.value)
                     };
-                    
+
                     if (maxDuration.value) {
                         config.max_duration = parseInt(maxDuration.value);
                     }
-                    
+
                     scriptConfigs.push(config);
                 });
-                
+
                 if (hasError) return;
-                
+
                 const showScreens = document.getElementById('showScreens').checked;
-                
+
                 // 构建请求数据
                 const data = {
                     scripts: scriptConfigs,
                     show_screens: showScreens
                 };
-                
+
                 // 发送回放请求
                 fetch('/api/scripts/replay/', {
                     method: 'POST',
@@ -579,7 +576,7 @@
                         // 关闭模态框
                         const modal = bootstrap.Modal.getInstance(document.getElementById('replayModal'));
                         modal.hide();
-                        
+
                         alert('回放已启动，请查看命令行窗口');
                     } else {
                         alert('回放启动失败: ' + data.message);
@@ -590,41 +587,41 @@
                     alert('回放启动失败，请检查网络连接');
                 });
             });
-            
+
             // 点击拖放区域触发文件选择
             dropzone.addEventListener('click', function() {
                 fileInput.click();
             });
-            
+
             // 处理拖放文件
             dropzone.addEventListener('dragover', function(e) {
                 e.preventDefault();
                 dropzone.style.borderColor = '#0d6efd';
                 dropzone.style.backgroundColor = '#e9ecef';
             });
-            
+
             dropzone.addEventListener('dragleave', function() {
                 dropzone.style.borderColor = '#ccc';
                 dropzone.style.backgroundColor = '#f8f9fa';
             });
-            
+
             dropzone.addEventListener('drop', function(e) {
                 e.preventDefault();
                 dropzone.style.borderColor = '#ccc';
                 dropzone.style.backgroundColor = '#f8f9fa';
-                
+
                 if (e.dataTransfer.files.length) {
                     handleFiles(e.dataTransfer.files);
                 }
             });
-            
+
             // 文件选择处理
             fileInput.addEventListener('change', function() {
                 if (fileInput.files.length) {
                     handleFiles(fileInput.files);
                 }
             });
-            
+
             // 移除已选文件
             removeFile.addEventListener('click', function() {
                 fileInput.value = '';
@@ -632,11 +629,11 @@
                 importError.classList.add('d-none');
                 importSuccess.classList.add('d-none');
             });
-            
+
             // 保存按钮处理
             saveScript.addEventListener('click', function() {
                 const activeTab = document.querySelector('.tab-pane.show.active');
-                
+
                 if (activeTab.id === 'import-content') {
                     // 处理导入JSON
                     if (!fileInput.files.length) {
@@ -644,10 +641,10 @@
                         importError.classList.remove('d-none');
                         return;
                     }
-                    
+
                     const formData = new FormData();
                     formData.append('file', fileInput.files[0]);
-                    
+
                     // 添加分类和描述
                     if (importScriptCategory.value) {
                         formData.append('category', importScriptCategory.value);
@@ -655,7 +652,7 @@
                     if (importScriptDescription.value) {
                         formData.append('description', importScriptDescription.value);
                     }
-                    
+
                     fetch('/api/scripts/import/', {
                         method: 'POST',
                         body: formData
@@ -666,7 +663,7 @@
                             importSuccess.textContent = data.message;
                             importSuccess.classList.remove('d-none');
                             importError.classList.add('d-none');
-                            
+
                             // 2秒后关闭模态框并刷新脚本列表
                             setTimeout(() => {
                                 const modal = bootstrap.Modal.getInstance(document.getElementById('importModal'));
@@ -691,16 +688,16 @@
                     const scriptCategory = document.getElementById('scriptCategory').value;
                     const scriptDescription = document.getElementById('scriptDescription').value.trim();
                     const scriptContent = document.getElementById('scriptContent').value.trim();
-                    
+
                     if (!scriptName) {
                         alert('请输入脚本名称');
                         return;
                     }
-                    
+
                     try {
                         // 检查JSON格式是否有效
                         JSON.parse(scriptContent || '{}');
-                        
+
                         // 这里应该发送请求到后端创建脚本
                         alert('暂未实现手动创建功能');
                     } catch (e) {
@@ -708,25 +705,25 @@
                     }
                 }
             });
-            
+
             // 处理文件函数
             function handleFiles(files) {
                 const file = files[0];
-                
+
                 // 检查文件类型
                 if (!file.name.endsWith('.json')) {
                     importError.textContent = '只支持JSON文件';
                     importError.classList.remove('d-none');
                     return;
                 }
-                
+
                 // 显示文件信息
                 fileName.textContent = file.name + ' (' + formatFileSize(file.size) + ')';
                 fileInfo.classList.remove('d-none');
                 importError.classList.add('d-none');
                 importSuccess.classList.add('d-none');
             }
-            
+
             // 格式化文件大小
             function formatFileSize(bytes) {
                 if (bytes < 1024) {
@@ -736,10 +733,39 @@
                 } else {
                     return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
                 }
-            }
-            
-            // 执行命令
+            }            // 执行命令
             function executeCommand(command) {
+                // 显示加载中
+                showLoading('正在启动命令...');
+
+                // 确保命令使用正确的scripts目录
+                const cmdParts = command.split(' ');
+                // 检测Python路径 - 确保它正确格式化
+                if (cmdParts[0].includes('python') && cmdParts[0].includes('.exe')) {
+                    // 使用全局设置中定义的Python路径
+                    cmdParts[0] = globalSettings.pythonPath;
+                }
+
+                // 处理脚本路径
+                for (let i = 1; i < cmdParts.length; i++) {
+                    if (cmdParts[i].endsWith('.py')) {
+                        // 获取脚本文件名，忽略路径前缀
+                        const scriptName = cmdParts[i].split('/').pop().split('\\').pop();
+
+                        // 使用单纯的脚本名，让后端从SCRIPTS_DIR查找
+                        // 避免使用apps/scripts/前缀，因为后端会自动添加路径
+                        cmdParts[i] = scriptName;
+                        console.log('修正脚本路径为纯文件名:', cmdParts[i]);
+                        break;
+                    }
+                }
+
+                // 重建命令字符串
+                command = cmdParts.join(' ');
+
+                // 记录实际执行的命令以便调试
+                console.log('执行命令:', command);
+
                 fetch('/api/scripts/debug/', {
                     method: 'POST',
                     headers: {
@@ -749,68 +775,77 @@
                 })
                 .then(response => response.json())
                 .then(data => {
+                    hideLoading();
                     if (data.success) {
-                        alert('命令已启动: ' + command + '\n请查看命令行窗口获取输出');
+                        showToast('命令已启动: ' + command + '\n请查看命令行窗口获取输出', 'success');
                     } else {
-                        alert('命令启动失败: ' + data.message);
+                        // 增强错误提示
+                        const errorMessage = data.message || '未知错误';
+                        let enhancedMessage = '命令启动失败: ' + errorMessage;
+
+                        // 检查是否为路径问题
+                        if (errorMessage.includes('FileNotFoundError') ||
+                            errorMessage.includes('找不到文件') ||
+                            errorMessage.includes('未找到')) {
+                            enhancedMessage += '\n\n可能原因: 脚本文件路径错误。请确保所有脚本都位于正确的目录: apps/scripts/';
+                        }
+
+                        showToast(enhancedMessage, 'error');
                     }
                 })
                 .catch(error => {
+                    hideLoading();
                     console.error('命令启动错误:', error);
-                    alert('命令启动失败，请检查网络连接');
+                    showToast('命令启动失败，请检查网络连接: ' + error, 'error');
                 });
             }
-            
-            // 加载设置
+              // 加载设置            // 加载设置
             function loadSettings() {
-                let settings = localStorage.getItem('scriptSettings');
-                
-                if (settings) {
-                    settings = JSON.parse(settings);
-                } else {
-                    settings = {
-                        debugCmd: 'record_script.py',
-                        recordCmd: 'record_script.py --record',
-                        replayCmd: 'replay_script.py --show-screens'
-                    };
+                let storedSettings = localStorage.getItem('scriptSettings');
+
+                try {
+                    if (storedSettings) {
+                        const parsedSettings = JSON.parse(storedSettings);
+
+                        // 合并存储的设置到全局设置，但强制更新命令路径
+                        if (parsedSettings.pythonPath) {
+                            globalSettings.pythonPath = parsedSettings.pythonPath;
+                        }                        // 始终强制使用正确的脚本路径格式 - 只使用纯文件名
+                        globalSettings.debugCmd = 'record_script.py';
+                        globalSettings.recordCmd = 'record_script.py --record';
+                        globalSettings.replayCmd = 'replay_script.py --show-screens';
+
+                        console.log('已加载设置:', globalSettings);
+                    } else {
+                        console.log('未找到存储的设置，使用默认设置');
+                        // 使用初始设置，这些已在全局变量中定义
+                    }
+                } catch (error) {
+                    console.error('解析设置时出错:', error);                    // 出错时设置默认值
+                    globalSettings.pythonPath = 'F:\\QA\\Software\\anaconda3\\envs\\py39_yolov10\\python.exe';
+                    globalSettings.debugCmd = 'record_script.py';
+                    globalSettings.recordCmd = 'record_script.py --record';
+                    globalSettings.replayCmd = 'replay_script.py --show-screens';
                 }
-                
-                // 强制使用指定Python路径，无论localStorage中存储的是什么
-                settings.pythonPath = 'F:\\QA\\Software\\anaconda3\\envs\\py39_yolov10\\python.exe';
-                
-                // 更新localStorage
-                localStorage.setItem('scriptSettings', JSON.stringify(settings));
-                
-                document.getElementById('pythonPath').value = settings.pythonPath;
-                document.getElementById('debugCmd').value = settings.debugCmd;
-                document.getElementById('recordCmd').value = settings.recordCmd;
-                document.getElementById('replayCmd').value = settings.replayCmd;
-            }
-            
-            // 获取设置
+
+                // 更新localStorage以确保一致性
+                localStorage.setItem('scriptSettings', JSON.stringify(globalSettings));
+
+                // 更新表单字段
+                document.getElementById('pythonPath').value = globalSettings.pythonPath;
+                document.getElementById('debugCmd').value = globalSettings.debugCmd;
+                document.getElementById('recordCmd').value = globalSettings.recordCmd;
+                document.getElementById('replayCmd').value = globalSettings.replayCmd;
+            }// 获取设置
             function getSettings() {
-                let settings = localStorage.getItem('scriptSettings');
-                
-                if (settings) {
-                    settings = JSON.parse(settings);
-                    // 强制覆盖Python路径
-                    settings.pythonPath = 'F:\\QA\\Software\\anaconda3\\envs\\py39_yolov10\\python.exe';
-                } else {
-                    settings = {
-                        pythonPath: 'F:\\QA\\Software\\anaconda3\\envs\\py39_yolov10\\python.exe',
-                        debugCmd: 'record_script.py',
-                        recordCmd: 'record_script.py --record',
-                        replayCmd: 'replay_script.py --show-screens'
-                    };
-                }
-                
-                return settings;
+                // 直接返回全局设置
+                return globalSettings;
             }
-            
+
             // 获取脚本列表
             function fetchScripts() {
                 showLoading('正在加载脚本列表...');
-                
+
                 fetch('/api/scripts/', {
                     method: 'POST',
                     headers: {
@@ -823,7 +858,7 @@
                     if (data.scripts && Array.isArray(data.scripts)) {
                         scripts = data.scripts;
                         updateScriptsTable(scripts);
-                        
+
                         // 同时更新脚本选择下拉列表
                         updateScriptDropdowns(scripts);
                     } else {
@@ -836,7 +871,7 @@
                     showToast('获取脚本列表失败: ' + error, 'error');
                 });
             }
-            
+
             // 更新脚本表格
             function updateScriptsTable(scripts) {
                 if (!scripts || scripts.length === 0) {
@@ -847,7 +882,7 @@
                     `;
                     return;
                 }
-                
+
                 const rows = scripts.map(script => {
                     // 构建不同类型的徽章颜色
                     let badgeClass = 'bg-secondary';
@@ -858,7 +893,7 @@
                     } else if (script.type === '自动生成') {
                         badgeClass = 'bg-info';
                     }
-                    
+
                     return `
                         <tr>
                             <td>${script.filename}</td>
@@ -883,21 +918,21 @@
                         </tr>
                     `;
                 }).join('');
-                
+
                 scriptsList.innerHTML = rows;
             }
-            
+
             // 更新脚本下拉选择列表
             function updateScriptDropdowns(scripts) {
                 const scriptSelects = document.querySelectorAll('.script-select');
-                
+
                 scriptSelects.forEach(select => {
                     // 保存当前选中的值
                     const currentValue = select.value;
-                    
+
                     // 清空现有选项
                     select.innerHTML = '<option value="">请选择脚本...</option>';
-                    
+
                     // 添加新选项
                     scripts.forEach(script => {
                         const option = document.createElement('option');
@@ -905,125 +940,125 @@
                         option.textContent = `${script.filename} (${script.step_count || 0}步)`;
                         select.appendChild(option);
                     });
-                    
+
                     // 如果之前有选中值，尝试恢复
                     if (currentValue) {
                         select.value = currentValue;
                     }
                 });
             }
-            
+
             // 添加脚本选择事件监听
             function addScriptSelectListeners() {
                 const scriptSelects = document.querySelectorAll('.script-select');
-                
+
                 scriptSelects.forEach(select => {
                     select.addEventListener('change', () => {
                         updateCommandPreview();
                     });
                 });
-                
+
                 // 循环次数和最大时间也需要添加事件监听
                 document.querySelectorAll('.loop-count, .max-duration').forEach(input => {
                     input.addEventListener('input', () => {
                         updateCommandPreview();
                     });
                 });
-                
+
                 // 显示屏幕选项也需要添加事件监听
                 document.getElementById('showScreens').addEventListener('change', () => {
                     updateCommandPreview();
                 });
             }
-            
+
             // 添加移除脚本事件监听
             function addRemoveScriptListeners() {
                 const removeButtons = document.querySelectorAll('.remove-script');
-                
+
                 removeButtons.forEach(button => {
                     button.addEventListener('click', function() {
                         const scriptConfig = this.closest('.script-config');
                         scriptConfig.remove();
-                        
+
                         // 更新脚本编号
                         const scriptConfigs = document.querySelectorAll('.script-config');
                         scriptConfigs.forEach((config, index) => {
                             config.querySelector('h6').textContent = `脚本 #${index + 1}`;
                         });
-                        
+
                         // 如果只剩一个脚本，隐藏删除按钮
                         if (scriptConfigs.length === 1) {
                             scriptConfigs[0].querySelector('.remove-script').style.display = 'none';
                         }
-                        
+
                         // 更新命令预览
                         updateCommandPreview();
                     });
                 });
             }
-            
+
             // 更新命令预览
             function updateCommandPreview() {
                 const settings = getSettings();
                 const showScreens = document.getElementById('showScreens').checked;
-                
+
                 let command = settings.pythonPath + ' ' + settings.replayCmd.split(' ')[0];
-                
+
                 if (showScreens) {
                     command += ' --show-screens';
                 }
-                
+
                 const scriptConfigs = document.querySelectorAll('.script-config');
-                
+
                 scriptConfigs.forEach(configElement => {
                     const scriptSelect = configElement.querySelector('.script-select');
                     const loopCount = configElement.querySelector('.loop-count');
                     const maxDuration = configElement.querySelector('.max-duration');
-                    
+
                     if (scriptSelect.value) {
                         command += ` --script ${scriptSelect.value}`;
-                        
+
                         if (loopCount.value && parseInt(loopCount.value) > 0) {
                             command += ` --loop-count ${loopCount.value}`;
                         }
-                        
+
                         if (maxDuration.value && parseInt(maxDuration.value) > 0) {
                             command += ` --max-duration ${maxDuration.value}`;
                         }
                     }
                 });
-                
+
                 commandPreview.textContent = command;
             }
         });
-        
+
         // 回放脚本
         function replayScript(path) {
             const modal = new bootstrap.Modal(document.getElementById('replayModal'));
-            
+
             // 确保脚本加载完成
             modal.show();
-            
+
             // 选择第一个脚本选择器并设置选中项
             const scriptSelect = document.querySelector('.script-select');
             if (scriptSelect) {
                 console.log("将选择脚本:", path);
                 console.log("可用选项:", Array.from(scriptSelect.options).map(o => o.value));
-                
+
                 // 等待下拉框加载完成
                 setTimeout(() => {
                     // 清空现有选项
                     if (scripts && scripts.length > 0) {
                         // 设置选中值
                         scriptSelect.value = path;
-                        
+
                         // 如果没有找到匹配的选项，检查是否需要更新下拉列表
                         if (scriptSelect.value !== path) {
                             console.log("未找到匹配选项，更新下拉列表");
                             updateScriptDropdowns(scripts);
                             scriptSelect.value = path;
                         }
-                        
+
                         // 触发change事件更新命令预览
                         const event = new Event('change');
                         scriptSelect.dispatchEvent(event);
@@ -1031,12 +1066,12 @@
                 }, 100);
             }
         }
-        
+
         // 编辑脚本
         function editScript(path) {
             // 提取文件名，忽略路径
             const filename = path.split('\\').pop().split('/').pop();
-            
+
             // 显示加载中
             showLoading('加载脚本内容中...');
 
@@ -1054,7 +1089,7 @@
                 .then(response => response.json())
                 .then(data => {
                     hideLoading();
-                    
+
                     if (data.success) {
                         // 创建编辑模态框
                         createEditModal(data);
@@ -1076,7 +1111,7 @@
             if (existingModal) {
                 existingModal.remove();
             }
-            
+
             // 创建模态框HTML
             const modalHTML = `
             <div class="modal fade" id="editScriptModal" tabindex="-1" aria-labelledby="editScriptModalLabel" aria-hidden="true">
@@ -1115,10 +1150,10 @@
                 </div>
             </div>
             `;
-            
+
             // 添加模态框到文档
             document.body.insertAdjacentHTML('beforeend', modalHTML);
-            
+
             // 获取模态框元素
             const modal = new bootstrap.Modal(document.getElementById('editScriptModal'));
             const scriptEditor = document.getElementById('scriptEditor');
@@ -1126,7 +1161,7 @@
             const saveEditBtn = document.getElementById('saveEditBtn');
             const editError = document.getElementById('editError');
             const editSuccess = document.getElementById('editSuccess');
-            
+
             // 格式化JSON按钮事件
             formatJsonBtn.addEventListener('click', function() {
                 try {
@@ -1138,16 +1173,16 @@
                     editError.classList.remove('d-none');
                 }
             });
-            
+
             // 保存编辑按钮事件
             saveEditBtn.addEventListener('click', function() {
                 try {
                     // 验证JSON格式
                     const jsonObj = JSON.parse(scriptEditor.value);
-                    
+
                     // 显示加载中
                     showLoading('保存脚本中...');
-                    
+
                     // 发送保存请求，只传递文件名
                     fetch(`/api/scripts/edit/`, {
                         method: 'POST',
@@ -1163,12 +1198,12 @@
                     .then(response => response.json())
                     .then(data => {
                         hideLoading();
-                        
+
                         if (data.success) {
                             editSuccess.textContent = data.message;
                             editSuccess.classList.remove('d-none');
                             editError.classList.add('d-none');
-                            
+
                             // 2秒后关闭模态框并刷新脚本列表
                             setTimeout(() => {
                                 modal.hide();
@@ -1192,7 +1227,7 @@
                     editError.classList.remove('d-none');
                 }
             });
-            
+
             // 显示模态框
             modal.show();
         }
@@ -1204,7 +1239,7 @@
             if (existingLoading) {
                 existingLoading.remove();
             }
-            
+
             // 创建加载提示HTML
             const loadingHTML = `
             <div id="loadingIndicator" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 9999; display: flex; justify-content: center; align-items: center;">
@@ -1218,7 +1253,7 @@
                 </div>
             </div>
             `;
-            
+
             // 添加加载提示到文档
             document.body.insertAdjacentHTML('beforeend', loadingHTML);
         }
@@ -1230,7 +1265,7 @@
                 loadingIndicator.remove();
             }
         }
-        
+
         // 显示提示消息
         function showToast(message, type = 'info') {
             // 检查是否已存在Toast，如果存在则移除
@@ -1238,7 +1273,7 @@
             if (existingToast) {
                 existingToast.remove();
             }
-            
+
             // 根据类型设置颜色
             let bgColor = 'bg-info';
             if (type === 'error') {
@@ -1248,7 +1283,7 @@
             } else if (type === 'warning') {
                 bgColor = 'bg-warning';
             }
-            
+
             // 创建Toast HTML
             const toastHTML = `
             <div id="toastMessage" class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
@@ -1263,10 +1298,10 @@
                 </div>
             </div>
             `;
-            
+
             // 添加Toast到文档
             document.body.insertAdjacentHTML('beforeend', toastHTML);
-            
+
             // 3秒后自动关闭
             setTimeout(() => {
                 let toast = document.getElementById('toastMessage');
@@ -1275,12 +1310,12 @@
                 }
             }, 3000);
         }
-        
+
         // 复制脚本
         function copyScript(path) {
             alert('复制脚本功能暂未实现: ' + path);
         }
-        
+
         // 删除脚本
         function deleteScript(path) {
             if (confirm('确定要删除该脚本吗？此操作不可恢复。')) {
@@ -1289,4 +1324,4 @@
         }
     </script>
 </body>
-</html> 
+</html>

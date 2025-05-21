@@ -6642,3 +6642,1238 @@ INFO 2025-05-20 16:07:24,383 basehttp 75488 78328 "POST /api/scripts/ HTTP/1.1" 
 INFO 2025-05-20 16:07:27,380 basehttp 75488 78328 "GET /pages/devices.html HTTP/1.1" 302 0
 INFO 2025-05-20 16:07:27,432 basehttp 75488 78328 "POST /api/devices/scan/ HTTP/1.1" 200 261
 INFO 2025-05-20 16:07:29,798 basehttp 75488 78328 "POST /api/devices/scan/ HTTP/1.1" 200 261
+INFO 2025-05-20 16:12:45,090 basehttp 75488 78536 "GET /pages/tasks.html HTTP/1.1" 200 9541
+INFO 2025-05-20 16:12:45,826 basehttp 75488 78536 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-20 16:12:45,827 basehttp 75488 78536 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-05-20 16:12:45,843 basehttp 75488 78536 "POST /api/scripts/ HTTP/1.1" 200 2748
+INFO 2025-05-20 16:12:54,748 views 75488 78536 使用配置文件中的Python路径: F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe
+INFO 2025-05-20 16:12:54,748 views 75488 78536 使用Python环境: F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe
+INFO 2025-05-20 16:12:54,748 views 75488 78536 执行回放命令: F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\replay_script.py --show-screens --script C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json --loop-count 1
+INFO 2025-05-20 16:12:55,774 basehttp 75488 78536 "POST /api/scripts/replay/ HTTP/1.1" 200 447
+ERROR 2025-05-20 16:12:58,225 views 75488 113184 回放输出: [16:12:58][DEBUG]<airtest.core.android.adb> F:\QA\Software\adb\platform-tools\adb.exe -s 5c41023b wait-for-device
+ERROR 2025-05-20 16:12:58,297 views 75488 113184 回放输出: [16:12:58][DEBUG]<airtest.core.android.adb> F:\QA\Software\adb\platform-tools\adb.exe -s 5c41023b shell getprop ro.build.version.sdk
+ERROR 2025-05-20 16:12:58,378 views 75488 113184 回放输出: [16:12:58][DEBUG]<airtest.core.android.adb> F:\QA\Software\adb\platform-tools\adb.exe -s 5c41023b shell getprop ro.product.brand
+ERROR 2025-05-20 16:12:58,457 views 75488 113184 回放输出: [16:12:58][DEBUG]<airtest.core.android.adb> F:\QA\Software\adb\platform-tools\adb.exe -s 5c41023b shell getprop ro.product.model
+ERROR 2025-05-20 16:12:58,542 views 75488 113184 回放输出: [16:12:58][DEBUG]<airtest.core.android.adb> F:\QA\Software\adb\platform-tools\adb.exe -s 5c41023b shell wm size
+ERROR 2025-05-20 16:12:58,641 views 75488 113184 回放输出: [16:12:58][DEBUG]<airtest.core.android.adb> F:\QA\Software\adb\platform-tools\adb.exe -s CWM0222215003786 wait-for-device
+ERROR 2025-05-20 16:12:58,722 views 75488 113184 回放输出: [16:12:58][DEBUG]<airtest.core.android.adb> F:\QA\Software\adb\platform-tools\adb.exe -s CWM0222215003786 shell getprop ro.build.version.sdk
+ERROR 2025-05-20 16:12:58,841 views 75488 113184 回放输出: [16:12:58][DEBUG]<airtest.core.android.adb> F:\QA\Software\adb\platform-tools\adb.exe -s CWM0222215003786 shell getprop ro.product.brand
+ERROR 2025-05-20 16:12:58,935 views 75488 113184 回放输出: [16:12:58][DEBUG]<airtest.core.android.adb> F:\QA\Software\adb\platform-tools\adb.exe -s CWM0222215003786 shell getprop ro.product.model
+ERROR 2025-05-20 16:12:59,029 views 75488 113184 回放输出: [16:12:59][DEBUG]<airtest.core.android.adb> F:\QA\Software\adb\platform-tools\adb.exe -s CWM0222215003786 shell wm size
+ERROR 2025-05-20 16:12:59,166 views 75488 113184 回放输出: [16:12:59][INFO]<airtest.core.api> {'msg': 'Start replay', 'success': True}
+ERROR 2025-05-20 16:13:08,661 views 75488 113184 回放输出: [16:13:08][ERROR]<airtest.report.report> Traceback (most recent call last):
+ERROR 2025-05-20 16:13:08,661 views 75488 113184 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\report.py", line 398, in copy_tree
+ERROR 2025-05-20 16:13:08,661 views 75488 113184 回放输出: shutil.copytree(src, dst, ignore=ignore)
+ERROR 2025-05-20 16:13:08,661 views 75488 113184 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\shutil.py", line 566, in copytree
+ERROR 2025-05-20 16:13:08,661 views 75488 113184 回放输出: with os.scandir(src) as itr:
+ERROR 2025-05-20 16:13:08,662 views 75488 113184 回放输出: 
+ERROR 2025-05-20 16:13:08,662 views 75488 113184 回放输出: [16:13:08][ERROR]<airtest.report.report> Traceback (most recent call last):
+ERROR 2025-05-20 16:13:08,663 views 75488 113184 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\report.py", line 398, in copy_tree
+ERROR 2025-05-20 16:13:08,663 views 75488 113184 回放输出: shutil.copytree(src, dst, ignore=ignore)
+ERROR 2025-05-20 16:13:08,663 views 75488 113184 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\shutil.py", line 566, in copytree
+ERROR 2025-05-20 16:13:08,663 views 75488 113184 回放输出: with os.scandir(src) as itr:
+ERROR 2025-05-20 16:13:08,663 views 75488 113184 回放输出: 
+ERROR 2025-05-20 16:13:08,663 views 75488 113184 回放输出: [16:13:08][ERROR]<airtest.report.report> Traceback (most recent call last):
+ERROR 2025-05-20 16:13:08,663 views 75488 113184 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\report.py", line 398, in copy_tree
+ERROR 2025-05-20 16:13:08,718 views 75488 113184 回放输出: shutil.copytree(src, dst, ignore=ignore)
+ERROR 2025-05-20 16:13:08,718 views 75488 113184 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\shutil.py", line 566, in copytree
+ERROR 2025-05-20 16:13:08,718 views 75488 113184 回放输出: with os.scandir(src) as itr:
+ERROR 2025-05-20 16:13:08,719 views 75488 113184 回放输出: 
+ERROR 2025-05-20 16:13:08,719 views 75488 113184 回放输出: [16:13:08][ERROR]<airtest.report.report> Traceback (most recent call last):
+ERROR 2025-05-20 16:13:08,719 views 75488 113184 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\report.py", line 398, in copy_tree
+ERROR 2025-05-20 16:13:08,719 views 75488 113184 回放输出: shutil.copytree(src, dst, ignore=ignore)
+ERROR 2025-05-20 16:13:08,719 views 75488 113184 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\shutil.py", line 566, in copytree
+ERROR 2025-05-20 16:13:08,719 views 75488 113184 回放输出: with os.scandir(src) as itr:
+ERROR 2025-05-20 16:13:08,719 views 75488 113184 回放输出: 
+ERROR 2025-05-20 16:13:08,719 views 75488 113184 回放输出: [16:13:08][INFO]<airtest.report.report> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-20-16-12-59\script.log\log.html
+ERROR 2025-05-20 16:13:09,094 views 75488 113184 回放输出: [16:13:09][ERROR]<airtest.report.report> Traceback (most recent call last):
+ERROR 2025-05-20 16:13:09,094 views 75488 113184 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\report.py", line 398, in copy_tree
+INFO 2025-05-20 16:13:09,841 views 75488 115148 回放输出: 解析命令行参数结果:
+ERROR 2025-05-20 16:13:10,660 views 75488 113184 回放输出: shutil.copytree(src, dst, ignore=ignore)
+INFO 2025-05-20 16:13:10,660 views 75488 115148 回放输出: 脚本 1: {'path': 'C:\\Users\\Administrator\\PycharmProjects\\WFGameAI\\wfgame-ai-server\\testcase\\scene1_nologin_steps_2025-04-07.json', 'loop_count': 1}
+ERROR 2025-05-20 16:13:10,660 views 75488 113184 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\shutil.py", line 566, in copytree
+INFO 2025-05-20 16:13:10,661 views 75488 115148 回放输出: 模型目录: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\datasets\train\weights
+ERROR 2025-05-20 16:13:10,661 views 75488 113184 回放输出: with os.scandir(src) as itr:
+INFO 2025-05-20 16:13:10,661 views 75488 115148 回放输出: 找到best.pt模型: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\datasets\train\weights\best.pt
+INFO 2025-05-20 16:13:10,661 views 75488 115148 回放输出: 将模型移至设备: cuda
+ERROR 2025-05-20 16:13:10,661 views 75488 113184 回放输出: 
+INFO 2025-05-20 16:13:10,661 views 75488 115148 回放输出: 模型加载成功: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\datasets\train\weights\best.pt
+ERROR 2025-05-20 16:13:10,661 views 75488 113184 回放输出: [16:13:09][ERROR]<airtest.report.report> Traceback (most recent call last):
+INFO 2025-05-20 16:13:10,661 views 75488 115148 回放输出: 准备执行用户指定的 1 个脚本...
+ERROR 2025-05-20 16:13:10,662 views 75488 113184 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\report.py", line 398, in copy_tree
+INFO 2025-05-20 16:13:10,662 views 75488 115148 回放输出: 添加脚本: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json
+ERROR 2025-05-20 16:13:10,662 views 75488 113184 回放输出: shutil.copytree(src, dst, ignore=ignore)
+INFO 2025-05-20 16:13:10,662 views 75488 115148 回放输出: 最终将执行 1 个脚本:
+ERROR 2025-05-20 16:13:10,662 views 75488 113184 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\shutil.py", line 566, in copytree
+INFO 2025-05-20 16:13:10,662 views 75488 115148 回放输出: 1. C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json (循环次数: 1)
+ERROR 2025-05-20 16:13:10,662 views 75488 113184 回放输出: with os.scandir(src) as itr:
+INFO 2025-05-20 16:13:10,662 views 75488 115148 回放输出: 设备 OnePlus-KB2000-1080x2400 连接成功
+INFO 2025-05-20 16:13:10,662 views 75488 115148 回放输出: 设备 HUAWEI-JAD-AL00-1228x2700 连接成功
+ERROR 2025-05-20 16:13:12,777 views 75488 113184 回放输出: 
+INFO 2025-05-20 16:13:12,778 views 75488 115148 回放输出: 加载脚本: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json
+ERROR 2025-05-20 16:13:12,778 views 75488 113184 回放输出: [16:13:09][ERROR]<airtest.report.report> Traceback (most recent call last):
+INFO 2025-05-20 16:13:12,778 views 75488 115148 回放输出: 检测到 2 个设备: ['OnePlus-KB2000-1080x2400', 'HUAWEI-JAD-AL00-1228x2700']
+ERROR 2025-05-20 16:13:12,778 views 75488 113184 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\report.py", line 398, in copy_tree
+INFO 2025-05-20 16:13:12,778 views 75488 115148 回放输出: 开始回放
+ERROR 2025-05-20 16:13:12,778 views 75488 113184 回放输出: shutil.copytree(src, dst, ignore=ignore)
+INFO 2025-05-20 16:13:12,778 views 75488 115148 回放输出: 清理日志目录: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs/device_reports
+ERROR 2025-05-20 16:13:12,778 views 75488 113184 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\shutil.py", line 566, in copytree
+INFO 2025-05-20 16:13:12,778 views 75488 115148 回放输出: run函数将执行 1 个脚本:
+ERROR 2025-05-20 16:13:12,778 views 75488 113184 回放输出: with os.scandir(src) as itr:
+INFO 2025-05-20 16:13:12,778 views 75488 115148 回放输出: 1. C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json
+ERROR 2025-05-20 16:13:12,779 views 75488 113184 回放输出: 
+ERROR 2025-05-20 16:13:14,516 views 75488 113184 回放输出: [16:13:09][ERROR]<airtest.report.report> Traceback (most recent call last):
+INFO 2025-05-20 16:13:14,516 views 75488 115148 回放输出: 设备: OnePlus-KB2000-1080x2400, 脚本: [{'path': 'C:\\Users\\Administrator\\PycharmProjects\\WFGameAI\\wfgame-ai-server\\testcase\\scene1_nologin_steps_2025-04-07.json', 'loop_count': 1}], 日志目录: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-20-16-12-59
+ERROR 2025-05-20 16:13:14,516 views 75488 113184 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\report.py", line 398, in copy_tree
+INFO 2025-05-20 16:13:14,516 views 75488 115148 回放输出: show_screens: True, loop_count: 1
+ERROR 2025-05-20 16:13:14,516 views 75488 113184 回放输出: shutil.copytree(src, dst, ignore=ignore)
+INFO 2025-05-20 16:13:14,516 views 75488 115148 回放输出: 开始回放设备: OnePlus-KB2000-1080x2400, 脚本: [{'path': 'C:\\Users\\Administrator\\PycharmProjects\\WFGameAI\\wfgame-ai-server\\testcase\\scene1_nologin_steps_2025-04-07.json', 'loop_count': 1}]
+ERROR 2025-05-20 16:13:14,516 views 75488 113184 回放输出: File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\shutil.py", line 566, in copytree
+INFO 2025-05-20 16:13:14,516 views 75488 115148 回放输出: 设备: HUAWEI-JAD-AL00-1228x2700, 脚本: [{'path': 'C:\\Users\\Administrator\\PycharmProjects\\WFGameAI\\wfgame-ai-server\\testcase\\scene1_nologin_steps_2025-04-07.json', 'loop_count': 1}], 日志目录: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-20-16-12-59
+ERROR 2025-05-20 16:13:14,516 views 75488 113184 回放输出: with os.scandir(src) as itr:
+INFO 2025-05-20 16:13:14,516 views 75488 115148 回放输出: show_screens: True, loop_count: 1
+INFO 2025-05-20 16:13:14,516 views 75488 115148 回放输出: 开始回放设备: HUAWEI-JAD-AL00-1228x2700, 脚本: [{'path': 'C:\\Users\\Administrator\\PycharmProjects\\WFGameAI\\wfgame-ai-server\\testcase\\scene1_nologin_steps_2025-04-07.json', 'loop_count': 1}]
+ERROR 2025-05-20 16:13:16,641 views 75488 113184 回放输出: 
+INFO 2025-05-20 16:13:16,641 views 75488 115148 回放输出: 保存初始截图: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-20-16-12-59\1747728779174.jpg
+ERROR 2025-05-20 16:13:16,641 views 75488 113184 回放输出: [16:13:09][INFO]<airtest.report.report> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-20-16-12-59\script.log\log.html
+INFO 2025-05-20 16:13:16,641 views 75488 115148 回放输出: 开始执行脚本: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json, 循环次数: 1, 最大执行时间: None秒
+INFO 2025-05-20 16:13:16,641 views 75488 115148 回放输出: 第 1/1 次循环
+INFO 2025-05-20 16:13:16,641 views 75488 115148 回放输出: 按顺序执行步骤，共 3 个步骤
+INFO 2025-05-20 16:13:16,641 views 75488 115148 回放输出: 执行步骤 1/3: operation-close, 备注: 启动游戏后先有一个公告弹窗，点击关闭
+INFO 2025-05-20 16:13:16,641 views 75488 115148 回放输出: 保存初始截图: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-20-16-12-59\1747728779175.jpg
+INFO 2025-05-20 16:13:16,641 views 75488 115148 回放输出: 开始执行脚本: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json, 循环次数: 1, 最大执行时间: None秒
+INFO 2025-05-20 16:13:16,641 views 75488 115148 回放输出: 第 1/1 次循环
+INFO 2025-05-20 16:13:16,641 views 75488 115148 回放输出: 按顺序执行步骤，共 3 个步骤
+INFO 2025-05-20 16:13:16,641 views 75488 115148 回放输出: 执行步骤 1/3: operation-close, 备注: 启动游戏后先有一个公告弹窗，点击关闭
+INFO 2025-05-20 16:13:16,641 views 75488 115148 回放输出: 保存截图: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-20-16-12-59\1747728780291.jpg
+INFO 2025-05-20 16:13:16,641 views 75488 115148 回放输出: 保存截图: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-20-16-12-59\1747728781089.jpg
+INFO 2025-05-20 16:13:16,641 views 75488 115148 回放输出: 设备 HUAWEI-JAD-AL00-1228x2700 执行步骤 1: operation-close，点击位置: (1144, 603)
+INFO 2025-05-20 16:13:16,641 views 75488 115148 回放输出: 设备 OnePlus-KB2000-1080x2400 执行步骤 1: operation-close，点击位置: (1008, 549)
+INFO 2025-05-20 16:13:16,641 views 75488 115148 回放输出: 执行步骤 2/3: system-cleanUpCache, 备注: 打开清理缓存弹窗
+INFO 2025-05-20 16:13:16,641 views 75488 115148 回放输出: 执行步骤 2/3: system-cleanUpCache, 备注: 打开清理缓存弹窗
+INFO 2025-05-20 16:13:16,641 views 75488 115148 回放输出: 保存截图: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-20-16-12-59\1747728783915.jpg
+INFO 2025-05-20 16:13:18,469 views 75488 115148 回放输出: 保存截图: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-20-16-12-59\1747728783445.jpg
+INFO 2025-05-20 16:13:18,469 views 75488 115148 回放输出: 设备 HUAWEI-JAD-AL00-1228x2700 执行步骤 2: system-cleanUpCache，点击位置: (1125, 417)
+INFO 2025-05-20 16:13:18,469 views 75488 115148 回放输出: 设备 OnePlus-KB2000-1080x2400 执行步骤 2: system-cleanUpCache，点击位置: (990, 367)
+INFO 2025-05-20 16:13:18,469 views 75488 115148 回放输出: 执行步骤 3/3: operation-close, 备注: 关闭清理缓存弹窗
+INFO 2025-05-20 16:13:18,469 views 75488 115148 回放输出: 执行步骤 3/3: operation-close, 备注: 关闭清理缓存弹窗
+INFO 2025-05-20 16:13:18,469 views 75488 115148 回放输出: 保存截图: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-20-16-12-59\1747728786415.jpg
+INFO 2025-05-20 16:13:18,469 views 75488 115148 回放输出: 保存截图: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-20-16-12-59\1747728786305.jpg
+INFO 2025-05-20 16:13:18,469 views 75488 115148 回放输出: 设备 HUAWEI-JAD-AL00-1228x2700 执行步骤 3: operation-close，点击位置: (382, 1595)
+INFO 2025-05-20 16:13:18,469 views 75488 115148 回放输出: 设备 OnePlus-KB2000-1080x2400 执行步骤 3: operation-close，点击位置: (336, 1414)
+INFO 2025-05-20 16:13:18,469 views 75488 115148 回放输出: 已完成执行 3 个步骤
+INFO 2025-05-20 16:13:18,469 views 75488 115148 回放输出: 完成脚本 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json，执行步骤数: 0，总步骤数: 3
+INFO 2025-05-20 16:13:18,469 views 75488 115148 回放输出: 设备 HUAWEI-JAD-AL00-1228x2700 回放完成，完成总步骤数: 3
+INFO 2025-05-20 16:13:18,469 views 75488 115148 回放输出: 已完成执行 3 个步骤
+INFO 2025-05-20 16:13:18,469 views 75488 115148 回放输出: 完成脚本 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json，执行步骤数: 0，总步骤数: 3
+INFO 2025-05-20 16:13:18,469 views 75488 115148 回放输出: 设备 OnePlus-KB2000-1080x2400 回放完成，完成总步骤数: 3
+INFO 2025-05-20 16:13:18,469 views 75488 115148 回放输出: 检查并修复日志文件JSON格式...
+INFO 2025-05-20 16:13:18,469 views 75488 115148 回放输出: JSON格式修复完成: 总行数 9, 有效行数 9, 修复 0 行
+INFO 2025-05-20 16:13:18,469 views 75488 115148 回放输出: 处理脚本文件 1: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json
+INFO 2025-05-20 16:13:18,469 views 75488 115148 回放输出: 已合并 1 个脚本文件到: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-20-16-12-59\script.py
+INFO 2025-05-20 16:13:18,469 views 75488 115148 回放输出: 复制CSS资源: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\css -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-20-16-12-59\static\css
+INFO 2025-05-20 16:13:18,469 views 75488 115148 回放输出: 复制JS资源: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\js -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-20-16-12-59\static\js
+INFO 2025-05-20 16:13:18,469 views 75488 115148 回放输出: 复制image资源: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\image -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-20-16-12-59\static\image
+INFO 2025-05-20 16:13:18,470 views 75488 115148 回放输出: 复制字体资源: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\fonts -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-20-16-12-59\static\fonts
+INFO 2025-05-20 16:13:19,953 views 75488 115148 回放输出: 复制模板文件: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\log_template.html -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-20-16-12-59
+INFO 2025-05-20 16:13:19,953 views 75488 115148 回放输出: 复制模板文件: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-20-16-12-59\log_template.html
+INFO 2025-05-20 16:13:19,953 views 75488 115148 回放输出: report_html_file: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-20-16-12-59\log.html
+INFO 2025-05-20 16:13:19,953 views 75488 115148 回放输出: script_log_html_file: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-20-16-12-59\script.log\log.html
+INFO 2025-05-20 16:13:19,953 views 75488 115148 回放输出: HTML报告生成成功: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-20-16-12-59\script.log\log.html
+INFO 2025-05-20 16:13:19,953 views 75488 115148 回放输出: 复制报告: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-20-16-12-59\script.log\log.html -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-20-16-12-59\log.html
+INFO 2025-05-20 16:13:19,953 views 75488 115148 回放输出: 无法解析data对象: (unicode error) 'unicodeescape' codec can't decode bytes in position 2-3: truncated \UXXXXXXXX escape (<unknown>, line 1)
+INFO 2025-05-20 16:13:19,953 views 75488 115148 回放输出: HTML路径和显示修复成功: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-20-16-12-59\log.html
+INFO 2025-05-20 16:13:19,953 views 75488 115148 回放输出: 设备报告已同步到静态目录: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\..\staticfiles\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-20-16-12-59
+INFO 2025-05-20 16:13:19,953 views 75488 115148 回放输出: 设备 OnePlus-KB2000-1080x2400 报告目录: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-20-16-12-59
+INFO 2025-05-20 16:13:19,953 views 75488 115148 回放输出: 设备 OnePlus-KB2000-1080x2400 报告路径: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\OnePlus-KB2000-1080x2400_2025-05-20-16-12-59\log.html
+INFO 2025-05-20 16:13:19,953 views 75488 115148 回放输出: 设备 OnePlus-KB2000-1080x2400 测试成功且全部通过
+INFO 2025-05-20 16:13:19,953 views 75488 115148 回放输出: 检查并修复日志文件JSON格式...
+INFO 2025-05-20 16:13:19,953 views 75488 115148 回放输出: JSON格式修复完成: 总行数 9, 有效行数 9, 修复 0 行
+INFO 2025-05-20 16:13:19,953 views 75488 115148 回放输出: 处理脚本文件 1: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase\scene1_nologin_steps_2025-04-07.json
+INFO 2025-05-20 16:13:19,953 views 75488 115148 回放输出: 已合并 1 个脚本文件到: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-20-16-12-59\script.py
+INFO 2025-05-20 16:13:19,953 views 75488 115148 回放输出: 复制CSS资源: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\css -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-20-16-12-59\static\css
+INFO 2025-05-20 16:13:20,807 views 75488 115148 回放输出: 复制JS资源: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\js -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-20-16-12-59\static\js
+INFO 2025-05-20 16:13:20,807 views 75488 115148 回放输出: 复制image资源: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\image -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-20-16-12-59\static\image
+INFO 2025-05-20 16:13:20,807 views 75488 115148 回放输出: 复制字体资源: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\fonts -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-20-16-12-59\static\fonts
+INFO 2025-05-20 16:13:20,807 views 75488 115148 回放输出: 复制模板文件: F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\airtest\report\log_template.html -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-20-16-12-59
+INFO 2025-05-20 16:13:20,807 views 75488 115148 回放输出: 复制模板文件: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-20-16-12-59\log_template.html
+INFO 2025-05-20 16:13:20,807 views 75488 115148 回放输出: report_html_file: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-20-16-12-59\log.html
+INFO 2025-05-20 16:13:20,807 views 75488 115148 回放输出: script_log_html_file: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-20-16-12-59\script.log\log.html
+INFO 2025-05-20 16:13:20,807 views 75488 115148 回放输出: HTML报告生成成功: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-20-16-12-59\script.log\log.html
+INFO 2025-05-20 16:13:20,807 views 75488 115148 回放输出: 复制报告: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-20-16-12-59\script.log\log.html -> C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-20-16-12-59\log.html
+INFO 2025-05-20 16:13:20,807 views 75488 115148 回放输出: 无法解析data对象: (unicode error) 'unicodeescape' codec can't decode bytes in position 2-3: truncated \UXXXXXXXX escape (<unknown>, line 1)
+INFO 2025-05-20 16:13:20,807 views 75488 115148 回放输出: HTML路径和显示修复成功: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-20-16-12-59\log.html
+INFO 2025-05-20 16:13:20,807 views 75488 115148 回放输出: 设备报告已同步到静态目录: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\..\staticfiles\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-20-16-12-59
+INFO 2025-05-20 16:13:20,807 views 75488 115148 回放输出: 设备 HUAWEI-JAD-AL00-1228x2700 报告目录: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-20-16-12-59
+INFO 2025-05-20 16:13:20,807 views 75488 115148 回放输出: 设备 HUAWEI-JAD-AL00-1228x2700 报告路径: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_run\WFGameAI.air\log\HUAWEI-JAD-AL00-1228x2700_2025-05-20-16-12-59\log.html
+INFO 2025-05-20 16:13:20,807 views 75488 115148 回放输出: 设备 HUAWEI-JAD-AL00-1228x2700 测试成功且全部通过
+INFO 2025-05-20 16:13:21,495 views 75488 115148 回放输出: 开始生成汇总报告，成功率: 2/2，通过率: 2/2
+INFO 2025-05-20 16:13:21,495 views 75488 115148 回放输出: 设备 OnePlus-KB2000-1080x2400 报告路径: ../ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/log.html
+INFO 2025-05-20 16:13:21,495 views 75488 115148 回放输出: 设备 HUAWEI-JAD-AL00-1228x2700 报告路径: ../ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-20-16-12-59/log.html
+INFO 2025-05-20 16:13:21,495 views 75488 115148 回放输出: 汇总报告已生成: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_reports\summary_report_2025-05-20-16-13-09.html
+INFO 2025-05-20 16:13:21,495 views 75488 115148 回放输出: 最新报告快捷方式: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_reports\latest_report.html
+INFO 2025-05-20 16:13:21,495 views 75488 115148 回放输出: 报告已同步到静态目录: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\..\staticfiles\reports
+INFO 2025-05-20 16:13:21,495 views 75488 115148 回放输出: 执行结果: 成功 2/2，全部通过 2/2, 报告地址: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\outputs\WFGameAI-reports\ui_reports\summary_report_2025-05-20-16-13-09.html
+INFO 2025-05-20 16:13:21,495 views 75488 115148 回放输出: 回放成功
+INFO 2025-05-20 16:13:26,275 basehttp 75488 78536 "GET /pages/reports.html HTTP/1.1" 200 15250
+INFO 2025-05-20 16:13:26,288 basehttp 75488 78536 "POST /api/reports/ HTTP/1.1" 200 1658
+INFO 2025-05-20 16:13:28,040 basehttp 75488 78536 "POST /api/reports/ HTTP/1.1" 200 1658
+INFO 2025-05-20 16:13:29,264 basehttp 75488 78536 "GET /static/reports/summary_report_2025-05-20-16-13-09.html HTTP/1.1" 200 2569
+INFO 2025-05-20 16:13:31,938 basehttp 75488 78536 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/log.html HTTP/1.1" 200 12369
+INFO 2025-05-20 16:13:31,950 basehttp 75488 78536 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//css/report.css HTTP/1.1" 200 18004
+INFO 2025-05-20 16:13:31,951 basehttp 75488 82240 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//js/jquery-lang.js HTTP/1.1" 200 25588
+INFO 2025-05-20 16:13:31,951 basehttp 75488 87816 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//js/jquery-1.10.2.min.js HTTP/1.1" 200 93111
+INFO 2025-05-20 16:13:31,952 basehttp 75488 78536 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//js/langpack/zh_CN.js HTTP/1.1" 200 2701
+INFO 2025-05-20 16:13:31,954 basehttp 75488 87816 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//js/lazyload.js HTTP/1.1" 200 5587
+INFO 2025-05-20 16:13:31,954 basehttp 75488 82240 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//image/download_log.svg HTTP/1.1" 200 2550
+INFO 2025-05-20 16:13:31,954 basehttp 75488 78536 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//image/copy.svg HTTP/1.1" 200 1013
+INFO 2025-05-20 16:13:31,959 basehttp 75488 78536 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//image/Airtest.png HTTP/1.1" 200 1947
+INFO 2025-05-20 16:13:31,960 basehttp 75488 82240 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//image/poco.png HTTP/1.1" 200 1385
+INFO 2025-05-20 16:13:31,982 basehttp 75488 78536 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//image/AirtestIDE.png HTTP/1.1" 200 3181
+INFO 2025-05-20 16:13:31,982 basehttp 75488 82240 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//css/monokai_sublime.min.css HTTP/1.1" 200 2017
+INFO 2025-05-20 16:13:31,983 basehttp 75488 78536 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//image/minimize.svg HTTP/1.1" 200 1031
+INFO 2025-05-20 16:13:31,984 basehttp 75488 82240 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//image/close.svg HTTP/1.1" 200 729
+INFO 2025-05-20 16:13:31,985 basehttp 75488 87816 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//js/highlight.min.js HTTP/1.1" 200 184850
+INFO 2025-05-20 16:13:31,985 basehttp 75488 78536 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//js/paging.js HTTP/1.1" 200 13030
+INFO 2025-05-20 16:13:31,986 basehttp 75488 82240 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//js/report.js HTTP/1.1" 200 31059
+INFO 2025-05-20 16:13:31,987 basehttp 75488 87816 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//image/AirLab.png HTTP/1.1" 200 1954
+INFO 2025-05-20 16:13:31,987 basehttp 75488 78536 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//image/netease.png HTTP/1.1" 200 7949
+INFO 2025-05-20 16:13:31,988 basehttp 75488 82240 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//image/maximize.svg HTTP/1.1" 200 1308
+INFO 2025-05-20 16:13:32,007 basehttp 75488 87816 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/log/1747728786415_small.jpg HTTP/1.1" 200 22044
+INFO 2025-05-20 16:13:32,007 basehttp 75488 82240 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/log/1747728780291_small.jpg HTTP/1.1" 200 41433
+INFO 2025-05-20 16:13:32,007 basehttp 75488 78536 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/log/1747728783915_small.jpg HTTP/1.1" 200 50264
+INFO 2025-05-20 16:13:32,009 basehttp 75488 87816 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//image/step_success.svg HTTP/1.1" 200 1144
+INFO 2025-05-20 16:13:32,009 basehttp 75488 78536 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//image/eye.svg HTTP/1.1" 200 1935
+INFO 2025-05-20 16:13:32,009 basehttp 75488 82240 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//image/time.svg HTTP/1.1" 200 820
+INFO 2025-05-20 16:13:32,010 basehttp 75488 87816 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//image/success.svg HTTP/1.1" 200 1156
+INFO 2025-05-20 16:13:33,566 basehttp 75488 82240 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//image/target.png HTTP/1.1" 200 25732
+INFO 2025-05-20 16:13:33,568 basehttp 75488 87816 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/log/1747728780291.jpg HTTP/1.1" 200 1007475
+INFO 2025-05-20 16:13:34,157 basehttp 75488 87816 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/log/1747728783915.jpg HTTP/1.1" 200 1223251
+INFO 2025-05-20 16:13:35,015 basehttp 75488 87816 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/log/1747728786415.jpg HTTP/1.1" 200 789954
+INFO 2025-05-20 16:13:40,340 basehttp 75488 87816 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//image/order.svg HTTP/1.1" 200 499
+INFO 2025-05-20 16:14:00,705 basehttp 75488 87816 "POST /api/reports/ HTTP/1.1" 200 1658
+INFO 2025-05-20 16:14:35,761 basehttp 75488 87816 "GET /static/reports/summary_report_2025-05-20-16-13-09.html HTTP/1.1" 304 0
+INFO 2025-05-20 16:15:31,429 basehttp 75488 87816 "GET /static/reports/summary_report_2025-05-20-16-13-09.html HTTP/1.1" 304 0
+INFO 2025-05-20 16:28:54,136 basehttp 75488 53992 "GET /pages/reports.html HTTP/1.1" 200 14581
+WARNING 2025-05-20 16:28:54,153 log 75488 53992 Not Found: /api/reports/summary_list/
+WARNING 2025-05-20 16:28:54,153 basehttp 75488 53992 "POST /api/reports/summary_list/ HTTP/1.1" 404 9670
+WARNING 2025-05-20 16:28:57,510 log 75488 53992 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 16:28:57,510 basehttp 75488 53992 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4770
+WARNING 2025-05-20 16:28:59,950 log 75488 53992 Not Found: /api/reports/summary_list/
+WARNING 2025-05-20 16:28:59,950 basehttp 75488 53992 "POST /api/reports/summary_list/ HTTP/1.1" 404 9670
+WARNING 2025-05-20 16:32:16,657 log 75488 53992 Not Found: /api/reports/summary_list/
+WARNING 2025-05-20 16:32:16,657 basehttp 75488 53992 "POST /api/reports/summary_list/ HTTP/1.1" 404 9670
+WARNING 2025-05-20 16:35:31,627 log 75488 53992 Not Found: /api/reports/summary_list/
+WARNING 2025-05-20 16:35:31,627 basehttp 75488 53992 "POST /api/reports/summary_list/ HTTP/1.1" 404 9670
+WARNING 2025-05-20 16:35:33,814 log 75488 53992 Not Found: /api/reports/summary_list/
+WARNING 2025-05-20 16:35:33,814 basehttp 75488 53992 "POST /api/reports/summary_list/ HTTP/1.1" 404 9670
+INFO 2025-05-20 16:35:45,821 basehttp 75488 53992 "GET /pages/tasks.html HTTP/1.1" 200 9541
+WARNING 2025-05-20 16:35:45,835 log 75488 53992 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 16:35:45,837 basehttp 75488 53992 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4770
+INFO 2025-05-20 16:35:46,921 basehttp 75488 53992 "GET /pages/reports.html HTTP/1.1" 200 14581
+WARNING 2025-05-20 16:35:46,938 log 75488 53992 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 16:35:46,938 basehttp 75488 53992 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4770
+WARNING 2025-05-20 16:35:46,941 log 75488 38328 Not Found: /api/reports/summary_list/
+WARNING 2025-05-20 16:35:46,942 basehttp 75488 38328 "POST /api/reports/summary_list/ HTTP/1.1" 404 9670
+WARNING 2025-05-20 16:35:49,801 log 75488 38328 Not Found: /api/reports/summary_list/
+WARNING 2025-05-20 16:35:49,802 basehttp 75488 38328 "POST /api/reports/summary_list/ HTTP/1.1" 404 9670
+WARNING 2025-05-20 16:36:31,526 log 75488 38328 Not Found: /api/reports/summary_list/
+WARNING 2025-05-20 16:36:31,526 basehttp 75488 38328 "POST /api/reports/summary_list/ HTTP/1.1" 404 9670
+WARNING 2025-05-20 16:37:25,996 log 75488 38328 Not Found: /api/reports/summary_list/
+WARNING 2025-05-20 16:37:25,996 basehttp 75488 38328 "POST /api/reports/summary_list/ HTTP/1.1" 404 9670
+INFO 2025-05-20 16:37:35,519 basehttp 75488 38328 "GET /pages/reports.html HTTP/1.1" 200 14581
+WARNING 2025-05-20 16:37:35,532 log 75488 38328 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 16:37:35,533 basehttp 75488 38328 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4770
+WARNING 2025-05-20 16:37:35,544 log 75488 38328 Not Found: /api/reports/summary_list/
+WARNING 2025-05-20 16:37:35,544 basehttp 75488 38328 "POST /api/reports/summary_list/ HTTP/1.1" 404 9670
+INFO 2025-05-20 16:37:36,652 basehttp 75488 38328 "GET /pages/reports.html HTTP/1.1" 200 14581
+WARNING 2025-05-20 16:37:36,663 log 75488 38328 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 16:37:36,663 basehttp 75488 38328 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4770
+WARNING 2025-05-20 16:37:36,668 log 75488 53992 Not Found: /api/reports/summary_list/
+WARNING 2025-05-20 16:37:36,668 basehttp 75488 53992 "POST /api/reports/summary_list/ HTTP/1.1" 404 9670
+INFO 2025-05-20 16:37:44,306 basehttp 75488 53992 "GET /pages/data.html HTTP/1.1" 200 9396
+WARNING 2025-05-20 16:37:44,322 log 75488 53992 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 16:37:44,322 basehttp 75488 53992 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4770
+INFO 2025-05-20 16:37:48,474 basehttp 75488 53992 "GET /pages/reports.html HTTP/1.1" 200 14581
+WARNING 2025-05-20 16:37:48,491 log 75488 53992 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 16:37:48,491 basehttp 75488 53992 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4770
+WARNING 2025-05-20 16:37:48,494 log 75488 38328 Not Found: /api/reports/summary_list/
+WARNING 2025-05-20 16:37:48,494 basehttp 75488 38328 "POST /api/reports/summary_list/ HTTP/1.1" 404 9670
+WARNING 2025-05-20 16:37:50,156 log 75488 38328 Not Found: /api/reports/summary_list/
+WARNING 2025-05-20 16:37:50,157 basehttp 75488 38328 "POST /api/reports/summary_list/ HTTP/1.1" 404 9670
+WARNING 2025-05-20 16:40:47,155 log 75488 38328 Not Found: /api/reports/summary_list/
+WARNING 2025-05-20 16:40:47,155 basehttp 75488 38328 "POST /api/reports/summary_list/ HTTP/1.1" 404 9670
+WARNING 2025-05-20 16:47:55,916 log 75488 75324 Not Found: /api/reports/summary_list/
+WARNING 2025-05-20 16:47:55,916 basehttp 75488 75324 "POST /api/reports/summary_list/ HTTP/1.1" 404 9670
+INFO 2025-05-20 17:14:12,642 views 75488 81052 接收到信号: 0
+INFO 2025-05-20 17:14:56,434 autoreload 75488 123656 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\wfgame_ai_server\urls.py changed, reloading.
+INFO 2025-05-20 17:16:10,383 autoreload 47252 102328 Watching for file changes with StatReloader
+INFO 2025-05-20 17:17:22,086 autoreload 15116 53364 Watching for file changes with StatReloader
+INFO 2025-05-20 17:17:22,337 views 15116 53364 已加载配置文件: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\config.ini
+INFO 2025-05-20 17:17:22,337 views 15116 53364 已加载路径配置: PYTHON_PATH=F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe, TESTCASE_DIR=C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase
+INFO 2025-05-20 17:17:22,337 views 15116 53364 使用配置文件中的Python路径: F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe
+INFO 2025-05-20 17:19:36,426 views 15116 107072 接收到信号: 0
+INFO 2025-05-20 17:19:53,884 autoreload 56096 106096 Watching for file changes with StatReloader
+INFO 2025-05-20 17:19:54,149 views 56096 106096 已加载配置文件: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\config.ini
+INFO 2025-05-20 17:19:54,151 views 56096 106096 已加载路径配置: PYTHON_PATH=F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe, TESTCASE_DIR=C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase
+INFO 2025-05-20 17:19:54,151 views 56096 106096 使用配置文件中的Python路径: F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe
+INFO 2025-05-20 17:20:52,920 views 56096 98444 接收到信号: 2
+INFO 2025-05-20 17:22:43,285 autoreload 68452 46952 Watching for file changes with StatReloader
+INFO 2025-05-20 17:22:43,543 views 68452 46952 已加载配置文件: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\config.ini
+INFO 2025-05-20 17:22:43,544 views 68452 46952 已加载路径配置: PYTHON_PATH=F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe, TESTCASE_DIR=C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase
+INFO 2025-05-20 17:22:43,544 views 68452 46952 使用配置文件中的Python路径: F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe
+INFO 2025-05-20 17:23:55,357 autoreload 105140 117900 Watching for file changes with StatReloader
+INFO 2025-05-20 17:23:55,630 views 105140 117900 已加载配置文件: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\config.ini
+INFO 2025-05-20 17:23:55,631 views 105140 117900 已加载路径配置: PYTHON_PATH=F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe, TESTCASE_DIR=C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase
+INFO 2025-05-20 17:23:55,632 views 105140 117900 使用配置文件中的Python路径: F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe
+ERROR 2025-05-20 17:24:15,545 log 105140 80832 Internal Server Error: /api/docs/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 220, in _get_response
+    response = response.render()
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 114, in render
+    self.content = self.rendered_content
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 90, in rendered_content
+    template = self.resolve_template(self.template_name)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 72, in resolve_template
+    return select_template(template, using=self.using)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\loader.py", line 47, in select_template
+    raise TemplateDoesNotExist(", ".join(template_name_list), chain=chain)
+django.template.exceptions.TemplateDoesNotExist: swagger-ui.html
+ERROR 2025-05-20 17:24:15,545 basehttp 105140 80832 "GET /api/docs/ HTTP/1.1" 500 97410
+INFO 2025-05-20 17:28:20,561 basehttp 105140 80832 "GET / HTTP/1.1" 200 9707
+WARNING 2025-05-20 17:28:20,578 log 105140 80832 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 17:28:20,578 basehttp 105140 80832 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4301
+INFO 2025-05-20 17:28:22,556 basehttp 105140 80832 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-20 17:28:22,556 basehttp 105140 80832 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-20 17:28:22,575 log 105140 80832 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 17:28:22,575 basehttp 105140 80832 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4301
+WARNING 2025-05-20 17:28:22,584 log 105140 38212 Method Not Allowed: /api/scripts/
+WARNING 2025-05-20 17:28:22,584 basehttp 105140 38212 "POST /api/scripts/ HTTP/1.1" 405 46
+INFO 2025-05-20 17:28:32,204 basehttp 105140 38212 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-05-20 17:28:32,207 basehttp 105140 38212 "GET /static/pages/devices.html HTTP/1.1" 304 0
+WARNING 2025-05-20 17:28:32,222 log 105140 38212 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+INFO 2025-05-20 17:28:32,222 basehttp 105140 80832 "GET /static/js/pages/devices_vue.js HTTP/1.1" 304 0
+WARNING 2025-05-20 17:28:32,222 basehttp 105140 38212 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4301
+INFO 2025-05-20 17:28:32,513 basehttp 105140 38212 "POST /api/devices/scan/ HTTP/1.1" 200 261
+INFO 2025-05-20 17:28:33,589 basehttp 105140 38212 "GET /pages/scripts.html HTTP/1.1" 302 0
+WARNING 2025-05-20 17:28:33,605 log 105140 38212 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 17:28:33,606 log 105140 80832 Method Not Allowed: /api/scripts/
+WARNING 2025-05-20 17:28:33,606 basehttp 105140 80832 "POST /api/scripts/ HTTP/1.1" 405 46
+WARNING 2025-05-20 17:28:33,606 basehttp 105140 38212 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4301
+INFO 2025-05-20 17:28:36,012 basehttp 105140 38212 "GET /pages/reports.html HTTP/1.1" 200 14581
+WARNING 2025-05-20 17:28:36,030 log 105140 80832 Not Found: /api/reports/summary_list/
+WARNING 2025-05-20 17:28:36,030 basehttp 105140 80832 "POST /api/reports/summary_list/ HTTP/1.1" 404 56
+WARNING 2025-05-20 17:28:36,032 log 105140 38212 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 17:28:36,032 basehttp 105140 38212 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4301
+INFO 2025-05-20 17:28:37,047 basehttp 105140 38212 "GET /pages/scripts.html HTTP/1.1" 302 0
+WARNING 2025-05-20 17:28:37,065 log 105140 38212 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 17:28:37,066 log 105140 80832 Method Not Allowed: /api/scripts/
+WARNING 2025-05-20 17:28:37,066 basehttp 105140 38212 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4301
+WARNING 2025-05-20 17:28:37,067 basehttp 105140 80832 "POST /api/scripts/ HTTP/1.1" 405 46
+INFO 2025-05-20 17:34:18,493 views 68452 18180 接收到信号: 0
+INFO 2025-05-20 17:34:22,668 autoreload 105140 117900 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\urls.py changed, reloading.
+INFO 2025-05-20 17:34:23,152 autoreload 64352 99352 Watching for file changes with StatReloader
+INFO 2025-05-20 17:34:23,404 views 64352 99352 已加载配置文件: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\config.ini
+INFO 2025-05-20 17:34:23,405 views 64352 99352 已加载路径配置: PYTHON_PATH=F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe, TESTCASE_DIR=C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase
+INFO 2025-05-20 17:34:23,406 views 64352 99352 使用配置文件中的Python路径: F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe
+INFO 2025-05-20 17:34:35,356 autoreload 64352 99352 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\urls.py changed, reloading.
+INFO 2025-05-20 17:34:35,936 autoreload 85864 62472 Watching for file changes with StatReloader
+INFO 2025-05-20 17:34:36,206 views 85864 62472 已加载配置文件: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\config.ini
+INFO 2025-05-20 17:34:36,208 views 85864 62472 已加载路径配置: PYTHON_PATH=F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe, TESTCASE_DIR=C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase
+INFO 2025-05-20 17:34:36,208 views 85864 62472 使用配置文件中的Python路径: F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe
+INFO 2025-05-20 17:34:37,586 autoreload 85864 62472 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\urls.py changed, reloading.
+INFO 2025-05-20 17:34:38,058 autoreload 95080 113668 Watching for file changes with StatReloader
+INFO 2025-05-20 17:34:38,311 views 95080 113668 已加载配置文件: C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\config.ini
+INFO 2025-05-20 17:34:38,312 views 95080 113668 已加载路径配置: PYTHON_PATH=F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe, TESTCASE_DIR=C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\testcase
+INFO 2025-05-20 17:34:38,312 views 95080 113668 使用配置文件中的Python路径: F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe
+INFO 2025-05-20 17:47:08,751 autoreload 95080 113668 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\wfgame_ai_server\settings.py changed, reloading.
+INFO 2025-05-20 17:47:08,855 autoreload 68452 46952 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\wfgame_ai_server\settings.py changed, reloading.
+INFO 2025-05-20 17:47:09,222 autoreload 53940 52828 Watching for file changes with StatReloader
+INFO 2025-05-20 17:47:21,042 autoreload 53940 52828 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\wfgame_ai_server\settings.py changed, reloading.
+INFO 2025-05-20 17:47:21,463 autoreload 44240 57988 Watching for file changes with StatReloader
+INFO 2025-05-20 17:47:29,790 autoreload 34792 104692 Watching for file changes with StatReloader
+INFO 2025-05-20 17:48:46,026 autoreload 49464 45168 Watching for file changes with StatReloader
+INFO 2025-05-20 17:49:41,439 autoreload 49464 45168 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\apps.py changed, reloading.
+INFO 2025-05-20 17:49:41,922 autoreload 94216 68136 Watching for file changes with StatReloader
+INFO 2025-05-20 17:49:46,547 autoreload 94216 68136 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\apps.py changed, reloading.
+INFO 2025-05-20 17:49:47,032 autoreload 115456 91616 Watching for file changes with StatReloader
+INFO 2025-05-20 17:49:49,716 autoreload 115456 91616 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\apps.py changed, reloading.
+INFO 2025-05-20 17:49:50,232 autoreload 88044 104096 Watching for file changes with StatReloader
+INFO 2025-05-20 17:49:54,829 basehttp 88044 45952 "GET / HTTP/1.1" 200 9707
+WARNING 2025-05-20 17:49:54,863 log 88044 45952 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 17:49:54,864 basehttp 88044 45952 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4301
+INFO 2025-05-20 17:49:57,662 basehttp 88044 45952 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-20 17:49:57,662 basehttp 88044 45952 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-20 17:49:57,680 log 88044 45952 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 17:49:57,680 basehttp 88044 45952 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4301
+WARNING 2025-05-20 17:49:57,692 log 88044 98772 Method Not Allowed: /api/scripts/
+WARNING 2025-05-20 17:49:57,692 basehttp 88044 98772 "POST /api/scripts/ HTTP/1.1" 405 46
+INFO 2025-05-20 17:50:18,397 autoreload 97992 117776 Watching for file changes with StatReloader
+ERROR 2025-05-20 17:50:38,370 log 88044 98772 Internal Server Error: /api/docs/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 220, in _get_response
+    response = response.render()
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 114, in render
+    self.content = self.rendered_content
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 90, in rendered_content
+    template = self.resolve_template(self.template_name)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 72, in resolve_template
+    return select_template(template, using=self.using)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\loader.py", line 47, in select_template
+    raise TemplateDoesNotExist(", ".join(template_name_list), chain=chain)
+django.template.exceptions.TemplateDoesNotExist: swagger-ui.html
+ERROR 2025-05-20 17:50:38,371 basehttp 88044 98772 "GET /api/docs/ HTTP/1.1" 500 97480
+INFO 2025-05-20 17:50:40,714 autoreload 97992 117776 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\users\apps.py changed, reloading.
+INFO 2025-05-20 17:50:41,160 autoreload 61076 87060 Watching for file changes with StatReloader
+INFO 2025-05-20 17:50:45,828 autoreload 61076 87060 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\users\apps.py changed, reloading.
+INFO 2025-05-20 17:50:46,319 autoreload 21128 80592 Watching for file changes with StatReloader
+INFO 2025-05-20 17:50:48,211 basehttp 88044 98772 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-20 17:50:48,223 log 88044 98772 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 17:50:48,223 basehttp 88044 98772 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4301
+WARNING 2025-05-20 17:50:48,226 log 88044 98772 Method Not Allowed: /api/scripts/
+WARNING 2025-05-20 17:50:48,226 basehttp 88044 98772 "POST /api/scripts/ HTTP/1.1" 405 46
+INFO 2025-05-20 17:50:50,162 basehttp 88044 98772 "GET / HTTP/1.1" 200 9707
+WARNING 2025-05-20 17:50:50,178 log 88044 98772 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 17:50:50,178 basehttp 88044 98772 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4301
+INFO 2025-05-20 17:51:26,279 autoreload 21128 80592 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\tasks\apps.py changed, reloading.
+INFO 2025-05-20 17:51:26,787 autoreload 95180 59668 Watching for file changes with StatReloader
+INFO 2025-05-20 17:51:28,313 autoreload 95180 59668 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\tasks\apps.py changed, reloading.
+INFO 2025-05-20 17:51:28,951 autoreload 98652 100864 Watching for file changes with StatReloader
+INFO 2025-05-20 17:51:51,570 basehttp 88044 98772 "GET / HTTP/1.1" 200 9707
+WARNING 2025-05-20 17:51:51,580 log 88044 98772 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 17:51:51,581 basehttp 88044 98772 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4301
+INFO 2025-05-20 17:51:53,488 basehttp 88044 98772 "GET /pages/scripts.html HTTP/1.1" 302 0
+WARNING 2025-05-20 17:51:53,507 log 88044 98772 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 17:51:53,508 basehttp 88044 98772 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4301
+WARNING 2025-05-20 17:51:53,508 log 88044 45952 Method Not Allowed: /api/scripts/
+WARNING 2025-05-20 17:51:53,509 basehttp 88044 45952 "POST /api/scripts/ HTTP/1.1" 405 46
+INFO 2025-05-20 17:53:06,344 basehttp 88044 45952 "GET /pages/scripts.html HTTP/1.1" 302 0
+WARNING 2025-05-20 17:53:06,359 log 88044 45952 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 17:53:06,360 log 88044 98772 Method Not Allowed: /api/scripts/
+WARNING 2025-05-20 17:53:06,360 basehttp 88044 45952 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4301
+WARNING 2025-05-20 17:53:06,360 basehttp 88044 98772 "POST /api/scripts/ HTTP/1.1" 405 46
+INFO 2025-05-20 17:53:07,390 basehttp 88044 98772 "GET /pages/tasks.html HTTP/1.1" 200 9541
+WARNING 2025-05-20 17:53:07,409 log 88044 98772 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 17:53:07,409 basehttp 88044 98772 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4301
+INFO 2025-05-20 17:53:09,142 basehttp 88044 98772 "GET /pages/data.html HTTP/1.1" 200 9396
+WARNING 2025-05-20 17:53:09,159 log 88044 98772 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 17:53:09,159 basehttp 88044 98772 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4301
+INFO 2025-05-20 17:53:09,709 basehttp 88044 98772 "GET /pages/reports.html HTTP/1.1" 200 14581
+WARNING 2025-05-20 17:53:09,724 log 88044 45952 Not Found: /api/reports/summary_list/
+WARNING 2025-05-20 17:53:09,725 basehttp 88044 45952 "POST /api/reports/summary_list/ HTTP/1.1" 404 56
+WARNING 2025-05-20 17:53:09,726 log 88044 98772 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 17:53:09,726 basehttp 88044 98772 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4301
+INFO 2025-05-20 17:53:10,975 basehttp 88044 98772 "GET /pages/reports.html HTTP/1.1" 200 14581
+WARNING 2025-05-20 17:53:10,985 log 88044 98772 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 17:53:10,986 basehttp 88044 98772 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4301
+WARNING 2025-05-20 17:53:10,987 log 88044 98772 Not Found: /api/reports/summary_list/
+WARNING 2025-05-20 17:53:10,987 basehttp 88044 98772 "POST /api/reports/summary_list/ HTTP/1.1" 404 56
+WARNING 2025-05-20 17:53:12,122 log 88044 98772 Not Found: /api/reports/summary_list/
+WARNING 2025-05-20 17:53:12,122 basehttp 88044 98772 "POST /api/reports/summary_list/ HTTP/1.1" 404 56
+INFO 2025-05-20 17:53:13,047 basehttp 88044 98772 "GET /pages/devices.html HTTP/1.1" 302 0
+WARNING 2025-05-20 17:53:13,072 log 88044 98772 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 17:53:13,072 basehttp 88044 98772 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4301
+INFO 2025-05-20 17:53:13,349 basehttp 88044 98772 "POST /api/devices/scan/ HTTP/1.1" 200 261
+INFO 2025-05-20 17:53:15,338 basehttp 88044 104820 "GET /pages/dashboard.html HTTP/1.1" 302 0
+INFO 2025-05-20 17:53:15,340 basehttp 88044 104820 "GET /static/pages/dashboard.html HTTP/1.1" 304 0
+WARNING 2025-05-20 17:53:15,354 log 88044 104820 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 17:53:15,354 basehttp 88044 104820 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4301
+INFO 2025-05-20 17:53:16,411 basehttp 88044 104820 "GET /pages/scripts.html HTTP/1.1" 302 0
+WARNING 2025-05-20 17:53:16,428 log 88044 104820 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 17:53:16,429 log 88044 32316 Method Not Allowed: /api/scripts/
+WARNING 2025-05-20 17:53:16,429 basehttp 88044 104820 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4301
+WARNING 2025-05-20 17:53:16,429 basehttp 88044 32316 "POST /api/scripts/ HTTP/1.1" 405 46
+INFO 2025-05-20 17:53:24,181 basehttp 88044 104820 "GET /pages/reports.html HTTP/1.1" 200 14581
+WARNING 2025-05-20 17:53:24,199 log 88044 32316 Not Found: /api/reports/summary_list/
+WARNING 2025-05-20 17:53:24,199 basehttp 88044 32316 "POST /api/reports/summary_list/ HTTP/1.1" 404 56
+WARNING 2025-05-20 17:53:24,200 log 88044 104820 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 17:53:24,200 basehttp 88044 104820 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4301
+INFO 2025-05-20 17:53:29,418 basehttp 88044 104820 "GET /pages/scripts.html HTTP/1.1" 302 0
+WARNING 2025-05-20 17:53:29,440 log 88044 104820 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 17:53:29,441 log 88044 32316 Method Not Allowed: /api/scripts/
+WARNING 2025-05-20 17:53:29,441 basehttp 88044 104820 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4301
+WARNING 2025-05-20 17:53:29,442 basehttp 88044 32316 "POST /api/scripts/ HTTP/1.1" 405 46
+INFO 2025-05-20 17:53:45,191 basehttp 88044 104820 "GET /pages/reports.html HTTP/1.1" 200 14581
+WARNING 2025-05-20 17:53:45,209 log 88044 32316 Not Found: /api/reports/summary_list/
+WARNING 2025-05-20 17:53:45,209 basehttp 88044 32316 "POST /api/reports/summary_list/ HTTP/1.1" 404 56
+WARNING 2025-05-20 17:53:45,212 log 88044 104820 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 17:53:45,212 basehttp 88044 104820 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4301
+INFO 2025-05-20 17:55:24,683 autoreload 113240 70396 Watching for file changes with StatReloader
+INFO 2025-05-20 17:56:05,776 autoreload 113240 70396 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-20 17:56:06,253 autoreload 122996 79792 Watching for file changes with StatReloader
+INFO 2025-05-20 17:57:29,013 autoreload 122996 79792 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\signals.py changed, reloading.
+INFO 2025-05-20 17:57:29,487 autoreload 43476 16048 Watching for file changes with StatReloader
+INFO 2025-05-20 17:57:35,200 autoreload 43476 16048 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\signals.py changed, reloading.
+INFO 2025-05-20 17:57:35,670 autoreload 25568 105880 Watching for file changes with StatReloader
+INFO 2025-05-20 17:57:58,166 autoreload 53892 75724 Watching for file changes with StatReloader
+INFO 2025-05-20 17:58:01,312 basehttp 53892 111384 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-05-20 17:58:01,314 basehttp 53892 111384 "GET /static/pages/devices.html HTTP/1.1" 304 0
+WARNING 2025-05-20 17:58:01,334 log 53892 111384 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 17:58:01,334 basehttp 53892 111384 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4301
+INFO 2025-05-20 17:58:01,641 basehttp 53892 111384 "POST /api/devices/scan/ HTTP/1.1" 200 261
+INFO 2025-05-20 17:58:12,379 basehttp 53892 111384 "GET /pages/scripts.html HTTP/1.1" 302 0
+WARNING 2025-05-20 17:58:12,394 log 53892 111384 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 17:58:12,395 basehttp 53892 111384 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4301
+WARNING 2025-05-20 17:58:12,406 log 53892 111384 Method Not Allowed: /api/scripts/
+WARNING 2025-05-20 17:58:12,406 basehttp 53892 111384 "POST /api/scripts/ HTTP/1.1" 405 46
+ERROR 2025-05-20 17:58:18,060 log 53892 111384 Internal Server Error: /api/docs/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 220, in _get_response
+    response = response.render()
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 114, in render
+    self.content = self.rendered_content
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 90, in rendered_content
+    template = self.resolve_template(self.template_name)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 72, in resolve_template
+    return select_template(template, using=self.using)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\loader.py", line 47, in select_template
+    raise TemplateDoesNotExist(", ".join(template_name_list), chain=chain)
+django.template.exceptions.TemplateDoesNotExist: swagger-ui.html
+ERROR 2025-05-20 17:58:18,061 basehttp 53892 111384 "GET /api/docs/ HTTP/1.1" 500 97480
+INFO 2025-05-20 17:58:19,313 basehttp 53892 111384 "GET / HTTP/1.1" 200 9707
+INFO 2025-05-20 17:58:21,186 basehttp 53892 111384 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-05-20 17:58:21,262 basehttp 53892 111384 "POST /api/devices/scan/ HTTP/1.1" 200 261
+INFO 2025-05-20 17:58:23,135 basehttp 53892 111384 "GET /pages/scripts.html HTTP/1.1" 302 0
+WARNING 2025-05-20 17:58:23,144 log 53892 111384 Method Not Allowed: /api/scripts/
+WARNING 2025-05-20 17:58:23,145 basehttp 53892 111384 "POST /api/scripts/ HTTP/1.1" 405 46
+INFO 2025-05-20 17:58:54,798 basehttp 53892 111384 "GET /pages/reports.html HTTP/1.1" 200 14581
+WARNING 2025-05-20 17:58:54,810 log 53892 111384 Not Found: /api/reports/summary_list/
+WARNING 2025-05-20 17:58:54,811 basehttp 53892 111384 "POST /api/reports/summary_list/ HTTP/1.1" 404 56
+INFO 2025-05-20 18:00:55,102 basehttp 53892 111384 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-05-20 18:00:55,393 basehttp 53892 111384 "POST /api/devices/scan/ HTTP/1.1" 200 261
+INFO 2025-05-20 18:00:56,485 basehttp 53892 111384 "GET /pages/scripts.html HTTP/1.1" 302 0
+WARNING 2025-05-20 18:00:56,494 log 53892 111384 Method Not Allowed: /api/scripts/
+WARNING 2025-05-20 18:00:56,495 basehttp 53892 111384 "POST /api/scripts/ HTTP/1.1" 405 46
+INFO 2025-05-20 18:00:58,274 basehttp 53892 111384 "GET /pages/tasks.html HTTP/1.1" 200 9541
+INFO 2025-05-20 18:00:59,287 basehttp 53892 111384 "GET /pages/reports.html HTTP/1.1" 200 14581
+WARNING 2025-05-20 18:00:59,296 log 53892 111384 Not Found: /api/reports/summary_list/
+WARNING 2025-05-20 18:00:59,296 basehttp 53892 111384 "POST /api/reports/summary_list/ HTTP/1.1" 404 56
+INFO 2025-05-20 18:02:53,111 autoreload 75444 49308 Watching for file changes with StatReloader
+INFO 2025-05-20 18:03:09,339 basehttp 75444 98256 "GET /pages/reports.html HTTP/1.1" 200 14581
+WARNING 2025-05-20 18:03:09,346 log 75444 98256 Not Found: /api/reports/summary_list/
+WARNING 2025-05-20 18:03:09,347 basehttp 75444 98256 "POST /api/reports/summary_list/ HTTP/1.1" 404 56
+WARNING 2025-05-20 18:03:12,377 log 75444 98256 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 18:03:12,378 basehttp 75444 98256 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4301
+ERROR 2025-05-20 18:03:13,020 log 75444 98256 Internal Server Error: /api/docs/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 220, in _get_response
+    response = response.render()
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 114, in render
+    self.content = self.rendered_content
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 90, in rendered_content
+    template = self.resolve_template(self.template_name)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 72, in resolve_template
+    return select_template(template, using=self.using)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\loader.py", line 47, in select_template
+    raise TemplateDoesNotExist(", ".join(template_name_list), chain=chain)
+django.template.exceptions.TemplateDoesNotExist: swagger-ui.html
+ERROR 2025-05-20 18:03:13,021 basehttp 75444 98256 "GET /api/docs/ HTTP/1.1" 500 97480
+WARNING 2025-05-20 18:03:16,061 log 75444 98256 Not Found: /api/reports/summary_list/
+WARNING 2025-05-20 18:03:16,062 basehttp 75444 98256 "POST /api/reports/summary_list/ HTTP/1.1" 404 56
+INFO 2025-05-20 18:03:17,837 basehttp 75444 98256 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-20 18:03:17,839 basehttp 75444 98256 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-20 18:03:17,855 log 75444 98256 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 18:03:17,856 basehttp 75444 98256 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4301
+WARNING 2025-05-20 18:03:17,865 log 75444 41148 Method Not Allowed: /api/scripts/
+WARNING 2025-05-20 18:03:17,865 basehttp 75444 41148 "POST /api/scripts/ HTTP/1.1" 405 46
+INFO 2025-05-20 18:05:55,456 autoreload 75444 49308 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\manage.py changed, reloading.
+INFO 2025-05-20 18:07:44,242 autoreload 28016 72048 Watching for file changes with StatReloader
+INFO 2025-05-20 18:08:24,564 autoreload 28016 72048 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\wfgame_ai_server_main\settings.py changed, reloading.
+INFO 2025-05-20 18:08:25,059 autoreload 52360 61472 Watching for file changes with StatReloader
+INFO 2025-05-20 18:08:51,095 autoreload 52360 61472 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\wfgame_ai_server_main\settings.py changed, reloading.
+INFO 2025-05-20 18:08:51,619 autoreload 96892 82248 Watching for file changes with StatReloader
+INFO 2025-05-20 18:08:52,197 basehttp 96892 75388 "GET / HTTP/1.1" 200 9707
+WARNING 2025-05-20 18:08:52,222 log 96892 75388 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 18:08:52,223 basehttp 96892 75388 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-20 18:09:04,911 basehttp 96892 75388 "GET /pages/scripts.html HTTP/1.1" 302 0
+WARNING 2025-05-20 18:09:04,928 log 96892 75388 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 18:09:04,928 basehttp 96892 75388 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+WARNING 2025-05-20 18:09:04,938 log 96892 75388 Method Not Allowed: /api/scripts/
+WARNING 2025-05-20 18:09:04,939 basehttp 96892 75388 "POST /api/scripts/ HTTP/1.1" 405 46
+INFO 2025-05-20 18:09:07,394 basehttp 96892 75388 "GET /pages/reports.html HTTP/1.1" 200 14581
+WARNING 2025-05-20 18:09:07,414 log 96892 33852 Not Found: /api/reports/summary_list/
+WARNING 2025-05-20 18:09:07,415 basehttp 96892 33852 "POST /api/reports/summary_list/ HTTP/1.1" 404 56
+WARNING 2025-05-20 18:09:07,416 log 96892 75388 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 18:09:07,416 basehttp 96892 75388 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-20 18:09:09,093 basehttp 96892 75388 "GET /pages/tasks.html HTTP/1.1" 200 9541
+WARNING 2025-05-20 18:09:09,106 log 96892 75388 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 18:09:09,106 basehttp 96892 75388 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-20 18:09:10,083 basehttp 96892 75388 "GET /pages/devices.html HTTP/1.1" 302 0
+WARNING 2025-05-20 18:09:10,104 log 96892 75388 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 18:09:10,104 basehttp 96892 75388 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-20 18:09:10,383 basehttp 96892 75388 "POST /api/devices/scan/ HTTP/1.1" 200 261
+INFO 2025-05-20 18:09:11,528 basehttp 96892 75388 "GET /pages/dashboard.html HTTP/1.1" 302 0
+WARNING 2025-05-20 18:09:11,544 log 96892 75388 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 18:09:11,544 basehttp 96892 75388 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-20 18:09:12,445 basehttp 96892 75388 "GET /pages/reports.html HTTP/1.1" 200 14581
+WARNING 2025-05-20 18:09:12,464 log 96892 75388 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 18:09:12,465 log 96892 33852 Not Found: /api/reports/summary_list/
+WARNING 2025-05-20 18:09:12,465 basehttp 96892 75388 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+WARNING 2025-05-20 18:09:12,466 basehttp 96892 33852 "POST /api/reports/summary_list/ HTTP/1.1" 404 56
+INFO 2025-05-20 18:09:12,949 basehttp 96892 75388 "GET /pages/data.html HTTP/1.1" 200 9396
+WARNING 2025-05-20 18:09:12,963 log 96892 75388 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 18:09:12,964 basehttp 96892 75388 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-20 18:09:13,982 basehttp 96892 75388 "GET /pages/reports.html HTTP/1.1" 200 14581
+WARNING 2025-05-20 18:09:13,997 log 96892 33852 Not Found: /api/reports/summary_list/
+WARNING 2025-05-20 18:09:13,998 basehttp 96892 33852 "POST /api/reports/summary_list/ HTTP/1.1" 404 56
+WARNING 2025-05-20 18:09:13,999 log 96892 75388 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 18:09:13,999 basehttp 96892 75388 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-20 18:10:25,419 basehttp 96892 75388 "GET /pages/scripts.html HTTP/1.1" 302 0
+WARNING 2025-05-20 18:10:25,437 log 96892 33852 Method Not Allowed: /api/scripts/
+WARNING 2025-05-20 18:10:25,438 basehttp 96892 33852 "POST /api/scripts/ HTTP/1.1" 405 46
+WARNING 2025-05-20 18:10:25,438 log 96892 75388 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 18:10:25,439 basehttp 96892 75388 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-20 18:11:25,086 autoreload 96892 82248 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\api\reports.py changed, reloading.
+INFO 2025-05-20 18:11:25,598 autoreload 74336 35588 Watching for file changes with StatReloader
+INFO 2025-05-20 18:11:42,020 autoreload 74336 35588 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\api\reports.py changed, reloading.
+INFO 2025-05-20 18:11:42,518 autoreload 93108 119512 Watching for file changes with StatReloader
+INFO 2025-05-20 18:11:48,406 autoreload 93108 119512 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-20 18:11:48,886 autoreload 88704 101256 Watching for file changes with StatReloader
+INFO 2025-05-20 18:11:59,200 autoreload 120600 35620 Watching for file changes with StatReloader
+INFO 2025-05-20 18:12:14,073 basehttp 88704 105628 "GET /pages/scripts.html HTTP/1.1" 302 0
+WARNING 2025-05-20 18:12:14,094 log 88704 105628 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 18:12:14,095 basehttp 88704 105628 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+WARNING 2025-05-20 18:12:14,104 log 88704 105628 Method Not Allowed: /api/scripts/
+WARNING 2025-05-20 18:12:14,105 basehttp 88704 105628 "POST /api/scripts/ HTTP/1.1" 405 46
+INFO 2025-05-20 18:12:17,646 basehttp 88704 105628 "GET /pages/reports.html HTTP/1.1" 200 14581
+WARNING 2025-05-20 18:12:17,663 log 88704 105628 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 18:12:17,664 basehttp 88704 105628 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-20 18:12:17,688 basehttp 88704 91084 "POST /api/reports/summary_list/ HTTP/1.1" 200 3708
+ERROR 2025-05-20 18:12:19,084 log 88704 91084 Internal Server Error: /api/docs/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 220, in _get_response
+    response = response.render()
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 114, in render
+    self.content = self.rendered_content
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 90, in rendered_content
+    template = self.resolve_template(self.template_name)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 72, in resolve_template
+    return select_template(template, using=self.using)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\loader.py", line 47, in select_template
+    raise TemplateDoesNotExist(", ".join(template_name_list), chain=chain)
+django.template.exceptions.TemplateDoesNotExist: swagger-ui.html
+ERROR 2025-05-20 18:12:19,085 basehttp 88704 91084 "GET /api/docs/ HTTP/1.1" 500 97505
+INFO 2025-05-20 18:12:24,830 basehttp 88704 91084 "GET /pages/report_detail.html?report_id=2025-05-20-16-13-09 HTTP/1.1" 200 6667
+INFO 2025-05-20 18:12:24,870 basehttp 88704 75424 "POST /api/reports/summary_list/ HTTP/1.1" 200 3708
+WARNING 2025-05-20 18:12:24,872 log 88704 91084 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 18:12:24,873 basehttp 88704 91084 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-20 18:12:24,989 basehttp 88704 91084 "GET /static/reports/summary_report_2025-05-20-16-13-09.html HTTP/1.1" 200 2569
+INFO 2025-05-20 18:12:26,748 basehttp 88704 91084 "GET /pages/reports.html HTTP/1.1" 200 14581
+WARNING 2025-05-20 18:12:26,768 log 88704 91084 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 18:12:26,768 basehttp 88704 91084 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-20 18:12:26,799 basehttp 88704 91084 "POST /api/reports/summary_list/ HTTP/1.1" 200 3708
+INFO 2025-05-20 18:12:30,402 basehttp 88704 91084 "GET /pages/scripts.html HTTP/1.1" 302 0
+WARNING 2025-05-20 18:12:30,424 log 88704 91084 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 18:12:30,424 basehttp 88704 91084 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+WARNING 2025-05-20 18:12:30,426 log 88704 75424 Method Not Allowed: /api/scripts/
+WARNING 2025-05-20 18:12:30,426 basehttp 88704 75424 "POST /api/scripts/ HTTP/1.1" 405 46
+INFO 2025-05-20 18:12:52,749 basehttp 120600 27496 "GET /pages/scripts.html HTTP/1.1" 302 0
+WARNING 2025-05-20 18:12:52,774 log 120600 27496 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 18:12:52,774 basehttp 120600 27496 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+WARNING 2025-05-20 18:12:52,786 log 120600 27496 Method Not Allowed: /api/scripts/
+WARNING 2025-05-20 18:12:52,786 basehttp 120600 27496 "POST /api/scripts/ HTTP/1.1" 405 46
+INFO 2025-05-20 18:13:09,418 basehttp 120600 27496 "GET /pages/devices.html HTTP/1.1" 302 0
+WARNING 2025-05-20 18:13:09,437 log 120600 27496 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 18:13:09,437 basehttp 120600 27496 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-20 18:13:09,730 basehttp 120600 27496 "POST /api/devices/scan/ HTTP/1.1" 200 261
+INFO 2025-05-20 18:13:11,586 basehttp 120600 27496 "GET /pages/dashboard.html HTTP/1.1" 302 0
+WARNING 2025-05-20 18:13:11,603 log 120600 27496 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 18:13:11,603 basehttp 120600 27496 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-20 18:13:12,893 basehttp 120600 27496 "GET /pages/tasks.html HTTP/1.1" 200 9541
+WARNING 2025-05-20 18:13:12,913 log 120600 27496 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 18:13:12,913 basehttp 120600 27496 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-20 18:13:13,670 basehttp 120600 27496 "GET /pages/reports.html HTTP/1.1" 200 14581
+WARNING 2025-05-20 18:13:13,687 log 120600 27496 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 18:13:13,687 basehttp 120600 27496 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-20 18:13:13,705 basehttp 120600 105844 "POST /api/reports/summary_list/ HTTP/1.1" 200 3708
+INFO 2025-05-20 18:13:18,612 basehttp 120600 105844 "GET /pages/scripts.html HTTP/1.1" 302 0
+WARNING 2025-05-20 18:13:18,632 log 120600 105844 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 18:13:18,633 log 120600 27496 Method Not Allowed: /api/scripts/
+WARNING 2025-05-20 18:13:18,633 basehttp 120600 105844 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+WARNING 2025-05-20 18:13:18,633 basehttp 120600 27496 "POST /api/scripts/ HTTP/1.1" 405 46
+INFO 2025-05-20 18:14:10,451 autoreload 120600 35620 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\urls.py changed, reloading.
+INFO 2025-05-20 18:14:10,961 autoreload 66208 23292 Watching for file changes with StatReloader
+INFO 2025-05-20 18:14:29,295 autoreload 48648 70796 Watching for file changes with StatReloader
+INFO 2025-05-20 18:14:43,651 autoreload 48648 70796 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\urls.py changed, reloading.
+INFO 2025-05-20 18:14:44,133 autoreload 100024 105376 Watching for file changes with StatReloader
+INFO 2025-05-20 18:14:44,419 autoreload 66208 23292 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\urls.py changed, reloading.
+INFO 2025-05-20 18:14:44,931 autoreload 81692 106228 Watching for file changes with StatReloader
+INFO 2025-05-20 18:14:48,718 basehttp 100024 62184 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-20 18:14:48,735 log 100024 62184 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 18:14:48,735 basehttp 100024 62184 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+WARNING 2025-05-20 18:14:48,743 log 100024 77964 Bad Request: /api/scripts/
+WARNING 2025-05-20 18:14:48,743 basehttp 100024 77964 "POST /api/scripts/ HTTP/1.1" 400 76
+ERROR 2025-05-20 18:14:49,255 log 100024 77964 Internal Server Error: /api/docs/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 220, in _get_response
+    response = response.render()
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 114, in render
+    self.content = self.rendered_content
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 90, in rendered_content
+    template = self.resolve_template(self.template_name)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 72, in resolve_template
+    return select_template(template, using=self.using)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\loader.py", line 47, in select_template
+    raise TemplateDoesNotExist(", ".join(template_name_list), chain=chain)
+django.template.exceptions.TemplateDoesNotExist: swagger-ui.html
+ERROR 2025-05-20 18:14:49,256 basehttp 100024 77964 "GET /api/docs/ HTTP/1.1" 500 97505
+INFO 2025-05-20 18:14:53,801 basehttp 100024 77964 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-20 18:14:53,813 log 100024 77964 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 18:14:53,813 basehttp 100024 77964 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+WARNING 2025-05-20 18:14:53,816 log 100024 77964 Bad Request: /api/scripts/
+WARNING 2025-05-20 18:14:53,816 basehttp 100024 77964 "POST /api/scripts/ HTTP/1.1" 400 76
+INFO 2025-05-20 18:19:23,279 autoreload 81692 106228 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-20 18:19:23,807 autoreload 102744 115052 Watching for file changes with StatReloader
+INFO 2025-05-20 18:19:34,795 autoreload 114552 52140 Watching for file changes with StatReloader
+INFO 2025-05-20 18:19:42,411 autoreload 102744 115052 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-20 18:19:42,754 autoreload 114552 52140 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-20 18:19:42,911 autoreload 78396 23572 Watching for file changes with StatReloader
+INFO 2025-05-20 18:19:43,282 autoreload 102272 83600 Watching for file changes with StatReloader
+INFO 2025-05-20 18:19:53,790 basehttp 78396 110132 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-20 18:19:53,804 log 78396 110132 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 18:19:53,805 basehttp 78396 110132 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-20 18:19:53,806 basehttp 78396 73860 "POST /api/scripts/ HTTP/1.1" 200 14
+ERROR 2025-05-20 18:19:54,655 log 78396 73860 Internal Server Error: /api/docs/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 220, in _get_response
+    response = response.render()
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 114, in render
+    self.content = self.rendered_content
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 90, in rendered_content
+    template = self.resolve_template(self.template_name)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 72, in resolve_template
+    return select_template(template, using=self.using)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\loader.py", line 47, in select_template
+    raise TemplateDoesNotExist(", ".join(template_name_list), chain=chain)
+django.template.exceptions.TemplateDoesNotExist: swagger-ui.html
+ERROR 2025-05-20 18:19:54,656 basehttp 78396 73860 "GET /api/docs/ HTTP/1.1" 500 97505
+INFO 2025-05-20 18:19:58,654 basehttp 78396 73860 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-20 18:19:58,665 log 78396 73860 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 18:19:58,665 basehttp 78396 73860 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-20 18:19:58,668 basehttp 78396 73860 "POST /api/scripts/ HTTP/1.1" 200 14
+INFO 2025-05-20 18:20:31,589 basehttp 78396 73860 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-05-20 18:23:14,401 autoreload 78396 23572 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-20 18:23:14,901 autoreload 8588 49228 Watching for file changes with StatReloader
+INFO 2025-05-20 18:23:24,162 autoreload 111264 6908 Watching for file changes with StatReloader
+INFO 2025-05-20 18:23:25,775 autoreload 111264 6908 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-20 18:23:26,044 autoreload 8588 49228 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-20 18:23:26,335 autoreload 65568 106216 Watching for file changes with StatReloader
+INFO 2025-05-20 18:23:26,567 autoreload 26268 40044 Watching for file changes with StatReloader
+INFO 2025-05-20 18:23:30,626 basehttp 65568 67168 "GET /pages/scripts.html HTTP/1.1" 302 0
+WARNING 2025-05-20 18:23:30,644 log 65568 67168 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 18:23:30,644 basehttp 65568 67168 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-20 18:23:30,646 basehttp 65568 67168 "POST /api/scripts/ HTTP/1.1" 200 14
+INFO 2025-05-20 18:23:32,654 basehttp 65568 67168 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+ERROR 2025-05-20 18:23:44,013 log 65568 67168 Internal Server Error: /api/docs/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 220, in _get_response
+    response = response.render()
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 114, in render
+    self.content = self.rendered_content
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 90, in rendered_content
+    template = self.resolve_template(self.template_name)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 72, in resolve_template
+    return select_template(template, using=self.using)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\loader.py", line 47, in select_template
+    raise TemplateDoesNotExist(", ".join(template_name_list), chain=chain)
+django.template.exceptions.TemplateDoesNotExist: swagger-ui.html
+ERROR 2025-05-20 18:23:44,013 basehttp 65568 67168 "GET /api/docs/ HTTP/1.1" 500 97505
+INFO 2025-05-20 18:24:37,148 basehttp 65568 67168 "POST /api/scripts/debug/ HTTP/1.1" 200 90
+INFO 2025-05-20 18:26:45,447 autoreload 26268 40044 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-20 18:26:56,004 autoreload 111440 87908 Watching for file changes with StatReloader
+INFO 2025-05-20 18:27:04,142 basehttp 111440 26556 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-20 18:27:04,161 log 111440 26556 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 18:27:04,161 basehttp 111440 26556 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-20 18:27:04,163 basehttp 111440 26556 "POST /api/scripts/ HTTP/1.1" 200 14
+ERROR 2025-05-20 18:27:15,833 log 111440 26556 Internal Server Error: /api/docs/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 220, in _get_response
+    response = response.render()
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 114, in render
+    self.content = self.rendered_content
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 90, in rendered_content
+    template = self.resolve_template(self.template_name)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 72, in resolve_template
+    return select_template(template, using=self.using)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\loader.py", line 47, in select_template
+    raise TemplateDoesNotExist(", ".join(template_name_list), chain=chain)
+django.template.exceptions.TemplateDoesNotExist: swagger-ui.html
+ERROR 2025-05-20 18:27:15,833 basehttp 111440 26556 "GET /api/docs/ HTTP/1.1" 500 97505
+ERROR 2025-05-20 18:27:17,110 log 111440 26556 Internal Server Error: /api/docs/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 220, in _get_response
+    response = response.render()
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 114, in render
+    self.content = self.rendered_content
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 90, in rendered_content
+    template = self.resolve_template(self.template_name)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 72, in resolve_template
+    return select_template(template, using=self.using)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\loader.py", line 47, in select_template
+    raise TemplateDoesNotExist(", ".join(template_name_list), chain=chain)
+django.template.exceptions.TemplateDoesNotExist: swagger-ui.html
+ERROR 2025-05-20 18:27:17,111 basehttp 111440 26556 "GET /api/docs/ HTTP/1.1" 500 97642
+INFO 2025-05-20 18:27:18,734 basehttp 111440 26556 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-20 18:27:18,745 log 111440 26556 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 18:27:18,745 basehttp 111440 26556 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-20 18:27:18,747 basehttp 111440 26556 "POST /api/scripts/ HTTP/1.1" 200 14
+INFO 2025-05-20 18:27:28,627 basehttp 111440 26556 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-05-20 18:29:26,362 autoreload 111440 87908 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-20 18:29:26,887 autoreload 92360 73096 Watching for file changes with StatReloader
+INFO 2025-05-20 18:29:36,432 autoreload 18184 99408 Watching for file changes with StatReloader
+INFO 2025-05-20 18:29:46,565 autoreload 18184 99408 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-20 18:29:46,597 autoreload 92360 73096 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-20 18:29:47,086 autoreload 84364 111532 Watching for file changes with StatReloader
+INFO 2025-05-20 18:29:47,132 autoreload 33024 67768 Watching for file changes with StatReloader
+INFO 2025-05-20 18:29:54,967 basehttp 84364 77172 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-20 18:29:54,982 log 84364 77172 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 18:29:54,983 basehttp 84364 77172 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-20 18:29:54,983 basehttp 84364 60316 "POST /api/scripts/ HTTP/1.1" 200 14
+ERROR 2025-05-20 18:29:56,278 log 84364 77172 Internal Server Error: /api/docs/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 220, in _get_response
+    response = response.render()
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 114, in render
+    self.content = self.rendered_content
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 90, in rendered_content
+    template = self.resolve_template(self.template_name)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 72, in resolve_template
+    return select_template(template, using=self.using)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\loader.py", line 47, in select_template
+    raise TemplateDoesNotExist(", ".join(template_name_list), chain=chain)
+django.template.exceptions.TemplateDoesNotExist: swagger-ui.html
+ERROR 2025-05-20 18:29:56,278 basehttp 84364 77172 "GET /api/docs/ HTTP/1.1" 500 97505
+INFO 2025-05-20 18:30:00,094 basehttp 84364 77172 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-20 18:30:00,104 log 84364 77172 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 18:30:00,105 basehttp 84364 77172 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-20 18:30:00,108 basehttp 84364 77172 "POST /api/scripts/ HTTP/1.1" 200 14
+INFO 2025-05-20 18:30:04,181 basehttp 84364 77172 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-05-20 18:31:22,371 basehttp 84364 77172 "GET /static/pages/scripts.html HTTP/1.1" 200 64217
+WARNING 2025-05-20 18:31:22,385 log 84364 77172 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 18:31:22,386 basehttp 84364 77172 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-20 18:31:22,389 basehttp 84364 77172 "POST /api/scripts/ HTTP/1.1" 200 14
+INFO 2025-05-20 18:32:37,050 basehttp 84364 77172 "GET /pages/reports.html HTTP/1.1" 200 14581
+WARNING 2025-05-20 18:32:37,075 log 84364 77172 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 18:32:37,077 basehttp 84364 77172 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-20 18:32:37,087 basehttp 84364 60316 "POST /api/reports/summary_list/ HTTP/1.1" 200 3708
+INFO 2025-05-20 18:32:49,790 basehttp 84364 60316 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-20 18:32:49,792 basehttp 84364 60316 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-20 18:32:49,813 log 84364 60316 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 18:32:49,815 basehttp 84364 60316 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-20 18:32:49,815 basehttp 84364 77172 "POST /api/scripts/ HTTP/1.1" 200 14
+INFO 2025-05-20 18:32:51,707 basehttp 84364 77172 "GET /pages/devices.html HTTP/1.1" 302 0
+WARNING 2025-05-20 18:32:51,724 log 84364 77172 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 18:32:51,724 basehttp 84364 77172 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-20 18:32:52,015 basehttp 84364 77172 "POST /api/devices/scan/ HTTP/1.1" 200 261
+INFO 2025-05-20 18:32:52,658 basehttp 84364 77172 "GET /pages/dashboard.html HTTP/1.1" 302 0
+WARNING 2025-05-20 18:32:52,673 log 84364 77172 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 18:32:52,673 basehttp 84364 77172 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-20 18:32:53,639 basehttp 84364 77172 "GET /pages/reports.html HTTP/1.1" 200 14581
+WARNING 2025-05-20 18:32:53,661 log 84364 77172 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 18:32:53,661 basehttp 84364 77172 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-20 18:32:53,677 basehttp 84364 60316 "POST /api/reports/summary_list/ HTTP/1.1" 200 3708
+INFO 2025-05-20 18:32:55,040 basehttp 84364 60316 "GET /pages/tasks.html HTTP/1.1" 200 9541
+WARNING 2025-05-20 18:32:55,060 log 84364 60316 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 18:32:55,060 basehttp 84364 60316 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-20 18:32:56,139 basehttp 84364 60316 "GET /pages/reports.html HTTP/1.1" 200 14581
+WARNING 2025-05-20 18:32:56,157 log 84364 60316 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 18:32:56,158 basehttp 84364 60316 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-20 18:32:56,174 basehttp 84364 77172 "POST /api/reports/summary_list/ HTTP/1.1" 200 3708
+INFO 2025-05-20 18:33:06,795 autoreload 84364 111532 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-20 18:33:07,319 autoreload 5208 74660 Watching for file changes with StatReloader
+INFO 2025-05-20 18:33:22,875 autoreload 104208 111032 Watching for file changes with StatReloader
+INFO 2025-05-20 18:33:26,545 basehttp 5208 13936 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-20 18:33:26,547 basehttp 5208 13936 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-20 18:33:26,569 log 5208 13936 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 18:33:26,569 basehttp 5208 13936 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-20 18:33:26,570 basehttp 5208 13936 "POST /api/scripts/ HTTP/1.1" 200 14
+INFO 2025-05-20 18:33:29,174 basehttp 5208 13936 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-20 18:33:29,183 log 5208 13936 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 18:33:29,184 basehttp 5208 13936 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-20 18:33:29,186 basehttp 5208 13936 "POST /api/scripts/ HTTP/1.1" 200 14
+INFO 2025-05-20 18:33:30,926 basehttp 5208 13936 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+ERROR 2025-05-20 18:33:42,719 log 5208 13936 Internal Server Error: /api/docs/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 220, in _get_response
+    response = response.render()
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 114, in render
+    self.content = self.rendered_content
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 90, in rendered_content
+    template = self.resolve_template(self.template_name)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 72, in resolve_template
+    return select_template(template, using=self.using)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\loader.py", line 47, in select_template
+    raise TemplateDoesNotExist(", ".join(template_name_list), chain=chain)
+django.template.exceptions.TemplateDoesNotExist: swagger-ui.html
+ERROR 2025-05-20 18:33:42,720 basehttp 5208 13936 "GET /api/docs/ HTTP/1.1" 500 97505
+INFO 2025-05-20 18:33:46,813 basehttp 5208 13936 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-05-20 18:34:25,599 autoreload 5208 74660 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-20 18:34:26,124 autoreload 110344 119884 Watching for file changes with StatReloader
+INFO 2025-05-20 18:34:35,606 basehttp 110344 80944 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-05-20 18:34:35,633 basehttp 110344 109688 "POST /api/scripts/ HTTP/1.1" 200 14
+WARNING 2025-05-20 18:34:35,637 log 110344 80944 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 18:34:35,637 basehttp 110344 80944 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-20 18:34:37,211 basehttp 110344 80944 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-05-20 18:42:26,319 autoreload 110344 119884 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-20 18:42:26,824 autoreload 68008 16788 Watching for file changes with StatReloader
+INFO 2025-05-20 18:42:56,048 autoreload 68008 16788 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-20 18:42:56,527 autoreload 66480 24084 Watching for file changes with StatReloader
+INFO 2025-05-20 18:43:15,151 autoreload 66480 24084 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-20 18:43:15,670 autoreload 80592 35600 Watching for file changes with StatReloader
+INFO 2025-05-20 18:43:36,386 autoreload 80592 35600 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-20 18:43:36,891 autoreload 59456 60204 Watching for file changes with StatReloader
+INFO 2025-05-20 18:43:53,364 autoreload 59456 60204 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-20 18:43:53,909 autoreload 73612 82488 Watching for file changes with StatReloader
+INFO 2025-05-20 18:44:04,027 autoreload 73612 82488 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-20 18:44:04,531 autoreload 52408 104416 Watching for file changes with StatReloader
+INFO 2025-05-20 18:44:33,283 basehttp 52408 114132 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-20 18:44:33,303 log 52408 114132 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 18:44:33,303 basehttp 52408 114132 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-20 18:44:33,307 basehttp 52408 114132 "POST /api/scripts/ HTTP/1.1" 200 14
+INFO 2025-05-20 18:44:39,408 basehttp 52408 114132 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-20 18:44:39,418 log 52408 114132 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 18:44:39,418 basehttp 52408 114132 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-20 18:44:39,421 basehttp 52408 114132 "POST /api/scripts/ HTTP/1.1" 200 14
+INFO 2025-05-20 18:44:44,293 basehttp 52408 114132 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-05-20 18:52:27,550 basehttp 52408 5100 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-20 18:52:27,565 log 52408 5100 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 18:52:27,566 basehttp 52408 5100 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-20 18:52:27,568 basehttp 52408 5100 "POST /api/scripts/ HTTP/1.1" 200 14
+INFO 2025-05-20 18:54:41,720 autoreload 52408 104416 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-20 18:54:42,220 autoreload 42628 35256 Watching for file changes with StatReloader
+INFO 2025-05-20 18:54:54,180 autoreload 99560 70908 Watching for file changes with StatReloader
+INFO 2025-05-20 18:58:37,117 autoreload 96832 68036 Watching for file changes with StatReloader
+INFO 2025-05-20 19:06:50,104 autoreload 32060 35572 Watching for file changes with StatReloader
+INFO 2025-05-20 19:09:19,036 autoreload 28276 41788 Watching for file changes with StatReloader
+INFO 2025-05-20 19:10:38,984 autoreload 96640 109252 Watching for file changes with StatReloader
+INFO 2025-05-20 19:12:38,297 autoreload 106460 111112 Watching for file changes with StatReloader
+INFO 2025-05-20 19:14:20,577 autoreload 42024 50336 Watching for file changes with StatReloader
+INFO 2025-05-20 19:14:25,641 basehttp 42024 107348 "GET / HTTP/1.1" 200 9707
+WARNING 2025-05-20 19:14:25,667 log 42024 107348 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 19:14:25,668 basehttp 42024 107348 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-20 19:14:27,206 basehttp 42024 107348 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-20 19:14:27,208 basehttp 42024 107348 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-20 19:14:27,227 log 42024 107348 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-20 19:14:27,227 basehttp 42024 107348 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+WARNING 2025-05-20 19:14:27,238 log 42024 74388 Bad Request: /api/scripts/
+WARNING 2025-05-20 19:14:27,238 basehttp 42024 74388 "POST /api/scripts/ HTTP/1.1" 400 76
+INFO 2025-05-20 19:14:29,400 basehttp 42024 74388 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+ERROR 2025-05-20 19:14:40,390 log 42024 74388 Internal Server Error: /api/docs/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 220, in _get_response
+    response = response.render()
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 114, in render
+    self.content = self.rendered_content
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 90, in rendered_content
+    template = self.resolve_template(self.template_name)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 72, in resolve_template
+    return select_template(template, using=self.using)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\loader.py", line 47, in select_template
+    raise TemplateDoesNotExist(", ".join(template_name_list), chain=chain)
+django.template.exceptions.TemplateDoesNotExist: swagger-ui.html
+ERROR 2025-05-20 19:14:40,390 basehttp 42024 74388 "GET /api/docs/ HTTP/1.1" 500 97921
+INFO 2025-05-21 10:29:02,065 basehttp 42024 51812 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-21 10:29:02,077 log 42024 51812 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 10:29:02,077 basehttp 42024 51812 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+WARNING 2025-05-21 10:29:02,084 log 42024 51812 Bad Request: /api/scripts/
+WARNING 2025-05-21 10:29:02,084 basehttp 42024 51812 "POST /api/scripts/ HTTP/1.1" 400 76
+INFO 2025-05-21 10:37:22,028 basehttp 42024 83600 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-05-21 10:46:35,717 autoreload 42024 50336 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-21 10:46:36,233 autoreload 65732 25728 Watching for file changes with StatReloader
+INFO 2025-05-21 10:47:17,104 autoreload 65732 25728 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-21 10:47:17,589 autoreload 71980 65388 Watching for file changes with StatReloader
+INFO 2025-05-21 10:47:46,827 autoreload 71980 65388 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-21 10:47:47,365 autoreload 89672 12000 Watching for file changes with StatReloader
+INFO 2025-05-21 11:11:43,223 basehttp 89672 82164 "GET /static/pages/scripts.html HTTP/1.1" 200 64240
+WARNING 2025-05-21 11:11:43,247 log 89672 82164 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 11:11:43,247 basehttp 89672 82164 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+WARNING 2025-05-21 11:11:43,256 log 89672 105084 Bad Request: /api/scripts/
+WARNING 2025-05-21 11:11:43,257 basehttp 89672 105084 "POST /api/scripts/ HTTP/1.1" 400 76
+INFO 2025-05-21 13:51:15,888 autoreload 35152 89724 Watching for file changes with StatReloader
+ERROR 2025-05-21 13:51:36,015 log 35152 98416 Internal Server Error: /api/docs/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 220, in _get_response
+    response = response.render()
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 114, in render
+    self.content = self.rendered_content
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 90, in rendered_content
+    template = self.resolve_template(self.template_name)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 72, in resolve_template
+    return select_template(template, using=self.using)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\loader.py", line 47, in select_template
+    raise TemplateDoesNotExist(", ".join(template_name_list), chain=chain)
+django.template.exceptions.TemplateDoesNotExist: swagger-ui.html
+ERROR 2025-05-21 13:51:36,016 basehttp 35152 98416 "GET /api/docs/ HTTP/1.1" 500 97920
+INFO 2025-05-21 13:51:53,004 basehttp 35152 98416 "GET / HTTP/1.1" 200 9707
+WARNING 2025-05-21 13:51:53,023 log 35152 98416 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 13:51:53,024 basehttp 35152 98416 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 13:51:59,340 basehttp 35152 98416 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-21 13:51:59,342 basehttp 35152 98416 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-21 13:51:59,359 log 35152 98416 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 13:51:59,360 basehttp 35152 98416 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+WARNING 2025-05-21 13:51:59,372 log 35152 83660 Bad Request: /api/scripts/
+WARNING 2025-05-21 13:51:59,372 basehttp 35152 83660 "POST /api/scripts/ HTTP/1.1" 400 76
+INFO 2025-05-21 13:52:56,199 basehttp 35152 83660 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-05-21 13:54:08,887 autoreload 88908 95536 Watching for file changes with StatReloader
+INFO 2025-05-21 13:54:15,280 basehttp 88908 49640 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-21 13:54:15,295 log 88908 49640 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 13:54:15,295 basehttp 88908 49640 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+WARNING 2025-05-21 13:54:15,307 log 88908 71204 Bad Request: /api/scripts/
+WARNING 2025-05-21 13:54:15,308 basehttp 88908 71204 "POST /api/scripts/ HTTP/1.1" 400 76
+INFO 2025-05-21 13:54:18,390 basehttp 88908 71204 "POST /api/scripts/debug/ HTTP/1.1" 200 90
+ERROR 2025-05-21 13:54:28,765 log 88908 71204 Internal Server Error: /api/docs/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 220, in _get_response
+    response = response.render()
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 114, in render
+    self.content = self.rendered_content
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 90, in rendered_content
+    template = self.resolve_template(self.template_name)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 72, in resolve_template
+    return select_template(template, using=self.using)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\loader.py", line 47, in select_template
+    raise TemplateDoesNotExist(", ".join(template_name_list), chain=chain)
+django.template.exceptions.TemplateDoesNotExist: swagger-ui.html
+ERROR 2025-05-21 13:54:28,766 basehttp 88908 71204 "GET /api/docs/ HTTP/1.1" 500 97920
+INFO 2025-05-21 14:00:25,480 autoreload 88908 95536 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-21 14:00:25,997 autoreload 71772 92844 Watching for file changes with StatReloader
+INFO 2025-05-21 14:00:33,784 autoreload 71772 92844 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-21 14:00:34,284 autoreload 64284 79092 Watching for file changes with StatReloader
+INFO 2025-05-21 14:00:54,979 autoreload 64284 79092 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-21 14:00:55,504 autoreload 122692 63468 Watching for file changes with StatReloader
+INFO 2025-05-21 14:01:08,745 autoreload 122692 63468 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-21 14:01:09,247 autoreload 88024 38904 Watching for file changes with StatReloader
+INFO 2025-05-21 14:02:32,536 autoreload 88024 38904 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-21 14:02:33,013 autoreload 123856 23836 Watching for file changes with StatReloader
+INFO 2025-05-21 14:05:06,452 basehttp 123856 56460 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-21 14:05:06,474 log 123856 56460 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 14:05:06,474 basehttp 123856 56460 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 14:05:06,485 basehttp 123856 56460 "POST /api/scripts/ HTTP/1.1" 200 2748
+INFO 2025-05-21 14:05:14,265 basehttp 123856 56460 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-05-21 14:05:14,267 basehttp 123856 56460 "GET /static/pages/devices.html HTTP/1.1" 304 0
+INFO 2025-05-21 14:05:14,283 basehttp 123856 110176 "GET /static/js/pages/devices_vue.js HTTP/1.1" 304 0
+WARNING 2025-05-21 14:05:14,284 log 123856 56460 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 14:05:14,285 basehttp 123856 56460 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 14:05:14,780 basehttp 123856 56460 "POST /api/devices/scan/ HTTP/1.1" 200 163
+INFO 2025-05-21 14:05:16,164 basehttp 123856 56460 "GET /pages/tasks.html HTTP/1.1" 200 9541
+WARNING 2025-05-21 14:05:16,181 log 123856 56460 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 14:05:16,181 basehttp 123856 56460 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 14:05:16,899 basehttp 123856 56460 "GET /pages/reports.html HTTP/1.1" 200 14581
+WARNING 2025-05-21 14:05:16,917 log 123856 56460 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 14:05:16,918 basehttp 123856 56460 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 14:05:16,932 basehttp 123856 110176 "POST /api/reports/summary_list/ HTTP/1.1" 200 3708
+INFO 2025-05-21 14:05:18,452 basehttp 123856 110176 "GET /pages/scripts.html HTTP/1.1" 302 0
+WARNING 2025-05-21 14:05:18,472 log 123856 110176 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 14:05:18,472 basehttp 123856 110176 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 14:05:18,475 basehttp 123856 56460 "POST /api/scripts/ HTTP/1.1" 200 2748
+INFO 2025-05-21 14:05:21,581 basehttp 123856 56460 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-05-21 14:28:57,442 autoreload 123856 23836 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-21 14:28:57,982 autoreload 47620 26940 Watching for file changes with StatReloader
+INFO 2025-05-21 14:29:18,646 autoreload 47620 26940 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-21 14:29:19,156 autoreload 54068 65860 Watching for file changes with StatReloader
+INFO 2025-05-21 14:30:24,344 autoreload 54068 65860 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-21 14:30:24,872 autoreload 61912 18516 Watching for file changes with StatReloader
+INFO 2025-05-21 14:30:45,312 basehttp 61912 30628 "GET /static/pages/scripts.html HTTP/1.1" 200 64277
+WARNING 2025-05-21 14:30:45,328 log 61912 30628 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 14:30:45,329 basehttp 61912 30628 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 14:30:45,687 basehttp 61912 30628 "POST /api/scripts/ HTTP/1.1" 200 2748
+INFO 2025-05-21 14:30:54,795 basehttp 61912 30628 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-05-21 14:38:29,084 autoreload 61912 18516 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-21 14:38:29,605 autoreload 108284 5860 Watching for file changes with StatReloader
+INFO 2025-05-21 14:38:58,800 autoreload 108284 5860 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-21 14:38:59,288 autoreload 92040 71948 Watching for file changes with StatReloader
+INFO 2025-05-21 14:39:41,109 autoreload 92040 71948 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-21 14:39:41,600 autoreload 54488 85532 Watching for file changes with StatReloader
+INFO 2025-05-21 15:16:22,414 autoreload 91624 6452 Watching for file changes with StatReloader
+INFO 2025-05-21 15:16:22,941 basehttp 91624 85352 "GET / HTTP/1.1" 200 9707
+WARNING 2025-05-21 15:16:22,962 log 91624 85352 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 15:16:22,962 basehttp 91624 85352 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 15:16:26,692 basehttp 91624 85352 "GET /pages/devices.html HTTP/1.1" 302 0
+WARNING 2025-05-21 15:16:26,716 log 91624 85352 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 15:16:26,716 basehttp 91624 85352 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 15:16:27,119 basehttp 91624 85352 "POST /api/devices/scan/ HTTP/1.1" 200 163
+INFO 2025-05-21 15:16:29,191 basehttp 91624 85352 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-21 15:16:29,300 basehttp 91624 85352 "GET /static/pages/scripts.html HTTP/1.1" 200 66735
+WARNING 2025-05-21 15:16:29,332 log 91624 85352 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 15:16:29,332 basehttp 91624 85352 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+ERROR 2025-05-21 15:16:42,263 log 91624 85352 Internal Server Error: /api/docs/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 220, in _get_response
+    response = response.render()
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 114, in render
+    self.content = self.rendered_content
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 90, in rendered_content
+    template = self.resolve_template(self.template_name)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 72, in resolve_template
+    return select_template(template, using=self.using)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\loader.py", line 47, in select_template
+    raise TemplateDoesNotExist(", ".join(template_name_list), chain=chain)
+django.template.exceptions.TemplateDoesNotExist: swagger-ui.html
+INFO 2025-05-21 15:16:42,263 basehttp 91624 85352 - Broken pipe from ('127.0.0.1', 50564)
+INFO 2025-05-21 15:16:48,081 basehttp 91624 78276 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-21 15:16:48,092 log 91624 78276 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 15:16:48,092 basehttp 91624 78276 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 15:24:42,671 basehttp 91624 103832 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-21 15:24:42,688 log 91624 103832 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 15:24:42,689 basehttp 91624 103832 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 15:24:48,016 basehttp 91624 103832 "GET /pages/tasks.html HTTP/1.1" 200 9541
+WARNING 2025-05-21 15:24:48,045 log 91624 103832 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 15:24:48,045 basehttp 91624 103832 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 15:24:50,975 basehttp 91624 103832 "GET /pages/reports.html HTTP/1.1" 200 14581
+WARNING 2025-05-21 15:24:51,004 log 91624 103832 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 15:24:51,004 basehttp 91624 103832 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 15:24:51,473 basehttp 91624 103832 "POST /api/reports/summary_list/ HTTP/1.1" 200 3708
+INFO 2025-05-21 15:24:53,986 basehttp 91624 103832 "GET /pages/scripts.html HTTP/1.1" 302 0
+WARNING 2025-05-21 15:24:54,026 log 91624 103832 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 15:24:54,027 basehttp 91624 103832 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 15:25:01,708 basehttp 91624 103832 "GET /pages/devices.html HTTP/1.1" 302 0
+WARNING 2025-05-21 15:25:01,750 log 91624 103832 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 15:25:01,751 basehttp 91624 103832 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 15:25:02,293 basehttp 91624 103832 "POST /api/devices/scan/ HTTP/1.1" 200 163
+INFO 2025-05-21 15:25:03,257 basehttp 91624 103832 "GET /pages/dashboard.html HTTP/1.1" 302 0
+INFO 2025-05-21 15:25:03,259 basehttp 91624 103832 "GET /static/pages/dashboard.html HTTP/1.1" 304 0
+WARNING 2025-05-21 15:25:03,309 log 91624 103832 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 15:25:03,310 basehttp 91624 103832 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 15:26:25,861 autoreload 91624 6452 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-21 15:26:26,388 autoreload 33248 93092 Watching for file changes with StatReloader
+INFO 2025-05-21 15:26:29,813 basehttp 33248 98988 "GET /static/pages/dashboard.html HTTP/1.1" 304 0
+WARNING 2025-05-21 15:26:29,828 log 33248 98988 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 15:26:29,829 basehttp 33248 98988 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 15:26:33,636 basehttp 33248 98988 "GET /pages/scripts.html HTTP/1.1" 302 0
+WARNING 2025-05-21 15:26:33,674 log 33248 98988 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 15:26:33,674 basehttp 33248 98988 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 15:27:01,848 basehttp 33248 98988 "GET /static/pages/scripts.html HTTP/1.1" 200 63140
+WARNING 2025-05-21 15:27:01,859 log 33248 98988 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 15:27:01,859 basehttp 33248 98988 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 15:27:16,350 basehttp 33248 98988 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-21 15:27:16,360 log 33248 98988 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 15:27:16,360 basehttp 33248 98988 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 15:34:55,871 basehttp 33248 50772 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-21 15:34:55,885 log 33248 50772 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 15:34:55,885 basehttp 33248 50772 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 15:35:05,398 basehttp 33248 50772 "GET /pages/reports.html HTTP/1.1" 200 14581
+WARNING 2025-05-21 15:35:05,427 log 33248 50772 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 15:35:05,427 basehttp 33248 50772 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 15:35:05,770 basehttp 33248 50772 "POST /api/reports/summary_list/ HTTP/1.1" 200 3708
+INFO 2025-05-21 15:35:07,440 basehttp 33248 50772 "POST /api/reports/summary_list/ HTTP/1.1" 200 3708
+INFO 2025-05-21 15:35:08,880 basehttp 33248 50772 "GET /pages/data.html HTTP/1.1" 200 9396
+WARNING 2025-05-21 15:35:08,904 log 33248 50772 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 15:35:08,904 basehttp 33248 50772 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 15:35:10,631 basehttp 33248 50772 "GET /pages/settings.html HTTP/1.1" 200 20581
+WARNING 2025-05-21 15:35:10,656 log 33248 50772 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 15:35:10,657 basehttp 33248 50772 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 15:35:11,900 basehttp 33248 50772 "GET /pages/scripts.html HTTP/1.1" 302 0
+WARNING 2025-05-21 15:35:11,943 log 33248 50772 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 15:35:11,943 basehttp 33248 50772 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 15:46:38,438 basehttp 33248 111612 "GET /static/pages/scripts.html HTTP/1.1" 200 64473
+WARNING 2025-05-21 15:46:38,451 log 33248 111612 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 15:46:38,451 basehttp 33248 111612 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 15:47:37,717 autoreload 67752 72308 Watching for file changes with StatReloader
+INFO 2025-05-21 15:47:43,473 basehttp 33248 111612 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-21 15:47:43,483 log 33248 111612 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 15:47:43,483 basehttp 33248 111612 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+ERROR 2025-05-21 15:47:57,865 log 67752 71904 Internal Server Error: /api/docs/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 220, in _get_response
+    response = response.render()
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 114, in render
+    self.content = self.rendered_content
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 90, in rendered_content
+    template = self.resolve_template(self.template_name)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 72, in resolve_template
+    return select_template(template, using=self.using)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\loader.py", line 47, in select_template
+    raise TemplateDoesNotExist(", ".join(template_name_list), chain=chain)
+django.template.exceptions.TemplateDoesNotExist: swagger-ui.html
+ERROR 2025-05-21 15:47:57,866 basehttp 67752 71904 "GET /api/docs/ HTTP/1.1" 500 97920
+INFO 2025-05-21 15:48:02,415 basehttp 67752 71904 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-21 15:48:02,425 log 67752 71904 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 15:48:02,426 basehttp 67752 71904 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 15:48:12,753 basehttp 67752 71904 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-21 15:48:12,764 log 67752 71904 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 15:48:12,764 basehttp 67752 71904 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 15:52:01,384 autoreload 67752 72308 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-21 15:52:01,877 autoreload 81628 120904 Watching for file changes with StatReloader
+INFO 2025-05-21 15:52:09,807 autoreload 81628 120904 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-21 15:52:10,310 autoreload 58256 88440 Watching for file changes with StatReloader
+INFO 2025-05-21 15:52:13,736 basehttp 58256 66728 "GET /static/pages/scripts.html HTTP/1.1" 200 64555
+WARNING 2025-05-21 15:52:13,755 log 58256 66728 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 15:52:13,755 basehttp 58256 66728 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 15:53:22,981 autoreload 58256 88440 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-21 15:53:23,469 autoreload 56732 55192 Watching for file changes with StatReloader
+INFO 2025-05-21 15:53:49,600 basehttp 56732 45008 "GET /static/pages/scripts.html HTTP/1.1" 200 65117
+WARNING 2025-05-21 15:53:49,616 log 56732 45008 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 15:53:49,616 basehttp 56732 45008 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 15:53:49,968 basehttp 56732 45008 "POST /api/scripts/ HTTP/1.1" 200 2748
+INFO 2025-05-21 15:54:47,890 autoreload 56732 55192 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-21 15:54:48,395 autoreload 114468 44028 Watching for file changes with StatReloader
+INFO 2025-05-21 15:54:54,088 basehttp 114468 42036 "GET /static/pages/scripts.html HTTP/1.1" 200 65751
+WARNING 2025-05-21 15:54:54,105 log 114468 42036 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 15:54:54,105 basehttp 114468 42036 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 15:54:54,434 basehttp 114468 42036 "POST /api/scripts/ HTTP/1.1" 200 2748
+INFO 2025-05-21 15:54:56,416 basehttp 114468 42036 "POST /api/scripts/debug/ HTTP/1.1" 200 88
+INFO 2025-05-21 15:57:45,326 autoreload 114468 44028 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-21 15:57:45,908 autoreload 102184 115320 Watching for file changes with StatReloader
+INFO 2025-05-21 16:00:37,310 autoreload 83208 9292 Watching for file changes with StatReloader
+INFO 2025-05-21 16:00:50,294 autoreload 83208 9292 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-21 16:00:50,761 autoreload 42792 110716 Watching for file changes with StatReloader
+INFO 2025-05-21 16:00:53,425 basehttp 42792 43264 "GET /static/pages/scripts.html HTTP/1.1" 200 65565
+WARNING 2025-05-21 16:00:53,446 log 42792 43264 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 16:00:53,447 basehttp 42792 43264 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 16:00:53,809 basehttp 42792 43264 "POST /api/scripts/ HTTP/1.1" 200 2748
+INFO 2025-05-21 16:00:56,381 basehttp 42792 43264 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+ERROR 2025-05-21 16:00:57,604 log 42792 43264 Internal Server Error: /api/docs/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 220, in _get_response
+    response = response.render()
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 114, in render
+    self.content = self.rendered_content
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 90, in rendered_content
+    template = self.resolve_template(self.template_name)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 72, in resolve_template
+    return select_template(template, using=self.using)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\loader.py", line 47, in select_template
+    raise TemplateDoesNotExist(", ".join(template_name_list), chain=chain)
+django.template.exceptions.TemplateDoesNotExist: swagger-ui.html
+ERROR 2025-05-21 16:00:57,605 basehttp 42792 43264 "GET /api/docs/ HTTP/1.1" 500 97920
+INFO 2025-05-21 16:03:12,765 basehttp 42792 43264 "GET /static/pages/scripts.html HTTP/1.1" 200 65509
+WARNING 2025-05-21 16:03:12,776 log 42792 43264 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 16:03:12,776 basehttp 42792 43264 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 16:03:13,120 basehttp 42792 43264 "POST /api/scripts/ HTTP/1.1" 200 2748
+INFO 2025-05-21 16:03:15,448 basehttp 42792 43264 "POST /api/scripts/debug/ HTTP/1.1" 200 89

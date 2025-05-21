@@ -194,40 +194,44 @@ WFGame AI自动化测试框架基于honeydou自动化测试平台构建，采用
    - 验证静态资源
    - 确认目录权限
 
-## 项目结构
+## 项目结构（详细分层说明，2025年5月最新）
 
 ```
 WFGameAI/
-├── datasets/                  # 数据集目录
+├── config.ini                  # 【全局路径配置，所有后端路径引用的唯一入口】
+├── datasets/                  # 数据集目录（config.ini: datasets_dir）
 │   ├── preprocessed/          # 预处理后的数据
 │   └── templates/             # 报告模板
 ├── docs/                      # 文档目录
 │   ├── README_honeydou.md     # honeydou平台文档
 │   └── WFGameAI_实施进度跟踪.md # 实施进度跟踪文档
-├── scripts/                   # 脚本目录
-│   ├── generate_annotations.py # 生成标注工具
-│   ├── generate_report.py     # 报告生成工具
-│   ├── json_gen.py            # JSON生成工具
-│   └── record_script.py       # 录制脚本工具
-├── templates/                 # 模板目录
-│   └── summary_template.html  # 汇总报告模板
-├── wfgame-ai-server/          # 服务器端
-│   ├── devices/               # 设备管理模块
-│   ├── reports/               # 报告管理模块
-│   ├── scripts/               # 脚本管理模块
-│   │   ├── record_script.py   # 录制脚本
-│   │   └── replay_script.py   # 回放脚本
-│   ├── testcase/              # 测试用例目录
-│   └── wfgame_ai_server/      # 服务器核心
-├── wfgame-ai-web/             # 前端Web界面
-│   ├── css/                   # 样式文件
-│   ├── js/                    # JavaScript文件
-│   ├── pages/                 # 页面文件
-│   └── src/                   # Vue源代码
+├── scripts/                   # AI训练/工具脚本目录（如 generate_annotations.py 等，config.ini 不直接管理）
+├── templates/                 # 报告/页面模板目录
+├── wfgame-ai-server/          # 服务器端主目录（config.ini: server_dir）
+│   ├── apps/                  # 各业务App目录（如 devices、scripts、reports 等）
+│   │   ├── scripts/           # 脚本管理App（config.ini: scripts_dir）
+│   │   │   ├── views.py       # 脚本API主视图（路径引用必须全部依赖config.ini）
+│   │   │   ├── record_script.py
+│   │   │   └── replay_script.py
+│   │   ├── devices/           # 设备管理App
+│   │   └── ...                # 其他App
+│   ├── testcase/              # 测试用例目录（config.ini: testcase_dir）
+│   ├── outputs/               # 输出目录（如报告，config.ini 的 reports_dir）
+│   │   └── WFGameAI-reports/  # 测试报告主目录（config.ini: reports_dir）
+│   │       └── ui_reports/    # UI报告目录（config.ini: ui_reports_dir）
+│   └── wfgame_ai_server/      # Django主项目目录（主urls.py/settings.py/wsgi.py等）
+├── wfgame-ai-web/             # 前端Web界面（Vue3）
 ├── requirements.txt           # 依赖列表
-├── start_wfgame_ai.py         # 启动脚本
+├── start_wfgame_ai.py         # 启动脚本（后端）
 └── train_model.py             # 模型训练脚本
 ```
+
+### 结构说明
+- **所有后端目录引用（如脚本、用例、报告等）必须严格通过 config.ini 统一管理和获取，禁止硬编码和静态拼接。**
+- **config.ini 是全局唯一的路径配置入口，所有API和后端逻辑均以其为准。**
+- **wfgame-ai-server/apps/scripts/** 目录下的 record_script.py、replay_script.py 等脚本，必须通过 config.ini 的 scripts_dir 路径引用。**
+- **wfgame-ai-server/testcase/**、**outputs/WFGameAI-reports/**、**outputs/WFGameAI-reports/ui_reports/** 等目录，均通过 config.ini 的 testcase_dir、reports_dir、ui_reports_dir 管理。**
+- **如需新增目录或调整结构，必须先修改 config.ini 并同步后端所有路径引用。**
 
 ## 数据库配置
 
@@ -238,3 +242,14 @@ USERNAME=root
 PASSWD=qa123456
 DBNAME=gogotest_data
 ```
+
+## 目录结构与路径说明（2025年5月最新）
+
+- 项目根目录：WFGameAI
+- 服务器主目录：WFGameAI/wfgame-ai-server
+- 脚本目录：WFGameAI/wfgame-ai-server/apps/scripts
+- 测试用例目录：WFGameAI/wfgame-ai-server/testcase
+- 报告目录：WFGameAI/outputs/WFGameAI-reports
+- UI报告目录：WFGameAI/outputs/WFGameAI-reports/ui_reports
+
+所有后端代码和API均已静态化引用上述目录，不再依赖config.ini或动态推导。
