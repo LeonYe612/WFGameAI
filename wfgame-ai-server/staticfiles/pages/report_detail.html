@@ -81,8 +81,7 @@
                     <p class="text-muted">查看测试报告详细信息</p>
                 </div>                <div>
                     <a href="/pages/reports_template.html" class="btn btn-secondary me-2"><i class="fas fa-arrow-left"></i> 返回报告列表</a>
-                    <a id="newWindowLink" href="#" target="_blank" class="btn btn-primary me-2"><i class="fas fa-external-link-alt"></i> 在新窗口打开</a>
-                    <a id="integratedReportLink" href="#" target="_blank" class="btn btn-success"><i class="fas fa-list-ul"></i> 查看集成报告</a>
+                    <a id="newWindowLink" href="#" target="_blank" class="btn btn-primary"><i class="fas fa-external-link-alt"></i> 在新窗口打开</a>
                 </div>
             </div>
             <div class="col-12">
@@ -164,13 +163,9 @@
                         <div>设备数: ${report.device_count}，成功数: ${report.success_count}，成功率: ${report.success_rate}%</div>
                         <div class="mb-2">
                             <a href="${report.url}" target="_blank" class="btn btn-outline-primary btn-sm"><i class="fas fa-external-link-alt"></i> 新窗口打开</a>
-                        </div>
-                    `;                    document.getElementById('reportFrame').src = report.url;
+                        </div>                    `;                    document.getElementById('reportFrame').src = report.url;
                     // Update the new window link
                     document.getElementById('newWindowLink').href = report.url;
-                    // Update the integrated report link
-                    const integratedUrl = report.url.replace('summary_report_', 'integrated_report_');
-                    document.getElementById('integratedReportLink').href = integratedUrl;
                 });
         }
     </script>

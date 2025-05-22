@@ -383,7 +383,7 @@ def summary_list(request):
                             url_base = '/static/reports/summary_reports/'
                             if reports_dir == UI_REPORTS_DIR:
                                 # 如果是配置文件中的报告目录，使用相对于静态目录的路径
-                                url_base = '/static/WFGameAI-reports/ui_reports/'
+                                url_base = '/static/reports/summary_reports/'
 
                             reports.append({
                                 'report_id': report_id,

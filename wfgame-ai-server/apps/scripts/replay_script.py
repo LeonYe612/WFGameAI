@@ -1782,18 +1782,21 @@ def run_summary(data):
             shutil.copy2(latest_report_path, os.path.join(static_reports_dir, "latest_report.html"))
             print(f"报告已同步到汇总报告目录: {static_reports_dir}")
 
+            # 确保同步到staticfiles目录，以便Web访问
+            staticfiles_reports_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "staticfiles", "reports", "summary_reports")
+            os.makedirs(staticfiles_reports_dir, exist_ok=True)
+            # 复制汇总报告
+            shutil.copy2(summary_report_path, os.path.join(staticfiles_reports_dir, os.path.basename(summary_report_path)))
+            # 复制latest_report.html
+            shutil.copy2(latest_report_path, os.path.join(staticfiles_reports_dir, "latest_report.html"))
+            print(f"报告已同步到Web静态目录: {staticfiles_reports_dir}")
+
             # --- 新增：自动创建集成式报告 ---
             try:
-                # 引入集成报告生成脚本
-                integrated_reports_script = os.path.join(os.path.dirname(__file__), "..", "..", "..", "create_integrated_reports.py")
-                if os.path.exists(integrated_reports_script):
-                    import subprocess
-                    subprocess.run([sys.executable, integrated_reports_script], check=True)
-                    print("集成式报告创建成功")
-                else:
-                    print(f"集成报告脚本不存在: {integrated_reports_script}")
+                # 不再需要创建集成报告
+                print("概要报告已成功创建")
             except Exception as int_e:
-                print(f"创建集成式报告失败: {int_e}")
+                print(f"处理报告时出错: {int_e}")
             # --- end ---
         except Exception as sync_e:
             print(f"报告同步到静态目录失败: {sync_e}")
