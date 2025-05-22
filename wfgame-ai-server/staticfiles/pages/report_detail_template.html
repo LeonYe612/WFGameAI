@@ -80,10 +80,9 @@
                 <div>
                     <h2><i class="fas fa-chart-bar"></i> 测试报告详情</h2>
                     <p class="text-muted">查看测试报告详细信息</p>
-                </div>
-                <div>
+                </div>                <div>
                     <a href="/pages/reports_template.html" class="btn btn-secondary me-2"><i class="fas fa-arrow-left"></i> 返回报告列表</a>
-                    <a href="/static/reports/summary_report_{{ report_id }}.html" target="_blank" class="btn btn-primary"><i class="fas fa-external-link-alt"></i> 在新窗口打开</a>
+                    <a id="newWindowLink" href="#" target="_blank" class="btn btn-primary"><i class="fas fa-external-link-alt"></i> 在新窗口打开</a>
                 </div>
             </div>
             <div class="col-12">
@@ -93,10 +92,9 @@
 
         <div class="row">
             <div class="col-12">
-                <div class="report-meta" id="reportMeta"></div>
-                <div class="card">
+                <div class="report-meta" id="reportMeta"></div>                <div class="card">
                     <div class="card-body p-0">
-                        <iframe id="reportFrame" class="report-frame" src="/static/reports/summary_report_{{ report_id }}.html"></iframe>
+                        <iframe id="reportFrame" class="report-frame" src="about:blank"></iframe>
                     </div>
                 </div>
             </div>
@@ -116,7 +114,7 @@
                 iframe.style.height = (window.innerHeight - 250) + 'px';
             }
         }
-        
+
         window.addEventListener('load', resizeIframe);
         window.addEventListener('resize', resizeIframe);
 
@@ -129,8 +127,7 @@
             document.getElementById('reportMeta').innerHTML = '<div class="text-danger">未指定报告ID</div>';
         } else {
             fetch('/api/reports/summary_list/', {method: 'POST'})
-                .then(res => res.json())
-                .then(data => {
+                .then(res => res.json())                .then(data => {
                     const report = (data.reports || []).find(r => r.report_id === reportId);
                     if (!report) {
                         document.getElementById('reportMeta').innerHTML = '<div class="text-danger">未找到该报告</div>';
@@ -145,8 +142,10 @@
                         </div>
                     `;
                     document.getElementById('reportFrame').src = report.url;
+                    // Update the new window link
+                    document.getElementById('newWindowLink').href = report.url;
                 });
         }
     </script>
 </body>
-</html> 
+</html>

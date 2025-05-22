@@ -13,7 +13,6 @@ from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 import os
-from api.reports import summary_list
 
 from .views import index_view
 
@@ -23,7 +22,7 @@ from apps.scripts.views import (
     get_reports, get_latest_report, record_script, get_python_envs
 )
 
-from apps.reports.views import get_report_list, get_device_performance
+from apps.reports.views import get_report_list, get_device_performance, summary_list
 
 # API文档配置
 schema_view = get_schema_view(
@@ -81,16 +80,16 @@ urlpatterns = [
     path('', index_view, name='index'),
 
     # 页面路由 - 使用静态页面视图
-    path('pages/<path:template_name>', static_page_view, name='static_page_view'),
-
-    # 设备管理API - 包含所有设备相关的端点
+    path('pages/<path:template_name>', static_page_view, name='static_page_view'),    # 设备管理API - 包含所有设备相关的端点
     path('api/', include('apps.devices.urls')),
 
     # 脚本管理API
     path('api/scripts/', include('apps.scripts.urls')),
 
-    # 其他API应用可在此include
-    # summary_list报告API
+    # 报告管理API
+    path('api/reports/', include('apps.reports.urls')),
+
+    # 保留原有的直接API访问路径，以确保兼容性
     path('api/reports/summary_list/', summary_list),
 
     # API接口 - 所有API使用POST方法

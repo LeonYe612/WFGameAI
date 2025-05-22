@@ -198,21 +198,24 @@
                     || (r.devices && r.devices.some(d => d.name.toLowerCase().includes(search)))
                     || (r.success_rate + '').includes(search);
             }).forEach(report => {
+                // 计算成功率并确定对应的样式
                 let badgeClass = 'badge-success';
-                if (report.success_rate < 70) badgeClass = 'badge-danger';
-                else if (report.success_rate < 90) badgeClass = 'badge-warning';
-                html += `
-                <div class="report-card p-4">
+                const successRatio = (report.success_count / (report.devices ? report.devices.length : 1));
+                if (successRatio < 0.7) badgeClass = 'badge-danger';
+                else if (successRatio < 0.9) badgeClass = 'badge-warning';
+
+                // 确保设备数使用devices.length，保证准确
+                const deviceCount = report.devices ? report.devices.length : 0;
+
+                html += `                <div class="report-card p-4">
                     <div class="report-header">
                         <div>
                             <h5>${report.title}</h5>
-                            <div class="text-muted">生成时间: ${report.created_at}</div>
-                            <span class="badge ${badgeClass}">成功率: ${report.success_rate}%</span>
-                            <span class="ms-2"><i class="fas fa-mobile-alt"></i> 设备数: ${report.device_count}</span>
-                        </div>
-                        <div>
-                            <a href="/pages/report_detail.html?report_id=${report.report_id}" class="btn btn-outline-primary me-2"><i class="fas fa-eye"></i> 查看详情</a>
-                            <a href="${report.url}" target="_blank" class="btn btn-outline-secondary"><i class="fas fa-external-link-alt"></i> 新窗口打开</a>
+                            <div class="text-muted">生成时间: ${report.created_at || '未知'}</div>
+                            <span class="badge ${badgeClass}">成功率: ${report.success_count}/${deviceCount}</span>
+                            <span class="ms-2"><i class="fas fa-mobile-alt"></i> 设备数: ${deviceCount}</span>
+                        </div>                        <div>
+                            <a href="${report.url.replace('summary_report_', 'integrated_report_')}" target="_blank" class="btn btn-outline-success"><i class="fas fa-list-ul"></i> 集成报告</a>
                         </div>
                     </div>
                     <div class="device-list mt-3">
@@ -237,36 +240,45 @@
             const searchText = document.getElementById('searchInput').value.toLowerCase();
             const successRateFilter = document.getElementById('successRateFilter').value;
             const dateFilter = document.getElementById('reportDateFilter').value;
-            
+
             let filtered = [...allReports];
-            
+
             // 搜索过滤
             if (searchText) {
-                filtered = filtered.filter(report => 
-                    report.title.toLowerCase().includes(searchText)
+                filtered = filtered.filter(report =>
+                    report.title.toLowerCase().includes(searchText) ||
+                    (report.created_at && report.created_at.toLowerCase().includes(searchText)) ||
+                    (report.devices && report.devices.some(d => d.name.toLowerCase().includes(searchText)))
                 );
             }
-            
-            // 成功率过滤
+
+            // 成功率过滤 - 使用 success_count/devices.length 而不是 success_rate
             if (successRateFilter !== 'all') {
-                if (successRateFilter === 'high') {
-                    filtered = filtered.filter(report => report.success_rate >= 90);
-                } else if (successRateFilter === 'medium') {
-                    filtered = filtered.filter(report => report.success_rate >= 70 && report.success_rate < 90);
-                } else if (successRateFilter === 'low') {
-                    filtered = filtered.filter(report => report.success_rate < 70);
-                }
+                filtered = filtered.filter(report => {
+                    const deviceCount = report.devices ? report.devices.length : 1;
+                    const successRatio = report.success_count / deviceCount;
+
+                    if (successRateFilter === 'high') {
+                        return successRatio >= 0.9;
+                    } else if (successRateFilter === 'medium') {
+                        return successRatio >= 0.7 && successRatio < 0.9;
+                    } else if (successRateFilter === 'low') {
+                        return successRatio < 0.7;
+                    }
+                    return true;
+                });
             }
-            
+
             // 日期过滤
             if (dateFilter) {
                 const filterDate = new Date(dateFilter);
                 filtered = filtered.filter(report => {
-                    const reportDate = new Date(report.date);
-                    return reportDate.toDateString() === filterDate.toDateString();
+                    if (!report.created_at) return false;
+                    const reportDate = new Date(report.created_at);
+                    return !isNaN(reportDate.getTime()) && reportDate.toDateString() === filterDate.toDateString();
                 });
             }
-            
+
             renderReports(filtered);
         }
 
@@ -279,7 +291,7 @@
         // 确认删除报告
         function deleteReport() {
             if (!deleteReportId) return;
-            
+
             fetch(`/api/reports/delete/`, {
                 method: 'POST',
                 headers: {
@@ -309,7 +321,7 @@
         // 页面加载时获取报告
         document.addEventListener('DOMContentLoaded', function() {
             fetchReports();
-            
+
             // 设置事件处理程序
             document.getElementById('searchInput').addEventListener('input', fetchReports);
             document.getElementById('successRateFilter').addEventListener('change', fetchReports);
@@ -319,4 +331,4 @@
         });
     </script>
 </body>
-</html> 
+</html>
