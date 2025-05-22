@@ -30,6 +30,12 @@ WFGame AI 自动化测试框架是一个基于YOLO11m计算机视觉的游戏UI�
 - Redis 7.2+（缓存）
 - ADB工具（设备连接）
 
+## 开发规范
+
+- [代码规范](docs/WFGameAI-Coding-Standards.md): 项目代码风格和结构规范
+- [Git提交规范](git_commit_guide.md): Git提交信息模板和规范
+- [API开发规范](docs/WFGameAI-API-Dev-Standards.md): API设计和开发规范
+
 ## 快速开始
 
 1. **环境配置**

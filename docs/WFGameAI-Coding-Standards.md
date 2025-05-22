@@ -347,7 +347,7 @@ memory_usage = psutil.Process().memory_info().rss / (1024 * 1024)  # MB
 提交代码时请遵循以下commit信息模板格式：
 
 ```
-<type>: <简要描述问题和修复>
+<type>(<scope>): <简要描述问题和修复>
 
 修复内容：
 1. <修改模块/文件1>:
@@ -367,6 +367,11 @@ memory_usage = psutil.Process().memory_info().rss / (1024 * 1024)  # MB
 测试: <描述如何验证修复结果>
 日期: <提交日期，格式：Month DD, YYYY>
 ```
+
+其中：
+- `<type>`: 提交类型，如 fix、feat、docs 等
+- `<scope>`: 影响范围，如 templates、devices、scripts 等
+- 示例：`feat(devices): 增强设备连接与管理功能`
 
 ### Type 类型说明
 - `fix`: 修复bug

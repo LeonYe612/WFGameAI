@@ -22,7 +22,8 @@ config = ConfigParser()
 config.read(os.path.join(os.path.dirname(__file__), '../config.ini'), encoding='utf-8')
 
 # 优先使用settings中的静态目录
-REPORTS_DIR = os.path.join(settings.BASE_DIR, 'staticfiles', 'reports')
+REPORTS_DIR = os.path.join(settings.BASE_DIR, 'apps', 'reports', 'reports') # C:\Users\wfgame\wfgame-ai-server\apps\reports
+
 
 @csrf_exempt
 @require_POST
@@ -87,4 +88,4 @@ def summary_list(request):
                 })
         return JsonResponse({'reports': reports}, status=200)
     except Exception as e:
-        return JsonResponse({'detail': f'服务异常: {str(e)}'}, status=500) 
+        return JsonResponse({'detail': f'服务异常: {str(e)}'}, status=500)

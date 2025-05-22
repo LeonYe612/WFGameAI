@@ -2,6 +2,6 @@ datasets/My First Project*
 external/
 train_results/
 # *.pt # git lfs track "*.pt"
-#*.png # git lfs track "*.png"
-#*.jpg # git lfs track "*.jpg"
+# *.png # git lfs track "*.png"
+# *.jpg # git lfs track "*.jpg"
 # git config --global http.postBuffer 524288000 # 500M
