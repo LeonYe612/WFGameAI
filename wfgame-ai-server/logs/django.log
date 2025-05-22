@@ -7877,3 +7877,507 @@ WARNING 2025-05-21 16:03:12,776 log 42792 43264 Not Found: /.well-known/appspeci
 WARNING 2025-05-21 16:03:12,776 basehttp 42792 43264 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
 INFO 2025-05-21 16:03:13,120 basehttp 42792 43264 "POST /api/scripts/ HTTP/1.1" 200 2748
 INFO 2025-05-21 16:03:15,448 basehttp 42792 43264 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-05-21 16:32:43,972 autoreload 42792 110716 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-21 16:32:44,538 autoreload 104768 121728 Watching for file changes with StatReloader
+INFO 2025-05-21 16:47:43,797 autoreload 104768 121728 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-21 16:47:44,301 autoreload 90268 64640 Watching for file changes with StatReloader
+INFO 2025-05-21 16:47:54,428 autoreload 90268 64640 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-21 16:47:54,970 autoreload 117884 79220 Watching for file changes with StatReloader
+INFO 2025-05-21 16:48:33,766 autoreload 117884 79220 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-21 16:48:34,261 autoreload 29572 92920 Watching for file changes with StatReloader
+INFO 2025-05-21 16:50:10,052 autoreload 29572 92920 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-21 16:50:10,545 autoreload 98648 26860 Watching for file changes with StatReloader
+INFO 2025-05-21 16:50:56,865 autoreload 98648 26860 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-21 16:50:57,522 autoreload 76984 101692 Watching for file changes with StatReloader
+INFO 2025-05-21 16:51:10,767 autoreload 76984 101692 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-21 16:51:11,285 autoreload 27036 73928 Watching for file changes with StatReloader
+INFO 2025-05-21 16:52:35,711 autoreload 27036 73928 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-21 16:52:36,229 autoreload 113608 28352 Watching for file changes with StatReloader
+INFO 2025-05-21 16:53:55,359 autoreload 113608 28352 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-21 16:53:55,885 autoreload 104504 102104 Watching for file changes with StatReloader
+INFO 2025-05-21 17:07:04,848 autoreload 104504 102104 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-21 17:07:05,354 autoreload 60112 48740 Watching for file changes with StatReloader
+INFO 2025-05-21 17:08:40,403 autoreload 60112 48740 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-21 17:08:40,970 autoreload 111720 123312 Watching for file changes with StatReloader
+INFO 2025-05-21 17:09:22,890 autoreload 111720 123312 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-21 17:09:23,408 autoreload 109652 67020 Watching for file changes with StatReloader
+INFO 2025-05-21 17:09:34,554 autoreload 109652 67020 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-21 17:09:35,061 autoreload 97772 10448 Watching for file changes with StatReloader
+INFO 2025-05-21 17:09:54,669 autoreload 97772 10448 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-21 17:09:55,156 autoreload 18900 21476 Watching for file changes with StatReloader
+INFO 2025-05-21 17:10:09,228 autoreload 18900 21476 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-21 17:10:09,715 autoreload 49932 37544 Watching for file changes with StatReloader
+INFO 2025-05-21 17:10:22,993 autoreload 49932 37544 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-21 17:10:23,484 autoreload 57360 115404 Watching for file changes with StatReloader
+INFO 2025-05-21 17:12:08,996 basehttp 57360 111360 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-21 17:12:09,015 log 57360 111360 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 17:12:09,015 basehttp 57360 111360 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 17:12:09,351 basehttp 57360 111360 "POST /api/scripts/ HTTP/1.1" 200 2748
+INFO 2025-05-21 17:12:12,299 basehttp 57360 111360 "GET /pages/tasks.html HTTP/1.1" 200 9541
+WARNING 2025-05-21 17:12:12,323 log 57360 111360 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 17:12:12,323 basehttp 57360 111360 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 17:12:13,578 basehttp 57360 111360 "GET /pages/reports.html HTTP/1.1" 200 14581
+WARNING 2025-05-21 17:12:13,603 log 57360 111360 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 17:12:13,603 basehttp 57360 111360 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 17:12:13,951 basehttp 57360 111360 "POST /api/reports/summary_list/ HTTP/1.1" 200 3708
+INFO 2025-05-21 17:12:15,064 basehttp 57360 111360 "GET /pages/dashboard.html HTTP/1.1" 302 0
+WARNING 2025-05-21 17:12:15,096 log 57360 111360 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 17:12:15,096 basehttp 57360 111360 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 17:12:15,958 basehttp 57360 111360 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-05-21 17:12:15,961 basehttp 57360 111360 "GET /static/pages/devices.html HTTP/1.1" 304 0
+WARNING 2025-05-21 17:12:15,997 log 57360 111360 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 17:12:15,997 basehttp 57360 111360 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 17:12:16,418 basehttp 57360 111360 "POST /api/devices/scan/ HTTP/1.1" 200 261
+INFO 2025-05-21 17:12:17,160 basehttp 57360 111360 "GET /pages/tasks.html HTTP/1.1" 200 9541
+WARNING 2025-05-21 17:12:17,195 log 57360 111360 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 17:12:17,195 basehttp 57360 111360 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 17:12:18,246 basehttp 57360 111360 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-21 17:12:18,358 basehttp 57360 111360 "GET /static/pages/scripts.html HTTP/1.1" 200 65509
+WARNING 2025-05-21 17:12:18,402 log 57360 111360 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 17:12:18,402 basehttp 57360 111360 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 17:12:18,737 basehttp 57360 111360 "POST /api/scripts/ HTTP/1.1" 200 2748
+INFO 2025-05-21 17:12:58,938 autoreload 57360 115404 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-21 17:12:59,466 autoreload 8448 108316 Watching for file changes with StatReloader
+INFO 2025-05-21 17:13:26,643 autoreload 8448 108316 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-21 17:13:27,130 autoreload 2852 112360 Watching for file changes with StatReloader
+INFO 2025-05-21 17:13:44,612 basehttp 2852 29920 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-21 17:13:44,642 log 2852 29920 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 17:13:44,642 basehttp 2852 29920 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 17:13:44,952 basehttp 2852 29920 "POST /api/scripts/ HTTP/1.1" 200 2748
+INFO 2025-05-21 17:13:47,177 basehttp 2852 29920 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-05-21 17:14:12,073 basehttp 2852 29920 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-05-21 17:17:17,290 basehttp 2852 29920 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-05-21 17:25:17,552 autoreload 68460 124604 Watching for file changes with StatReloader
+INFO 2025-05-21 17:25:20,969 basehttp 68460 20424 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-21 17:25:20,972 basehttp 68460 20424 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-21 17:25:20,997 log 68460 20424 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 17:25:20,997 basehttp 68460 20424 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 17:25:21,364 basehttp 68460 20424 "POST /api/scripts/ HTTP/1.1" 200 2748
+INFO 2025-05-21 17:25:28,981 basehttp 68460 20424 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+ERROR 2025-05-21 17:25:37,443 log 68460 20424 Internal Server Error: /api/docs/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 220, in _get_response
+    response = response.render()
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 114, in render
+    self.content = self.rendered_content
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 90, in rendered_content
+    template = self.resolve_template(self.template_name)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 72, in resolve_template
+    return select_template(template, using=self.using)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\loader.py", line 47, in select_template
+    raise TemplateDoesNotExist(", ".join(template_name_list), chain=chain)
+django.template.exceptions.TemplateDoesNotExist: swagger-ui.html
+ERROR 2025-05-21 17:25:37,444 basehttp 68460 20424 "GET /api/docs/ HTTP/1.1" 500 97921
+INFO 2025-05-21 17:27:06,981 basehttp 68460 20424 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-21 17:27:06,994 log 68460 20424 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 17:27:06,995 basehttp 68460 20424 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 17:27:07,337 basehttp 68460 20424 "POST /api/scripts/ HTTP/1.1" 200 14
+INFO 2025-05-21 17:29:31,828 basehttp 68460 20424 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-21 17:29:31,839 log 68460 20424 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 17:29:31,839 basehttp 68460 20424 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 17:29:32,185 basehttp 68460 20424 "POST /api/scripts/ HTTP/1.1" 200 14
+INFO 2025-05-21 17:29:39,883 basehttp 68460 20424 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-21 17:29:39,893 log 68460 20424 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 17:29:39,893 basehttp 68460 20424 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 17:29:40,220 basehttp 68460 20424 "POST /api/scripts/ HTTP/1.1" 200 14
+INFO 2025-05-21 17:31:56,542 autoreload 18320 54360 Watching for file changes with StatReloader
+INFO 2025-05-21 17:32:01,055 basehttp 18320 85220 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-21 17:32:01,072 log 18320 85220 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 17:32:01,073 basehttp 18320 85220 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 17:32:01,409 basehttp 18320 85220 "POST /api/scripts/ HTTP/1.1" 200 2748
+INFO 2025-05-21 17:32:13,045 basehttp 18320 85220 "POST /api/scripts/replay/ HTTP/1.1" 200 468
+ERROR 2025-05-21 17:32:16,419 log 18320 85220 Internal Server Error: /api/docs/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 220, in _get_response
+    response = response.render()
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 114, in render
+    self.content = self.rendered_content
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 90, in rendered_content
+    template = self.resolve_template(self.template_name)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 72, in resolve_template
+    return select_template(template, using=self.using)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\loader.py", line 47, in select_template
+    raise TemplateDoesNotExist(", ".join(template_name_list), chain=chain)
+django.template.exceptions.TemplateDoesNotExist: swagger-ui.html
+ERROR 2025-05-21 17:32:16,420 basehttp 18320 85220 "GET /api/docs/ HTTP/1.1" 500 97921
+INFO 2025-05-21 17:32:35,814 basehttp 18320 85220 "GET /pages/reports.html HTTP/1.1" 200 14581
+WARNING 2025-05-21 17:32:35,841 log 18320 85220 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 17:32:35,841 basehttp 18320 85220 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 17:32:36,215 basehttp 18320 85220 "POST /api/reports/summary_list/ HTTP/1.1" 200 3708
+INFO 2025-05-21 17:32:44,033 basehttp 18320 85220 "GET /pages/report_detail.html?report_id=2025-05-20-16-13-09 HTTP/1.1" 200 6667
+WARNING 2025-05-21 17:32:44,055 log 18320 85220 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 17:32:44,055 basehttp 18320 85220 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 17:32:44,416 basehttp 18320 102828 "POST /api/reports/summary_list/ HTTP/1.1" 200 3708
+WARNING 2025-05-21 17:32:44,417 basehttp 18320 85220 "GET /static/reports/summary_report_.html HTTP/1.1" 404 1944
+INFO 2025-05-21 17:32:44,420 basehttp 18320 102828 "GET /static/reports/summary_report_2025-05-20-16-13-09.html HTTP/1.1" 304 0
+INFO 2025-05-21 17:32:50,070 basehttp 18320 102828 "GET /pages/reports.html HTTP/1.1" 200 14581
+WARNING 2025-05-21 17:32:50,102 log 18320 102828 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 17:32:50,103 basehttp 18320 102828 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 17:32:50,455 basehttp 18320 102828 "POST /api/reports/summary_list/ HTTP/1.1" 200 3708
+INFO 2025-05-21 17:32:59,506 basehttp 18320 102828 "GET /pages/report_detail.html?report_id=2025-05-19-15-40-17 HTTP/1.1" 200 6667
+WARNING 2025-05-21 17:32:59,532 log 18320 102828 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 17:32:59,532 basehttp 18320 102828 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 17:32:59,892 basehttp 18320 41876 "POST /api/reports/summary_list/ HTTP/1.1" 200 3708
+WARNING 2025-05-21 17:32:59,893 basehttp 18320 102828 "GET /static/reports/summary_report_.html HTTP/1.1" 404 1944
+INFO 2025-05-21 17:33:00,019 basehttp 18320 41876 "GET /static/reports/summary_report_2025-05-19-15-40-17.html HTTP/1.1" 200 2569
+INFO 2025-05-21 17:33:02,324 basehttp 18320 41876 "GET /pages/reports.html HTTP/1.1" 200 14581
+WARNING 2025-05-21 17:33:02,358 log 18320 41876 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 17:33:02,358 basehttp 18320 41876 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 17:33:02,713 basehttp 18320 41876 "POST /api/reports/summary_list/ HTTP/1.1" 200 3708
+INFO 2025-05-21 17:33:04,042 basehttp 18320 41876 "GET /pages/report_detail.html?report_id=2025-05-20-16-13-09 HTTP/1.1" 200 6667
+WARNING 2025-05-21 17:33:04,082 log 18320 41876 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 17:33:04,082 basehttp 18320 41876 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 17:33:04,428 basehttp 18320 99604 "POST /api/reports/summary_list/ HTTP/1.1" 200 3708
+WARNING 2025-05-21 17:33:04,428 basehttp 18320 41876 "GET /static/reports/summary_report_.html HTTP/1.1" 404 1944
+INFO 2025-05-21 17:33:06,459 basehttp 18320 99604 "GET /pages/reports.html HTTP/1.1" 200 14581
+WARNING 2025-05-21 17:33:06,500 log 18320 99604 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 17:33:06,500 basehttp 18320 99604 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 17:33:06,850 basehttp 18320 99604 "POST /api/reports/summary_list/ HTTP/1.1" 200 3708
+INFO 2025-05-21 17:33:13,825 basehttp 18320 99604 "POST /api/reports/summary_list/ HTTP/1.1" 200 3708
+INFO 2025-05-21 17:38:49,318 autoreload 18320 54360 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\reports\views.py changed, reloading.
+INFO 2025-05-21 17:38:49,829 autoreload 75856 18000 Watching for file changes with StatReloader
+INFO 2025-05-21 17:39:35,998 autoreload 75856 18000 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\reports\views.py changed, reloading.
+INFO 2025-05-21 17:39:36,477 autoreload 30748 72468 Watching for file changes with StatReloader
+INFO 2025-05-21 17:40:20,700 basehttp 30748 85104 "GET /pages/reports.html HTTP/1.1" 200 14581
+WARNING 2025-05-21 17:40:20,715 log 30748 85104 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 17:40:20,715 basehttp 30748 85104 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 17:40:21,071 basehttp 30748 85104 "POST /api/reports/summary_list/ HTTP/1.1" 200 3708
+INFO 2025-05-21 17:40:25,008 basehttp 30748 85104 "GET /pages/report_detail.html?report_id=2025-05-20-16-13-09 HTTP/1.1" 200 6667
+WARNING 2025-05-21 17:40:25,042 log 30748 85104 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 17:40:25,043 basehttp 30748 85104 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 17:40:25,387 basehttp 30748 78160 "POST /api/reports/summary_list/ HTTP/1.1" 200 3708
+WARNING 2025-05-21 17:40:25,388 basehttp 30748 85104 "GET /static/reports/summary_report_.html HTTP/1.1" 404 1944
+INFO 2025-05-21 17:40:27,925 basehttp 30748 78160 "GET /pages/reports.html HTTP/1.1" 200 14581
+WARNING 2025-05-21 17:40:27,960 log 30748 78160 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 17:40:27,960 basehttp 30748 78160 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 17:40:28,295 basehttp 30748 78160 "POST /api/reports/summary_list/ HTTP/1.1" 200 3708
+INFO 2025-05-21 17:40:46,518 autoreload 43980 97032 Watching for file changes with StatReloader
+INFO 2025-05-21 17:40:52,337 basehttp 30748 78160 "POST /api/reports/summary_list/ HTTP/1.1" 200 3708
+INFO 2025-05-21 17:55:34,972 autoreload 30748 72468 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\wfgame_ai_server_main\settings.py changed, reloading.
+INFO 2025-05-21 17:55:35,457 autoreload 69016 46872 Watching for file changes with StatReloader
+INFO 2025-05-21 18:01:07,515 autoreload 69016 46872 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\wfgame_ai_server_main\settings.py changed, reloading.
+INFO 2025-05-21 18:01:12,279 autoreload 100404 100284 Watching for file changes with StatReloader
+WARNING 2025-05-21 18:01:16,244 log 100404 89192 Not Found: /pages/scripts.html
+WARNING 2025-05-21 18:01:16,245 basehttp 100404 89192 "GET /pages/scripts.html HTTP/1.1" 404 4059
+WARNING 2025-05-21 18:01:16,264 log 100404 89192 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 18:01:16,264 basehttp 100404 89192 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4149
+ERROR 2025-05-21 18:01:32,137 log 100404 89192 Internal Server Error: /api/docs/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 220, in _get_response
+    response = response.render()
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 114, in render
+    self.content = self.rendered_content
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 90, in rendered_content
+    template = self.resolve_template(self.template_name)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 72, in resolve_template
+    return select_template(template, using=self.using)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\loader.py", line 47, in select_template
+    raise TemplateDoesNotExist(", ".join(template_name_list), chain=chain)
+django.template.exceptions.TemplateDoesNotExist: swagger-ui.html
+ERROR 2025-05-21 18:01:32,138 basehttp 100404 89192 "GET /api/docs/ HTTP/1.1" 500 97839
+INFO 2025-05-21 18:01:36,484 basehttp 100404 16532 "GET / HTTP/1.1" 200 9707
+WARNING 2025-05-21 18:01:36,504 log 100404 16532 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 18:01:36,504 basehttp 100404 16532 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4149
+WARNING 2025-05-21 18:01:38,522 log 100404 16532 Not Found: /pages/devices.html
+WARNING 2025-05-21 18:01:38,522 basehttp 100404 16532 "GET /pages/devices.html HTTP/1.1" 404 4059
+WARNING 2025-05-21 18:01:38,544 log 100404 16532 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 18:01:38,545 basehttp 100404 16532 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4149
+WARNING 2025-05-21 18:04:18,344 log 100404 16532 Not Found: /pages/devices.html
+WARNING 2025-05-21 18:04:18,344 basehttp 100404 16532 "GET /pages/devices.html HTTP/1.1" 404 4059
+WARNING 2025-05-21 18:04:18,354 log 100404 16532 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 18:04:18,354 basehttp 100404 16532 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4149
+INFO 2025-05-21 18:21:38,683 autoreload 64192 113732 Watching for file changes with StatReloader
+WARNING 2025-05-21 18:21:48,024 log 64192 50264 Not Found: /pages/devices.html
+WARNING 2025-05-21 18:21:48,024 basehttp 64192 50264 "GET /pages/devices.html HTTP/1.1" 404 4059
+WARNING 2025-05-21 18:21:48,034 log 64192 50264 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 18:21:48,034 basehttp 64192 50264 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4149
+ERROR 2025-05-21 18:21:58,576 log 64192 50264 Internal Server Error: /api/docs/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 220, in _get_response
+    response = response.render()
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 114, in render
+    self.content = self.rendered_content
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 90, in rendered_content
+    template = self.resolve_template(self.template_name)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 72, in resolve_template
+    return select_template(template, using=self.using)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\loader.py", line 47, in select_template
+    raise TemplateDoesNotExist(", ".join(template_name_list), chain=chain)
+django.template.exceptions.TemplateDoesNotExist: swagger-ui.html
+ERROR 2025-05-21 18:21:58,576 basehttp 64192 50264 "GET /api/docs/ HTTP/1.1" 500 98083
+WARNING 2025-05-21 18:25:16,025 log 64192 102204 Not Found: /pages/devices.html
+WARNING 2025-05-21 18:25:16,025 basehttp 64192 102204 "GET /pages/devices.html HTTP/1.1" 404 4059
+WARNING 2025-05-21 18:25:16,038 log 64192 102204 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 18:25:16,038 basehttp 64192 102204 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4149
+WARNING 2025-05-21 18:25:19,830 log 64192 102204 Not Found: /pages/devices.html
+WARNING 2025-05-21 18:25:19,830 basehttp 64192 102204 "GET /pages/devices.html HTTP/1.1" 404 4059
+WARNING 2025-05-21 18:25:19,840 log 64192 102204 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 18:25:19,840 basehttp 64192 102204 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4149
+WARNING 2025-05-21 18:31:26,759 log 64192 67984 Not Found: /pages/devices.html
+WARNING 2025-05-21 18:31:26,759 basehttp 64192 67984 "GET /pages/devices.html HTTP/1.1" 404 4059
+WARNING 2025-05-21 18:31:26,770 log 64192 67984 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 18:31:26,770 basehttp 64192 67984 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4149
+INFO 2025-05-21 18:33:14,506 autoreload 64192 113732 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\wfgame_ai_server_main\urls.py changed, reloading.
+INFO 2025-05-21 18:35:05,515 autoreload 121116 119328 Watching for file changes with StatReloader
+INFO 2025-05-21 18:35:05,913 basehttp 121116 78960 "GET /pages/devices.html HTTP/1.1" 302 0
+ERROR 2025-05-21 18:35:05,946 log 121116 78960 Internal Server Error: /static/pages/devices.html
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\static.py", line 34, in serve
+    fullpath = Path(safe_join(document_root, path))
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\utils\_os.py", line 17, in safe_join
+    final_path = abspath(join(base, *paths))
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\ntpath.py", line 78, in join
+    path = os.fspath(path)
+TypeError: expected str, bytes or os.PathLike object, not NoneType
+ERROR 2025-05-21 18:35:05,947 basehttp 121116 78960 "GET /static/pages/devices.html HTTP/1.1" 500 91388
+WARNING 2025-05-21 18:35:05,967 log 121116 78960 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 18:35:05,969 basehttp 121116 78960 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 18:35:10,898 basehttp 121116 114224 "GET / HTTP/1.1" 200 9707
+WARNING 2025-05-21 18:35:10,911 log 121116 114224 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 18:35:10,911 basehttp 121116 114224 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 18:35:12,716 basehttp 121116 114224 "GET /pages/scripts.html HTTP/1.1" 302 0
+ERROR 2025-05-21 18:35:12,728 log 121116 114224 Internal Server Error: /static/pages/scripts.html
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\static.py", line 34, in serve
+    fullpath = Path(safe_join(document_root, path))
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\utils\_os.py", line 17, in safe_join
+    final_path = abspath(join(base, *paths))
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\ntpath.py", line 78, in join
+    path = os.fspath(path)
+TypeError: expected str, bytes or os.PathLike object, not NoneType
+ERROR 2025-05-21 18:35:12,729 basehttp 121116 114224 "GET /static/pages/scripts.html HTTP/1.1" 500 91251
+WARNING 2025-05-21 18:35:12,749 log 121116 114224 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 18:35:12,750 basehttp 121116 114224 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+WARNING 2025-05-21 18:35:20,630 log 121116 114224 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 18:35:20,631 basehttp 121116 114224 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+WARNING 2025-05-21 18:35:20,641 log 121116 114224 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 18:35:20,641 basehttp 121116 114224 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 18:35:21,853 basehttp 121116 114224 "GET /pages/tasks.html HTTP/1.1" 200 9541
+WARNING 2025-05-21 18:35:21,882 log 121116 114224 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 18:35:21,882 basehttp 121116 114224 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 18:35:23,654 basehttp 121116 114224 "GET /pages/reports.html HTTP/1.1" 200 14581
+WARNING 2025-05-21 18:35:23,675 log 121116 114224 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 18:35:23,675 basehttp 121116 114224 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+WARNING 2025-05-21 18:35:23,990 log 121116 114224 Not Found: /api/reports/summary_list/
+WARNING 2025-05-21 18:35:23,990 basehttp 121116 114224 "POST /api/reports/summary_list/ HTTP/1.1" 404 56
+ERROR 2025-05-21 18:35:25,359 log 121116 114224 Internal Server Error: /api/docs/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 220, in _get_response
+    response = response.render()
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 114, in render
+    self.content = self.rendered_content
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 90, in rendered_content
+    template = self.resolve_template(self.template_name)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\response.py", line 72, in resolve_template
+    return select_template(template, using=self.using)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\template\loader.py", line 47, in select_template
+    raise TemplateDoesNotExist(", ".join(template_name_list), chain=chain)
+django.template.exceptions.TemplateDoesNotExist: swagger-ui.html
+ERROR 2025-05-21 18:35:25,360 basehttp 121116 114224 "GET /api/docs/ HTTP/1.1" 500 97839
+WARNING 2025-05-21 18:35:28,384 log 121116 114224 Not Found: /api/reports/summary_list/
+WARNING 2025-05-21 18:35:28,385 basehttp 121116 114224 "POST /api/reports/summary_list/ HTTP/1.1" 404 56
+INFO 2025-05-21 18:35:29,771 basehttp 121116 114224 "GET /pages/devices.html HTTP/1.1" 302 0
+ERROR 2025-05-21 18:35:29,785 log 121116 114224 Internal Server Error: /static/pages/devices.html
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\static.py", line 34, in serve
+    fullpath = Path(safe_join(document_root, path))
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\utils\_os.py", line 17, in safe_join
+    final_path = abspath(join(base, *paths))
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\ntpath.py", line 78, in join
+    path = os.fspath(path)
+TypeError: expected str, bytes or os.PathLike object, not NoneType
+ERROR 2025-05-21 18:35:29,786 basehttp 121116 114224 "GET /static/pages/devices.html HTTP/1.1" 500 91108
+WARNING 2025-05-21 18:35:29,818 log 121116 114224 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 18:35:29,818 basehttp 121116 114224 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4306
+INFO 2025-05-21 18:58:33,195 autoreload 18012 81232 Watching for file changes with StatReloader
+ERROR 2025-05-21 18:58:39,428 log 18012 77344 Internal Server Error: /static/pages/devices.html
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\static.py", line 34, in serve
+    fullpath = Path(safe_join(document_root, path))
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\utils\_os.py", line 17, in safe_join
+    final_path = abspath(join(base, *paths))
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\ntpath.py", line 78, in join
+    path = os.fspath(path)
+TypeError: expected str, bytes or os.PathLike object, not NoneType
+ERROR 2025-05-21 18:58:39,430 basehttp 18012 77344 "GET /static/pages/devices.html HTTP/1.1" 500 91297
+WARNING 2025-05-21 18:58:39,446 log 18012 77344 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 18:58:39,447 basehttp 18012 77344 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4720
+INFO 2025-05-21 18:58:42,353 basehttp 18012 77344 "GET / HTTP/1.1" 200 9797
+WARNING 2025-05-21 18:58:42,366 log 18012 77344 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 18:58:42,366 basehttp 18012 77344 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4720
+INFO 2025-05-21 18:58:44,042 basehttp 18012 77344 "GET /pages/devices.html HTTP/1.1" 302 0
+ERROR 2025-05-21 18:58:44,056 log 18012 77344 Internal Server Error: /static/pages/devices.html
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\static.py", line 34, in serve
+    fullpath = Path(safe_join(document_root, path))
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\utils\_os.py", line 17, in safe_join
+    final_path = abspath(join(base, *paths))
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\ntpath.py", line 78, in join
+    path = os.fspath(path)
+TypeError: expected str, bytes or os.PathLike object, not NoneType
+ERROR 2025-05-21 18:58:44,057 basehttp 18012 77344 "GET /static/pages/devices.html HTTP/1.1" 500 91142
+WARNING 2025-05-21 18:58:44,076 log 18012 77344 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 18:58:44,077 basehttp 18012 77344 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4720
+INFO 2025-05-21 18:58:54,203 autoreload 18012 81232 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\wfgame_ai_server_main\urls.py changed, reloading.
+INFO 2025-05-21 18:58:54,769 autoreload 75556 55948 Watching for file changes with StatReloader
+INFO 2025-05-21 18:58:56,407 autoreload 75556 55948 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\wfgame_ai_server_main\views.py changed, reloading.
+INFO 2025-05-21 18:58:56,900 autoreload 62792 117436 Watching for file changes with StatReloader
+ERROR 2025-05-21 18:59:08,720 log 62792 42100 Internal Server Error: /static/pages/devices.html
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\static.py", line 34, in serve
+    fullpath = Path(safe_join(document_root, path))
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\utils\_os.py", line 17, in safe_join
+    final_path = abspath(join(base, *paths))
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\ntpath.py", line 78, in join
+    path = os.fspath(path)
+TypeError: expected str, bytes or os.PathLike object, not NoneType
+ERROR 2025-05-21 18:59:08,721 basehttp 62792 42100 "GET /static/pages/devices.html HTTP/1.1" 500 91279
+WARNING 2025-05-21 18:59:08,732 log 62792 42100 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 18:59:08,732 basehttp 62792 42100 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4720
+INFO 2025-05-21 18:59:23,183 basehttp 62792 42100 "GET /pages/devices.html HTTP/1.1" 302 0
+ERROR 2025-05-21 18:59:23,195 log 62792 42100 Internal Server Error: /static/pages/devices.html
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\static.py", line 34, in serve
+    fullpath = Path(safe_join(document_root, path))
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\utils\_os.py", line 17, in safe_join
+    final_path = abspath(join(base, *paths))
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\ntpath.py", line 78, in join
+    path = os.fspath(path)
+TypeError: expected str, bytes or os.PathLike object, not NoneType
+ERROR 2025-05-21 18:59:23,196 basehttp 62792 42100 "GET /static/pages/devices.html HTTP/1.1" 500 90991
+WARNING 2025-05-21 18:59:23,208 log 62792 42100 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 18:59:23,208 basehttp 62792 42100 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4720
+INFO 2025-05-21 18:59:25,674 basehttp 62792 42100 "GET / HTTP/1.1" 200 9797
+WARNING 2025-05-21 18:59:25,686 log 62792 42100 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 18:59:25,687 basehttp 62792 42100 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4720
+INFO 2025-05-21 18:59:27,191 basehttp 62792 42100 "GET /pages/tasks_template.html HTTP/1.1" 302 0
+ERROR 2025-05-21 18:59:27,204 log 62792 42100 Internal Server Error: /static/pages/tasks_template.html
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\static.py", line 34, in serve
+    fullpath = Path(safe_join(document_root, path))
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\utils\_os.py", line 17, in safe_join
+    final_path = abspath(join(base, *paths))
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\ntpath.py", line 78, in join
+    path = os.fspath(path)
+TypeError: expected str, bytes or os.PathLike object, not NoneType
+ERROR 2025-05-21 18:59:27,205 basehttp 62792 42100 "GET /static/pages/tasks_template.html HTTP/1.1" 500 91240
+WARNING 2025-05-21 18:59:27,227 log 62792 42100 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 18:59:27,227 basehttp 62792 42100 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4720
+INFO 2025-05-21 18:59:29,206 basehttp 62792 42100 "GET / HTTP/1.1" 200 9797
+WARNING 2025-05-21 18:59:29,217 log 62792 42100 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 18:59:29,217 basehttp 62792 42100 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4720
+INFO 2025-05-21 18:59:30,860 basehttp 62792 42100 "GET /pages/reports_template.html HTTP/1.1" 302 0
+ERROR 2025-05-21 18:59:30,874 log 62792 42100 Internal Server Error: /static/pages/reports_template.html
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\static.py", line 34, in serve
+    fullpath = Path(safe_join(document_root, path))
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\utils\_os.py", line 17, in safe_join
+    final_path = abspath(join(base, *paths))
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\ntpath.py", line 78, in join
+    path = os.fspath(path)
+TypeError: expected str, bytes or os.PathLike object, not NoneType
+ERROR 2025-05-21 18:59:30,875 basehttp 62792 42100 "GET /static/pages/reports_template.html HTTP/1.1" 500 91268
+WARNING 2025-05-21 18:59:30,898 log 62792 42100 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 18:59:30,899 basehttp 62792 42100 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4720
+INFO 2025-05-21 18:59:50,050 basehttp 62792 42100 "GET / HTTP/1.1" 200 9797
+WARNING 2025-05-21 18:59:50,063 log 62792 42100 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 18:59:50,063 basehttp 62792 42100 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4720
+INFO 2025-05-21 18:59:51,689 basehttp 62792 42100 "GET /pages/devices.html HTTP/1.1" 302 0
+ERROR 2025-05-21 18:59:51,701 log 62792 42100 Internal Server Error: /static/pages/devices.html
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\static.py", line 34, in serve
+    fullpath = Path(safe_join(document_root, path))
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\utils\_os.py", line 17, in safe_join
+    final_path = abspath(join(base, *paths))
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\ntpath.py", line 78, in join
+    path = os.fspath(path)
+TypeError: expected str, bytes or os.PathLike object, not NoneType
+ERROR 2025-05-21 18:59:51,702 basehttp 62792 42100 "GET /static/pages/devices.html HTTP/1.1" 500 91142
+WARNING 2025-05-21 18:59:51,729 log 62792 42100 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 18:59:51,730 basehttp 62792 42100 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4720
+INFO 2025-05-21 19:02:21,032 autoreload 62792 117436 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\wfgame_ai_server_main\settings.py changed, reloading.
+INFO 2025-05-21 19:02:21,564 autoreload 2976 58384 Watching for file changes with StatReloader
+INFO 2025-05-21 19:02:42,265 autoreload 2976 58384 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\wfgame_ai_server_main\settings.py changed, reloading.
+INFO 2025-05-21 19:02:42,764 autoreload 88708 44868 Watching for file changes with StatReloader
+INFO 2025-05-21 19:02:45,811 autoreload 26420 96220 Watching for file changes with StatReloader
+INFO 2025-05-21 19:02:49,517 basehttp 88708 112836 "GET /static/pages/devices.html HTTP/1.1" 200 5384
+INFO 2025-05-21 19:02:49,549 basehttp 88708 62428 "GET /static/js/pages/devices_vue.js HTTP/1.1" 304 0
+WARNING 2025-05-21 19:02:49,555 log 88708 112836 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 19:02:49,556 basehttp 88708 112836 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4720
+INFO 2025-05-21 19:02:49,955 basehttp 88708 112836 "POST /api/devices/scan/ HTTP/1.1" 200 261
+INFO 2025-05-21 19:02:51,853 basehttp 88708 112836 "GET /pages/tasks_template.html HTTP/1.1" 302 0
+INFO 2025-05-21 19:02:51,855 basehttp 88708 112836 "GET /static/pages/tasks_template.html HTTP/1.1" 200 9783
+WARNING 2025-05-21 19:02:51,885 log 88708 112836 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 19:02:51,885 basehttp 88708 112836 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4720
+INFO 2025-05-21 19:02:53,702 basehttp 88708 112836 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-21 19:02:53,705 basehttp 88708 112836 "GET /static/pages/scripts.html HTTP/1.1" 200 65554
+WARNING 2025-05-21 19:02:53,738 log 88708 112836 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 19:02:53,739 basehttp 88708 112836 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4720
+INFO 2025-05-21 19:02:54,068 basehttp 88708 112836 "POST /api/scripts/ HTTP/1.1" 200 2748
+INFO 2025-05-21 19:02:55,486 basehttp 88708 112836 "GET /pages/data_template.html HTTP/1.1" 302 0
+INFO 2025-05-21 19:02:55,488 basehttp 88708 112836 "GET /static/pages/data_template.html HTTP/1.1" 200 9617
+WARNING 2025-05-21 19:02:55,529 log 88708 112836 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 19:02:55,529 basehttp 88708 112836 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4720
+INFO 2025-05-21 19:02:56,623 basehttp 88708 112836 "GET /pages/reports_template.html HTTP/1.1" 302 0
+INFO 2025-05-21 19:02:56,625 basehttp 88708 112836 "GET /static/pages/reports_template.html HTTP/1.1" 200 14947
+WARNING 2025-05-21 19:02:56,660 log 88708 112836 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 19:02:56,661 basehttp 88708 112836 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4720
+WARNING 2025-05-21 19:02:56,974 log 88708 112836 Not Found: /api/reports/summary_list/
+WARNING 2025-05-21 19:02:56,975 basehttp 88708 112836 "POST /api/reports/summary_list/ HTTP/1.1" 404 56
+INFO 2025-05-21 19:02:58,405 basehttp 88708 112836 "GET /pages/reports_template.html HTTP/1.1" 302 0
+WARNING 2025-05-21 19:02:58,445 log 88708 112836 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-21 19:02:58,445 basehttp 88708 112836 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4720
+WARNING 2025-05-21 19:02:58,772 log 88708 112836 Not Found: /api/reports/summary_list/
+WARNING 2025-05-21 19:02:58,772 basehttp 88708 112836 "POST /api/reports/summary_list/ HTTP/1.1" 404 56
+WARNING 2025-05-21 19:02:59,414 log 88708 112836 Not Found: /api/reports/summary_list/
+WARNING 2025-05-21 19:02:59,415 basehttp 88708 112836 "POST /api/reports/summary_list/ HTTP/1.1" 404 56

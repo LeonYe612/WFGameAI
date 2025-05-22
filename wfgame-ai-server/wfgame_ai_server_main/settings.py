@@ -14,8 +14,7 @@ import os
 from pathlib import Path
 
 # 构建路径，以项目目录为起点
-BASE_DIR = Path(__file__).resolve().parent.parent
-
+BASE_DIR = Path(__file__).resolve().parent.parent # wfgame-ai-server/wfgame_ai_server_main
 # 密钥设置
 SECRET_KEY = 'django-insecure-key-for-development-only'
 
@@ -31,7 +30,7 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'django.contrib.staticfiles',
+    'django.contrib.staticfiles',  # Django静态文件处理
     # 第三方应用
     'rest_framework',
     'drf_yasg',
@@ -61,7 +60,7 @@ ROOT_URLCONF = 'wfgame_ai_server_main.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'templates')],
+        'DIRS': [os.path.join(BASE_DIR, 'staticfiles', 'pages')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -217,4 +216,4 @@ VERSION = '1.0.0'
 
 # YOLO模型设置
 YOLO_MODEL_PATH = os.path.join(BASE_DIR.parent, 'yolo11m.pt')
-YOLO_CONFIDENCE_THRESHOLD = 0.5 
+YOLO_CONFIDENCE_THRESHOLD = 0.5

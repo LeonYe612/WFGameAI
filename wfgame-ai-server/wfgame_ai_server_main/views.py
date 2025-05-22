@@ -17,12 +17,12 @@ from django.conf import settings
 def index_view(request):
     """
     首页视图
-    
+
     渲染主页模板
-    
+
     Args:
         request: HTTP请求对象
-    
+
     Returns:
         HttpResponse: 渲染后的HTML页面
     """
@@ -31,4 +31,4 @@ def index_view(request):
         'description': '集成AI视觉识别、多设备管理和自动化测试的一体化解决方案',
         'version': settings.VERSION
     }
-    return render(request, 'index.html', context) 
+    return render(request, 'index_template.html', context)

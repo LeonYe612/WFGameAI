@@ -1,3 +1,3 @@
-{"tag": "function", "depth": 1, "time": 1747728778.378028, "data": {"name": "connect_device", "call_args": {"uri": "Android:///5c41023b"}, "start_time": 1747728778.1823313, "ret": "<Android '5c41023b'>", "end_time": 1747728778.378028}}
-{"tag": "function", "depth": 1, "time": 1747728778.840896, "data": {"name": "connect_device", "call_args": {"uri": "Android:///CWM0222215003786"}, "start_time": 1747728778.634941, "ret": "<Android 'CWM0222215003786'>", "end_time": 1747728778.840896}}
-{"tag": "info", "depth": 0, "time": 1747728779.166983, "data": {"name": "{'msg': 'Start replay', 'success': True}", "traceback": null, "log": "{'msg': 'Start replay', 'success': True}"}}
+{"tag": "function", "depth": 1, "time": 1747819934.6649888, "data": {"name": "connect_device", "call_args": {"uri": "Android:///5c41023b"}, "start_time": 1747819934.4173582, "ret": "<Android '5c41023b'>", "end_time": 1747819934.6649888}}
+{"tag": "function", "depth": 1, "time": 1747819935.1771405, "data": {"name": "connect_device", "call_args": {"uri": "Android:///CWM0222215003786"}, "start_time": 1747819934.9739635, "ret": "<Android 'CWM0222215003786'>", "end_time": 1747819935.1771405}}
+{"tag": "info", "depth": 0, "time": 1747819935.5739167, "data": {"name": "{'msg': 'Start replay', 'success': True}", "traceback": null, "log": "{'msg': 'Start replay', 'success': True}"}}

@@ -147,7 +147,7 @@ def process_device(device_name: str, timeout: int = 30) -> bool:
 
     Returns:
         bool: 处理是否成功
-    
+
     Raises:
         DeviceConnectionError: 设备连接失败时抛出
     """
@@ -159,9 +159,9 @@ def process_device(device_name: str, timeout: int = 30) -> bool:
 class DeviceManager:
     """
     设备管理器类。
-    
+
     负责管理设备连接、状态监控和资源释放。
-    
+
     Attributes:
         devices (List[str]): 已连接设备列表
         current_device (str): 当前活动设备
@@ -222,7 +222,7 @@ wfgame-ai-server/
 scripts_dir = ${server_dir}/apps/scripts
 
 # 测试用例目录
-testcase_dir = ${server_dir}/testcase
+testcase_dir = ${server_dir}/apps/scripts/testcase
 
 # 报告目录
 reports_dir = ${server_dir}/outputs/WFGameAI-reports
@@ -339,4 +339,68 @@ fps = 1.0 / (time.time() - start_time)
 
 # 计算内存使用
 memory_usage = psutil.Process().memory_info().rss / (1024 * 1024)  # MB
+```
+
+## Git 提交规范
+
+### Commit 信息模板
+提交代码时请遵循以下commit信息模板格式：
+
+```
+<type>: <简要描述问题和修复>
+
+修复内容：
+1. <修改模块/文件1>:
+   - <具体修改内容>
+   - <具体修改内容>
+
+2. <修改模块/文件2>:
+   - <具体修改内容>
+   - <具体修改内容>
+
+3. <修改的关键点>:
+   - <具体修改内容>
+   - <具体修改内容>
+
+修复问题: "<错误信息或问题描述>"
+
+测试: <描述如何验证修复结果>
+日期: <提交日期，格式：Month DD, YYYY>
+```
+
+### Type 类型说明
+- `fix`: 修复bug
+- `feat`: 新功能
+- `docs`: 文档更新
+- `style`: 代码风格或格式修改
+- `refactor`: 代码重构（不涉及功能变更）
+- `perf`: 性能优化
+- `test`: 添加或修改测试
+- `build`: 构建系统或外部依赖项修改
+- `ci`: CI配置或脚本修改
+
+### 提交示例
+```
+fix: resolve script path duplication issue in debugging functions
+
+修复内容：
+1. 前端脚本路径处理(scripts.html):
+   - 移除全局设置中脚本路径的'apps/scripts/'前缀，防止路径重复
+   - 更新executeCommand函数，仅使用脚本文件名而非完整路径
+   - 修复路径处理逻辑，从任何路径中只提取基本文件名
+
+2. 后端路径处理(views.py):
+   - 改进debug_script函数中的脚本路径解析
+   - 当脚本找不到时添加更好的错误信息
+   - 修复路径处理，防止目录重复，例如"apps/scripts/apps/scripts/"
+
+3. 路径格式修复:
+   - 更新loadSettings函数
+   - 更新saveSettings函数
+   - 更新executeCommand函数
+
+修复问题: "can't open file '...apps\scripts\apps\scripts\record_script.py'"
+
+测试: 验证了脚本调试、录制和回放按钮的功能正常
+日期: May 21, 2025
 ```

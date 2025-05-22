@@ -842,7 +842,7 @@ def replay_script(request):
         logger.info(f"使用Python环境: {python_exec}")
 
         # 获取replay_script.py的绝对路径
-        replay_script_path = os.path.join(SCRIPTS_DIR, "replay_script.py")
+        replay_script_path = find_script_path("replay_script.py")
 
         # 组装命令
         cmd = [
@@ -1073,42 +1073,10 @@ def debug_script(request):
                     logger.info(f"脚本文件路径: {script_file_part}")
 
                     if not os.path.isabs(script_file_part):
-                        # 标准化脚本路径处理步骤
-
-                        # 1. 如果路径以 apps/scripts/ 开头，截取文件名
-                        if script_file_part.startswith('apps/scripts/'):
-                            base_name = os.path.basename(script_file_part)
-                            abs_script_path = os.path.join(SCRIPTS_DIR, base_name)
-                            if os.path.exists(abs_script_path):
-                                args[script_name_arg_index] = abs_script_path
-                                logger.info(f"通过apps/scripts/前缀找到脚本: {abs_script_path}")
-                            else:
-                                logger.warning(f"脚本 '{base_name}' 未找到在 {SCRIPTS_DIR} 目录下")
-                                # 尝试创建一个返回详细路径的错误消息
-                                return JsonResponse({
-                                    'success': False,
-                                    'message': f"无法找到脚本: {base_name}。已尝试查找路径: {abs_script_path}"
-                                }, status=404)
-
-                        # 2. 或者尝试直接在SCRIPTS_DIR目录中查找
-                        else:
-                            # 先看看是否为相对于项目根目录的路径
-                            if script_file_part.startswith('scripts/'):
-                                base_name = os.path.basename(script_file_part)
-                            else:
-                                base_name = os.path.basename(script_file_part)
-
-                            abs_script_path = os.path.join(SCRIPTS_DIR, base_name)
-                            if os.path.exists(abs_script_path):
-                                args[script_name_arg_index] = abs_script_path
-                                logger.info(f"已找到脚本: {abs_script_path}")
-                            else:
-                                logger.warning(f"脚本 '{script_file_part}' 未找到在 {SCRIPTS_DIR} 目录下")
-                                # 创建一个返回详细路径的错误消息
-                                return JsonResponse({
-                                    'success': False,
-                                    'message': f"无法找到脚本: {base_name}。已尝试查找路径: {abs_script_path}"
-                                }, status=404)
+                        # 使用辅助函数查找脚本
+                        script_path = find_script_path(script_file_part)
+                        args[script_name_arg_index] = script_path
+                        logger.info(f"找到脚本: {script_path}")
                     # If it was absolute, assume it's correct or will fail naturally
             else:
                 # Command does not start with python or a .py file, assume it's a full path to an executable
@@ -1123,34 +1091,12 @@ def debug_script(request):
             # 检查args[1]是否是一个Python脚本
             if args[1].endswith('.py'):
                 script_path = args[1]
-                if os.path.exists(script_path):
-                    logger.info(f"即将执行的脚本确认存在: {script_path}")
-                else:
-                    # 尝试在不同位置查找脚本
+                if not os.path.exists(script_path) or not os.path.isabs(script_path):
+                    # 使用辅助函数查找脚本
                     script_basename = os.path.basename(script_path)
-                    script_in_apps = os.path.join(SCRIPTS_DIR, script_basename)
-                    server_dir = os.path.abspath(os.path.join(SCRIPTS_DIR, "../.."))
-                    script_in_server = os.path.join(server_dir, 'scripts', script_basename)
-                    root_dir = os.path.abspath(os.path.join(SCRIPTS_DIR, "../../.."))
-                    script_in_root = os.path.join(root_dir, 'scripts', script_basename)
-
-                    # 依次检查不同位置
-                    possible_paths = [
-                        (script_in_apps, "apps/scripts目录"),
-                        (script_in_server, "server/scripts目录"),
-                        (script_in_root, "项目根目录的scripts")
-                    ]
-
-                    found = False
-                    for possible_path, location in possible_paths:
-                        if os.path.exists(possible_path):
-                            logger.info(f"找到脚本在{location}: {possible_path}")
-                            args[1] = possible_path  # 替换为找到的路径
-                            found = True
-                            break
-
-                    if not found:
-                        logger.error(f"警告：即将执行的脚本不存在: {script_path}")
+                    new_script_path = find_script_path(script_basename)
+                    args[1] = new_script_path
+                    logger.info(f"脚本路径已更新为: {new_script_path}")
 
         process = subprocess.Popen(
             args,
@@ -1204,7 +1150,7 @@ def start_record(request):
         python_exec = get_persistent_python_path()
 
         # 获取record_script.py的绝对路径
-        record_script_path = os.path.join(SCRIPTS_DIR, "record_script.py")
+        record_script_path = find_script_path("record_script.py")
 
         # 组装命令
         cmd = [
@@ -1862,3 +1808,37 @@ def edit_script(request, script_path=None):
     except Exception as e:
         logger.error(f"Error processing script edit request: {str(e)}")
         return JsonResponse({'success': False, 'message': f'处理脚本编辑请求失败: {str(e)}'}, status=500)
+
+def find_script_path(script_name):
+    """
+    查找脚本文件的实际路径，按优先级依次检查多个可能的位置
+
+    Args:
+        script_name (str): 脚本文件名
+
+    Returns:
+        str: 找到的脚本路径，如果未找到则返回 SCRIPTS_DIR 下的默认路径
+    """
+    # 移除路径前缀，只保留基本文件名
+    base_name = os.path.basename(script_name)
+
+    # 尝试多个位置查找脚本
+    possible_paths = [
+        # 1. 在当前apps/scripts目录中查找
+        os.path.join(os.path.dirname(__file__), base_name),
+        # 2. 在传统的SCRIPTS_DIR目录中查找
+        os.path.join(SCRIPTS_DIR, base_name),
+        # 3. 在项目根目录中查找
+        os.path.abspath(os.path.join(SCRIPTS_DIR, "..", base_name))
+    ]
+
+    # 查找首个存在的脚本路径
+    for path in possible_paths:
+        if os.path.exists(path):
+            logger.info(f"找到脚本: {path}")
+            return path
+
+    # 未找到脚本时，返回apps/scripts目录中的路径并记录警告
+    default_path = os.path.join(os.path.dirname(__file__), base_name)
+    logger.warning(f"找不到脚本 {base_name}，使用默认路径: {default_path}")
+    return default_path

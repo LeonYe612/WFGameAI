@@ -14,6 +14,7 @@ import os
 import json
 import logging
 import glob
+import configparser
 from datetime import datetime
 
 from django.conf import settings
@@ -24,10 +25,32 @@ from rest_framework import permissions
 
 logger = logging.getLogger(__name__)
 
-# 定义报告路径
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-REPORTS_DIR = os.path.join(os.path.dirname(BASE_DIR), "outputs", "WFGameAI-reports")
-UI_REPORTS_DIR = os.path.join(REPORTS_DIR, "ui_reports")
+# 加载项目根目录下的config.ini
+CONFIG_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../config.ini'))
+config = configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation())
+
+# 确保config.ini文件存在
+if not os.path.exists(CONFIG_PATH):
+    raise FileNotFoundError(f'配置文件未找到: {CONFIG_PATH}')
+
+# 读取配置文件
+if not config.read(CONFIG_PATH, encoding='utf-8'):
+    raise IOError(f'无法读取配置文件: {CONFIG_PATH}')
+
+# 确保paths部分存在
+if 'paths' not in config:
+    raise KeyError(f'配置文件中缺少[paths]部分: {CONFIG_PATH}')
+
+paths = config['paths']
+
+# 记录加载的关键路径
+logger.info(f'已加载配置文件: {CONFIG_PATH}')
+logger.info(f'REPORTS_DIR将被设置为: {paths["reports_dir"]}')
+logger.info(f'UI_REPORTS_DIR将被设置为: {paths["ui_reports_dir"]}')
+
+# 从config.ini获取报告路径
+REPORTS_DIR = os.path.abspath(paths['reports_dir'])
+UI_REPORTS_DIR = os.path.abspath(paths['ui_reports_dir'])
 
 @api_view(['POST'])
 @csrf_exempt
@@ -37,24 +60,24 @@ def get_report_list(request):
     try:
         # 确保目录存在
         os.makedirs(UI_REPORTS_DIR, exist_ok=True)
-        
+
         # 获取所有HTML报告文件
         reports = []
         report_id = 1
-        
+
         # 查找汇总报告
         for report_file in glob.glob(os.path.join(UI_REPORTS_DIR, "summary_report_*.html")):
             if os.path.basename(report_file) == 'latest_report.html':
                 continue
-            
+
             filename = os.path.basename(report_file)
             created_time = datetime.fromtimestamp(os.path.getctime(report_file))
             created_str = created_time.strftime('%Y-%m-%d %H:%M:%S')
-            
+
             # 尝试从文件中提取成功率
             success_rate = 0
             device_count = 0
-            
+
             try:
                 with open(report_file, 'r', encoding='utf-8') as f:
                     content = f.read()
@@ -66,7 +89,7 @@ def get_report_list(request):
                         success_rate_match = re.search(r'(\d+)%', success_rate_text)
                         if success_rate_match:
                             success_rate = int(success_rate_match.group(1))
-                    
+
                     # 提取设备数量信息
                     device_count_pos = content.find('设备数量:')
                     if device_count_pos > 0:
@@ -76,10 +99,10 @@ def get_report_list(request):
                             device_count = int(device_count_match.group(1))
             except Exception as e:
                 logger.error(f"读取报告内容失败: {e}")
-            
+
             # 生成报告URL (相对路径)
             report_url = f"/static/WFGameAI-reports/ui_reports/{filename}"
-            
+
             reports.append({
                 'id': str(report_id),
                 'title': f"测试报告 {created_str}",
@@ -91,10 +114,10 @@ def get_report_list(request):
                 'filename': filename
             })
             report_id += 1
-        
+
         # 按创建时间排序，最新的在前面
         reports.sort(key=lambda x: x['date'], reverse=True)
-        
+
         return JsonResponse({'reports': reports})
     except Exception as e:
         logger.error(f"获取报告列表失败: {e}")
@@ -108,11 +131,11 @@ def report_detail(request, report_id):
     try:
         # 确保目录存在
         os.makedirs(UI_REPORTS_DIR, exist_ok=True)
-        
+
         # 获取所有HTML报告文件
         report_files = glob.glob(os.path.join(UI_REPORTS_DIR, "summary_report_*.html"))
         report_files.sort(key=lambda x: os.path.getctime(x), reverse=True)
-        
+
         # 检查报告ID是否有效
         try:
             report_idx = int(report_id) - 1
@@ -126,14 +149,14 @@ def report_detail(request, report_id):
                 if report_id in os.path.basename(file):
                     report_file = file
                     break
-            
+
             if not report_file:
                 return JsonResponse({'error': '报告不存在'}, status=404)
-        
+
         # 返回报告文件内容
         with open(report_file, 'r', encoding='utf-8') as f:
             content = f.read()
-        
+
         return HttpResponse(content, content_type='text/html')
     except Exception as e:
         logger.error(f"获取报告详情失败: {e}")
@@ -147,11 +170,11 @@ def report_delete(request, report_id):
     try:
         # 确保目录存在
         os.makedirs(UI_REPORTS_DIR, exist_ok=True)
-        
+
         # 获取所有HTML报告文件
         report_files = glob.glob(os.path.join(UI_REPORTS_DIR, "summary_report_*.html"))
         report_files.sort(key=lambda x: os.path.getctime(x), reverse=True)
-        
+
         # 检查报告ID是否有效
         try:
             report_idx = int(report_id) - 1
@@ -165,10 +188,10 @@ def report_delete(request, report_id):
                 if report_id in os.path.basename(file):
                     report_file = file
                     break
-            
+
             if not report_file:
                 return JsonResponse({'success': False, 'error': '报告不存在'}, status=404)
-        
+
         # 删除报告文件
         if os.path.exists(report_file):
             os.remove(report_file)
@@ -177,7 +200,7 @@ def report_delete(request, report_id):
             return JsonResponse({'success': False, 'error': '报告文件不存在'}, status=404)
     except Exception as e:
         logger.error(f"删除报告失败: {e}")
-        return JsonResponse({'success': False, 'error': str(e)}, status=500) 
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 @api_view(['POST'])
 @csrf_exempt
@@ -188,29 +211,29 @@ def get_device_performance(request, device_id=None):
         # 从请求体中获取device_id
         data = json.loads(request.body)
         device_id = data.get('device_id', device_id)
-        
+
         if not device_id:
             return JsonResponse({'error': '未提供设备ID'}, status=400)
-        
+
         # 获取性能日志文件路径
         performance_dir = os.path.join(REPORTS_DIR, "device_reports", device_id)
-        
+
         if not os.path.exists(performance_dir):
             return JsonResponse({'error': f'未找到设备{device_id}的性能日志'}, status=404)
-        
+
         # 获取性能日志文件
         performance_files = glob.glob(os.path.join(performance_dir, "performance_*.json"))
-        
+
         if not performance_files:
             return JsonResponse({'error': f'未找到设备{device_id}的性能日志文件'}, status=404)
-        
+
         # 按修改时间排序，最新的在前面
         performance_files.sort(key=lambda x: os.path.getmtime(x), reverse=True)
-        
+
         # 读取最新的性能日志文件
         with open(performance_files[0], 'r', encoding='utf-8') as f:
             performance_data = json.load(f)
-        
+
         # 返回性能数据
         return JsonResponse({
             'device_id': device_id,
@@ -218,4 +241,4 @@ def get_device_performance(request, device_id=None):
         })
     except Exception as e:
         logger.error(f"获取设备性能数据失败: {e}")
-        return JsonResponse({'error': str(e)}, status=500) 
+        return JsonResponse({'error': str(e)}, status=500)
