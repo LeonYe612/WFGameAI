@@ -249,13 +249,3 @@ PASSWD=qa123456
 DBNAME=gogotest_data
 ```
 
-## 目录结构与路径说明（2025年5月最新）
-
-- 项目根目录：WFGameAI
-- 服务器主目录：WFGameAI/wfgame-ai-server
-- 脚本目录：WFGameAI/wfgame-ai-server/apps/scripts
-- 测试用例目录：WFGameAI/wfgame-ai-server/testcase
-- 报告目录：WFGameAI/outputs/WFGameAI-reports
-- UI报告目录：WFGameAI/outputs/WFGameAI-reports/ui_reports
-
-所有后端代码和API均已静态化引用上述目录，不再依赖config.ini或动态推导。

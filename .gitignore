@@ -1,6 +1,7 @@
 datasets/My First Project*
 external/
 train_results/
+*.log
 # *.pt # git lfs track "*.pt"
 # *.png # git lfs track "*.png"
 # *.jpg # git lfs track "*.jpg"

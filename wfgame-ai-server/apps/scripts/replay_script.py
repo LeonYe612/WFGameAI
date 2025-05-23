@@ -22,22 +22,41 @@ from datetime import datetime
 import random
 import torch
 import re
-from utils import load_yolo_model  # 导入模型加载公共函数
+import torch
+from datetime import datetime
+import random
 
+# 导入统一路径管理工具
+try:
+    # 尝试从项目根目录导入
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../")))
+    from utils import get_project_root, get_scripts_dir, get_testcase_dir, get_reports_dir, get_ui_reports_dir, load_yolo_model
+
+    # 使用配置文件中的路径
+    BASE_DIR = get_scripts_dir() or os.path.dirname(os.path.abspath(__file__))
+    TESTCASE_DIR = get_testcase_dir() or os.path.join(BASE_DIR, "testcase")
+    REPORTS_DIR = get_reports_dir() or os.path.join(BASE_DIR, "outputs", "WFGameAI-reports")
+    UI_REPORTS_DIR = get_ui_reports_dir() or os.path.join(REPORTS_DIR, "ui_reports")
+    print(f"使用路径配置: BASE_DIR={BASE_DIR}, TESTCASE_DIR={TESTCASE_DIR}, REPORTS_DIR={REPORTS_DIR}")
+except ImportError:
+    # 如果导入失败，使用相对路径
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    TESTCASE_DIR = os.path.join(BASE_DIR, "testcase")
+    REPORTS_DIR = os.path.join(BASE_DIR, "outputs", "WFGameAI-reports")
+    UI_REPORTS_DIR = os.path.join(REPORTS_DIR, "ui_reports")
+    print("警告: 未找到配置管理工具，使用相对路径")
 # 禁用 Ultralytics 的日志输出
 logging.getLogger("ultralytics").setLevel(logging.CRITICAL)
 
 # 全局变量
 model = None
 devices = []
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CURRENT_TIME = "_" + time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))
 template_dir = os.path.join(BASE_DIR, "templates")  # 模板目录路径
 
-# 定义报告基础目录
-reports_base_dir = os.path.join(BASE_DIR, "outputs", "WFGameAI-reports")
-# 定义UI报告目录
-ui_reports_dir = os.path.join(reports_base_dir, "ui_reports")
+# 定义报告目录，使用配置中的路径
+reports_base_dir = REPORTS_DIR
+ui_reports_dir = UI_REPORTS_DIR
 # 定义运行代码目录
 ui_run_dir = os.path.join(reports_base_dir, "ui_run")
 # 定义项目目录
@@ -1809,427 +1828,33 @@ def run_summary(data):
         return ""
 
 
-# 在多台设备上并行运行测试
-def run_on_multi_device(devices, scripts, results, run_all, device_names, show_screens=False):
-    tasks = []
-    for i, device in enumerate(devices):
-        serial = device.serial
-        # 修复：从列表中获取设备名称，使用索引而不是字典
-        device_name = device_names[i] if i < len(device_names) else serial
-        print(f"⚠️ 当前测试设备: {device_name}")
-        if not run_all and device_name in results['tests'] and results['tests'][device_name]['status'] == 0:
-            print(f"❌ 跳过设备 {device_name}")
-            continue
-
-        log_dir = get_log_dir(device_name)
-        t = Thread(target=replay_device, args=(
-            device, scripts, screenshot_queue, action_queue, Event(), device_name, log_dir),
-                   kwargs={"show_screens": show_screens})
-        t.daemon = True
-        t.start()
-        tasks.append({
-            'thread': t,
-            'dev': device_name,
-            'log_dir': log_dir
-        })
-    return tasks
-
-
-# 主测试流程
-def run(devices, scripts, device_names, show_screens=False, run_all=False):
-    """运行主测试流程"""
-    # 加载测试进度数据
-    results = load_json_data(run_all)
-
-    # 显式记录实际要执行的脚本
-    print(f"run函数将执行 {len(scripts)} 个脚本:")
-    for idx, script in enumerate(scripts):
-        print(f"  {idx+1}. {script['path']}")
-
-    # 创建报告基础目录
-    timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-    os.makedirs(report_dir, exist_ok=True)
-
-    # 在多设备上运行测试
-    tasks = run_on_multi_device(devices, scripts, results, run_all, device_names, show_screens)
-    success_count = 0
-    test_pass_count = 0
-
-    # 对每个设备生成报告
-    for task in tasks:
-        task['thread'].join()
-        # 报告目录就是日志目录
-        device_report_dir = task['log_dir']
-
-        # 准备所有脚本文件路径
-        script_paths = []
-        if scripts:
-            for script_config in scripts:
-                if script_config.get('path') and os.path.exists(script_config.get('path')):
-                    script_paths.append(script_config.get('path'))
-
-        # 生成报告 - 传递所有脚本路径列表
-        report_generated, test_passed = run_one_report(device_report_dir, device_report_dir, script_paths)
-
-        # 更新报告路径为log.html的绝对路径
-        report_path = os.path.join(device_report_dir, "log.html") if report_generated else None
-
-        # 保存报告路径和测试通过状态
-        results['tests'][task['dev']] = {
-            'report_path': report_path,
-            'test_passed': test_passed
-        }
-
-        print(f"设备 {task['dev']} 报告目录: {device_report_dir}")
-        print(f"设备 {task['dev']} 报告路径: {report_path}")
-
-        if report_generated:
-            success_count += 1
-            if test_passed:
-                test_pass_count += 1
-                print(f"设备 {task['dev']} 测试成功且全部通过")
-            else:
-                print(f"设备 {task['dev']} 测试成功但有断言失败")
-        else:
-            print(f"设备 {task['dev']} 测试报告生成失败")
-
-    # 生成汇总报告
-    print(f"开始生成汇总报告，成功率: {success_count}/{len(tasks)}，通过率: {test_pass_count}/{len(tasks)}")
-    summary_report = run_summary(results)
-
-    # 返回结果
-    result_str = f"成功 {success_count}/{len(tasks)}，全部通过 {test_pass_count}/{len(tasks)}"
-    return result_str, summary_report
-
-
-# 回放步骤
-def replay_steps(scripts, show_screens=False):
-    global model, devices
-
-    # 清空所有可能的缓存数据，确保只执行用户指定的脚本
-    loaded_scripts = []
-    print(f"准备执行用户指定的 {len(scripts)} 个脚本...")
-
-    for script_config in scripts:
-        script_path = script_config["path"]
-        if not os.path.exists(script_path):
-            print(f"文件 {script_path} 不存在，跳过")
-            continue
-        loaded_scripts.append(script_config)
-        print(f"添加脚本: {script_path}")
-
-    if not loaded_scripts:
-        print("未加载任何有效脚本，回放终止")
-        return False
-
-    # 显式输出将要执行的脚本，方便调试
-    print(f"最终将执行 {len(loaded_scripts)} 个脚本:")
-    for idx, script in enumerate(loaded_scripts):
-        print(f"  {idx+1}. {script['path']}" +
-              (f" (最大执行时间: {script.get('max_duration')}秒)" if 'max_duration' in script else "") +
-              (f" (循环次数: {script.get('loop_count')})" if 'loop_count' in script else ""))
-
-    # 设置默认日志目录为项目目录，避免在根目录生成日志
-    set_logdir(project_air_dir)
-
-    # 修改为列表
-    device_names = []
-    for device in devices:
-        serial = device.serial
-        try:
-            airtest_device = connect_device(f"Android:///{serial}")
-            friendly_name = get_device_name(airtest_device)
-            device_names.append(friendly_name)
-            airtest_device.serial = serial
-            print(f"设备 {friendly_name} 连接成功")
-        except Exception as e:
-            print(f"设备 {serial} 连接失败: {e}")
-            continue
-
-    print(f"加载脚本: {', '.join(s['path'] for s in loaded_scripts)}")
-    print(f"检测到 {len(devices)} 个设备: {device_names}")
-    print("开始回放")
-    log({"msg": "Start replay", "success": True})
-
-    # 启动检测服务线程
-    stop_event = Event()
-    detection_thread = Thread(target=detection_service, args=(screenshot_queue, click_queue, stop_event))
-    detection_thread.daemon = True
-    detection_thread.start()
-
-    try:
-        result, report_url = run(devices, loaded_scripts, device_names, show_screens=show_screens, run_all=False)
-        print(f"执行结果: {result}, 报告地址: {report_url}")
-        return True
-    except Exception as e:
-        print(f"回放失败: {e}")
-        return False
-    finally:
-        # 停止检测服务线程
-        stop_event.set()
-        detection_thread.join()
-
-
-# 修改函数位置。禁止使用或增加清理无用文件的函数！！！
-def cleanup_unused_files():
-    """清理生成的无用临时文件"""
-    print("🧹 开始清理无用文件...")
-
-    # 清理项目根目录下错误创建的静态资源目录
-    root_static_dirs = ['static', 'static/css', 'static/js', 'static/image', 'static/fonts']
-    for static_dir in root_static_dirs:
-        if os.path.exists(static_dir) and os.path.abspath(static_dir).startswith(os.path.abspath(BASE_DIR)):
-            try:
-                if os.path.isdir(static_dir):
-                    shutil.rmtree(static_dir)
-                else:
-                    os.remove(static_dir)
-                print(f"✅ 已删除项目根目录下的静态资源: {static_dir}")
-            except Exception as e:
-                print(f"❌ 删除失败: {static_dir}, 错误: {e}")
-
-    # 清理script.log目录中的冗余文件(保留log.html)
-    for root, dirs, files in os.walk(reports_base_dir):
-        if root.endswith("script.log"):
-            for file in files:
-                if file != "log.html":
-                    file_path = os.path.join(root, file)
-                    try:
-                        os.remove(file_path)
-                        print(f"✅ 已删除冗余文件: {file_path}")
-                    except Exception as e:
-                        print(f"❌ 删除失败: {file_path}, 错误: {e}")
-
-
-# 主程序
-def main():
-    parser = argparse.ArgumentParser(description="设备回放脚本")
-    parser.add_argument("--show-screens", action="store_true", help="显示所有设备画面并同步回放")
-    parser.add_argument("--script", action="append", help="指定回放步骤文件，可多次使用")
-    parser.add_argument("--loop-count", type=int, action="append", help="指定循环次数，逐脚本应用")
-    parser.add_argument("--max-duration", type=float, action="append", help="指定最大运行时间（秒），逐脚本应用")
-
-    args = parser.parse_args()
-    scripts = []
-
-    if args.script:
-        # 解析命令行参数，按照顺序重建脚本配置
-        arg_values = sys.argv[1:]
-        script_configs = []
-        current_config = None
-
-        i = 0
-        while i < len(arg_values):
-            arg = arg_values[i]
-
-            if arg == "--script":
-                # 如果已有配置，保存它
-                if current_config is not None:
-                    script_configs.append(current_config)
-
-                # 创建新的脚本配置
-                if i + 1 < len(arg_values) and not arg_values[i + 1].startswith("--"):
-                    script_path = arg_values[i + 1]
-                    current_config = {"path": script_path}
-                    i += 2
-                else:
-                    print("警告: --script 参数缺少值")
-                    i += 1
-
-            elif arg == "--loop-count" and current_config is not None:
-                # 将循环次数应用于当前配置
-                if i + 1 < len(arg_values) and not arg_values[i + 1].startswith("--"):
-                    try:
-                        current_config["loop_count"] = int(arg_values[i + 1])
-                        i += 2
-                    except ValueError:
-                        print(f"警告: 无效的循环次数值: {arg_values[i + 1]}")
-                        i += 2
-                else:
-                    print("警告: --loop-count 参数缺少值")
-                    i += 1
-
-            elif arg == "--max-duration" and current_config is not None:
-                # 将最大执行时间应用于当前配置
-                if i + 1 < len(arg_values) and not arg_values[i + 1].startswith("--"):
-                    try:
-                        current_config["max_duration"] = float(arg_values[i + 1])
-                        i += 2
-                    except ValueError:
-                        print(f"警告: 无效的最大执行时间值: {arg_values[i + 1]}")
-                        i += 2
-                else:
-                    print("警告: --max-duration 参数缺少值")
-                    i += 1
-
-            else:
-                # 跳过其他参数
-                i += 1
-
-        # 添加最后一个配置
-        if current_config is not None:
-            script_configs.append(current_config)
-
-        # 将解析出的配置传递给脚本
-        scripts = script_configs
-
-        # 打印解析结果以便调试
-        print("解析命令行参数结果:")
-        for i, config in enumerate(scripts):
-            print(f"脚本 {i+1}: {config}")
-
-    if not scripts:
-        parser.error("必须使用 --script 指定至少一个脚本文件")
-
-    global devices, model
-    devices = adb.device_list()
-    if not devices:
-        print("错误: 未检测到 ADB 设备")
-        exit(1)
-
-    # 加载YOLO模型 - 使用统一的加载函数
-    try:
-        model = load_yolo_model(
-            base_dir=BASE_DIR,
-            model_class=YOLO,
-            device="cuda"
-        )
-        if not model:
-            print("错误：未能加载模型")
-            exit(1)
-    except Exception as e:
-        print(f"模型加载失败: {e}")
-        exit(1)
-
-    try:
-        success = replay_steps(scripts, show_screens=args.show_screens)
-        if not success:
-            print("回放失败，请检查日志")
-        else:
-            print("回放成功")
-    except Exception as e:
-        print(f"回放失败: {e}")
-        traceback.print_exc()
-
-    # 清理无用文件
-    # cleanup_unused_files()
-
-
-if __name__ == "__main__":
-    main()
-
-def generate_reports(results, script_path=None):
-    """
-    生成测试报告，按照Airtest标准结构
-
-    参数:
-        results: 包含测试结果的字典，格式如下:
-                {'logs': {设备名: 日志目录}, 'tests': {设备名: 报告结果}, 'success_count': 成功数量}
-        script_path: 脚本文件路径，可以是单个路径字符串或路径列表
-
-    返回:
-        bool: 是否成功生成报告
-    """
-    try:
-        import traceback
-        from datetime import datetime
-
-        # 确保所有基础目录存在
-        os.makedirs(reports_base_dir, exist_ok=True)
-        os.makedirs(ui_reports_dir, exist_ok=True)
-        os.makedirs(ui_run_dir, exist_ok=True)
-        os.makedirs(project_air_dir, exist_ok=True)
-        os.makedirs(device_log_dir, exist_ok=True)
-
-        # 生成时间戳
-        timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-
-        # 初始化结果计数器
-        if 'success_count' not in results:
-            results['success_count'] = 0
-
-        if 'passed_count' not in results:
-            results['passed_count'] = 0
-
-        if 'tests' not in results:
-            results['tests'] = {}
-
-        # 确保logs字段存在
-        if 'logs' not in results:
-            print("错误: results中缺少logs字段")
-            return False
-
-        # 为每个设备生成报告
-        device_reports = {}
-        for device_name, log_dir in results['logs'].items():
-            if not os.path.exists(log_dir):
-                print(f"警告: 设备 {device_name} 的日志目录不存在: {log_dir}")
-                results['tests'][device_name] = {
-                    'report_path': None,
-                    'test_passed': False
-                }
-                continue
-
-            # 为每个设备创建标准目录路径
-            device_timestamp = timestamp  # 使用相同的时间戳保持一致性
-            device_report_dir = os.path.join(device_log_dir, f"{device_name}_{device_timestamp}")
-            os.makedirs(device_report_dir, exist_ok=True)
-
-            # 处理脚本路径，支持单个路径或路径列表
-            script_paths = None
-            if script_path:
-                if isinstance(script_path, list):
-                    # 过滤掉不存在的路径
-                    script_paths = [path for path in script_path if os.path.exists(path)]
-                    if script_paths:
-                        print(f"为设备 {device_name} 使用 {len(script_paths)} 个脚本文件")
-                    else:
-                        print(f"警告: 设备 {device_name} 的所有脚本路径都不存在")
-                else:
-                    # 单个路径
-                    if os.path.exists(script_path):
-                        script_paths = [script_path]
-                        print(f"为设备 {device_name} 使用脚本文件: {script_path}")
-                    else:
-                        print(f"警告: 设备 {device_name} 的脚本路径不存在: {script_path}")
-
-            # 生成设备报告
-            print(f"为设备 {device_name} 生成报告...")
-            report_generated, test_passed = run_one_report(log_dir, device_report_dir, script_paths)
-
-            # 更新测试结果
-            if report_generated:
-                report_path = os.path.join(device_report_dir, "log.html")
-                results['tests'][device_name] = {
-                    'report_path': report_path,
-                    'test_passed': test_passed
-                }
-                results['success_count'] += 1
-                if test_passed:
-                    results['passed_count'] += 1
-                device_reports[device_name] = report_path
-                print(f"设备 {device_name} 报告生成成功，测试{'通过' if test_passed else '失败'}")
-            else:
-                results['tests'][device_name] = {
-                    'report_path': None,
-                    'test_passed': False
-                }
-                print(f"设备 {device_name} 报告生成失败")
-
-        # 生成汇总报告
-        total_tests = len(results['logs'])
-        success_rate = (results['success_count'] / total_tests * 100) if total_tests > 0 else 0
-        pass_rate = (results['passed_count'] / total_tests * 100) if total_tests > 0 else 0
-
-        # 使用run_summary函数生成汇总报告
-        summary_report = run_summary(results)
-
-        print(f"报告生成完成，共测试 {total_tests} 个设备，成功生成报告 {results['success_count']} 个，测试全部通过 {results['passed_count']} 个")
-        print(f"成功率: {success_rate:.1f}%，通过率: {pass_rate:.1f}%")
-        print(f"报告目录: {reports_base_dir}")
-
-        return True
-    except Exception as e:
-        print(f"报告生成失败: {str(e)}")
-        traceback.print_exc()
-        return False
+# 处理脚本路径，确保使用配置系统中的路径
+def normalize_script_path(script_path):
+    """处理脚本路径，确保使用配置中的路径"""
+    # 如果已经是绝对路径，直接使用
+    if os.path.isabs(script_path) and os.path.exists(script_path):
+        return script_path
+
+    # 相对路径处理策略
+    # 1. 首先尝试相对于TESTCASE_DIR的路径
+    path_in_testcase = os.path.join(TESTCASE_DIR, os.path.basename(script_path))
+    if os.path.exists(path_in_testcase):
+        return path_in_testcase
+
+    # 2. 尝试相对于BASE_DIR的路径
+    path_in_base = os.path.join(BASE_DIR, script_path)
+    if os.path.exists(path_in_base):
+        return path_in_base
+
+    # 3. 尝试相对于BASE_DIR/testcase的路径
+    path_in_base_testcase = os.path.join(BASE_DIR, "testcase", os.path.basename(script_path))
+    if os.path.exists(path_in_base_testcase):
+        return path_in_base_testcase
+
+    # 如果都不存在，返回原始路径并打印警告
+    print(f"警告: 找不到脚本文件 {script_path}")
+    print(f"已尝试以下路径:")
+    print(f"  - {path_in_testcase}")
+    print(f"  - {path_in_base}")
+    print(f"  - {path_in_base_testcase}")
+    return script_path

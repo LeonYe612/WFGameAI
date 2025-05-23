@@ -1,2 +1,0 @@
-{"tag": "function", "depth": 1, "time": 1747900908.1907237, "data": {"name": "connect_device", "call_args": {"uri": "Android:///CWM0222215003786"}, "start_time": 1747900907.7270558, "ret": "<Android 'CWM0222215003786'>", "end_time": 1747900908.1907237}}
-{"tag": "info", "depth": 0, "time": 1747900908.5598059, "data": {"name": "{'msg': 'Start replay', 'success': True}", "traceback": null, "log": "{'msg': 'Start replay', 'success': True}"}}
