@@ -90,9 +90,9 @@ REPORTS_DIR = os.path.abspath(paths['reports_dir'])
 UI_REPORTS_DIR = os.path.abspath(paths['ui_reports_dir'])
 
 # 确保所有目录存在
-os.makedirs(TESTCASE_DIR, exist_ok=True)
-os.makedirs(REPORTS_DIR, exist_ok=True)
-os.makedirs(UI_REPORTS_DIR, exist_ok=True)
+# os.makedirs(TESTCASE_DIR, exist_ok=True)
+# os.makedirs(REPORTS_DIR, exist_ok=True)
+# os.makedirs(UI_REPORTS_DIR, exist_ok=True)
 
 # 其余所有涉及目录引用的地方，全部使用上述变量，不允许静态拼接。
 # 例如：

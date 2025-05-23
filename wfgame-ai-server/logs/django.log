@@ -771,3 +771,64 @@ INFO 2025-05-23 11:19:24,956 basehttp 12224 119780 "GET /static/ui_run/WFGameAI.
 INFO 2025-05-23 11:19:24,956 basehttp 12224 87032 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/log/1747900914666_small.jpg HTTP/1.1" 304 0
 INFO 2025-05-23 11:19:28,787 basehttp 12224 87032 "GET /api/docs/ HTTP/1.1" 200 788
 INFO 2025-05-23 11:19:29,264 basehttp 12224 87032 "GET /api/schema/ HTTP/1.1" 200 16516
+INFO 2025-05-23 11:27:29,518 basehttp 12224 95800 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-23 11:27:29,762 basehttp 12224 95800 "POST /api/scripts/ HTTP/1.1" 200 2748
+INFO 2025-05-23 11:27:38,673 basehttp 12224 95800 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-05-23 11:28:37,107 basehttp 12224 95800 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+WARNING 2025-05-23 11:28:44,452 log 12224 95800 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 11:28:44,452 basehttp 12224 95800 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 11:29:25,663 basehttp 12224 95800 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-05-23 11:30:24,849 autoreload 12224 63520 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-23 11:30:25,406 autoreload 114008 99608 Watching for file changes with StatReloader
+INFO 2025-05-23 11:30:32,188 basehttp 114008 52456 "GET / HTTP/1.1" 200 9797
+WARNING 2025-05-23 11:30:32,215 log 114008 52456 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 11:30:32,215 basehttp 114008 52456 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 11:30:34,218 basehttp 114008 52456 "GET /pages/scripts.html HTTP/1.1" 302 0
+WARNING 2025-05-23 11:30:34,244 log 114008 52456 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 11:30:34,244 basehttp 114008 52456 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 11:30:34,573 basehttp 114008 52456 "POST /api/scripts/ HTTP/1.1" 200 2748
+INFO 2025-05-23 11:30:36,628 basehttp 114008 52456 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-05-23 11:31:33,105 basehttp 114008 52456 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-05-23 11:32:49,372 basehttp 114008 52456 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-05-23 13:43:43,854 basehttp 114008 69220 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-23 13:43:43,874 log 114008 69220 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 13:43:43,875 basehttp 114008 69220 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 13:43:44,216 basehttp 114008 69220 "POST /api/scripts/ HTTP/1.1" 200 2748
+INFO 2025-05-23 13:43:47,326 basehttp 114008 69220 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-05-23 13:44:19,523 basehttp 114008 69220 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-05-23 13:46:08,842 basehttp 114008 69220 "GET /pages/scripts.html HTTP/1.1" 302 0
+WARNING 2025-05-23 13:46:08,861 log 114008 69220 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 13:46:08,861 basehttp 114008 69220 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 13:46:09,204 basehttp 114008 69220 "POST /api/scripts/ HTTP/1.1" 200 2935
+ERROR 2025-05-23 13:46:17,472 log 114008 69220 Internal Server Error: /api/scripts/edit/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\decorators\csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 517, in dispatch
+    self.response = self.finalize_response(request, response, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 429, in finalize_response
+    assert isinstance(response, HttpResponseBase), (
+AssertionError: Expected a `Response`, `HttpResponse` or `StreamingHttpResponse` to be returned from the view, but received a `<class 'NoneType'>`
+ERROR 2025-05-23 13:46:17,473 basehttp 114008 69220 "POST /api/scripts/edit/ HTTP/1.1" 500 96969
+ERROR 2025-05-23 13:46:44,932 log 114008 69220 Internal Server Error: /api/scripts/edit/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\decorators\csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 517, in dispatch
+    self.response = self.finalize_response(request, response, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 429, in finalize_response
+    assert isinstance(response, HttpResponseBase), (
+AssertionError: Expected a `Response`, `HttpResponse` or `StreamingHttpResponse` to be returned from the view, but received a `<class 'NoneType'>`
+ERROR 2025-05-23 13:46:44,933 basehttp 114008 69220 "POST /api/scripts/edit/ HTTP/1.1" 500 96969

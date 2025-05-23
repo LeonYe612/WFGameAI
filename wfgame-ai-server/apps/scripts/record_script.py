@@ -15,17 +15,39 @@ import queue
 import subprocess
 import importlib.util
 
-# 导入统一路径管理工具
+# 导入我们的模型加载适配器
 try:
-    # 尝试从项目根目录导入
-    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../")))
-    from utils import get_project_root, get_scripts_dir, get_testcase_dir, load_yolo_model
+    # 正确导入model_loader模块
+    from model_loader import load_model
+    print("已导入模型加载适配器")
+except ImportError as e:
+    print(f"导入模型加载适配器失败: {e}")
+    # 尝试当前目录中的utils.py
+    try:
+        from utils import load_yolo_model
+        # 为了兼容性，我们将load_yolo_model重命名为load_model
+        load_model = load_yolo_model
+        print("从当前目录的utils.py导入了load_yolo_model函数")
+    except ImportError as e2:
+        print(f"从当前目录导入load_yolo_model失败: {e2}")
+        print("直接退出，因为模型加载是必须的")
+        sys.exit(1)
+
+# 导入统一路径管理工具
+# 确保项目根目录在sys.path中
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+try:
+    from utils import get_project_root, get_scripts_dir, get_testcase_dir
 
     # 使用配置文件中的路径
     PROJECT_ROOT = get_scripts_dir() or os.path.dirname(os.path.abspath(__file__))
     TESTCASE_DIR = get_testcase_dir() or os.path.join(PROJECT_ROOT, "testcase")
     print(f"使用路径配置: PROJECT_ROOT={PROJECT_ROOT}, TESTCASE_DIR={TESTCASE_DIR}")
-except ImportError:
+except ImportError as e:
+    print(f"从项目根目录导入失败: {e}")
     # 如果导入失败，使用相对路径
     PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
     TESTCASE_DIR = os.path.join(PROJECT_ROOT, "testcase")
@@ -936,17 +958,22 @@ except Exception as e:
 
 # 加载模型
 try:
-    # 使用统一的模型加载函数
-    model = load_yolo_model(
+    # 使用我们的适配器加载模型
+    print(f"开始加载模型，使用路径: {PROJECT_ROOT}")
+
+    model = load_model(
         base_dir=PROJECT_ROOT,
         model_class=YOLO,
         device=DEVICE
     )
+
     if not model:
         print("错误：未能加载模型")
         sys.exit(1)
+    print(f"模型加载成功")
 except Exception as e:
     print(f"模型加载失败: {e}")
+    traceback.print_exc()
     sys.exit(1)
 
 # 判断是否为录制模式
