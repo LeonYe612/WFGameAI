@@ -27,19 +27,82 @@ from datetime import datetime
 import random
 
 # 导入统一路径管理工具
-try:
-    # 尝试从项目根目录导入
-    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../")))
-    from utils import get_project_root, get_scripts_dir, get_testcase_dir, get_reports_dir, get_ui_reports_dir, load_yolo_model
 
-    # 使用配置文件中的路径
-    BASE_DIR = get_scripts_dir() or os.path.dirname(os.path.abspath(__file__))
-    TESTCASE_DIR = get_testcase_dir() or os.path.join(BASE_DIR, "testcase")
-    REPORTS_DIR = get_reports_dir() or os.path.join(BASE_DIR, "outputs", "WFGameAI-reports")
-    UI_REPORTS_DIR = get_ui_reports_dir() or os.path.join(REPORTS_DIR, "ui_reports")
-    print(f"使用路径配置: BASE_DIR={BASE_DIR}, TESTCASE_DIR={TESTCASE_DIR}, REPORTS_DIR={REPORTS_DIR}")
-except ImportError:
+# 定义默认路径（用于导入失败时的后备方案）
+DEFAULT_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DEFAULT_TESTCASE_DIR = os.path.join(DEFAULT_BASE_DIR, "testcase")
+DEFAULT_REPORTS_DIR = os.path.join(DEFAULT_BASE_DIR, "outputs", "WFGameAI-reports")
+DEFAULT_UI_REPORTS_DIR = os.path.join(DEFAULT_REPORTS_DIR, "ui_reports")
+
+try:
+    # 使用单独的配置导入文件
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from config_import import config_manager, ConfigManager
+
+    # 将load_yolo_model也正确导入
+    try:
+        from utils import load_yolo_model
+    except ImportError:
+        # 如果导入失败，提供一个空函数
+        def load_yolo_model(*args, **kwargs):
+            print("警告: load_yolo_model 导入失败")
+            return None
+
+    if config_manager:
+        print("成功导入ConfigManager模块")
+
+        # 使用配置管理器获取路径
+        BASE_DIR = config_manager.get_path('scripts_dir')
+        if not BASE_DIR:
+            BASE_DIR = DEFAULT_BASE_DIR
+
+        TESTCASE_DIR = config_manager.get_path('testcase_dir')
+        if not TESTCASE_DIR:
+            TESTCASE_DIR = DEFAULT_TESTCASE_DIR
+
+        REPORTS_DIR = config_manager.get_path('reports_dir')
+        if not REPORTS_DIR:
+            REPORTS_DIR = DEFAULT_REPORTS_DIR
+
+        UI_REPORTS_DIR = config_manager.get_path('ui_reports_dir')
+        if not UI_REPORTS_DIR:
+            UI_REPORTS_DIR = DEFAULT_UI_REPORTS_DIR
+
+        print(f"使用路径配置: BASE_DIR={BASE_DIR}, TESTCASE_DIR={TESTCASE_DIR}, REPORTS_DIR={REPORTS_DIR}")
+    else:
+        raise ImportError("ConfigManager导入失败")
+except Exception as e:
     # 如果导入失败，使用相对路径
+    print(f"配置管理器错误: {e}")
+    BASE_DIR = DEFAULT_BASE_DIR
+    TESTCASE_DIR = DEFAULT_TESTCASE_DIR
+    REPORTS_DIR = DEFAULT_REPORTS_DIR
+    UI_REPORTS_DIR = DEFAULT_UI_REPORTS_DIR
+    print("警告: 未找到配置管理工具，使用相对路径")
+
+    # 使用配置管理器获取路径
+    config = ConfigManager()
+    BASE_DIR = config.get_path('scripts_dir')
+    if not BASE_DIR:
+        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+    TESTCASE_DIR = config.get_path('testcase_dir')
+
+    if not TESTCASE_DIR:
+        TESTCASE_DIR = os.path.join(BASE_DIR, "testcase")
+
+    REPORTS_DIR = config.get_path('reports_dir')
+    if not REPORTS_DIR:
+        REPORTS_DIR = os.path.join(BASE_DIR, "outputs", "WFGameAI-reports")
+
+    UI_REPORTS_DIR = config.get_path('ui_reports_dir')
+    if not UI_REPORTS_DIR:
+        UI_REPORTS_DIR = os.path.join(REPORTS_DIR, "ui_reports")
+
+    print(f"使用路径配置: BASE_DIR={BASE_DIR}, TESTCASE_DIR={TESTCASE_DIR}, REPORTS_DIR={REPORTS_DIR}")
+except (ImportError, FileNotFoundError) as e:
+    # 如果导入失败，使用相对路径
+    print(f"配置管理器错误: {e}")
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     TESTCASE_DIR = os.path.join(BASE_DIR, "testcase")
     REPORTS_DIR = os.path.join(BASE_DIR, "outputs", "WFGameAI-reports")
@@ -1858,3 +1921,487 @@ def normalize_script_path(script_path):
     print(f"  - {path_in_base}")
     print(f"  - {path_in_base_testcase}")
     return script_path
+
+
+def parse_script_args():
+    """
+    自定义解析脚本参数，支持多脚本顺序执行，每个脚本可单独指定循环次数和最大执行时间
+    例如: --script script1.json --loop-count 1 --script script2.json --max-duration 30
+    """
+    import sys
+
+    # 初始化默认值
+    result = {
+        'script_list': None,
+        'device': None,
+        'show_screens': False,
+        'run_all': False,
+        'clear_logs': False,
+        'model': 'best.pt',
+        'scripts': []  # 存储脚本及其参数 [{'path': str, 'loop_count': int, 'max_duration': int}]
+    }
+
+    # 全局默认值
+    global_loop_count = 1
+    global_max_duration = None
+
+    args = sys.argv[1:]  # 跳过脚本名称
+    i = 0
+
+    while i < len(args):
+        arg = args[i]
+
+        if arg in ['--script', '-s']:
+            # 开始处理一个新脚本
+            if i + 1 >= len(args):
+                print("错误: --script 参数需要指定脚本路径")
+                sys.exit(1)
+
+            script_path = args[i + 1]
+            script_loop_count = global_loop_count
+            script_max_duration = global_max_duration
+            i += 2  # 跳过 --script 和路径
+
+            # 检查后续参数是否是此脚本的专用参数
+            while i < len(args) and not args[i].startswith('--'):
+                i += 1
+
+            # 处理脚本专用参数
+            while i < len(args):
+                if args[i] in ['--loop-count', '-c']:
+                    if i + 1 >= len(args):
+                        print("错误: --loop-count 参数需要指定数值")
+                        sys.exit(1)
+                    try:
+                        script_loop_count = int(args[i + 1])
+                    except ValueError:
+                        print(f"错误: --loop-count 参数必须是整数: {args[i + 1]}")
+                        sys.exit(1)
+                    i += 2
+                elif args[i] in ['--max-duration', '-t']:
+                    if i + 1 >= len(args):
+                        print("错误: --max-duration 参数需要指定数值")
+                        sys.exit(1)
+                    try:
+                        script_max_duration = int(args[i + 1])
+                    except ValueError:
+                        print(f"错误: --max-duration 参数必须是整数: {args[i + 1]}")
+                        sys.exit(1)
+                    i += 2
+                elif args[i] in ['--script', '-s', '--script-list', '-l', '--device', '-d',
+                               '--show-screens', '--run-all', '--clear', '--model', '-m']:
+                    # 遇到其他参数，结束当前脚本的参数解析
+                    break
+                else:
+                    print(f"错误: 未识别的参数: {args[i]}")
+                    sys.exit(1)
+
+            # 添加脚本到列表
+            result['scripts'].append({
+                'path': script_path,
+                'loop_count': script_loop_count,
+                'max_duration': script_max_duration
+            })
+
+        elif arg in ['--script-list', '-l']:
+            if i + 1 >= len(args):
+                print("错误: --script-list 参数需要指定文件路径")
+                sys.exit(1)
+            result['script_list'] = args[i + 1]
+            i += 2
+
+        elif arg in ['--device', '-d']:
+            if i + 1 >= len(args):
+                print("错误: --device 参数需要指定设备序列号")
+                sys.exit(1)
+            result['device'] = args[i + 1]
+            i += 2
+
+        elif arg in ['--loop-count', '-c']:
+            # 全局循环次数（作为默认值）
+            if i + 1 >= len(args):
+                print("错误: --loop-count 参数需要指定数值")
+                sys.exit(1)
+            try:
+                global_loop_count = int(args[i + 1])
+            except ValueError:
+                print(f"错误: --loop-count 参数必须是整数: {args[i + 1]}")
+                sys.exit(1)
+            i += 2
+
+        elif arg in ['--max-duration', '-t']:
+            # 全局最大执行时间（作为默认值）
+            if i + 1 >= len(args):
+                print("错误: --max-duration 参数需要指定数值")
+                sys.exit(1)
+            try:
+                global_max_duration = int(args[i + 1])
+            except ValueError:
+                print(f"错误: --max-duration 参数必须是整数: {args[i + 1]}")
+                sys.exit(1)
+            i += 2
+
+        elif arg == '--show-screens':
+            result['show_screens'] = True
+            i += 1
+
+        elif arg == '--run-all':
+            result['run_all'] = True
+            i += 1
+
+        elif arg == '--clear':
+            result['clear_logs'] = True
+            i += 1
+
+        elif arg in ['--model', '-m']:
+            if i + 1 >= len(args):
+                print("错误: --model 参数需要指定模型文件路径")
+                sys.exit(1)
+            result['model'] = args[i + 1]
+            i += 2
+
+        elif arg in ['--help', '-h']:
+            print("""
+回放游戏操作脚本
+
+用法:
+  replay_script.py [选项]
+
+选项:
+  --script, -s PATH         脚本文件路径（可多次指定，支持顺序执行）
+  --script-list, -l PATH    脚本列表文件路径
+  --device, -d SERIAL       指定设备序列号，不指定则使用所有已连接设备
+  --loop-count, -c COUNT    循环次数（默认为1，可作为全局默认值或紧跟--script后作为该脚本专用参数）
+  --max-duration, -t SEC    最大执行时间（秒，可作为全局默认值或紧跟--script后作为该脚本专用参数）
+  --show-screens            显示截图（默认为不显示）
+  --run-all                 忽略进度文件，全部重新测试
+  --clear                   清空所有历史日志
+  --model, -m PATH          指定YOLO模型文件路径（默认为best.pt）
+  --help, -h                显示此帮助信息
+
+示例:
+  # 单个脚本
+  replay_script.py --script test.json --loop-count 5
+
+  # 多个脚本顺序执行，使用全局参数
+  replay_script.py --loop-count 2 --script script1.json --script script2.json
+
+  # 多个脚本顺序执行，每个脚本单独指定参数
+  replay_script.py --script script1.json --loop-count 1 --script script2.json --max-duration 30
+
+  # 使用脚本列表文件
+  replay_script.py --script-list scripts.json
+            """)
+            sys.exit(0)
+
+        else:
+            print(f"错误: 未识别的参数: {arg}")
+            print("使用 --help 查看帮助信息")
+            sys.exit(1)
+
+    return result
+
+
+if __name__ == "__main__":
+    # 使用自定义参数解析
+    args = parse_script_args()
+
+    if args['clear_logs']:
+        print("清空所有历史日志...")
+        if os.path.exists(report_dir):
+            shutil.rmtree(report_dir)
+        if os.path.exists(ui_run_dir):
+            shutil.rmtree(ui_run_dir)
+
+        # 重新创建目录
+        os.makedirs(report_dir, exist_ok=True)
+        os.makedirs(ui_run_dir, exist_ok=True)
+        os.makedirs(project_air_dir, exist_ok=True)
+        os.makedirs(device_log_dir, exist_ok=True)
+
+    # 加载YOLO模型
+    try:
+        # 检查是否可以使用工具类中的load_yolo_model函数
+        try:
+            # 尝试从utils.py导入load_yolo_model
+            sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../")))
+            from utils import load_yolo_model as utils_load_yolo_model
+
+            # 使用工具类的函数加载模型
+            print("使用统一的模型加载工具...")
+
+            # 判断参数是否是绝对路径
+            if os.path.isabs(args['model']):
+                model = utils_load_yolo_model(model_path=args['model'], exit_on_failure=True)
+            else:
+                # 使用更健壮的扩展模式, 会自动搜索多个路径
+                model = utils_load_yolo_model(
+                    base_dir=BASE_DIR,
+                    model_class=YOLO,
+                    specific_model=args['model'],
+                    exit_on_failure=True
+                )
+            print(f"模型加载成功")
+
+        except (ImportError, AttributeError) as e:
+            print(f"无法使用统一工具类加载模型: {e}")
+
+            # 使用原来的加载逻辑作为备用
+            # 从配置获取权重文件目录
+            weights_dir = ""
+            if config_manager:
+                weights_dir = config_manager.get_path('weights_dir')
+
+            if not weights_dir or not os.path.isdir(weights_dir):
+                # 如果配置中的权重目录无效，设置默认路径
+                project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
+                weights_dir = os.path.join(project_root, "wfgame-ai-server", "apps", "scripts", "datasets", "train", "weights")
+                print(f"从配置获取权重目录失败，使用默认目录: {weights_dir}")
+
+            # 构建模型路径
+            model_file = args['model']
+            if os.path.isabs(model_file):
+                model_path = model_file
+            else:
+                model_path = os.path.join(weights_dir, model_file)
+
+            print(f"使用模型路径: {model_path}")
+
+            # 检查文件是否存在
+            if not os.path.exists(model_path):
+                print(f"警告：模型文件不存在: {model_path}")
+                print("尝试使用备用路径...")
+
+                # 尝试在项目根目录查找模型文件
+                project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
+                candidate_paths = [
+                    os.path.join(project_root, model_file),
+                    os.path.join(project_root, "yolo11m.pt"),
+                    os.path.join(weights_dir, "best.pt")
+                ]
+
+                found_model = False
+                for alt_model_path in candidate_paths:
+                    if os.path.exists(alt_model_path):
+                        model_path = alt_model_path
+                        print(f"找到备用模型: {model_path}")
+                        found_model = True
+                        break
+
+                if not found_model:
+                    print("错误：无法找到可用的模型文件")
+                    sys.exit(1)
+
+            print(f"加载模型: {model_path}")
+            model = YOLO(model_path)
+        print(f"模型加载成功: {model}")
+    except Exception as e:
+        print(f"模型加载失败: {e}")
+        traceback.print_exc()
+        sys.exit(1)
+
+    # 准备脚本
+    scripts_to_run = []
+
+    if args['scripts']:
+        # 处理多个 --script 参数（新的自定义解析逻辑）
+        for script_info in args['scripts']:
+            normalized_path = normalize_script_path(script_info['path'])
+            if not os.path.exists(normalized_path):
+                print(f"错误: 脚本文件不存在: {normalized_path}")
+                sys.exit(1)
+
+            scripts_to_run.append({
+                "path": normalized_path,
+                "loop_count": script_info['loop_count'],
+                "max_duration": script_info['max_duration']
+            })
+
+        print(f"将运行 {len(scripts_to_run)} 个脚本（顺序执行）")
+
+    elif args['script_list']:
+        list_path = normalize_script_path(args['script_list'])
+        if not os.path.exists(list_path):
+            print(f"错误: 脚本列表文件不存在: {list_path}")
+            sys.exit(1)
+
+        try:
+            with open(list_path, "r", encoding="utf-8") as f:
+                script_list_data = json.load(f)
+
+            for script_item in script_list_data:
+                if isinstance(script_item, dict):
+                    script_path = script_item.get("path")
+                    # 处理 loop_count=null 的特殊情况，将其转换为无限循环（用 999999 表示）
+                    loop_count = script_item.get("loop_count")
+                    if loop_count is None and script_item.get("max_duration") is not None:
+                        loop_count = 999999  # 当 loop_count 为 null 且设置了 max_duration 时，视为无限循环
+                    else:
+                        loop_count = loop_count if loop_count is not None else 1  # 默认循环次数
+                    max_duration = script_item.get("max_duration", None)
+                else:
+                    script_path = script_item
+                    loop_count = 1  # 默认循环次数
+                    max_duration = None
+
+                normalized_path = normalize_script_path(script_path)
+                if os.path.exists(normalized_path):
+                    scripts_to_run.append({
+                        "path": normalized_path,
+                        "loop_count": loop_count,
+                        "max_duration": max_duration
+                    })
+                else:
+                    print(f"警告: 跳过不存在的脚本: {normalized_path}")
+
+            print(f"将运行 {len(scripts_to_run)} 个脚本")
+        except Exception as e:
+            print(f"读取脚本列表文件失败: {e}")
+            traceback.print_exc()
+            sys.exit(1)
+    else:
+        print("错误: 必须指定 --script 或 --script-list 参数")
+        print("使用 --help 查看帮助信息")
+        sys.exit(1)
+
+    # 获取设备列表
+    try:
+        device_list = adb.device_list()
+        if not device_list:
+            print("错误: 未找到已连接的设备")
+            sys.exit(1)
+
+        if args['device']:
+            # 使用指定的设备
+            devices = [d for d in device_list if d.serial == args['device']]
+            if not devices:
+                print(f"错误: 未找到指定的设备: {args['device']}")
+                print("可用设备:")
+                for d in device_list:
+                    print(f"  - {d.serial}")
+                sys.exit(1)
+        else:
+            # 使用所有已连接设备
+            devices = device_list
+
+        print(f"使用设备: {', '.join([d.serial if d.serial else '' for d in devices])}")
+    except Exception as e:
+        print(f"获取设备列表失败: {e}")
+        traceback.print_exc()
+        sys.exit(1)
+
+    # 加载测试进度数据
+    data = load_json_data(args['run_all'])
+
+    # 创建线程和事件
+    threads = []
+    device_events = {}
+    device_reports = {}
+
+    # 对每个设备启动回放线程
+    for device in devices:
+        try:
+            device_name = get_device_name(device)
+            print(f"设备 {device_name} 初始化...")
+
+            # 检查设备状态
+            if not check_device_status(device, device_name):
+                print(f"设备 {device_name} 状态异常，跳过")
+                continue
+
+            # 获取设备日志目录
+            log_dir = get_log_dir(device_name)
+            print(f"设备 {device_name} 日志目录: {log_dir}")
+
+            # 为每个设备创建停止事件
+            stop_event = Event()
+            device_events[device_name] = stop_event
+
+            # 为每个设备创建检测服务线程
+            detection_thread = Thread(
+                target=detection_service,
+                args=(screenshot_queue, click_queue, stop_event),
+                daemon=True
+            )
+            detection_thread.start()
+            threads.append(detection_thread)
+
+            # 为每个设备创建回放线程
+            replay_thread = Thread(
+                target=replay_device,
+                args=(
+                    device,
+                    scripts_to_run,
+                    screenshot_queue,
+                    action_queue,
+                    stop_event,
+                    device_name,
+                    log_dir,
+                    args['show_screens'],
+                    1  # 传递默认循环次数，但实际使用脚本中的循环次数
+                ),
+                daemon=True
+            )
+            replay_thread.start()
+            threads.append(replay_thread)
+
+            # 记录设备报告路径
+            report_html_path = os.path.join(log_dir, "log.html")
+            device_reports[device_name] = {
+                'report_path': report_html_path,
+                'log_dir': log_dir
+            }
+
+            print(f"设备 {device_name} 回放线程已启动")
+        except Exception as e:
+            print(f"启动设备 {device.serial} 线程失败: {e}")
+            traceback.print_exc()
+
+    # 等待所有线程完成
+    for thread in threads:
+        thread.join()
+
+    # 生成报告
+    print("所有设备回放完成，生成报告...")
+
+    test_results = {}
+    for device_name, report_info in device_reports.items():
+        log_dir = report_info['log_dir']
+        report_dir = os.path.join(log_dir)  # 保持报告和日志在同一个目录
+
+        print(f"为设备 {device_name} 生成报告...")
+
+        report_generated, test_passed = run_one_report(
+            log_dir=log_dir,
+            report_dir=report_dir,
+            script_path=[s['path'] for s in scripts_to_run]  # 传递脚本路径列表
+        )
+
+        # 更新测试结果
+        test_results[device_name] = {
+            'report_path': os.path.join(report_dir, "log.html") if report_generated else None,
+            'test_passed': test_passed
+        }
+
+        print(f"设备 {device_name} 报告生成 {'成功' if report_generated else '失败'}, 测试 {'通过' if test_passed else '失败'}")
+
+    # 更新测试进度数据
+    data['tests'].update(test_results)
+    data['end'] = time.time()
+    data['duration'] = data['end'] - data.get('start', data['end'])
+
+    # 保存测试进度数据
+    try:
+        with open(os.path.join(BASE_DIR, 'data.json'), 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"保存测试进度数据失败: {e}")
+
+    # 生成汇总报告
+    summary_report_path = run_summary(data)
+    if summary_report_path:
+        print(f"汇总报告已生成: {summary_report_path}")
+    else:
+        print("汇总报告生成失败")
+
+    print("所有操作完成")
