@@ -479,9 +479,7 @@
                 modal.hide();
 
                 showToast('设置已保存', 'success');
-            });
-
-            // 添加脚本配置
+            });            // 添加脚本配置
             addScriptConfig.addEventListener('click', function() {
                 const scriptConfigs = document.querySelectorAll('.script-config');
                 const newIndex = scriptConfigs.length + 1;
@@ -519,7 +517,20 @@
                 // 添加到容器
                 const tempDiv = document.createElement('div');
                 tempDiv.innerHTML = newScriptConfigHTML;
-                scriptConfigsContainer.appendChild(tempDiv.firstElementChild);
+                const newElement = tempDiv.firstElementChild;
+                scriptConfigsContainer.appendChild(newElement);
+
+                // 如果脚本列表已加载，立即更新新添加的脚本选择器
+                if (scripts && scripts.length > 0) {
+                    const scriptSelect = newElement.querySelector('.script-select');
+                    // 添加脚本选项
+                    scripts.forEach(script => {
+                        const option = document.createElement('option');
+                        option.value = script.path;
+                        option.textContent = `${script.filename} (${script.step_count || 0}步)`;
+                        scriptSelect.appendChild(option);
+                    });
+                }
 
                 // 重新添加事件监听
                 addRemoveScriptListeners();
