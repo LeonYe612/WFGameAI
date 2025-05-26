@@ -832,3 +832,875 @@ Traceback (most recent call last):
     assert isinstance(response, HttpResponseBase), (
 AssertionError: Expected a `Response`, `HttpResponse` or `StreamingHttpResponse` to be returned from the view, but received a `<class 'NoneType'>`
 ERROR 2025-05-23 13:46:44,933 basehttp 114008 69220 "POST /api/scripts/edit/ HTTP/1.1" 500 96969
+INFO 2025-05-23 14:13:41,120 autoreload 114008 99608 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\urls.py changed, reloading.
+INFO 2025-05-23 14:13:41,638 autoreload 94756 88428 Watching for file changes with StatReloader
+INFO 2025-05-23 14:13:56,023 autoreload 94756 88428 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\urls.py changed, reloading.
+INFO 2025-05-23 14:13:56,513 autoreload 51792 93068 Watching for file changes with StatReloader
+INFO 2025-05-23 14:16:54,332 autoreload 51792 93068 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views_script_operations.py changed, reloading.
+INFO 2025-05-23 14:16:54,824 autoreload 101848 86608 Watching for file changes with StatReloader
+INFO 2025-05-23 14:17:58,370 basehttp 101848 46140 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-23 14:17:58,390 log 101848 46140 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 14:17:58,390 basehttp 101848 46140 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 14:17:58,708 basehttp 101848 46140 "POST /api/scripts/ HTTP/1.1" 200 2935
+ERROR 2025-05-23 14:18:00,923 log 101848 46140 Internal Server Error: /api/scripts/edit/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\decorators\csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 517, in dispatch
+    self.response = self.finalize_response(request, response, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 429, in finalize_response
+    assert isinstance(response, HttpResponseBase), (
+AssertionError: Expected a `Response`, `HttpResponse` or `StreamingHttpResponse` to be returned from the view, but received a `<class 'NoneType'>`
+ERROR 2025-05-23 14:18:00,924 basehttp 101848 46140 "POST /api/scripts/edit/ HTTP/1.1" 500 96969
+INFO 2025-05-23 14:18:35,679 basehttp 101848 46140 "GET / HTTP/1.1" 200 9797
+WARNING 2025-05-23 14:18:35,700 log 101848 46140 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 14:18:35,701 basehttp 101848 46140 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 14:18:37,916 basehttp 101848 46140 "GET /pages/scripts.html HTTP/1.1" 302 0
+WARNING 2025-05-23 14:18:37,942 log 101848 46140 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 14:18:37,942 basehttp 101848 46140 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 14:18:38,280 basehttp 101848 46140 "POST /api/scripts/ HTTP/1.1" 200 2935
+ERROR 2025-05-23 14:18:41,285 log 101848 46140 Internal Server Error: /api/scripts/edit/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\decorators\csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 517, in dispatch
+    self.response = self.finalize_response(request, response, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 429, in finalize_response
+    assert isinstance(response, HttpResponseBase), (
+AssertionError: Expected a `Response`, `HttpResponse` or `StreamingHttpResponse` to be returned from the view, but received a `<class 'NoneType'>`
+ERROR 2025-05-23 14:18:41,286 basehttp 101848 46140 "POST /api/scripts/edit/ HTTP/1.1" 500 96969
+INFO 2025-05-23 14:23:37,482 basehttp 101848 109028 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-23 14:23:37,501 log 101848 109028 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 14:23:37,502 basehttp 101848 109028 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 14:23:37,832 basehttp 101848 109028 "POST /api/scripts/ HTTP/1.1" 200 2935
+ERROR 2025-05-23 14:23:39,560 log 101848 109028 Internal Server Error: /api/scripts/edit/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\decorators\csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 517, in dispatch
+    self.response = self.finalize_response(request, response, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 429, in finalize_response
+    assert isinstance(response, HttpResponseBase), (
+AssertionError: Expected a `Response`, `HttpResponse` or `StreamingHttpResponse` to be returned from the view, but received a `<class 'NoneType'>`
+ERROR 2025-05-23 14:23:39,561 basehttp 101848 109028 "POST /api/scripts/edit/ HTTP/1.1" 500 96969
+INFO 2025-05-23 14:35:35,018 basehttp 101848 95564 "GET / HTTP/1.1" 200 9797
+WARNING 2025-05-23 14:35:35,045 log 101848 95564 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 14:35:35,045 basehttp 101848 95564 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 14:35:37,577 basehttp 101848 95564 "GET /pages/scripts.html HTTP/1.1" 302 0
+WARNING 2025-05-23 14:35:37,605 log 101848 95564 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 14:35:37,605 basehttp 101848 95564 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 14:35:37,952 basehttp 101848 95564 "POST /api/scripts/ HTTP/1.1" 200 2935
+ERROR 2025-05-23 14:35:39,433 log 101848 95564 Internal Server Error: /api/scripts/edit/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\decorators\csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 517, in dispatch
+    self.response = self.finalize_response(request, response, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 429, in finalize_response
+    assert isinstance(response, HttpResponseBase), (
+AssertionError: Expected a `Response`, `HttpResponse` or `StreamingHttpResponse` to be returned from the view, but received a `<class 'NoneType'>`
+ERROR 2025-05-23 14:35:39,434 basehttp 101848 95564 "POST /api/scripts/edit/ HTTP/1.1" 500 96969
+ERROR 2025-05-23 14:36:02,475 log 101848 95564 Internal Server Error: /api/scripts/edit/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\decorators\csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 517, in dispatch
+    self.response = self.finalize_response(request, response, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 429, in finalize_response
+    assert isinstance(response, HttpResponseBase), (
+AssertionError: Expected a `Response`, `HttpResponse` or `StreamingHttpResponse` to be returned from the view, but received a `<class 'NoneType'>`
+ERROR 2025-05-23 14:36:02,476 basehttp 101848 95564 "POST /api/scripts/edit/ HTTP/1.1" 500 96969
+ERROR 2025-05-23 14:36:37,443 log 101848 95564 Internal Server Error: /api/scripts/edit/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\decorators\csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 517, in dispatch
+    self.response = self.finalize_response(request, response, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 429, in finalize_response
+    assert isinstance(response, HttpResponseBase), (
+AssertionError: Expected a `Response`, `HttpResponse` or `StreamingHttpResponse` to be returned from the view, but received a `<class 'NoneType'>`
+ERROR 2025-05-23 14:36:37,443 basehttp 101848 95564 "POST /api/scripts/edit/ HTTP/1.1" 500 96969
+INFO 2025-05-23 14:46:11,107 basehttp 101848 99564 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-23 14:46:11,124 log 101848 99564 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 14:46:11,124 basehttp 101848 99564 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 14:46:11,460 basehttp 101848 99564 "POST /api/scripts/ HTTP/1.1" 200 2935
+ERROR 2025-05-23 14:46:13,938 log 101848 99564 Internal Server Error: /api/scripts/edit/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\decorators\csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 517, in dispatch
+    self.response = self.finalize_response(request, response, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 429, in finalize_response
+    assert isinstance(response, HttpResponseBase), (
+AssertionError: Expected a `Response`, `HttpResponse` or `StreamingHttpResponse` to be returned from the view, but received a `<class 'NoneType'>`
+ERROR 2025-05-23 14:46:13,938 basehttp 101848 99564 "POST /api/scripts/edit/ HTTP/1.1" 500 96969
+INFO 2025-05-23 14:46:27,954 basehttp 101848 99564 "GET / HTTP/1.1" 200 9797
+WARNING 2025-05-23 14:46:27,977 log 101848 99564 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 14:46:27,978 basehttp 101848 99564 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 14:46:29,505 basehttp 101848 99564 "GET /pages/scripts.html HTTP/1.1" 302 0
+WARNING 2025-05-23 14:46:29,531 log 101848 99564 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 14:46:29,531 basehttp 101848 99564 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 14:46:29,848 basehttp 101848 99564 "POST /api/scripts/ HTTP/1.1" 200 2935
+ERROR 2025-05-23 14:46:31,426 log 101848 99564 Internal Server Error: /api/scripts/edit/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\decorators\csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 517, in dispatch
+    self.response = self.finalize_response(request, response, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 429, in finalize_response
+    assert isinstance(response, HttpResponseBase), (
+AssertionError: Expected a `Response`, `HttpResponse` or `StreamingHttpResponse` to be returned from the view, but received a `<class 'NoneType'>`
+ERROR 2025-05-23 14:46:31,428 basehttp 101848 99564 "POST /api/scripts/edit/ HTTP/1.1" 500 96969
+INFO 2025-05-23 15:27:26,275 autoreload 100104 80664 Watching for file changes with StatReloader
+INFO 2025-05-23 15:27:33,087 basehttp 100104 111516 "GET /static/pages/scripts.html HTTP/1.1" 200 53850
+WARNING 2025-05-23 15:27:33,103 log 100104 111516 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 15:27:33,104 basehttp 100104 111516 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 15:27:37,764 basehttp 100104 111516 "GET /pages/tasks_template.html HTTP/1.1" 302 0
+INFO 2025-05-23 15:27:37,767 basehttp 100104 111516 "GET /static/pages/tasks_template.html HTTP/1.1" 304 0
+WARNING 2025-05-23 15:27:37,786 log 100104 111516 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 15:27:37,786 basehttp 100104 111516 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 15:27:38,854 basehttp 100104 111516 "GET /pages/reports_template.html HTTP/1.1" 302 0
+INFO 2025-05-23 15:27:38,856 basehttp 100104 111516 "GET /static/pages/reports_template.html HTTP/1.1" 304 0
+WARNING 2025-05-23 15:27:38,880 log 100104 111516 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 15:27:38,880 basehttp 100104 111516 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 15:27:39,209 basehttp 100104 111516 "POST /api/reports/summary_list/ HTTP/1.1" 200 5881
+INFO 2025-05-23 15:27:40,260 basehttp 100104 111516 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-05-23 15:27:40,262 basehttp 100104 111516 "GET /static/pages/devices.html HTTP/1.1" 304 0
+WARNING 2025-05-23 15:27:40,294 log 100104 111516 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 15:27:40,294 basehttp 100104 111516 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 15:27:41,193 basehttp 100104 111516 "GET /pages/dashboard_template.html HTTP/1.1" 302 0
+INFO 2025-05-23 15:27:41,194 basehttp 100104 111516 "GET /static/pages/dashboard_template.html HTTP/1.1" 304 0
+WARNING 2025-05-23 15:27:41,227 log 100104 111516 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 15:27:41,227 basehttp 100104 111516 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 15:27:42,094 basehttp 100104 111516 "GET /pages/scripts.html HTTP/1.1" 302 0
+WARNING 2025-05-23 15:27:42,123 log 100104 111516 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 15:27:42,123 basehttp 100104 111516 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 15:27:43,063 basehttp 100104 111516 "GET /pages/devices.html HTTP/1.1" 302 0
+WARNING 2025-05-23 15:27:43,100 log 100104 111516 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 15:27:43,100 basehttp 100104 111516 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 15:27:43,507 basehttp 100104 111516 "POST /api/devices/scan/ HTTP/1.1" 200 163
+INFO 2025-05-23 15:27:45,529 basehttp 100104 111516 "GET /pages/scripts.html HTTP/1.1" 302 0
+WARNING 2025-05-23 15:27:45,567 log 100104 111516 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 15:27:45,567 basehttp 100104 111516 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 15:27:46,125 basehttp 100104 111516 "GET /api/docs/ HTTP/1.1" 200 788
+INFO 2025-05-23 15:27:46,624 basehttp 100104 111516 "GET /api/schema/ HTTP/1.1" 200 19220
+INFO 2025-05-23 15:27:49,497 basehttp 100104 111516 "GET /pages/scripts.html HTTP/1.1" 302 0
+WARNING 2025-05-23 15:27:49,536 log 100104 111516 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 15:27:49,537 basehttp 100104 111516 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 15:32:52,183 basehttp 100104 104116 "GET /static/pages/scripts.html HTTP/1.1" 200 55557
+WARNING 2025-05-23 15:32:52,197 log 100104 104116 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 15:32:52,197 basehttp 100104 104116 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 15:32:54,936 basehttp 100104 104116 "GET / HTTP/1.1" 200 9797
+WARNING 2025-05-23 15:32:54,973 log 100104 104116 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 15:32:54,974 basehttp 100104 104116 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 15:32:56,259 basehttp 100104 104116 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-23 15:32:56,261 basehttp 100104 104116 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-23 15:32:56,299 log 100104 104116 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 15:32:56,299 basehttp 100104 104116 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 15:33:09,864 basehttp 100104 104116 "GET / HTTP/1.1" 200 9797
+WARNING 2025-05-23 15:33:09,908 log 100104 104116 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 15:33:09,909 basehttp 100104 104116 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 15:33:11,652 basehttp 100104 104116 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-23 15:33:11,655 basehttp 100104 104116 "GET /static/pages/scripts.html HTTP/1.1" 200 53850
+WARNING 2025-05-23 15:33:11,704 log 100104 104116 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 15:33:11,704 basehttp 100104 104116 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 15:34:30,186 basehttp 100104 104116 "GET /static/pages/scripts.html HTTP/1.1" 200 53850
+WARNING 2025-05-23 15:34:30,198 log 100104 104116 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 15:34:30,198 basehttp 100104 104116 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 15:38:21,534 basehttp 100104 104116 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-23 15:38:21,545 log 100104 104116 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 15:38:21,546 basehttp 100104 104116 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 15:39:00,058 autoreload 100104 80664 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\urls.py changed, reloading.
+INFO 2025-05-23 15:39:00,634 autoreload 97608 53808 Watching for file changes with StatReloader
+INFO 2025-05-23 15:39:11,529 basehttp 97608 105124 "GET /static/pages/scripts.html HTTP/1.1" 200 65554
+WARNING 2025-05-23 15:39:11,546 log 97608 105124 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 15:39:11,546 basehttp 97608 105124 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 15:39:11,880 basehttp 97608 105124 "POST /api/scripts/ HTTP/1.1" 200 2935
+INFO 2025-05-23 15:39:17,226 basehttp 97608 105124 "POST /api/scripts/debug/ HTTP/1.1" 200 90
+INFO 2025-05-23 15:40:07,487 basehttp 97608 71308 "GET / HTTP/1.1" 200 9797
+INFO 2025-05-23 15:40:10,061 basehttp 97608 56872 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-23 15:40:10,075 basehttp 97608 56872 "GET /static/pages/scripts.html HTTP/1.1" 200 65554
+INFO 2025-05-23 15:40:10,449 basehttp 97608 56872 "POST /api/scripts/ HTTP/1.1" 200 2935
+WARNING 2025-05-23 15:40:24,994 log 97608 72712 Not Found: /favicon.ico
+WARNING 2025-05-23 15:40:24,994 basehttp 97608 72712 "GET /favicon.ico HTTP/1.1" 404 4725
+INFO 2025-05-23 15:40:27,089 basehttp 97608 72712 "GET /pages/tasks_template.html HTTP/1.1" 302 0
+INFO 2025-05-23 15:40:27,101 basehttp 97608 72712 "GET /static/pages/tasks_template.html HTTP/1.1" 200 9783
+INFO 2025-05-23 15:40:28,379 basehttp 97608 72712 "GET /pages/reports_template.html HTTP/1.1" 302 0
+INFO 2025-05-23 15:40:28,393 basehttp 97608 72712 "GET /static/pages/reports_template.html HTTP/1.1" 200 15555
+INFO 2025-05-23 15:40:28,779 basehttp 97608 72712 "POST /api/reports/summary_list/ HTTP/1.1" 200 5881
+INFO 2025-05-23 15:40:30,553 basehttp 97608 59056 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/log.html HTTP/1.1" 200 13095
+INFO 2025-05-23 15:40:30,595 basehttp 97608 59056 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//css/report.css HTTP/1.1" 200 18004
+INFO 2025-05-23 15:40:30,603 basehttp 97608 119260 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//js/langpack/zh_CN.js HTTP/1.1" 200 2701
+INFO 2025-05-23 15:40:30,604 basehttp 97608 10128 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//js/jquery-lang.js HTTP/1.1" 200 25588
+INFO 2025-05-23 15:40:30,604 basehttp 97608 25988 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//image/download_log.svg HTTP/1.1" 200 2550
+INFO 2025-05-23 15:40:30,604 basehttp 97608 87572 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//js/lazyload.js HTTP/1.1" 200 5587
+INFO 2025-05-23 15:40:30,605 basehttp 97608 59056 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//image/copy.svg HTTP/1.1" 200 1013
+INFO 2025-05-23 15:40:30,610 basehttp 97608 109936 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//js/jquery-1.10.2.min.js HTTP/1.1" 200 93111
+INFO 2025-05-23 15:40:30,920 basehttp 97608 109936 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//image/Airtest.png HTTP/1.1" 200 1947
+INFO 2025-05-23 15:40:30,921 basehttp 97608 59056 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//image/poco.png HTTP/1.1" 200 1385
+INFO 2025-05-23 15:40:30,928 basehttp 97608 109936 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//css/monokai_sublime.min.css HTTP/1.1" 200 2017
+INFO 2025-05-23 15:40:30,929 basehttp 97608 59056 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//image/AirtestIDE.png HTTP/1.1" 200 3181
+INFO 2025-05-23 15:40:30,935 basehttp 97608 87572 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//js/paging.js HTTP/1.1" 200 13030
+INFO 2025-05-23 15:40:30,936 basehttp 97608 119260 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//image/AirLab.png HTTP/1.1" 200 1954
+INFO 2025-05-23 15:40:30,936 basehttp 97608 25988 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//js/report.js HTTP/1.1" 200 31059
+INFO 2025-05-23 15:40:30,938 basehttp 97608 59056 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//image/netease.png HTTP/1.1" 200 7949
+INFO 2025-05-23 15:40:30,938 basehttp 97608 109936 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//image/minimize.svg HTTP/1.1" 200 1031
+INFO 2025-05-23 15:40:30,951 basehttp 97608 119260 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//image/close.svg HTTP/1.1" 200 729
+INFO 2025-05-23 15:40:30,951 basehttp 97608 59056 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//image/maximize.svg HTTP/1.1" 200 1308
+INFO 2025-05-23 15:40:30,954 basehttp 97608 10128 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//js/highlight.min.js HTTP/1.1" 200 184850
+INFO 2025-05-23 15:40:31,015 basehttp 97608 109936 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//image/step_fail.svg HTTP/1.1" 200 1274
+INFO 2025-05-23 15:40:31,015 basehttp 97608 25988 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//image/eye.svg HTTP/1.1" 200 1935
+INFO 2025-05-23 15:40:31,015 basehttp 97608 87572 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//image/time.svg HTTP/1.1" 200 820
+INFO 2025-05-23 15:40:31,016 basehttp 97608 59056 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/log/1747900917624_small.jpg HTTP/1.1" 200 26643
+INFO 2025-05-23 15:40:31,016 basehttp 97608 119260 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/log/1747900910914_small.jpg HTTP/1.1" 200 60979
+INFO 2025-05-23 15:40:31,016 basehttp 97608 10128 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/log/1747900914666_small.jpg HTTP/1.1" 200 60326
+INFO 2025-05-23 15:40:31,021 basehttp 97608 109936 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//image/success.svg HTTP/1.1" 200 1156
+INFO 2025-05-23 15:40:43,527 basehttp 97608 70488 "GET /static/pages/scripts.html HTTP/1.1" 200 65554
+WARNING 2025-05-23 15:40:44,777 log 97608 21356 Not Found: /favicon.ico
+WARNING 2025-05-23 15:40:44,777 basehttp 97608 21356 "GET /favicon.ico HTTP/1.1" 404 4725
+INFO 2025-05-23 15:40:52,355 basehttp 97608 60924 "POST /api/scripts/ HTTP/1.1" 200 2935
+INFO 2025-05-23 15:41:01,475 basehttp 97608 99856 "GET / HTTP/1.1" 200 9797
+INFO 2025-05-23 15:41:22,930 basehttp 97608 81732 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-05-23 15:41:22,952 basehttp 97608 81732 "GET /static/pages/devices.html HTTP/1.1" 200 5384
+INFO 2025-05-23 15:41:22,986 basehttp 97608 81732 "GET /static/js/pages/devices_vue.js HTTP/1.1" 200 9531
+INFO 2025-05-23 15:41:31,668 basehttp 97608 100216 "POST /api/devices/scan/ HTTP/1.1" 200 163
+INFO 2025-05-23 15:41:38,411 basehttp 97608 30152 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-23 15:41:38,433 basehttp 97608 30152 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-05-23 15:41:47,185 basehttp 97608 21084 "POST /api/scripts/ HTTP/1.1" 200 2935
+INFO 2025-05-23 15:42:00,182 basehttp 97608 117628 "GET / HTTP/1.1" 200 9797
+INFO 2025-05-23 15:42:16,092 basehttp 97608 32740 "GET / HTTP/1.1" 200 9797
+INFO 2025-05-23 15:47:45,761 basehttp 97608 124180 "GET / HTTP/1.1" 200 9797
+INFO 2025-05-23 15:48:32,801 autoreload 5728 96368 Watching for file changes with StatReloader
+INFO 2025-05-23 15:48:37,723 basehttp 5728 95264 "GET / HTTP/1.1" 200 9797
+INFO 2025-05-23 15:48:52,976 basehttp 5728 117148 "GET /api/docs/ HTTP/1.1" 200 788
+INFO 2025-05-23 15:48:53,759 basehttp 5728 117148 "GET /api/schema/ HTTP/1.1" 200 16516
+INFO 2025-05-23 15:48:56,952 basehttp 5728 117148 "GET /static/pages/scripts.html HTTP/1.1" 200 65571
+WARNING 2025-05-23 15:48:56,973 basehttp 5728 74256 "GET /static/vendor/fontawesome/css/all.min.css HTTP/1.1" 404 1962
+WARNING 2025-05-23 15:48:56,974 basehttp 5728 117148 "GET /static/vendor/bootstrap/css/bootstrap.min.css HTTP/1.1" 404 1974
+WARNING 2025-05-23 15:48:56,974 basehttp 5728 63980 "GET /static/vendor/bootstrap/js/bootstrap.bundle.min.js HTTP/1.1" 404 1989
+WARNING 2025-05-23 15:48:57,272 log 5728 68388 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 15:48:57,272 basehttp 5728 68388 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 15:48:57,301 basehttp 5728 68388 "POST /api/scripts/ HTTP/1.1" 200 2935
+INFO 2025-05-23 15:48:58,289 basehttp 5728 68388 "GET / HTTP/1.1" 200 9797
+WARNING 2025-05-23 15:48:58,312 log 5728 68388 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 15:48:58,312 basehttp 5728 68388 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 15:49:00,277 basehttp 5728 68388 "GET / HTTP/1.1" 200 9797
+WARNING 2025-05-23 15:49:00,289 log 5728 68388 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 15:49:00,289 basehttp 5728 68388 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 15:49:01,708 basehttp 5728 68388 "GET /pages/dashboard_template.html HTTP/1.1" 302 0
+WARNING 2025-05-23 15:49:01,736 log 5728 68388 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 15:49:01,736 basehttp 5728 68388 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 15:49:03,391 basehttp 5728 68388 "GET /pages/devices.html HTTP/1.1" 302 0
+WARNING 2025-05-23 15:49:03,423 log 5728 68388 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 15:49:03,424 basehttp 5728 68388 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 15:49:03,808 basehttp 5728 68388 "POST /api/devices/scan/ HTTP/1.1" 200 163
+INFO 2025-05-23 15:49:04,944 basehttp 5728 68388 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-23 15:49:04,946 basehttp 5728 68388 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-23 15:49:04,984 log 5728 68388 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 15:49:04,984 basehttp 5728 111724 "GET /static/vendor/bootstrap/css/bootstrap.min.css HTTP/1.1" 404 1974
+WARNING 2025-05-23 15:49:04,984 basehttp 5728 68388 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+WARNING 2025-05-23 15:49:04,988 basehttp 5728 68388 "GET /static/vendor/fontawesome/css/all.min.css HTTP/1.1" 404 1962
+WARNING 2025-05-23 15:49:05,290 basehttp 5728 121288 "GET /static/vendor/bootstrap/js/bootstrap.bundle.min.js HTTP/1.1" 404 1989
+INFO 2025-05-23 15:49:05,298 basehttp 5728 108432 "POST /api/scripts/ HTTP/1.1" 200 2935
+INFO 2025-05-23 15:49:11,829 basehttp 5728 108432 "GET /pages/tasks_template.html HTTP/1.1" 302 0
+WARNING 2025-05-23 15:49:11,874 log 5728 108432 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 15:49:11,874 basehttp 5728 108432 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 15:49:13,564 basehttp 5728 108432 "GET /pages/reports_template.html HTTP/1.1" 302 0
+WARNING 2025-05-23 15:49:13,602 log 5728 108432 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 15:49:13,602 basehttp 5728 108432 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 15:49:13,941 basehttp 5728 108432 "POST /api/reports/summary_list/ HTTP/1.1" 200 5881
+INFO 2025-05-23 15:49:14,917 basehttp 5728 108432 "GET /pages/data_template.html HTTP/1.1" 302 0
+INFO 2025-05-23 15:49:14,919 basehttp 5728 108432 "GET /static/pages/data_template.html HTTP/1.1" 304 0
+WARNING 2025-05-23 15:49:14,968 log 5728 108432 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 15:49:14,969 basehttp 5728 108432 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 15:49:16,067 basehttp 5728 108432 "GET /pages/settings_template.html HTTP/1.1" 302 0
+INFO 2025-05-23 15:49:16,070 basehttp 5728 108432 "GET /static/pages/settings_template.html HTTP/1.1" 200 21031
+WARNING 2025-05-23 15:49:16,117 log 5728 108432 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 15:49:16,118 basehttp 5728 108432 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 15:49:20,013 basehttp 5728 56684 "GET /pages/dashboard_template.html HTTP/1.1" 302 0
+INFO 2025-05-23 15:49:20,027 basehttp 5728 56684 "GET /static/pages/dashboard_template.html HTTP/1.1" 200 8479
+INFO 2025-05-23 15:49:26,149 basehttp 5728 62280 "GET /pages/tasks_template.html HTTP/1.1" 302 0
+INFO 2025-05-23 15:49:30,531 basehttp 5728 66216 "GET /pages/reports_template.html HTTP/1.1" 302 0
+INFO 2025-05-23 15:49:40,325 basehttp 5728 108432 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-23 15:49:40,330 basehttp 5728 108432 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-23 15:49:40,366 basehttp 5728 53536 "GET /static/vendor/bootstrap/css/bootstrap.min.css HTTP/1.1" 404 1974
+WARNING 2025-05-23 15:49:40,367 log 5728 108432 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 15:49:40,367 basehttp 5728 108432 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+WARNING 2025-05-23 15:49:40,372 basehttp 5728 108432 "GET /static/vendor/fontawesome/css/all.min.css HTTP/1.1" 404 1962
+WARNING 2025-05-23 15:49:40,671 basehttp 5728 103376 "GET /static/vendor/bootstrap/js/bootstrap.bundle.min.js HTTP/1.1" 404 1989
+INFO 2025-05-23 15:49:40,721 basehttp 5728 9276 "POST /api/scripts/ HTTP/1.1" 200 2935
+INFO 2025-05-23 15:50:16,510 basehttp 5728 9276 "GET /static/pages/scripts.html HTTP/1.1" 200 65554
+WARNING 2025-05-23 15:50:16,523 log 5728 9276 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 15:50:16,523 basehttp 5728 9276 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 15:50:16,866 basehttp 5728 9276 "POST /api/scripts/ HTTP/1.1" 200 2935
+INFO 2025-05-23 15:50:18,626 basehttp 5728 9276 "GET /pages/dashboard_template.html HTTP/1.1" 302 0
+WARNING 2025-05-23 15:50:18,661 log 5728 9276 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 15:50:18,662 basehttp 5728 9276 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 16:01:22,895 basehttp 5728 118468 "GET /static/pages/dashboard_template.html HTTP/1.1" 304 0
+WARNING 2025-05-23 16:01:22,909 log 5728 118468 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 16:01:22,910 basehttp 5728 118468 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 16:01:25,180 basehttp 5728 118468 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-05-23 16:01:26,272 basehttp 5728 118468 "POST /api/devices/scan/ HTTP/1.1" 200 163
+INFO 2025-05-23 16:01:27,167 basehttp 5728 118468 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-23 16:01:27,169 basehttp 5728 118468 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-05-23 16:01:27,347 basehttp 5728 118468 "POST /api/scripts/ HTTP/1.1" 200 2935
+INFO 2025-05-23 16:01:28,147 basehttp 5728 118468 "GET /pages/tasks_template.html HTTP/1.1" 302 0
+INFO 2025-05-23 16:01:30,764 basehttp 5728 118468 "GET /pages/reports_template.html HTTP/1.1" 302 0
+INFO 2025-05-23 16:01:31,016 basehttp 5728 118468 "POST /api/reports/summary_list/ HTTP/1.1" 200 5881
+INFO 2025-05-23 16:01:32,234 basehttp 5728 118468 "GET /pages/tasks_template.html HTTP/1.1" 302 0
+INFO 2025-05-23 16:01:33,066 basehttp 5728 118468 "GET /pages/reports_template.html HTTP/1.1" 302 0
+INFO 2025-05-23 16:01:33,312 basehttp 5728 118468 "POST /api/reports/summary_list/ HTTP/1.1" 200 5881
+INFO 2025-05-23 16:01:36,663 basehttp 5728 87964 "GET /static/pages/reports_template.html HTTP/1.1" 304 0
+INFO 2025-05-23 16:07:35,005 basehttp 5728 33244 "GET /static/pages/reports_template.html HTTP/1.1" 304 0
+INFO 2025-05-23 16:07:35,974 basehttp 5728 78596 "POST /api/reports/summary_list/ HTTP/1.1" 200 5881
+INFO 2025-05-23 16:07:38,785 basehttp 5728 78596 "GET /pages/tasks_template.html HTTP/1.1" 302 0
+INFO 2025-05-23 16:07:41,039 basehttp 5728 61704 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-23 16:07:41,052 basehttp 5728 61704 "GET /static/pages/scripts.html HTTP/1.1" 200 63570
+WARNING 2025-05-23 16:07:41,088 basehttp 5728 61704 "GET /static/vendor/bootstrap/css/bootstrap.min.css HTTP/1.1" 404 1978
+WARNING 2025-05-23 16:07:41,089 basehttp 5728 13504 "GET /static/vendor/fontawesome/css/all.min.css HTTP/1.1" 404 1966
+WARNING 2025-05-23 16:07:41,091 basehttp 5728 31840 "GET /static/vendor/bootstrap/js/bootstrap.bundle.min.js HTTP/1.1" 404 1993
+INFO 2025-05-23 16:07:41,434 basehttp 5728 80620 "POST /api/scripts/ HTTP/1.1" 200 2935
+INFO 2025-05-23 16:07:45,799 basehttp 5728 83156 "GET /pages/scripts.html HTTP/1.1" 302 0
+WARNING 2025-05-23 16:07:45,847 basehttp 5728 83156 "GET /static/vendor/bootstrap/css/bootstrap.min.css HTTP/1.1" 404 1978
+WARNING 2025-05-23 16:07:45,847 basehttp 5728 76324 "GET /static/vendor/fontawesome/css/all.min.css HTTP/1.1" 404 1966
+WARNING 2025-05-23 16:07:45,850 basehttp 5728 94220 "GET /static/vendor/bootstrap/js/bootstrap.bundle.min.js HTTP/1.1" 404 1993
+INFO 2025-05-23 16:07:46,190 basehttp 5728 77528 "POST /api/scripts/ HTTP/1.1" 200 2935
+INFO 2025-05-23 16:07:47,102 basehttp 5728 77528 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-05-23 16:07:47,687 basehttp 5728 77528 "POST /api/devices/scan/ HTTP/1.1" 200 163
+INFO 2025-05-23 16:08:00,150 basehttp 5728 44452 "GET /static/pages/reports_template.html HTTP/1.1" 304 0
+INFO 2025-05-23 16:08:00,308 basehttp 5728 44452 "POST /api/reports/summary_list/ HTTP/1.1" 200 5881
+INFO 2025-05-23 16:08:01,192 basehttp 5728 44452 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-23 16:08:01,195 basehttp 5728 44452 "GET /static/pages/scripts.html HTTP/1.1" 200 63570
+WARNING 2025-05-23 16:08:01,213 basehttp 5728 108596 "GET /static/vendor/bootstrap/js/bootstrap.bundle.min.js HTTP/1.1" 404 1989
+WARNING 2025-05-23 16:08:01,215 basehttp 5728 44452 "GET /static/vendor/bootstrap/css/bootstrap.min.css HTTP/1.1" 404 1974
+WARNING 2025-05-23 16:08:01,215 basehttp 5728 88644 "GET /static/vendor/fontawesome/css/all.min.css HTTP/1.1" 404 1962
+INFO 2025-05-23 16:08:01,650 basehttp 5728 88224 "POST /api/scripts/ HTTP/1.1" 200 2935
+INFO 2025-05-23 16:08:03,355 basehttp 5728 88224 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-23 16:08:03,367 basehttp 5728 88224 "GET /static/vendor/bootstrap/css/bootstrap.min.css HTTP/1.1" 404 1974
+WARNING 2025-05-23 16:08:03,368 basehttp 5728 48952 "GET /static/vendor/fontawesome/css/all.min.css HTTP/1.1" 404 1962
+WARNING 2025-05-23 16:08:03,666 basehttp 5728 117664 "GET /static/vendor/bootstrap/js/bootstrap.bundle.min.js HTTP/1.1" 404 1989
+INFO 2025-05-23 16:08:03,978 basehttp 5728 71532 "POST /api/scripts/ HTTP/1.1" 200 2935
+INFO 2025-05-23 16:08:15,195 basehttp 5728 71532 "GET /static/pages/scripts.html HTTP/1.1" 200 65554
+INFO 2025-05-23 16:08:15,323 basehttp 5728 71532 "POST /api/scripts/ HTTP/1.1" 200 2935
+INFO 2025-05-23 16:08:18,053 basehttp 5728 103924 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-23 16:08:18,073 basehttp 5728 103924 "GET /static/pages/scripts.html HTTP/1.1" 200 65554
+INFO 2025-05-23 16:08:18,484 basehttp 5728 103924 "POST /api/scripts/ HTTP/1.1" 200 2935
+INFO 2025-05-23 16:08:21,616 basehttp 5728 107280 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-05-23 16:22:25,092 basehttp 5728 123544 "GET /pages/dashboard_template.html HTTP/1.1" 302 0
+INFO 2025-05-23 16:35:15,081 basehttp 5728 55512 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-23 16:35:15,083 basehttp 5728 55512 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-05-23 16:35:15,500 basehttp 5728 55512 "POST /api/scripts/ HTTP/1.1" 200 2935
+INFO 2025-05-23 16:39:58,562 basehttp 5728 55512 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-05-23 16:40:47,814 basehttp 5728 55512 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-05-23 16:42:48,703 basehttp 5728 55512 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-05-23 16:42:48,842 basehttp 5728 55512 "POST /api/scripts/ HTTP/1.1" 200 3122
+ERROR 2025-05-23 16:42:54,749 log 5728 55512 Internal Server Error: /api/scripts/edit/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\decorators\csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 517, in dispatch
+    self.response = self.finalize_response(request, response, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 429, in finalize_response
+    assert isinstance(response, HttpResponseBase), (
+AssertionError: Expected a `Response`, `HttpResponse` or `StreamingHttpResponse` to be returned from the view, but received a `<class 'NoneType'>`
+ERROR 2025-05-23 16:42:54,750 basehttp 5728 55512 "POST /api/scripts/edit/ HTTP/1.1" 500 96969
+INFO 2025-05-23 16:44:34,074 basehttp 5728 55512 "GET /pages/reports_template.html HTTP/1.1" 302 0
+INFO 2025-05-23 16:44:34,313 basehttp 5728 55512 "POST /api/reports/summary_list/ HTTP/1.1" 200 5881
+INFO 2025-05-23 16:44:35,714 basehttp 5728 55512 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/log.html HTTP/1.1" 304 0
+INFO 2025-05-23 16:44:36,078 basehttp 5728 33584 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/log/1747900914666_small.jpg HTTP/1.1" 304 0
+INFO 2025-05-23 16:44:36,078 basehttp 5728 55512 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/log/1747900910914_small.jpg HTTP/1.1" 304 0
+INFO 2025-05-23 16:44:36,079 basehttp 5728 33584 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/log/1747900917624_small.jpg HTTP/1.1" 304 0
+INFO 2025-05-23 16:44:54,762 basehttp 5728 33584 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-23 16:44:55,002 basehttp 5728 33584 "POST /api/scripts/ HTTP/1.1" 200 3122
+ERROR 2025-05-23 16:46:29,079 log 5728 33584 Internal Server Error: /api/scripts/edit/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\decorators\csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 517, in dispatch
+    self.response = self.finalize_response(request, response, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 429, in finalize_response
+    assert isinstance(response, HttpResponseBase), (
+AssertionError: Expected a `Response`, `HttpResponse` or `StreamingHttpResponse` to be returned from the view, but received a `<class 'NoneType'>`
+ERROR 2025-05-23 16:46:29,080 basehttp 5728 33584 "POST /api/scripts/edit/ HTTP/1.1" 500 96969
+ERROR 2025-05-23 16:46:42,367 log 5728 33584 Internal Server Error: /api/scripts/edit/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\decorators\csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 517, in dispatch
+    self.response = self.finalize_response(request, response, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 429, in finalize_response
+    assert isinstance(response, HttpResponseBase), (
+AssertionError: Expected a `Response`, `HttpResponse` or `StreamingHttpResponse` to be returned from the view, but received a `<class 'NoneType'>`
+ERROR 2025-05-23 16:46:42,368 basehttp 5728 33584 "POST /api/scripts/edit/ HTTP/1.1" 500 96969
+INFO 2025-05-23 16:49:41,162 basehttp 5728 111256 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-23 16:49:41,183 basehttp 5728 111256 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-05-23 16:49:41,547 basehttp 5728 111256 "POST /api/scripts/ HTTP/1.1" 200 3122
+INFO 2025-05-23 16:49:56,365 autoreload 5728 96368 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-23 16:49:56,890 autoreload 122524 33140 Watching for file changes with StatReloader
+INFO 2025-05-23 16:50:30,330 autoreload 122524 33140 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-23 16:50:30,819 autoreload 75100 56792 Watching for file changes with StatReloader
+INFO 2025-05-23 16:50:36,546 basehttp 75100 16188 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-05-23 16:50:36,812 basehttp 75100 16188 "POST /api/scripts/ HTTP/1.1" 200 3122
+ERROR 2025-05-23 16:50:38,244 log 75100 16188 Internal Server Error: /api/scripts/edit/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\decorators\csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 517, in dispatch
+    self.response = self.finalize_response(request, response, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 429, in finalize_response
+    assert isinstance(response, HttpResponseBase), (
+AssertionError: Expected a `Response`, `HttpResponse` or `StreamingHttpResponse` to be returned from the view, but received a `<class 'NoneType'>`
+ERROR 2025-05-23 16:50:38,245 basehttp 75100 16188 "POST /api/scripts/edit/ HTTP/1.1" 500 96969
+INFO 2025-05-23 16:51:51,522 basehttp 75100 16188 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-05-23 16:51:51,656 basehttp 75100 16188 "POST /api/scripts/ HTTP/1.1" 200 3122
+ERROR 2025-05-23 16:51:53,527 log 75100 16188 Internal Server Error: /api/scripts/edit/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\decorators\csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 517, in dispatch
+    self.response = self.finalize_response(request, response, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 429, in finalize_response
+    assert isinstance(response, HttpResponseBase), (
+AssertionError: Expected a `Response`, `HttpResponse` or `StreamingHttpResponse` to be returned from the view, but received a `<class 'NoneType'>`
+ERROR 2025-05-23 16:51:53,528 basehttp 75100 16188 "POST /api/scripts/edit/ HTTP/1.1" 500 96969
+WARNING 2025-05-23 16:52:01,327 log 75100 16188 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 16:52:01,327 basehttp 75100 16188 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+ERROR 2025-05-23 16:52:03,430 log 75100 16188 Internal Server Error: /api/scripts/edit/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\decorators\csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 517, in dispatch
+    self.response = self.finalize_response(request, response, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 429, in finalize_response
+    assert isinstance(response, HttpResponseBase), (
+AssertionError: Expected a `Response`, `HttpResponse` or `StreamingHttpResponse` to be returned from the view, but received a `<class 'NoneType'>`
+ERROR 2025-05-23 16:52:03,431 basehttp 75100 16188 "POST /api/scripts/edit/ HTTP/1.1" 500 96969
+INFO 2025-05-23 16:53:02,336 autoreload 70940 62440 Watching for file changes with StatReloader
+INFO 2025-05-23 16:53:05,861 basehttp 70940 14524 "GET / HTTP/1.1" 200 9797
+WARNING 2025-05-23 16:53:05,883 log 70940 14524 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 16:53:05,884 basehttp 70940 14524 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 16:53:07,355 basehttp 70940 14524 "GET /pages/scripts.html HTTP/1.1" 302 0
+WARNING 2025-05-23 16:53:07,379 log 70940 14524 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 16:53:07,379 basehttp 70940 14524 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 16:53:07,714 basehttp 70940 14524 "POST /api/scripts/ HTTP/1.1" 200 3122
+ERROR 2025-05-23 16:53:08,927 log 70940 14524 Internal Server Error: /api/scripts/edit/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\decorators\csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 517, in dispatch
+    self.response = self.finalize_response(request, response, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 429, in finalize_response
+    assert isinstance(response, HttpResponseBase), (
+AssertionError: Expected a `Response`, `HttpResponse` or `StreamingHttpResponse` to be returned from the view, but received a `<class 'NoneType'>`
+ERROR 2025-05-23 16:53:08,929 basehttp 70940 14524 "POST /api/scripts/edit/ HTTP/1.1" 500 96969
+INFO 2025-05-23 16:53:22,531 basehttp 70940 108292 "GET /api/docs/ HTTP/1.1" 200 788
+INFO 2025-05-23 16:53:23,387 basehttp 70940 108292 "GET /api/schema/ HTTP/1.1" 200 16516
+INFO 2025-05-23 16:56:34,251 autoreload 70940 62440 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\urls.py changed, reloading.
+INFO 2025-05-23 16:56:34,755 autoreload 111136 59140 Watching for file changes with StatReloader
+INFO 2025-05-23 17:06:32,255 autoreload 70672 16404 Watching for file changes with StatReloader
+INFO 2025-05-23 17:06:35,852 basehttp 70672 100524 "GET / HTTP/1.1" 200 9797
+WARNING 2025-05-23 17:06:35,875 log 70672 100524 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 17:06:35,875 basehttp 70672 100524 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 17:06:37,707 basehttp 70672 100524 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-23 17:06:37,711 basehttp 70672 100524 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-23 17:06:37,734 log 70672 100524 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 17:06:37,734 basehttp 70672 100524 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 17:06:38,069 basehttp 70672 100524 "POST /api/scripts/ HTTP/1.1" 200 3122
+ERROR 2025-05-23 17:06:39,887 log 70672 100524 Internal Server Error: /api/scripts/edit/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\decorators\csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 517, in dispatch
+    self.response = self.finalize_response(request, response, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 429, in finalize_response
+    assert isinstance(response, HttpResponseBase), (
+AssertionError: Expected a `Response`, `HttpResponse` or `StreamingHttpResponse` to be returned from the view, but received a `<class 'NoneType'>`
+ERROR 2025-05-23 17:06:39,888 basehttp 70672 100524 "POST /api/scripts/edit/ HTTP/1.1" 500 96969
+INFO 2025-05-23 17:06:52,119 basehttp 70672 100524 "GET /api/docs/ HTTP/1.1" 200 788
+INFO 2025-05-23 17:06:52,839 basehttp 70672 100524 "GET /api/schema/ HTTP/1.1" 200 16516
+ERROR 2025-05-23 17:08:03,917 log 70672 100524 Internal Server Error: /api/scripts/edit/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\decorators\csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 517, in dispatch
+    self.response = self.finalize_response(request, response, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 429, in finalize_response
+    assert isinstance(response, HttpResponseBase), (
+AssertionError: Expected a `Response`, `HttpResponse` or `StreamingHttpResponse` to be returned from the view, but received a `<class 'NoneType'>`
+ERROR 2025-05-23 17:08:03,917 basehttp 70672 100524 "POST /api/scripts/edit/ HTTP/1.1" 500 96969
+INFO 2025-05-23 17:14:26,241 autoreload 70672 16404 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-23 17:14:26,743 autoreload 53512 13616 Watching for file changes with StatReloader
+INFO 2025-05-23 17:14:36,840 autoreload 53512 13616 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\urls.py changed, reloading.
+INFO 2025-05-23 17:14:37,342 autoreload 37748 39348 Watching for file changes with StatReloader
+INFO 2025-05-23 17:14:47,416 autoreload 37748 39348 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\urls.py changed, reloading.
+INFO 2025-05-23 17:14:47,916 autoreload 34708 30716 Watching for file changes with StatReloader
+INFO 2025-05-23 17:16:42,732 autoreload 16152 81396 Watching for file changes with StatReloader
+INFO 2025-05-23 17:17:08,217 basehttp 16152 72124 "GET /static/pages/scripts.html HTTP/1.1" 200 68067
+WARNING 2025-05-23 17:17:08,233 log 16152 72124 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 17:17:08,233 basehttp 16152 72124 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 17:17:08,563 basehttp 16152 72124 "POST /api/scripts/ HTTP/1.1" 200 3122
+ERROR 2025-05-23 17:17:10,056 log 16152 72124 Internal Server Error: /api/scripts/edit/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\decorators\csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 517, in dispatch
+    self.response = self.finalize_response(request, response, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 429, in finalize_response
+    assert isinstance(response, HttpResponseBase), (
+AssertionError: Expected a `Response`, `HttpResponse` or `StreamingHttpResponse` to be returned from the view, but received a `<class 'NoneType'>`
+ERROR 2025-05-23 17:17:10,057 basehttp 16152 72124 "POST /api/scripts/edit/ HTTP/1.1" 500 97012
+INFO 2025-05-23 17:17:19,823 basehttp 16152 72124 "POST /api/scripts/copy/ HTTP/1.1" 200 280
+INFO 2025-05-23 17:17:22,511 basehttp 16152 72124 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-23 17:17:22,521 log 16152 72124 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 17:17:22,522 basehttp 16152 72124 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 17:17:22,848 basehttp 16152 72124 "POST /api/scripts/ HTTP/1.1" 200 3323
+INFO 2025-05-23 17:17:25,979 basehttp 16152 72124 "POST /api/scripts/delete/ HTTP/1.1" 200 118
+INFO 2025-05-23 17:17:28,703 basehttp 16152 72124 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-23 17:17:28,713 log 16152 72124 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 17:17:28,714 basehttp 16152 72124 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 17:17:29,036 basehttp 16152 72124 "POST /api/scripts/ HTTP/1.1" 200 3122
+ERROR 2025-05-23 17:17:31,909 log 16152 72124 Internal Server Error: /api/scripts/edit/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\decorators\csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 517, in dispatch
+    self.response = self.finalize_response(request, response, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 429, in finalize_response
+    assert isinstance(response, HttpResponseBase), (
+AssertionError: Expected a `Response`, `HttpResponse` or `StreamingHttpResponse` to be returned from the view, but received a `<class 'NoneType'>`
+ERROR 2025-05-23 17:17:31,910 basehttp 16152 72124 "POST /api/scripts/edit/ HTTP/1.1" 500 97012
+INFO 2025-05-23 17:17:43,024 autoreload 16152 81396 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\urls.py changed, reloading.
+INFO 2025-05-23 17:17:43,558 autoreload 106072 116240 Watching for file changes with StatReloader
+INFO 2025-05-23 17:17:43,778 autoreload 34708 30716 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-23 17:17:44,275 autoreload 37536 69280 Watching for file changes with StatReloader
+INFO 2025-05-23 17:18:06,418 basehttp 37536 60924 "GET /static/pages/scripts.html HTTP/1.1" 200 68015
+WARNING 2025-05-23 17:18:06,436 log 37536 60924 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 17:18:06,437 basehttp 37536 60924 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 17:18:06,775 basehttp 37536 60924 "POST /api/scripts/ HTTP/1.1" 200 3122
+ERROR 2025-05-23 17:18:13,131 log 37536 60924 Internal Server Error: /api/scripts/edit/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\decorators\csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 517, in dispatch
+    self.response = self.finalize_response(request, response, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 429, in finalize_response
+    assert isinstance(response, HttpResponseBase), (
+AssertionError: Expected a `Response`, `HttpResponse` or `StreamingHttpResponse` to be returned from the view, but received a `<class 'NoneType'>`
+ERROR 2025-05-23 17:18:13,132 basehttp 37536 60924 "POST /api/scripts/edit/ HTTP/1.1" 500 96969
+INFO 2025-05-23 17:24:39,674 autoreload 37536 69280 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-23 17:30:15,400 autoreload 1716 78748 Watching for file changes with StatReloader
+INFO 2025-05-23 17:30:29,703 autoreload 1716 78748 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\urls.py changed, reloading.
+INFO 2025-05-23 17:30:30,225 autoreload 47804 81404 Watching for file changes with StatReloader
+INFO 2025-05-23 17:30:39,359 basehttp 47804 80072 "GET / HTTP/1.1" 200 9797
+WARNING 2025-05-23 17:30:39,384 log 47804 80072 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 17:30:39,384 basehttp 47804 80072 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 17:30:41,081 basehttp 47804 80072 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-23 17:30:41,082 basehttp 47804 80072 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-23 17:30:41,105 log 47804 80072 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 17:30:41,105 basehttp 47804 80072 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 17:30:41,443 basehttp 47804 80072 "POST /api/scripts/ HTTP/1.1" 200 3122
+INFO 2025-05-23 17:30:43,056 basehttp 47804 80072 "POST /api/scripts/edit/ HTTP/1.1" 200 1334
+INFO 2025-05-23 17:31:03,700 basehttp 47804 80072 "POST /api/scripts/edit/ HTTP/1.1" 200 461
+INFO 2025-05-23 17:31:37,955 basehttp 47804 80072 "POST /api/scripts/copy/ HTTP/1.1" 200 280
+INFO 2025-05-23 17:31:40,683 basehttp 47804 80072 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-23 17:31:40,696 log 47804 80072 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 17:31:40,696 basehttp 47804 80072 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 17:31:41,039 basehttp 47804 80072 "POST /api/scripts/ HTTP/1.1" 200 3323
+INFO 2025-05-23 17:31:42,561 basehttp 47804 80072 "POST /api/scripts/edit/ HTTP/1.1" 200 1348
+INFO 2025-05-23 17:31:54,739 basehttp 47804 80072 "POST /api/scripts/edit/ HTTP/1.1" 200 83
+INFO 2025-05-23 17:46:52,006 autoreload 93496 31916 Watching for file changes with StatReloader
+INFO 2025-05-23 17:48:08,367 basehttp 47804 48272 "GET /static/pages/scripts.html HTTP/1.1" 200 70041
+WARNING 2025-05-23 17:48:08,381 log 47804 48272 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 17:48:08,382 basehttp 47804 48272 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 17:48:13,383 basehttp 47804 48272 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-23 17:48:13,393 log 47804 48272 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 17:48:13,393 basehttp 47804 48272 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 17:48:15,570 basehttp 47804 48272 "GET / HTTP/1.1" 200 9797
+WARNING 2025-05-23 17:48:15,592 log 47804 48272 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 17:48:15,592 basehttp 47804 48272 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 17:48:17,388 basehttp 47804 48272 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-23 17:48:17,390 basehttp 47804 48272 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-23 17:48:17,420 log 47804 48272 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 17:48:17,420 basehttp 47804 48272 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 17:55:12,682 autoreload 38196 9132 Watching for file changes with StatReloader
+INFO 2025-05-23 17:55:17,275 basehttp 38196 60472 "GET /static/pages/scripts.html HTTP/1.1" 200 70041
+WARNING 2025-05-23 17:55:17,297 log 38196 60472 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 17:55:17,297 basehttp 38196 60472 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 17:55:32,555 basehttp 38196 60472 "GET /api/docs/ HTTP/1.1" 200 788
+INFO 2025-05-23 17:55:33,292 basehttp 38196 60472 "GET /api/schema/ HTTP/1.1" 200 16730
+INFO 2025-05-23 17:57:20,483 basehttp 38196 60472 "GET /static/pages/scripts.html HTTP/1.1" 200 68015
+WARNING 2025-05-23 17:57:20,496 log 38196 60472 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 17:57:20,496 basehttp 38196 60472 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 17:57:20,859 basehttp 38196 60472 "POST /api/scripts/ HTTP/1.1" 200 3323
+INFO 2025-05-23 17:57:22,832 basehttp 38196 60472 "POST /api/scripts/edit/ HTTP/1.1" 200 1548
+INFO 2025-05-23 17:57:31,735 basehttp 38196 60472 "POST /api/scripts/copy/ HTTP/1.1" 200 306
+INFO 2025-05-23 17:57:35,057 basehttp 38196 60472 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-23 17:57:35,071 log 38196 60472 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 17:57:35,071 basehttp 38196 60472 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 17:57:35,402 basehttp 38196 60472 "POST /api/scripts/ HTTP/1.1" 200 3538
+WARNING 2025-05-23 18:54:40,650 log 38196 61712 Not Found: /staticfiles/pages/scripts.html
+WARNING 2025-05-23 18:54:40,651 basehttp 38196 61712 "GET /staticfiles/pages/scripts.html?id=425dae41-9d19-40fd-8e30-807eedc1e2ea&vscodeBrowserReqId=1747997680330 HTTP/1.1" 404 4855
+WARNING 2025-05-23 18:54:53,528 log 38196 61712 Not Found: /staticfiles/pages/scripts.html
+WARNING 2025-05-23 18:54:53,529 basehttp 38196 61712 "GET /staticfiles/pages/scripts.html?id=425dae41-9d19-40fd-8e30-807eedc1e2ea&vscodeBrowserReqId=1747997693519 HTTP/1.1" 404 4855
+INFO 2025-05-23 18:55:28,610 basehttp 38196 15024 "GET /static/pages/scripts.html HTTP/1.1" 200 70063
+WARNING 2025-05-23 18:55:28,626 log 38196 15024 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 18:55:28,626 basehttp 38196 15024 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 18:55:28,970 basehttp 38196 15024 "POST /api/scripts/ HTTP/1.1" 200 3538
+INFO 2025-05-23 18:55:30,149 basehttp 38196 15024 "GET / HTTP/1.1" 200 9797
+WARNING 2025-05-23 18:55:30,170 log 38196 15024 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 18:55:30,171 basehttp 38196 15024 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 18:55:31,823 basehttp 38196 15024 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-23 18:55:31,825 basehttp 38196 15024 "GET /static/pages/scripts.html HTTP/1.1" 200 70063
+WARNING 2025-05-23 18:55:31,853 log 38196 15024 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 18:55:31,853 basehttp 38196 15024 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 18:55:32,173 basehttp 38196 15024 "POST /api/scripts/ HTTP/1.1" 200 3538
+INFO 2025-05-23 18:55:33,736 basehttp 38196 15024 "POST /api/scripts/edit/ HTTP/1.1" 200 1562
+INFO 2025-05-23 18:55:41,359 basehttp 38196 15024 "POST /api/scripts/copy/ HTTP/1.1" 200 332
+INFO 2025-05-23 18:55:44,011 basehttp 38196 15024 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-23 18:55:44,022 log 38196 15024 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 18:55:44,022 basehttp 38196 15024 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 18:55:44,351 basehttp 38196 15024 "POST /api/scripts/ HTTP/1.1" 200 3767
+INFO 2025-05-23 18:55:46,759 basehttp 38196 15024 "POST /api/scripts/delete/ HTTP/1.1" 200 144
+INFO 2025-05-23 18:55:48,762 basehttp 38196 15024 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-23 18:55:48,771 log 38196 15024 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 18:55:48,772 basehttp 38196 15024 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 18:55:49,096 basehttp 38196 15024 "POST /api/scripts/ HTTP/1.1" 200 3538
+INFO 2025-05-23 19:04:21,241 basehttp 38196 16752 "POST /api/scripts/delete/ HTTP/1.1" 200 131
+INFO 2025-05-23 19:04:24,047 basehttp 38196 16752 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-23 19:04:24,060 log 38196 16752 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-23 19:04:24,060 basehttp 38196 16752 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-23 19:04:24,401 basehttp 38196 16752 "POST /api/scripts/ HTTP/1.1" 200 3323
+INFO 2025-05-26 10:24:52,968 basehttp 38196 68012 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-26 10:24:52,981 log 38196 68012 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-26 10:24:52,982 basehttp 38196 68012 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-26 10:24:53,318 basehttp 38196 68012 "POST /api/scripts/ HTTP/1.1" 200 3323
+INFO 2025-05-26 10:25:09,639 basehttp 38196 68012 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-05-26 10:25:09,643 basehttp 38196 68012 "GET /static/pages/devices.html HTTP/1.1" 304 0
+INFO 2025-05-26 10:25:09,654 basehttp 38196 68012 "GET /static/js/pages/devices_vue.js HTTP/1.1" 304 0
+INFO 2025-05-26 10:25:10,349 basehttp 38196 68012 "POST /api/devices/scan/ HTTP/1.1" 200 163
+INFO 2025-05-26 10:25:17,103 basehttp 38196 68012 "POST /api/devices/scan/ HTTP/1.1" 200 163
+WARNING 2025-05-26 10:25:19,889 log 38196 68012 Bad Request: /api/devices/2/connect/
+WARNING 2025-05-26 10:25:19,890 basehttp 38196 68012 "POST /api/devices/2/connect/ HTTP/1.1" 400 43
+INFO 2025-05-26 10:32:10,296 basehttp 38196 61020 "POST /api/devices/scan/ HTTP/1.1" 200 261
+INFO 2025-05-26 10:37:12,461 basehttp 38196 63664 "GET / HTTP/1.1" 200 9797
+INFO 2025-05-26 10:37:16,488 basehttp 38196 63664 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-05-26 10:37:17,219 basehttp 38196 63664 "POST /api/devices/scan/ HTTP/1.1" 200 261
+INFO 2025-05-26 10:37:20,488 basehttp 38196 63664 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-26 10:37:20,713 basehttp 38196 63664 "POST /api/scripts/ HTTP/1.1" 200 3323
+INFO 2025-05-26 10:37:21,317 basehttp 38196 63664 "GET /pages/reports_template.html HTTP/1.1" 302 0
+INFO 2025-05-26 10:37:21,318 basehttp 38196 63664 "GET /static/pages/reports_template.html HTTP/1.1" 304 0
+INFO 2025-05-26 10:37:21,483 basehttp 38196 63664 "POST /api/reports/summary_list/ HTTP/1.1" 200 5881
+INFO 2025-05-26 10:37:22,994 basehttp 38196 63664 "GET /pages/settings_template.html HTTP/1.1" 302 0
+INFO 2025-05-26 10:37:22,996 basehttp 38196 63664 "GET /static/pages/settings_template.html HTTP/1.1" 304 0
+INFO 2025-05-26 10:37:26,572 basehttp 38196 63664 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-05-26 10:37:26,863 basehttp 38196 63664 "POST /api/devices/scan/ HTTP/1.1" 200 261
+INFO 2025-05-26 10:38:42,335 basehttp 38196 63664 "GET /pages/reports_template.html HTTP/1.1" 302 0
+INFO 2025-05-26 10:38:42,592 basehttp 38196 63664 "POST /api/reports/summary_list/ HTTP/1.1" 200 5881
+INFO 2025-05-26 10:38:43,938 basehttp 38196 63664 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/log.html HTTP/1.1" 304 0
+INFO 2025-05-26 10:38:43,949 basehttp 38196 63664 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//css/report.css HTTP/1.1" 304 0
+INFO 2025-05-26 10:38:43,949 basehttp 38196 110648 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//js/jquery-1.10.2.min.js HTTP/1.1" 304 0
+INFO 2025-05-26 10:38:43,950 basehttp 38196 63664 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//js/jquery-lang.js HTTP/1.1" 304 0
+INFO 2025-05-26 10:38:43,951 basehttp 38196 110648 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//js/langpack/zh_CN.js HTTP/1.1" 304 0
+INFO 2025-05-26 10:38:43,952 basehttp 38196 63664 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//js/lazyload.js HTTP/1.1" 304 0
+INFO 2025-05-26 10:38:43,952 basehttp 38196 110648 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//image/download_log.svg HTTP/1.1" 304 0
+INFO 2025-05-26 10:38:43,952 basehttp 38196 63664 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//image/copy.svg HTTP/1.1" 304 0
+INFO 2025-05-26 10:38:44,238 basehttp 38196 63664 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//image/Airtest.png HTTP/1.1" 304 0
+INFO 2025-05-26 10:38:44,239 basehttp 38196 63664 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//image/poco.png HTTP/1.1" 304 0
+INFO 2025-05-26 10:38:44,243 basehttp 38196 63664 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//image/AirtestIDE.png HTTP/1.1" 304 0
+INFO 2025-05-26 10:38:44,247 basehttp 38196 63664 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//css/monokai_sublime.min.css HTTP/1.1" 304 0
+INFO 2025-05-26 10:38:44,247 basehttp 38196 110648 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//js/highlight.min.js HTTP/1.1" 304 0
+INFO 2025-05-26 10:38:44,249 basehttp 38196 63664 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//js/paging.js HTTP/1.1" 304 0
+INFO 2025-05-26 10:38:44,249 basehttp 38196 110648 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//js/report.js HTTP/1.1" 304 0
+INFO 2025-05-26 10:38:44,252 basehttp 38196 84760 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//image/AirLab.png HTTP/1.1" 304 0
+INFO 2025-05-26 10:38:44,252 basehttp 38196 84788 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//image/netease.png HTTP/1.1" 304 0
+INFO 2025-05-26 10:38:44,252 basehttp 38196 5240 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//image/minimize.svg HTTP/1.1" 304 0
+INFO 2025-05-26 10:38:44,253 basehttp 38196 63664 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//image/maximize.svg HTTP/1.1" 304 0
+INFO 2025-05-26 10:38:44,253 basehttp 38196 110648 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//image/close.svg HTTP/1.1" 304 0
+INFO 2025-05-26 10:38:44,310 basehttp 38196 122384 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//image/time.svg HTTP/1.1" 304 0
+INFO 2025-05-26 10:38:44,311 basehttp 38196 5240 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/log/1747900917624_small.jpg HTTP/1.1" 304 0
+INFO 2025-05-26 10:38:44,311 basehttp 38196 84788 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//image/step_fail.svg HTTP/1.1" 304 0
+INFO 2025-05-26 10:38:44,312 basehttp 38196 63664 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/log/1747900914666_small.jpg HTTP/1.1" 304 0
+INFO 2025-05-26 10:38:44,312 basehttp 38196 84760 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//image/eye.svg HTTP/1.1" 304 0
+INFO 2025-05-26 10:38:44,312 basehttp 38196 110648 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/log/1747900910914_small.jpg HTTP/1.1" 304 0
+INFO 2025-05-26 10:38:44,313 basehttp 38196 122384 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//image/success.svg HTTP/1.1" 304 0
+INFO 2025-05-26 10:38:45,625 basehttp 38196 122384 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//image/step_success.svg HTTP/1.1" 304 0
+INFO 2025-05-26 10:38:45,625 basehttp 38196 110648 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/log/1747900910914.jpg HTTP/1.1" 304 0
+INFO 2025-05-26 10:38:47,118 basehttp 38196 122384 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//image/order.svg HTTP/1.1" 200 499
+INFO 2025-05-26 10:38:52,494 basehttp 38196 122384 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/log/1747900914666.jpg HTTP/1.1" 304 0
+INFO 2025-05-26 10:38:52,494 basehttp 38196 110648 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/static//image/target.png HTTP/1.1" 304 0
+INFO 2025-05-26 10:38:59,325 basehttp 38196 110648 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-22-16-01-48/log/1747900917624.jpg HTTP/1.1" 304 0
+INFO 2025-05-26 10:39:17,037 basehttp 38196 110648 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/log.html HTTP/1.1" 304 0
+INFO 2025-05-26 10:39:17,049 basehttp 38196 110648 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//css/report.css HTTP/1.1" 304 0
+INFO 2025-05-26 10:39:17,049 basehttp 38196 63664 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//js/langpack/zh_CN.js HTTP/1.1" 304 0
+INFO 2025-05-26 10:39:17,050 basehttp 38196 5240 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//image/download_log.svg HTTP/1.1" 304 0
+INFO 2025-05-26 10:39:17,050 basehttp 38196 122384 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//js/jquery-1.10.2.min.js HTTP/1.1" 304 0
+INFO 2025-05-26 10:39:17,050 basehttp 38196 84760 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//js/jquery-lang.js HTTP/1.1" 304 0
+INFO 2025-05-26 10:39:17,050 basehttp 38196 84788 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//js/lazyload.js HTTP/1.1" 304 0
+INFO 2025-05-26 10:39:17,052 basehttp 38196 84788 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//image/copy.svg HTTP/1.1" 304 0
+INFO 2025-05-26 10:39:17,340 basehttp 38196 84788 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//image/Airtest.png HTTP/1.1" 304 0
+INFO 2025-05-26 10:39:17,340 basehttp 38196 84760 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//image/poco.png HTTP/1.1" 304 0
+INFO 2025-05-26 10:39:17,347 basehttp 38196 84788 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//css/monokai_sublime.min.css HTTP/1.1" 304 0
+INFO 2025-05-26 10:39:17,347 basehttp 38196 84760 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//image/AirtestIDE.png HTTP/1.1" 304 0
+INFO 2025-05-26 10:39:17,348 basehttp 38196 110648 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//js/report.js HTTP/1.1" 304 0
+INFO 2025-05-26 10:39:17,348 basehttp 38196 63664 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//image/AirLab.png HTTP/1.1" 304 0
+INFO 2025-05-26 10:39:17,348 basehttp 38196 122384 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//js/highlight.min.js HTTP/1.1" 304 0
+INFO 2025-05-26 10:39:17,348 basehttp 38196 5240 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//js/paging.js HTTP/1.1" 304 0
+INFO 2025-05-26 10:39:17,349 basehttp 38196 84788 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//image/netease.png HTTP/1.1" 304 0
+INFO 2025-05-26 10:39:17,349 basehttp 38196 84760 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//image/minimize.svg HTTP/1.1" 304 0
+INFO 2025-05-26 10:39:17,351 basehttp 38196 122384 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//image/close.svg HTTP/1.1" 304 0
+INFO 2025-05-26 10:39:17,351 basehttp 38196 84760 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//image/maximize.svg HTTP/1.1" 304 0
+INFO 2025-05-26 10:39:17,377 basehttp 38196 84760 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/log/1747728780291_small.jpg HTTP/1.1" 304 0
+INFO 2025-05-26 10:39:17,378 basehttp 38196 63664 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//image/eye.svg HTTP/1.1" 304 0
+INFO 2025-05-26 10:39:17,378 basehttp 38196 122384 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/log/1747728783915_small.jpg HTTP/1.1" 304 0
+INFO 2025-05-26 10:39:17,378 basehttp 38196 110648 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//image/time.svg HTTP/1.1" 304 0
+INFO 2025-05-26 10:39:17,378 basehttp 38196 84788 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/log/1747728786415_small.jpg HTTP/1.1" 304 0
+INFO 2025-05-26 10:39:17,378 basehttp 38196 5240 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//image/step_success.svg HTTP/1.1" 304 0
+INFO 2025-05-26 10:39:17,380 basehttp 38196 84788 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-20-16-12-59/static//image/success.svg HTTP/1.1" 304 0
+INFO 2025-05-26 10:39:31,263 basehttp 38196 84788 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-26 10:39:31,500 basehttp 38196 84788 "POST /api/scripts/ HTTP/1.1" 200 3323
+INFO 2025-05-26 10:39:36,763 basehttp 38196 84788 "POST /api/scripts/edit/ HTTP/1.1" 200 1548
+INFO 2025-05-26 10:40:05,036 basehttp 38196 84788 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-05-26 10:40:06,346 basehttp 38196 84788 "POST /api/devices/scan/ HTTP/1.1" 200 261
+INFO 2025-05-26 10:40:13,800 basehttp 38196 84788 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-26 10:40:14,044 basehttp 38196 84788 "POST /api/scripts/ HTTP/1.1" 200 3323
+INFO 2025-05-26 10:40:20,804 basehttp 38196 84788 "POST /api/scripts/debug/ HTTP/1.1" 200 90
+INFO 2025-05-26 10:42:30,976 basehttp 38196 84788 "POST /api/scripts/edit/ HTTP/1.1" 200 1334
+INFO 2025-05-26 10:43:09,009 basehttp 38196 84788 "POST /api/scripts/edit/ HTTP/1.1" 200 1479
+INFO 2025-05-26 10:43:56,231 basehttp 38196 84788 "POST /api/scripts/edit/ HTTP/1.1" 200 1016
+INFO 2025-05-26 10:44:31,478 basehttp 38196 84788 "POST /api/scripts/edit/ HTTP/1.1" 200 1479
+INFO 2025-05-26 10:45:33,812 basehttp 38196 84788 "GET /pages/reports_template.html HTTP/1.1" 302 0
+INFO 2025-05-26 10:45:34,075 basehttp 38196 84788 "POST /api/reports/summary_list/ HTTP/1.1" 200 5881
+INFO 2025-05-26 10:45:35,395 basehttp 38196 84788 "GET /pages/data_template.html HTTP/1.1" 302 0
+INFO 2025-05-26 10:45:35,398 basehttp 38196 84788 "GET /static/pages/data_template.html HTTP/1.1" 304 0
+INFO 2025-05-26 10:45:38,883 basehttp 38196 84788 "GET /pages/settings_template.html HTTP/1.1" 302 0
+INFO 2025-05-26 10:46:04,143 basehttp 38196 84788 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-05-26 10:46:04,464 basehttp 38196 84788 "POST /api/devices/scan/ HTTP/1.1" 200 261
+INFO 2025-05-26 10:46:07,213 basehttp 38196 84788 "POST /api/devices/scan/ HTTP/1.1" 200 261
+INFO 2025-05-26 10:46:08,875 basehttp 38196 84788 "GET /pages/dashboard_template.html HTTP/1.1" 302 0
+INFO 2025-05-26 10:46:08,879 basehttp 38196 84788 "GET /static/pages/dashboard_template.html HTTP/1.1" 304 0
+INFO 2025-05-26 10:46:12,778 basehttp 38196 84788 "GET /pages/data_template.html HTTP/1.1" 302 0
+INFO 2025-05-26 10:46:16,214 basehttp 38196 84788 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-05-26 10:46:16,472 basehttp 38196 84788 "POST /api/devices/scan/ HTTP/1.1" 200 261
+INFO 2025-05-26 10:46:49,546 basehttp 38196 84788 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-26 10:46:49,846 basehttp 38196 84788 "POST /api/scripts/ HTTP/1.1" 200 3323
+INFO 2025-05-26 10:53:24,531 basehttp 38196 87676 "POST /api/scripts/debug/ HTTP/1.1" 200 89

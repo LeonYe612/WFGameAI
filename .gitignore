@@ -6,3 +6,4 @@ train_results/
 # *.png # git lfs track "*.png"
 # *.jpg # git lfs track "*.jpg"
 # git config --global http.postBuffer 524288000 # 500M
+wfgame-ai-server/logs/django.log

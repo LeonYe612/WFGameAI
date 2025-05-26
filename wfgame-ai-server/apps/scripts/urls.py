@@ -26,9 +26,11 @@ from .views import (
     debug_script,
     start_record,
     import_script,
-    edit_script,
     get_python_envs,
-    switch_python_env
+    switch_python_env,
+    edit_script_view,
+    copy_script,
+    delete_script
 )
 
 # 创建路由器并注册视图集
@@ -44,7 +46,7 @@ urlpatterns = [
     path('', ScriptViewSet.as_view({'post': 'create'})),
     # 包含路由器生成的其他URL
     path('', include(router.urls)),
-    
+
     # 自定义API端点
     path('devices/', get_devices, name='get-devices'),
     path('list/', get_scripts, name='get-scripts'),
@@ -52,15 +54,16 @@ urlpatterns = [
     path('latest-report/', get_latest_report, name='get-latest-report'),
     path('record/', record_script, name='record-script'),
     path('replay/', replay_script, name='replay-script'),
-    
+
     # 新增API端点
     path('debug/', debug_script, name='debug-script'),
     path('start-record/', start_record, name='start-record'),
-    path('import/', import_script, name='import-script'),
-    path('edit/', edit_script, name='edit-script'),
-    path('edit/<path:script_path>/', edit_script, name='edit-script-with-path'),
-    
+    path('import/', import_script, name='import-script'),    path('edit/', edit_script_view, name='edit-script'),
+    path('edit/<path:script_path>/', edit_script_view, name='edit-script-with-path'),
+    path('copy/', copy_script, name='copy-script'),
+    path('delete/', delete_script, name='delete-script'),
+
     # Python环境管理
     path('python-envs/', get_python_envs, name='get-python-envs'),
     path('switch-python-env/', switch_python_env, name='switch-python-env'),
-] 
+]

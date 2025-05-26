@@ -1752,55 +1752,60 @@ def edit_script(request, script_path=None):
                             content = content_bytes.decode('latin1')
                             logger.warning(f"使用latin1作为回退编码")
 
-                    script_json_data = {}
-                    try:
-                        script_json_data = json.loads(content)
-                        formatted_content = json.dumps(script_json_data, indent=2, ensure_ascii=False)
-                    except json.JSONDecodeError:
-                        formatted_content = content
-                        logger.warning(f"Content of '{final_absolute_path}' is not valid JSON. Serving raw.")
+                script_json_data = {}
+                try:
+                    script_json_data = json.loads(content)
+                    formatted_content = json.dumps(script_json_data, indent=2, ensure_ascii=False)
+                except json.JSONDecodeError:
+                    formatted_content = content
+                    logger.warning(f"Content of '{final_absolute_path}' is not valid JSON. Serving raw.")
 
-                    created_time = datetime.fromtimestamp(os.path.getctime(final_absolute_path))
-                    modified_time = datetime.fromtimestamp(os.path.getmtime(final_absolute_path))
-                    step_count = len(script_json_data.get('steps', [])) if isinstance(script_json_data, dict) else 0
+                created_time = datetime.fromtimestamp(os.path.getctime(final_absolute_path))
+                modified_time = datetime.fromtimestamp(os.path.getmtime(final_absolute_path))
+                step_count = len(script_json_data.get('steps', [])) if isinstance(script_json_data, dict) else 0
 
-                    return JsonResponse({
-                        'success': True, 'filename': safe_filename, 'path': final_absolute_path,
-                        'content': formatted_content, 'created': created_time.strftime('%Y-%m-%d %H:%M:%S'),
-                        'modified': modified_time.strftime('%Y-%m-%d %H:%M:%S'), 'step_count': step_count
-                    })
-                except FileNotFoundError:
-                    logger.error(f"File not found: {final_absolute_path}")
-                    return JsonResponse({'success': False, 'message': f'脚本文件不存在: {safe_filename}'}, status=404)
+                return JsonResponse({
+                    'success': True,
+                    'filename': safe_filename,
+                    'path': final_absolute_path,
+                    'content': formatted_content,
+                    'created': created_time.strftime('%Y-%m-%d %H:%M:%S'),
+                    'modified': modified_time.strftime('%Y-%m-%d %H:%M:%S'),
+                    'step_count': step_count
+                })
+            except FileNotFoundError:
+                logger.error(f"File not found: {final_absolute_path}")
+                return JsonResponse({'success': False, 'message': f'脚本文件不存在: {safe_filename}'}, status=404)
             except Exception as e_read:
                 logger.error(f"Error reading script file '{final_absolute_path}': {str(e_read)}")
                 return JsonResponse({'success': False, 'message': f'读取脚本文件失败: {str(e_read)}'}, status=500)
 
         elif operation == 'write':
             # 更新文件内容
-                new_content_str = data.get('content')
-                if new_content_str is None:
-                    return JsonResponse({'success': False, 'message': '未提供新的脚本内容'}, status=400)
+            new_content_str = data.get('content')
+            if new_content_str is None:
+                return JsonResponse({'success': False, 'message': '未提供新的脚本内容'}, status=400)
 
             # 验证JSON格式
-                try:
-                    json.loads(new_content_str)
-                except json.JSONDecodeError as e_json:
-                    logger.error(f"Invalid JSON content: {str(e_json)}")
-                    return JsonResponse({'success': False, 'message': f'无效的JSON格式: {str(e_json)}'}, status=400)
+            try:
+                json.loads(new_content_str)
+            except json.JSONDecodeError as e_json:
+                logger.error(f"Invalid JSON content: {str(e_json)}")
+                return JsonResponse({'success': False, 'message': f'无效的JSON格式: {str(e_json)}'}, status=400)
 
             # 确保目录存在
-                os.makedirs(os.path.dirname(final_absolute_path), exist_ok=True)
+            os.makedirs(os.path.dirname(final_absolute_path), exist_ok=True)
 
-                # 写入文件
-                with open(final_absolute_path, 'w', encoding='utf-8') as file:
-                        file.write(new_content_str)
-                logger.info(f"Script updated successfully: {final_absolute_path}")
+            # 写入文件
+            with open(final_absolute_path, 'w', encoding='utf-8') as file:
+                file.write(new_content_str)
+            logger.info(f"Script updated successfully: {final_absolute_path}")
 
-                return JsonResponse({
-                        'success': True, 'message': '脚本已成功更新',
-                        'modified': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                    })
+            return JsonResponse({
+                'success': True,
+                'message': '脚本已成功更新',
+                'modified': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            })
         else:
             # 不支持的操作类型
             return JsonResponse({'success': False, 'message': f'不支持的操作类型: {operation}'}, status=400)
@@ -1808,6 +1813,156 @@ def edit_script(request, script_path=None):
     except Exception as e:
         logger.error(f"Error processing script edit request: {str(e)}")
         return JsonResponse({'success': False, 'message': f'处理脚本编辑请求失败: {str(e)}'}, status=500)
+
+@api_view(['POST'])
+@csrf_exempt
+@permission_classes([permissions.AllowAny])
+def edit_script_view(request, script_path=None):
+    """
+    获取和更新脚本内容 - 统一使用POST请求
+    操作类型由请求体中的operation字段决定：
+    - 'read': 读取脚本内容
+    - 'write': 更新脚本内容
+
+    采用了兼容Django Rest Framework的装饰器，并确保返回正确的Response对象。
+    """
+    try:
+        # 记录请求信息，帮助诊断
+        logger.info(f"Edit script request received - method: {request.method}, path: {script_path}")
+        logger.info(f"Request body: {request.body}")
+
+        # 从POST请求体中获取参数
+        data = json.loads(request.body)
+        logger.info(f"Edit script request - parsed data: {data}")
+        operation = data.get('operation', 'read')  # 默认为读取操作
+        filename = data.get('filename')  # 从请求体中获取文件名
+
+        if not filename:
+            logger.error("Filename not provided")
+            return Response({'success': False, 'message': '未提供文件名'}, status=400)
+
+        logger.info(f"Edit script request - operation: {operation}, filename: {filename}")
+
+        # 构建完整路径 - 确保路径安全
+        # 只使用文件名，忽略任何路径信息，并限制在测试用例目录内
+        safe_filename = os.path.basename(filename)  # 提取文件名，移除任何路径
+        final_absolute_path = os.path.join(TESTCASE_DIR, safe_filename)
+
+        logger.info(f"Final absolute path: {final_absolute_path}")
+
+        # 根据操作类型处理请求
+        if operation == 'read':
+            # 读取文件
+            try:
+                # 尝试以UTF-8读取
+                try:
+                    with open(final_absolute_path, 'r', encoding='utf-8') as file:
+                        content = file.read()
+                except UnicodeDecodeError:
+                    # 如果UTF-8解码失败，尝试以二进制方式读取
+                    with open(final_absolute_path, 'rb') as file:
+                        content_bytes = file.read()
+                        # 尝试检测编码
+                        encodings = ['utf-8', 'latin1', 'gbk', 'gb2312', 'big5']
+                        content = None
+                        for encoding in encodings:
+                            try:
+                                content = content_bytes.decode(encoding)
+                                logger.info(f"成功使用{encoding}解码")
+                                break
+                            except UnicodeDecodeError:
+                                continue
+
+                        # 如果所有编码都失败，将其作为latin1（能处理任何字节）
+                        if content is None:
+                            content = content_bytes.decode('latin1')
+                            logger.warning(f"使用latin1作为回退编码")
+
+                script_json_data = {}
+                try:
+                    script_json_data = json.loads(content)
+                    formatted_content = json.dumps(script_json_data, indent=2, ensure_ascii=False)
+                except json.JSONDecodeError:
+                    formatted_content = content
+                    logger.warning(f"Content of '{final_absolute_path}' is not valid JSON. Serving raw.")
+
+                created_time = datetime.fromtimestamp(os.path.getctime(final_absolute_path))
+                modified_time = datetime.fromtimestamp(os.path.getmtime(final_absolute_path))
+                step_count = len(script_json_data.get('steps', [])) if isinstance(script_json_data, dict) else 0
+
+                response_data = {
+                    'success': True,
+                    'filename': safe_filename,
+                    'path': final_absolute_path,
+                    'content': formatted_content,
+                    'created': created_time.strftime('%Y-%m-%d %H:%M:%S'),
+                    'modified': modified_time.strftime('%Y-%m-%d %H:%M:%S'),
+                    'step_count': step_count
+                }
+
+                logger.info("Script read operation successful")
+                return Response(response_data)
+
+            except FileNotFoundError:
+                logger.error(f"File not found: {final_absolute_path}")
+                return Response(
+                    {'success': False, 'message': f'脚本文件不存在: {safe_filename}'},
+                    status=404
+                )
+            except Exception as e_read:
+                logger.error(f"Error reading script file '{final_absolute_path}': {str(e_read)}")
+                return Response(
+                    {'success': False, 'message': f'读取脚本文件失败: {str(e_read)}'},
+                    status=500
+                )
+
+        elif operation == 'write':
+            # 更新文件内容
+            new_content_str = data.get('content')
+            if new_content_str is None:
+                logger.error("No content provided for write operation")
+                return Response(
+                    {'success': False, 'message': '未提供新的脚本内容'},
+                    status=400
+                )
+
+            # 验证JSON格式
+            try:
+                json.loads(new_content_str)
+            except json.JSONDecodeError as e_json:
+                logger.error(f"Invalid JSON content: {str(e_json)}")
+                return Response(
+                    {'success': False, 'message': f'无效的JSON格式: {str(e_json)}'},
+                    status=400
+                )
+
+            # 确保目录存在
+            os.makedirs(os.path.dirname(final_absolute_path), exist_ok=True)
+
+            # 写入文件
+            with open(final_absolute_path, 'w', encoding='utf-8') as file:
+                file.write(new_content_str)
+            logger.info(f"Script updated successfully: {final_absolute_path}")
+
+            return Response({
+                'success': True,
+                'message': '脚本已成功更新',
+                'modified': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            })
+        else:
+            # 不支持的操作类型
+            logger.error(f"Unsupported operation: {operation}")
+            return Response(
+                {'success': False, 'message': f'不支持的操作类型: {operation}'},
+                status=400
+            )
+
+    except Exception as e:
+        logger.error(f"Error processing script edit request: {str(e)}, traceback: {traceback.format_exc()}")
+        return Response(
+            {'success': False, 'message': f'处理脚本编辑请求失败: {str(e)}'},
+            status=500
+        )
 
 def find_script_path(script_name):
     """
@@ -1842,3 +1997,107 @@ def find_script_path(script_name):
     default_path = os.path.join(os.path.dirname(__file__), base_name)
     logger.warning(f"找不到脚本 {base_name}，使用默认路径: {default_path}")
     return default_path
+
+def copy_script(request):
+    """
+    复制脚本文件
+    """
+    try:
+        # 从POST请求体中获取参数
+        data = json.loads(request.body)
+        source_path = data.get('source_path')
+        new_name = data.get('new_name')
+
+        if not source_path or not new_name:
+            return JsonResponse({'success': False, 'message': '未提供源文件路径或新文件名'}, status=400)
+
+        # 确保新文件名只包含文件名，不包含路径
+        new_name = os.path.basename(new_name)
+
+        # 如果新文件名没有.json扩展名，添加该扩展名
+        if not new_name.endswith('.json'):
+            new_name += '.json'
+
+        # 获取源文件的完整路径
+        source_file = os.path.join(TESTCASE_DIR, os.path.basename(source_path))
+
+        # 创建目标文件的完整路径
+        target_file = os.path.join(TESTCASE_DIR, new_name)
+
+        # 检查源文件是否存在
+        if not os.path.exists(source_file):
+            return JsonResponse({'success': False, 'message': f'源文件不存在: {os.path.basename(source_path)}'}, status=404)
+
+        # 检查目标文件是否已存在
+        if os.path.exists(target_file):
+            return JsonResponse({'success': False, 'message': f'目标文件已存在: {new_name}'}, status=400)
+
+        # 复制文件
+        shutil.copy2(source_file, target_file)
+
+        # 修改文件内容中的名称（如果需要）
+        try:
+            with open(target_file, 'r', encoding='utf-8') as file:
+                content = file.read()
+
+            try:
+                script_data = json.loads(content)
+                # 如果脚本数据中有name字段，更新它
+                if isinstance(script_data, dict) and 'name' in script_data:
+                    original_name = script_data['name']
+                    script_data['name'] = f"复制 - {original_name}"
+
+                    # 写入更新后的内容
+                    with open(target_file, 'w', encoding='utf-8') as file:
+                        json.dump(script_data, file, indent=2, ensure_ascii=False)
+            except json.JSONDecodeError:
+                # 如果不是有效的JSON，跳过内容修改
+                logger.warning(f"无法解析复制后的脚本内容为JSON: {target_file}")
+        except Exception as e:
+            logger.warning(f"修改复制脚本内容时出错: {str(e)}")
+
+        logger.info(f"脚本复制成功: {source_file} -> {target_file}")
+
+        return JsonResponse({
+            'success': True,
+            'message': '脚本复制成功',
+            'new_path': target_file,
+            'new_name': new_name
+        })
+
+    except Exception as e:
+        logger.error(f"复制脚本时出错: {str(e)}")
+        return JsonResponse({'success': False, 'message': f'复制脚本失败: {str(e)}'}, status=500)
+
+def delete_script(request):
+    """
+    删除脚本文件
+    """
+    try:
+        # 从POST请求体中获取参数
+        data = json.loads(request.body)
+        file_path = data.get('path')
+
+        if not file_path:
+            return JsonResponse({'success': False, 'message': '未提供文件路径'}, status=400)
+
+        # 确保只使用文件名，不使用完整路径，限制在指定目录内操作
+        safe_filename = os.path.basename(file_path)
+        full_path = os.path.join(TESTCASE_DIR, safe_filename)
+
+        # 检查文件是否存在
+        if not os.path.exists(full_path):
+            return JsonResponse({'success': False, 'message': f'文件不存在: {safe_filename}'}, status=404)
+
+        # 删除文件
+        os.remove(full_path)
+        logger.info(f"脚本删除成功: {full_path}")
+
+        return JsonResponse({
+            'success': True,
+            'message': f'脚本已成功删除: {safe_filename}'
+        })
+
+    except Exception as e:
+        logger.error(f"删除脚本时出错: {str(e)}")
+        return JsonResponse({'success': False, 'message': f'删除脚本失败: {str(e)}'}, status=500)

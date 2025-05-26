@@ -402,7 +402,19 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>        document.addEventListener('DOMContentLoaded', function() {            // 定义全局变量
+    <script>        document.addEventListener('DOMContentLoaded', function() {
+            // 添加模态框显示事件
+            const replayModalEl = document.getElementById('replayModal');
+            if (replayModalEl) {
+                replayModalEl.addEventListener('shown.bs.modal', function() {
+                    // 延迟执行以确保模态框中的元素已完全加载
+                    setTimeout(() => {
+                        updateCommandPreview();
+                    }, 100);
+                });
+            }
+
+            // 定义全局变量
             let scripts = [];
             // 定义全局设置变量
             let globalSettings = {
@@ -995,20 +1007,24 @@
                         updateCommandPreview();
                     });
                 });
-            }
-
-            // 更新命令预览
+            }            // 更新命令预览
             function updateCommandPreview() {
-                const settings = getSettings();
+                const pythonPath = document.getElementById('pythonPath').value.trim();
+                const replayCmd = document.getElementById('replayCmd').value.trim() || 'apps/scripts/replay_script.py';
                 const showScreens = document.getElementById('showScreens').checked;
+                const commandPreview = document.getElementById('commandPreview');
 
-                let command = settings.pythonPath + ' ' + settings.replayCmd.split(' ')[0];
+                // 基本命令
+                let command = `${pythonPath} ${replayCmd.split(' ')[0]}`;
 
+                // 添加显示屏幕选项
                 if (showScreens) {
                     command += ' --show-screens';
                 }
 
+                // 获取脚本配置
                 const scriptConfigs = document.querySelectorAll('.script-config');
+                let hasValidScripts = false;
 
                 scriptConfigs.forEach(configElement => {
                     const scriptSelect = configElement.querySelector('.script-select');
@@ -1016,9 +1032,10 @@
                     const maxDuration = configElement.querySelector('.max-duration');
 
                     if (scriptSelect.value) {
-                        command += ` --script ${scriptSelect.value}`;
+                        hasValidScripts = true;
+                        command += `\n  --script "${scriptSelect.value}"`;
 
-                        if (loopCount.value && parseInt(loopCount.value) > 0) {
+                        if (loopCount.value && parseInt(loopCount.value) > 1) {
                             command += ` --loop-count ${loopCount.value}`;
                         }
 
@@ -1028,42 +1045,67 @@
                     }
                 });
 
-                commandPreview.textContent = command;
-            }
-        });
+                if (!hasValidScripts) {
+                    command += "\n  # 请选择至少一个脚本";
+                }
 
-        // 回放脚本
+                // 更新预览区域
+                commandPreview.textContent = command;
+                console.log("已更新命令预览:", command);
+
+                // 高亮显示命令行区域
+                if (typeof hljs !== 'undefined') {
+                    commandPreview.classList.add('language-bash');
+                    hljs.highlightElement(commandPreview);
+                }
+            }
+        });        // 回放脚本
         function replayScript(path) {
             const modal = new bootstrap.Modal(document.getElementById('replayModal'));
 
-            // 确保脚本加载完成
+            // 先更新脚本下拉列表，确保脚本列表已加载
+            if (scripts && scripts.length > 0) {
+                updateScriptDropdowns(scripts);
+            }
+
+            // 显示模态框
             modal.show();
 
             // 选择第一个脚本选择器并设置选中项
             const scriptSelect = document.querySelector('.script-select');
             if (scriptSelect) {
                 console.log("将选择脚本:", path);
-                console.log("可用选项:", Array.from(scriptSelect.options).map(o => o.value));
 
-                // 等待下拉框加载完成
+                // 延迟执行以确保模态框已完全显示且DOM已更新
                 setTimeout(() => {
-                    // 清空现有选项
-                    if (scripts && scripts.length > 0) {
-                        // 设置选中值
-                        scriptSelect.value = path;
+                    // 设置选中值
+                    scriptSelect.value = path;
 
-                        // 如果没有找到匹配的选项，检查是否需要更新下拉列表
-                        if (scriptSelect.value !== path) {
-                            console.log("未找到匹配选项，更新下拉列表");
-                            updateScriptDropdowns(scripts);
-                            scriptSelect.value = path;
+                    // 如果没有找到匹配的选项，尝试通过文件名匹配
+                    if (scriptSelect.value !== path) {
+                        // 查找包含此路径结尾的选项
+                        const options = Array.from(scriptSelect.options);
+                        const filename = path.split('/').pop().split('\\').pop();
+
+                        for (const option of options) {
+                            if (option.text.includes(filename)) {
+                                scriptSelect.value = option.value;
+                                console.log("找到匹配的脚本:", option.value);
+                                break;
+                            }
                         }
-
-                        // 触发change事件更新命令预览
-                        const event = new Event('change');
-                        scriptSelect.dispatchEvent(event);
                     }
-                }, 100);
+
+                    // 触发change事件更新命令预览
+                    const event = new Event('change');
+                    scriptSelect.dispatchEvent(event);
+
+                    // 强制更新命令预览
+                    updateCommandPreview();
+                }, 300); // 增加延迟时间以确保模态框完全加载
+            } else {
+                // 如果脚本选择器不存在，可能DOM还未加载完成
+                console.error("未找到脚本选择器");
             }
         }
 
@@ -1309,17 +1351,79 @@
                     toast.remove();
                 }
             }, 3000);
-        }
-
-        // 复制脚本
+        }        // 复制脚本
         function copyScript(path) {
-            alert('复制脚本功能暂未实现: ' + path);
+            // 提示用户输入新文件名
+            const fileName = path.split('/').pop();
+            const defaultNewName = '复制_' + fileName;
+            const newName = prompt('请输入新脚本名称:', defaultNewName);
+
+            if (!newName) return; // 用户取消输入
+
+            // 显示加载提示
+            showLoading('正在复制脚本...');
+
+            // 发送复制请求
+            fetch('/api/scripts/copy/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    source_path: path,
+                    new_name: newName
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                if (data.success) {
+                    showToast('脚本复制成功: ' + data.new_name, 'success');
+                    // 刷新脚本列表
+                    fetchScripts();
+                } else {
+                    showToast('复制失败: ' + data.message, 'error');
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                console.error('复制脚本错误:', error);
+                showToast('复制失败，请检查网络连接', 'error');
+            });
         }
 
         // 删除脚本
         function deleteScript(path) {
             if (confirm('确定要删除该脚本吗？此操作不可恢复。')) {
-                alert('删除脚本功能暂未实现: ' + path);
+                // 显示加载提示
+                showLoading('正在删除脚本...');
+
+                // 发送删除请求
+                fetch('/api/scripts/delete/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        path: path
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    hideLoading();
+                    if (data.success) {
+                        showToast('脚本已成功删除', 'success');
+                        // 刷新脚本列表
+                        fetchScripts();
+                    } else {
+                        showToast('删除失败: ' + data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    hideLoading();
+                    console.error('删除脚本错误:', error);
+                    showToast('删除失败，请检查网络连接', 'error');
+                });
             }
         }
     </script>
