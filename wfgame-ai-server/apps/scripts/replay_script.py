@@ -19,6 +19,7 @@ import traceback
 import io  # 确保导入 io 模块
 import airtest  # 添加这行
 from datetime import datetime
+from app_lifecycle_manager import AppLifecycleManager
 import random
 import torch
 import re
@@ -198,10 +199,9 @@ def get_device_name(device):
         # 清理和规范化设备信息
         brand = "".join(c for c in brand if c.isalnum() or c in ('-', '_'))
         model = "".join(c for c in model if c.isalnum() or c in ('-', '_'))
-        resolution = "".join(c for c in resolution if c.isalnum() or c in ('-', '_'))
 
-        # 组合设备名称
-        device_name = f"{brand}-{model}-{resolution}"
+        # 组合设备名称（不包含分辨率）
+        device_name = f"{brand}-{model}"
         return device_name
     except Exception as e:
         print(f"获取设备 {device.serial} 信息失败: {e}")
@@ -416,8 +416,83 @@ def replay_device(device, scripts, screenshot_queue, action_queue, stop_event, d
         script_path = script_config["path"]
         script_loop_count = script_config.get("loop_count", loop_count)  # 优先使用脚本配置中的 loop_count
         max_duration = script_config.get("max_duration", None)  # 获取最大执行时间（如果有）
+        script_id = script_config.get("script_id")
+        script_category = script_config.get("category")
 
         print(f"开始执行脚本: {script_path}, 循环次数: {script_loop_count}, 最大执行时间: {max_duration}秒")
+        print(f"脚本ID: {script_id}, 脚本分类: {script_category}")
+
+        # 特殊处理：启动程序和停止程序类别
+        if script_category in ['启动程序', '停止程序']:
+            print(f"检测到应用生命周期管理脚本，分类: {script_category}")
+
+            try:
+                # 从脚本文件中读取应用信息
+                with open(script_path, "r", encoding="utf-8") as f:
+                    json_data = json.load(f)
+                    steps = json_data.get("steps", [])
+
+                # 查找app_start或app_stop步骤中的应用信息
+                app_name = None
+                package_name = None
+
+                for step in steps:
+                    if step.get("class") in ["app_start", "app_stop"]:
+                        params = step.get("params", {})
+                        app_name = params.get("app_name", "")
+                        package_name = params.get("package_name", "")
+                        break
+
+                if not app_name and not package_name:
+                    print(f"警告: {script_category}脚本中未找到应用信息，跳过特殊处理")
+                else:
+                    # 使用AppLifecycleManager执行应用生命周期操作
+                    app_lifecycle_manager = AppLifecycleManager()
+
+                    if script_category == '启动程序':
+                        print(f"执行应用启动: {app_name or package_name}")
+                        success = app_lifecycle_manager.start_app(app_name or package_name, device.serial)
+                        operation_name = "start_app"
+
+                    elif script_category == '停止程序':
+                        print(f"执行应用停止: {app_name or package_name}")
+                        if package_name:
+                            success = app_lifecycle_manager.force_stop_by_package(package_name, device.serial)
+                        else:
+                            success = app_lifecycle_manager.stop_app(app_name, device.serial)
+                        operation_name = "stop_app"
+
+                    print(f"{script_category}操作{'成功' if success else '失败'}")
+
+                    # 记录生命周期管理操作日志
+                    timestamp = time.time()
+                    lifecycle_entry = {
+                        "tag": "function",
+                        "depth": 1,
+                        "time": timestamp,
+                        "data": {
+                            "name": operation_name,
+                            "call_args": {"app_name": app_name or package_name},
+                            "start_time": timestamp,
+                            "ret": success,
+                            "end_time": timestamp + 1,
+                            "category": script_category,
+                            "is_lifecycle_operation": True
+                        }
+                    }
+                    with open(log_txt_path, "a", encoding="utf-8") as f:
+                        f.write(json.dumps(lifecycle_entry, ensure_ascii=False) + "\n")
+
+                    has_executed_steps = True
+                    total_step_counter += 1
+
+                    # 对于生命周期脚本，执行完后直接跳过正常的步骤处理
+                    print(f"{script_category}脚本执行完成，跳过正常步骤处理")
+                    continue
+
+            except Exception as e:
+                print(f"执行{script_category}脚本时出错: {e}")
+                # 出错时继续执行正常的脚本处理流程
 
         # 从 script_path 读取步骤
         with open(script_path, "r", encoding="utf-8") as f:
@@ -859,6 +934,240 @@ def replay_device(device, scripts, screenshot_queue, action_queue, stop_event, d
                     step_remark = step.get("remark", "")
 
                     print(f"执行步骤 {step_idx+1}/{len(steps)}: {step_class}, 备注: {step_remark}")
+
+                    # 处理特殊步骤类型
+                    if step_class == "delay":
+                        # 处理延时步骤
+                        delay_seconds = step.get("params", {}).get("seconds", 1)
+                        print(f"延时 {delay_seconds} 秒: {step_remark}")
+                        time.sleep(delay_seconds)
+
+                        # 记录延时日志
+                        timestamp = time.time()
+                        delay_entry = {
+                            "tag": "function",
+                            "depth": 1,
+                            "time": timestamp,
+                            "data": {
+                                "name": "sleep",
+                                "call_args": {"secs": delay_seconds},
+                                "start_time": timestamp,
+                                "ret": None,
+                                "end_time": timestamp + delay_seconds
+                            }
+                        }
+                        with open(log_txt_path, "a", encoding="utf-8") as f:
+                            f.write(json.dumps(delay_entry, ensure_ascii=False) + "\n")
+                        continue
+
+                    elif step_class == "app_start":
+                        # 处理应用启动步骤
+                        app_name = step.get("params", {}).get("app_name", "")
+                        package_name = step.get("params", {}).get("package_name", "")
+
+                        if not app_name and not package_name:
+                            print(f"错误: app_start 步骤缺少 app_name 或 package_name 参数")
+                            continue
+
+                        print(f"启动应用 {app_name or package_name}: {step_remark}")
+
+                        # 使用 AppLifecycleManager 启动应用
+                        app_lifecycle_manager = AppLifecycleManager()
+                        success = False
+
+                        if app_name:
+                            try:
+                                success = app_lifecycle_manager.start_app(app_name, device.serial)
+                            except Exception as e:
+                                print(f"使用模板启动失败: {e}")
+                                success = False
+                        elif package_name:
+                            # 如果提供了包名但没有模板，尝试直接启动
+                            print(f"直接启动包名: {package_name}")
+                            try:
+                                import subprocess
+                                result = subprocess.run(
+                                    f"adb -s {device.serial} shell am start -n {package_name}/.MainActivity".split(),
+                                    capture_output=True,
+                                    text=True,
+                                    timeout=30
+                                )
+                                success = result.returncode == 0
+                            except Exception as e:
+                                print(f"直接启动失败: {e}")
+                                success = False
+
+                        print(f"应用启动{'成功' if success else '失败'}")
+
+                        # 记录应用启动日志
+                        timestamp = time.time()
+                        app_start_entry = {
+                            "tag": "function",
+                            "depth": 1,
+                            "time": timestamp,
+                            "data": {
+                                "name": "app_start",
+                                "call_args": {"app_name": app_name or package_name},
+                                "start_time": timestamp,
+                                "ret": success,
+                                "end_time": timestamp + 0.5
+                            }
+                        }
+                        with open(log_txt_path, "a", encoding="utf-8") as f:
+                            f.write(json.dumps(app_start_entry, ensure_ascii=False) + "\n")
+                        continue
+
+                    elif step_class == "app_stop":
+                        # 处理应用停止步骤
+                        app_name = step.get("params", {}).get("app_name", "")
+                        package_name = step.get("params", {}).get("package_name", "")
+
+                        if not app_name and not package_name:
+                            print(f"错误: app_stop 步骤缺少 app_name 或 package_name 参数")
+                            continue
+
+                        print(f"停止应用 {app_name or package_name}: {step_remark}")
+
+                        # 使用 AppLifecycleManager 停止应用
+                        app_lifecycle_manager = AppLifecycleManager()
+                        success = False
+
+                        if app_name:
+                            # 首先尝试使用模板名称
+                            try:
+                                success = app_lifecycle_manager.stop_app(app_name, device.serial)
+                                if not success:
+                                    # 如果模板停止失败，检查是否是包名格式，直接强制停止
+                                    if "." in app_name:  # 包名通常包含点号
+                                        print(f"模板停止失败，尝试使用包名直接停止: {app_name}")
+                                        success = app_lifecycle_manager.force_stop_by_package(app_name, device.serial)
+                            except Exception as e:
+                                print(f"使用模板停止失败: {e}，尝试使用包名直接停止")
+                                if "." in app_name:  # 包名通常包含点号
+                                    success = app_lifecycle_manager.force_stop_by_package(app_name, device.serial)
+                        else:
+                            # 使用包名直接强制停止
+                            success = app_lifecycle_manager.force_stop_by_package(package_name, device.serial)
+
+                        print(f"应用停止{'成功' if success else '失败'}")
+
+                        # 记录应用停止日志
+                        timestamp = time.time()
+                        app_stop_entry = {
+                            "tag": "function",
+                            "depth": 1,
+                            "time": timestamp,
+                            "data": {
+                                "name": "app_stop",
+                                "call_args": {"app_name": app_name or package_name},
+                                "start_time": timestamp,
+                                "ret": success,
+                                "end_time": timestamp + 0.5
+                            }
+                        }
+                        with open(log_txt_path, "a", encoding="utf-8") as f:
+                            f.write(json.dumps(app_stop_entry, ensure_ascii=False) + "\n")
+                        continue
+
+                    elif step_class == "log":
+                        # 处理日志步骤
+                        log_message = step.get("params", {}).get("message", step_remark)
+                        print(f"日志: {log_message}")
+
+                        # 记录日志条目
+                        timestamp = time.time()
+                        log_entry = {
+                            "tag": "function",
+                            "depth": 1,
+                            "time": timestamp,
+                            "data": {
+                                "name": "log",
+                                "call_args": {"msg": log_message},
+                                "start_time": timestamp,
+                                "ret": None,
+                                "end_time": timestamp
+                            }
+                        }
+                        with open(log_txt_path, "a", encoding="utf-8") as f:
+                            f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+                        continue
+
+                    elif step_class == "app_start":
+                        # 处理应用启动步骤
+                        app_name = step.get("params", {}).get("app_name", "")
+                        print(f"启动应用: {app_name} - {step_remark}")
+
+                        try:
+                            app_manager = AppLifecycleManager()
+                            result = app_manager.start_app(app_name, device.serial)
+                            print(f"应用启动结果: {result}")
+
+                            # 记录应用启动日志
+                            timestamp = time.time()
+                            app_start_entry = {
+                                "tag": "function",
+                                "depth": 1,
+                                "time": timestamp,
+                                "data": {
+                                    "name": "start_app",
+                                    "call_args": {"app_name": app_name},
+                                    "start_time": timestamp,
+                                    "ret": result,
+                                    "end_time": timestamp + 1
+                                }
+                            }
+                            with open(log_txt_path, "a", encoding="utf-8") as f:
+                                f.write(json.dumps(app_start_entry, ensure_ascii=False) + "\n")
+                        except Exception as e:
+                            print(f"启动应用失败: {e}")
+                        continue
+
+                    elif step_class == "app_stop":
+                        # 处理应用停止步骤
+                        params = step.get("params", {})
+                        app_name = params.get("app_name", "")
+                        package_name = params.get("package_name", "")
+
+                        print(f"停止应用 - {step_remark}")
+
+                        try:
+                            app_manager = AppLifecycleManager()
+
+                            if package_name:
+                                # 直接使用包名停止应用
+                                print(f"使用包名停止应用: {package_name}")
+                                result = app_manager.force_stop_by_package(package_name, device.serial)
+                                call_args = {"package_name": package_name}
+                            elif app_name:
+                                # 使用模板名停止应用
+                                print(f"使用模板名停止应用: {app_name}")
+                                result = app_manager.stop_app(app_name, device.serial)
+                                call_args = {"app_name": app_name}
+                            else:
+                                print("错误: 未提供app_name或package_name参数")
+                                continue
+
+                            print(f"应用停止结果: {result}")
+
+                            # 记录应用停止日志
+                            timestamp = time.time()
+                            app_stop_entry = {
+                                "tag": "function",
+                                "depth": 1,
+                                "time": timestamp,
+                                "data": {
+                                    "name": "stop_app",
+                                    "call_args": call_args,
+                                    "start_time": timestamp,
+                                    "ret": result,
+                                    "end_time": timestamp + 1
+                                }
+                            }
+                            with open(log_txt_path, "a", encoding="utf-8") as f:
+                                f.write(json.dumps(app_stop_entry, ensure_ascii=False) + "\n")
+                        except Exception as e:
+                            print(f"停止应用失败: {e}")
+                        continue
 
                     # 截取屏幕以检测目标
                     timestamp = time.time()
@@ -1967,6 +2276,9 @@ def parse_script_args():
                 i += 1
 
             # 处理脚本专用参数
+            script_id = None
+            script_category = None
+
             while i < len(args):
                 if args[i] in ['--loop-count', '-c']:
                     if i + 1 >= len(args):
@@ -1977,6 +2289,22 @@ def parse_script_args():
                     except ValueError:
                         print(f"错误: --loop-count 参数必须是整数: {args[i + 1]}")
                         sys.exit(1)
+                    i += 2
+                elif args[i] in ['--script-id']:
+                    if i + 1 >= len(args):
+                        print("错误: --script-id 参数需要指定数值")
+                        sys.exit(1)
+                    try:
+                        script_id = int(args[i + 1])
+                    except ValueError:
+                        print(f"错误: --script-id 参数必须是整数: {args[i + 1]}")
+                        sys.exit(1)
+                    i += 2
+                elif args[i] in ['--script-category']:
+                    if i + 1 >= len(args):
+                        print("错误: --script-category 参数需要指定分类名称")
+                        sys.exit(1)
+                    script_category = args[i + 1]
                     i += 2
                 elif args[i] in ['--max-duration', '-t']:
                     if i + 1 >= len(args):
@@ -2000,7 +2328,9 @@ def parse_script_args():
             result['scripts'].append({
                 'path': script_path,
                 'loop_count': script_loop_count,
-                'max_duration': script_max_duration
+                'max_duration': script_max_duration,
+                'script_id': script_id,
+                'category': script_category
             })
 
         elif arg in ['--script-list', '-l']:
@@ -2214,7 +2544,9 @@ if __name__ == "__main__":
             scripts_to_run.append({
                 "path": normalized_path,
                 "loop_count": script_info['loop_count'],
-                "max_duration": script_info['max_duration']
+                "max_duration": script_info['max_duration'],
+                "script_id": script_info.get('script_id'),
+                "category": script_info.get('category')
             })
 
         print(f"将运行 {len(scripts_to_run)} 个脚本（顺序执行）")

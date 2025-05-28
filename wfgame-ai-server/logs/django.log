@@ -2046,3 +2046,648 @@ WARNING 2025-05-26 15:49:47,378 basehttp 37508 35764 "GET /.well-known/appspecif
 INFO 2025-05-26 15:49:47,712 basehttp 37508 35764 "POST /api/scripts/ HTTP/1.1" 200 3122
 INFO 2025-05-26 15:50:07,177 basehttp 37508 35764 "POST /api/scripts/replay/ HTTP/1.1" 200 469
 INFO 2025-05-26 15:52:17,052 autoreload 38552 43996 Watching for file changes with StatReloader
+INFO 2025-05-26 15:52:22,963 basehttp 38552 54624 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-26 15:52:22,979 log 38552 54624 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-26 15:52:22,980 basehttp 38552 54624 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-26 15:52:23,323 basehttp 38552 54624 "POST /api/scripts/ HTTP/1.1" 200 3122
+INFO 2025-05-26 15:52:35,477 basehttp 38552 54624 "POST /api/scripts/replay/ HTTP/1.1" 200 468
+INFO 2025-05-26 15:52:36,946 basehttp 38552 54624 "GET /api/docs/ HTTP/1.1" 200 788
+INFO 2025-05-26 15:52:37,705 basehttp 38552 54624 "GET /api/schema/ HTTP/1.1" 200 16730
+INFO 2025-05-26 15:52:45,149 basehttp 38552 54624 "POST /api/reports/summary_list/ HTTP/1.1" 200 21625
+INFO 2025-05-26 15:52:47,771 basehttp 38552 54624 "POST /api/reports/summary_list/ HTTP/1.1" 200 21625
+INFO 2025-05-26 15:53:03,775 basehttp 38552 54624 "POST /api/reports/summary_list/ HTTP/1.1" 200 22937
+INFO 2025-05-26 15:53:06,107 basehttp 38552 54624 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-15-52-40/log.html HTTP/1.1" 200 14496
+INFO 2025-05-26 15:53:06,173 basehttp 38552 54624 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-15-52-40/static//css/report.css HTTP/1.1" 200 18004
+INFO 2025-05-26 15:53:06,174 basehttp 38552 45208 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-15-52-40/static//js/jquery-lang.js HTTP/1.1" 200 25588
+INFO 2025-05-26 15:53:06,175 basehttp 38552 39836 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-15-52-40/static//js/jquery-1.10.2.min.js HTTP/1.1" 200 93111
+INFO 2025-05-26 15:53:06,175 basehttp 38552 54624 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-15-52-40/static//js/langpack/zh_CN.js HTTP/1.1" 200 2701
+INFO 2025-05-26 15:53:06,177 basehttp 38552 54624 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-15-52-40/static//image/download_log.svg HTTP/1.1" 200 2550
+INFO 2025-05-26 15:53:06,177 basehttp 38552 39836 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-15-52-40/static//image/copy.svg HTTP/1.1" 200 1013
+INFO 2025-05-26 15:53:06,178 basehttp 38552 45208 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-15-52-40/static//js/lazyload.js HTTP/1.1" 200 5587
+INFO 2025-05-26 15:53:06,481 basehttp 38552 39836 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-15-52-40/static//image/poco.png HTTP/1.1" 200 1385
+INFO 2025-05-26 15:53:06,481 basehttp 38552 45208 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-15-52-40/static//image/Airtest.png HTTP/1.1" 200 1947
+INFO 2025-05-26 15:53:06,486 basehttp 38552 39836 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-15-52-40/static//image/AirtestIDE.png HTTP/1.1" 200 3181
+INFO 2025-05-26 15:53:06,486 basehttp 38552 45208 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-15-52-40/static//css/monokai_sublime.min.css HTTP/1.1" 200 2017
+INFO 2025-05-26 15:53:06,490 basehttp 38552 68196 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-15-52-40/static//image/AirLab.png HTTP/1.1" 200 1954
+INFO 2025-05-26 15:53:06,490 basehttp 38552 53824 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-15-52-40/static//js/paging.js HTTP/1.1" 200 13030
+INFO 2025-05-26 15:53:06,491 basehttp 38552 45208 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-15-52-40/static//image/netease.png HTTP/1.1" 200 7949
+INFO 2025-05-26 15:53:06,491 basehttp 38552 39836 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-15-52-40/static//image/minimize.svg HTTP/1.1" 200 1031
+INFO 2025-05-26 15:53:06,493 basehttp 38552 16628 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-15-52-40/static//js/report.js HTTP/1.1" 200 31059
+INFO 2025-05-26 15:53:06,494 basehttp 38552 54624 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-15-52-40/static//js/highlight.min.js HTTP/1.1" 200 184850
+INFO 2025-05-26 15:53:06,494 basehttp 38552 53824 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-15-52-40/static//image/close.svg HTTP/1.1" 200 729
+INFO 2025-05-26 15:53:06,494 basehttp 38552 45208 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-15-52-40/static//image/maximize.svg HTTP/1.1" 200 1308
+INFO 2025-05-26 15:53:06,563 basehttp 38552 68196 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-15-52-40/static//image/eye.svg HTTP/1.1" 200 1935
+INFO 2025-05-26 15:53:06,563 basehttp 38552 39836 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-15-52-40/static//image/step_fail.svg HTTP/1.1" 200 1274
+INFO 2025-05-26 15:53:06,565 basehttp 38552 54624 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-15-52-40/log/1748245966856_small.jpg HTTP/1.1" 200 60286
+INFO 2025-05-26 15:53:06,565 basehttp 38552 16628 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-15-52-40/log/1748245968706_small.jpg HTTP/1.1" 200 60578
+INFO 2025-05-26 15:53:06,565 basehttp 38552 45208 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-15-52-40/log/1748245962091_small.jpg HTTP/1.1" 200 60135
+INFO 2025-05-26 15:53:06,566 basehttp 38552 39836 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-15-52-40/static//image/time.svg HTTP/1.1" 200 820
+INFO 2025-05-26 15:53:06,566 basehttp 38552 53824 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-15-52-40/log/1748245965018_small.jpg HTTP/1.1" 200 60206
+INFO 2025-05-26 15:53:06,566 basehttp 38552 68196 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-15-52-40/static//image/success.svg HTTP/1.1" 200 1156
+INFO 2025-05-26 16:12:54,201 basehttp 38552 48556 "GET /pages/reports_template.html HTTP/1.1" 302 0
+INFO 2025-05-26 16:12:54,665 basehttp 38552 48556 "POST /api/reports/summary_list/ HTTP/1.1" 200 22937
+INFO 2025-05-26 16:12:55,099 basehttp 38552 48556 "POST /api/reports/summary_list/ HTTP/1.1" 200 22937
+INFO 2025-05-26 16:12:56,827 basehttp 38552 48556 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-15-52-40/log.html HTTP/1.1" 304 0
+INFO 2025-05-26 16:12:57,205 basehttp 38552 48556 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-15-52-40/log/1748245962091_small.jpg HTTP/1.1" 304 0
+INFO 2025-05-26 16:12:57,205 basehttp 38552 75828 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-15-52-40/log/1748245965018_small.jpg HTTP/1.1" 304 0
+INFO 2025-05-26 16:12:57,205 basehttp 38552 120036 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-15-52-40/log/1748245966856_small.jpg HTTP/1.1" 304 0
+INFO 2025-05-26 16:12:57,206 basehttp 38552 48556 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-15-52-40/log/1748245968706_small.jpg HTTP/1.1" 304 0
+INFO 2025-05-26 16:13:04,403 basehttp 38552 48556 "GET /pages/scripts.html HTTP/1.1" 302 0
+WARNING 2025-05-26 16:13:04,422 log 38552 48556 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-26 16:13:04,422 basehttp 38552 48556 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-26 16:13:04,769 basehttp 38552 48556 "POST /api/scripts/ HTTP/1.1" 200 3287
+INFO 2025-05-26 16:13:25,422 basehttp 38552 48556 "POST /api/scripts/replay/ HTTP/1.1" 200 625
+INFO 2025-05-26 16:14:04,512 basehttp 38552 48556 "GET /pages/reports_template.html HTTP/1.1" 302 0
+INFO 2025-05-26 16:14:04,812 basehttp 38552 48556 "POST /api/reports/summary_list/ HTTP/1.1" 200 24249
+INFO 2025-05-26 16:14:07,505 basehttp 38552 48556 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-13-30/log.html HTTP/1.1" 200 14613
+INFO 2025-05-26 16:14:07,517 basehttp 38552 48556 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-13-30/static//css/report.css HTTP/1.1" 200 18004
+INFO 2025-05-26 16:14:07,517 basehttp 38552 75828 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-13-30/static//js/jquery-lang.js HTTP/1.1" 200 25588
+INFO 2025-05-26 16:14:07,518 basehttp 38552 120036 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-13-30/static//js/jquery-1.10.2.min.js HTTP/1.1" 200 93111
+INFO 2025-05-26 16:14:07,518 basehttp 38552 48556 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-13-30/static//js/langpack/zh_CN.js HTTP/1.1" 200 2701
+INFO 2025-05-26 16:14:07,521 basehttp 38552 75828 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-13-30/static//js/lazyload.js HTTP/1.1" 200 5587
+INFO 2025-05-26 16:14:07,521 basehttp 38552 120036 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-13-30/static//image/download_log.svg HTTP/1.1" 200 2550
+INFO 2025-05-26 16:14:07,521 basehttp 38552 48556 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-13-30/static//image/copy.svg HTTP/1.1" 200 1013
+INFO 2025-05-26 16:14:07,821 basehttp 38552 48556 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-13-30/static//image/Airtest.png HTTP/1.1" 200 1947
+INFO 2025-05-26 16:14:07,822 basehttp 38552 120036 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-13-30/static//image/poco.png HTTP/1.1" 200 1385
+INFO 2025-05-26 16:14:07,825 basehttp 38552 120036 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-13-30/static//image/AirtestIDE.png HTTP/1.1" 200 3181
+INFO 2025-05-26 16:14:07,826 basehttp 38552 48556 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-13-30/static//css/monokai_sublime.min.css HTTP/1.1" 200 2017
+INFO 2025-05-26 16:14:07,829 basehttp 38552 68088 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-13-30/static//js/paging.js HTTP/1.1" 200 13030
+INFO 2025-05-26 16:14:07,829 basehttp 38552 120036 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-13-30/static//image/minimize.svg HTTP/1.1" 200 1031
+INFO 2025-05-26 16:14:07,829 basehttp 38552 48216 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-13-30/static//image/AirLab.png HTTP/1.1" 200 1954
+INFO 2025-05-26 16:14:07,830 basehttp 38552 106520 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-13-30/static//js/report.js HTTP/1.1" 200 31059
+INFO 2025-05-26 16:14:07,830 basehttp 38552 48556 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-13-30/static//image/netease.png HTTP/1.1" 200 7949
+INFO 2025-05-26 16:14:07,831 basehttp 38552 75828 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-13-30/static//js/highlight.min.js HTTP/1.1" 200 184850
+INFO 2025-05-26 16:14:07,831 basehttp 38552 68088 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-13-30/static//image/close.svg HTTP/1.1" 200 729
+INFO 2025-05-26 16:14:07,831 basehttp 38552 48216 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-13-30/static//image/maximize.svg HTTP/1.1" 200 1308
+INFO 2025-05-26 16:14:07,908 basehttp 38552 106520 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-13-30/static//image/step_fail.svg HTTP/1.1" 200 1274
+INFO 2025-05-26 16:14:07,909 basehttp 38552 120036 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-13-30/static//image/eye.svg HTTP/1.1" 200 1935
+INFO 2025-05-26 16:14:07,910 basehttp 38552 48216 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-13-30/log/1748247216711_small.jpg HTTP/1.1" 200 60578
+INFO 2025-05-26 16:14:07,911 basehttp 38552 75828 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-13-30/log/1748247220431_small.jpg HTTP/1.1" 200 60150
+INFO 2025-05-26 16:14:07,911 basehttp 38552 68088 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-13-30/log/1748247218563_small.jpg HTTP/1.1" 200 60403
+INFO 2025-05-26 16:14:07,911 basehttp 38552 106520 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-13-30/static//image/time.svg HTTP/1.1" 200 820
+INFO 2025-05-26 16:14:07,912 basehttp 38552 48556 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-13-30/log/1748247222310_small.jpg HTTP/1.1" 200 60166
+INFO 2025-05-26 16:14:07,912 basehttp 38552 120036 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-13-30/static//image/success.svg HTTP/1.1" 200 1156
+INFO 2025-05-26 16:14:17,580 basehttp 38552 120036 "POST /api/scripts/edit/ HTTP/1.1" 200 605
+INFO 2025-05-26 16:14:25,390 basehttp 38552 120036 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-26-16-13-33/log.html HTTP/1.1" 200 14617
+INFO 2025-05-26 16:14:25,405 basehttp 38552 48216 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-26-16-13-33/static//image/download_log.svg HTTP/1.1" 200 2550
+INFO 2025-05-26 16:14:25,405 basehttp 38552 68088 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-26-16-13-33/static//js/langpack/zh_CN.js HTTP/1.1" 200 2701
+INFO 2025-05-26 16:14:25,406 basehttp 38552 120036 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-26-16-13-33/static//css/report.css HTTP/1.1" 200 18004
+INFO 2025-05-26 16:14:25,407 basehttp 38552 75828 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-26-16-13-33/static//js/lazyload.js HTTP/1.1" 200 5587
+INFO 2025-05-26 16:14:25,407 basehttp 38552 48556 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-26-16-13-33/static//js/jquery-lang.js HTTP/1.1" 200 25588
+INFO 2025-05-26 16:14:25,408 basehttp 38552 48216 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-26-16-13-33/static//image/copy.svg HTTP/1.1" 200 1013
+INFO 2025-05-26 16:14:25,408 basehttp 38552 106520 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-26-16-13-33/static//js/jquery-1.10.2.min.js HTTP/1.1" 200 93111
+INFO 2025-05-26 16:14:25,707 basehttp 38552 48216 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-26-16-13-33/static//image/Airtest.png HTTP/1.1" 200 1947
+INFO 2025-05-26 16:14:25,707 basehttp 38552 106520 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-26-16-13-33/static//image/poco.png HTTP/1.1" 200 1385
+INFO 2025-05-26 16:14:25,715 basehttp 38552 106520 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-26-16-13-33/static//image/AirtestIDE.png HTTP/1.1" 200 3181
+INFO 2025-05-26 16:14:25,715 basehttp 38552 48216 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-26-16-13-33/static//css/monokai_sublime.min.css HTTP/1.1" 200 2017
+INFO 2025-05-26 16:14:25,717 basehttp 38552 68088 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-26-16-13-33/static//image/AirLab.png HTTP/1.1" 200 1954
+INFO 2025-05-26 16:14:25,718 basehttp 38552 120036 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-26-16-13-33/static//js/report.js HTTP/1.1" 200 31059
+INFO 2025-05-26 16:14:25,718 basehttp 38552 75828 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-26-16-13-33/static//js/paging.js HTTP/1.1" 200 13030
+INFO 2025-05-26 16:14:25,719 basehttp 38552 106520 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-26-16-13-33/static//image/netease.png HTTP/1.1" 200 7949
+INFO 2025-05-26 16:14:25,719 basehttp 38552 48216 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-26-16-13-33/static//image/minimize.svg HTTP/1.1" 200 1031
+INFO 2025-05-26 16:14:25,720 basehttp 38552 120036 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-26-16-13-33/static//image/maximize.svg HTTP/1.1" 200 1308
+INFO 2025-05-26 16:14:25,720 basehttp 38552 68088 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-26-16-13-33/static//image/close.svg HTTP/1.1" 200 729
+INFO 2025-05-26 16:14:25,721 basehttp 38552 48556 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-26-16-13-33/static//js/highlight.min.js HTTP/1.1" 200 184850
+INFO 2025-05-26 16:14:25,780 basehttp 38552 75828 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-26-16-13-33/static//image/eye.svg HTTP/1.1" 200 1935
+INFO 2025-05-26 16:14:25,782 basehttp 38552 106520 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-26-16-13-33/static//image/step_fail.svg HTTP/1.1" 200 1274
+INFO 2025-05-26 16:14:25,783 basehttp 38552 75828 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-26-16-13-33/static//image/time.svg HTTP/1.1" 200 820
+INFO 2025-05-26 16:14:25,783 basehttp 38552 48216 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-26-16-13-33/log/1748247228150_small.jpg HTTP/1.1" 200 72352
+INFO 2025-05-26 16:14:25,784 basehttp 38552 120036 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-26-16-13-33/log/1748247223095_small.jpg HTTP/1.1" 200 72479
+INFO 2025-05-26 16:14:25,784 basehttp 38552 68088 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-26-16-13-33/log/1748247225629_small.jpg HTTP/1.1" 200 72146
+INFO 2025-05-26 16:14:25,784 basehttp 38552 48556 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-26-16-13-33/log/1748247220570_small.jpg HTTP/1.1" 200 72623
+INFO 2025-05-26 16:14:25,784 basehttp 38552 106520 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-26-16-13-33/static//image/success.svg HTTP/1.1" 200 1156
+INFO 2025-05-26 16:14:29,588 basehttp 38552 106520 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-26-16-13-33/static//image/step_success.svg HTTP/1.1" 200 1144
+INFO 2025-05-26 16:14:34,042 basehttp 38552 106520 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-26-16-13-33/log/1748247220570.jpg HTTP/1.1" 200 1542477
+INFO 2025-05-26 16:14:42,095 basehttp 38552 106520 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-26-16-13-33/log/1748247223095.jpg HTTP/1.1" 200 1545422
+INFO 2025-05-26 16:14:43,812 basehttp 38552 106520 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-26-16-13-33/log/1748247225629.jpg HTTP/1.1" 200 1545517
+INFO 2025-05-26 16:15:45,123 basehttp 38552 106520 "POST /api/scripts/replay/ HTTP/1.1" 200 641
+INFO 2025-05-26 16:19:02,080 basehttp 38552 106520 "GET /pages/reports_template.html HTTP/1.1" 302 0
+INFO 2025-05-26 16:19:02,580 basehttp 38552 106520 "POST /api/reports/summary_list/ HTTP/1.1" 200 24249
+INFO 2025-05-26 16:19:03,465 basehttp 38552 106520 "GET /pages/reports_template.html HTTP/1.1" 302 0
+INFO 2025-05-26 16:19:03,765 basehttp 38552 106520 "POST /api/reports/summary_list/ HTTP/1.1" 200 24249
+INFO 2025-05-26 16:19:06,663 basehttp 38552 106520 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-13-30/log.html HTTP/1.1" 304 0
+INFO 2025-05-26 16:19:07,057 basehttp 38552 120036 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-13-30/log/1748247222310_small.jpg HTTP/1.1" 304 0
+INFO 2025-05-26 16:19:07,058 basehttp 38552 68088 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-13-30/log/1748247218563_small.jpg HTTP/1.1" 304 0
+INFO 2025-05-26 16:19:07,058 basehttp 38552 106520 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-13-30/log/1748247216711_small.jpg HTTP/1.1" 304 0
+INFO 2025-05-26 16:19:07,059 basehttp 38552 48556 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-13-30/log/1748247220431_small.jpg HTTP/1.1" 304 0
+INFO 2025-05-26 16:19:32,490 basehttp 38552 48556 "POST /api/scripts/edit/ HTTP/1.1" 200 1479
+INFO 2025-05-26 16:20:00,746 basehttp 38552 48556 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-05-26 16:21:12,995 basehttp 38552 48556 "POST /api/reports/summary_list/ HTTP/1.1" 200 24249
+INFO 2025-05-26 16:21:13,750 basehttp 38552 48556 "POST /api/reports/summary_list/ HTTP/1.1" 200 24249
+INFO 2025-05-26 16:21:17,246 basehttp 38552 48556 "POST /api/reports/summary_list/ HTTP/1.1" 200 24249
+INFO 2025-05-26 16:21:21,624 basehttp 38552 48556 "POST /api/scripts/replay/ HTTP/1.1" 200 639
+INFO 2025-05-26 16:21:25,462 basehttp 38552 48556 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-05-26 16:22:42,308 basehttp 38552 48556 "POST /api/reports/summary_list/ HTTP/1.1" 200 24249
+INFO 2025-05-26 16:22:43,205 basehttp 38552 48556 "POST /api/reports/summary_list/ HTTP/1.1" 200 24249
+INFO 2025-05-26 16:22:43,856 basehttp 38552 48556 "POST /api/reports/summary_list/ HTTP/1.1" 200 24249
+INFO 2025-05-26 16:22:50,519 basehttp 38552 48556 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-13-30/log.html HTTP/1.1" 304 0
+INFO 2025-05-26 16:22:50,944 basehttp 38552 68088 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-13-30/log/1748247220431_small.jpg HTTP/1.1" 304 0
+INFO 2025-05-26 16:22:50,945 basehttp 38552 106520 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-13-30/log/1748247218563_small.jpg HTTP/1.1" 304 0
+INFO 2025-05-26 16:22:50,945 basehttp 38552 48556 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-13-30/log/1748247216711_small.jpg HTTP/1.1" 304 0
+INFO 2025-05-26 16:22:50,945 basehttp 38552 120036 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-13-30/log/1748247222310_small.jpg HTTP/1.1" 304 0
+INFO 2025-05-26 16:22:55,150 basehttp 38552 120036 "POST /api/reports/summary_list/ HTTP/1.1" 200 25561
+INFO 2025-05-26 16:22:56,730 basehttp 38552 120036 "POST /api/reports/summary_list/ HTTP/1.1" 200 25561
+INFO 2025-05-26 16:22:59,083 basehttp 38552 120036 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/log.html HTTP/1.1" 200 21006
+INFO 2025-05-26 16:22:59,102 basehttp 38552 106520 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/static//js/langpack/zh_CN.js HTTP/1.1" 200 2701
+INFO 2025-05-26 16:22:59,102 basehttp 38552 120036 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/static//css/report.css HTTP/1.1" 200 18004
+INFO 2025-05-26 16:22:59,102 basehttp 38552 68088 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/static//js/jquery-lang.js HTTP/1.1" 200 25588
+INFO 2025-05-26 16:22:59,104 basehttp 38552 48556 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/static//js/jquery-1.10.2.min.js HTTP/1.1" 200 93111
+INFO 2025-05-26 16:22:59,104 basehttp 38552 120036 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/static//js/lazyload.js HTTP/1.1" 200 5587
+INFO 2025-05-26 16:22:59,105 basehttp 38552 106520 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/static//image/download_log.svg HTTP/1.1" 200 2550
+INFO 2025-05-26 16:22:59,105 basehttp 38552 68088 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/static//image/copy.svg HTTP/1.1" 200 1013
+INFO 2025-05-26 16:22:59,481 basehttp 38552 48556 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/static//css/monokai_sublime.min.css HTTP/1.1" 200 2017
+INFO 2025-05-26 16:22:59,482 basehttp 38552 68088 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/static//image/poco.png HTTP/1.1" 200 1385
+INFO 2025-05-26 16:22:59,483 basehttp 38552 106520 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/static//image/AirtestIDE.png HTTP/1.1" 200 3181
+INFO 2025-05-26 16:22:59,483 basehttp 38552 62768 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/static//js/paging.js HTTP/1.1" 200 13030
+INFO 2025-05-26 16:22:59,483 basehttp 38552 120036 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/static//image/Airtest.png HTTP/1.1" 200 1947
+INFO 2025-05-26 16:22:59,484 basehttp 38552 48556 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/static//image/minimize.svg HTTP/1.1" 200 1031
+INFO 2025-05-26 16:22:59,484 basehttp 38552 68088 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/static//image/close.svg HTTP/1.1" 200 729
+INFO 2025-05-26 16:22:59,485 basehttp 38552 33952 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/static//js/highlight.min.js HTTP/1.1" 200 184850
+INFO 2025-05-26 16:22:59,581 basehttp 38552 33952 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/static//js/report.js HTTP/1.1" 200 31059
+INFO 2025-05-26 16:22:59,581 basehttp 38552 68088 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/static//image/AirLab.png HTTP/1.1" 200 1954
+INFO 2025-05-26 16:22:59,583 basehttp 38552 48556 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/static//image/netease.png HTTP/1.1" 200 7949
+INFO 2025-05-26 16:22:59,583 basehttp 38552 120036 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/static//image/maximize.svg HTTP/1.1" 200 1308
+INFO 2025-05-26 16:22:59,634 basehttp 38552 106520 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/log/1748247703008_small.jpg HTTP/1.1" 200 26450
+INFO 2025-05-26 16:22:59,634 basehttp 38552 68088 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/log/1748247698272_small.jpg HTTP/1.1" 200 26090
+INFO 2025-05-26 16:22:59,635 basehttp 38552 48556 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/log/1748247687625_small.jpg HTTP/1.1" 200 26384
+INFO 2025-05-26 16:22:59,635 basehttp 38552 62768 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/log/1748247707704_small.jpg HTTP/1.1" 200 40602
+INFO 2025-05-26 16:22:59,635 basehttp 38552 120036 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/log/1748247696551_small.jpg HTTP/1.1" 200 26084
+INFO 2025-05-26 16:22:59,635 basehttp 38552 33952 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/log/1748247699979_small.jpg HTTP/1.1" 200 26209
+INFO 2025-05-26 16:22:59,637 basehttp 38552 68088 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/log/1748247712590_small.jpg HTTP/1.1" 200 33724
+INFO 2025-05-26 16:22:59,639 basehttp 38552 48556 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/log/1748247717179_small.jpg HTTP/1.1" 200 24673
+INFO 2025-05-26 16:22:59,640 basehttp 38552 62768 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/log/1748247721950_small.jpg HTTP/1.1" 200 40731
+INFO 2025-05-26 16:22:59,642 basehttp 38552 33952 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/log/1748247726613_small.jpg HTTP/1.1" 200 33761
+INFO 2025-05-26 16:22:59,643 basehttp 38552 120036 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/log/1748247731046_small.jpg HTTP/1.1" 200 48816
+INFO 2025-05-26 16:22:59,644 basehttp 38552 106520 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/log/1748247735584_small.jpg HTTP/1.1" 200 49626
+INFO 2025-05-26 16:22:59,646 basehttp 38552 62768 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/log/1748247740109_small.jpg HTTP/1.1" 200 49624
+INFO 2025-05-26 16:22:59,647 basehttp 38552 68088 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/log/1748247744650_small.jpg HTTP/1.1" 200 48521
+INFO 2025-05-26 16:22:59,647 basehttp 38552 33952 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/static//image/time.svg HTTP/1.1" 200 820
+INFO 2025-05-26 16:22:59,651 basehttp 38552 48556 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/log/1748247749443_small.jpg HTTP/1.1" 200 48493
+INFO 2025-05-26 16:22:59,652 basehttp 38552 120036 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/static//image/step_fail.svg HTTP/1.1" 200 1274
+INFO 2025-05-26 16:22:59,653 basehttp 38552 62768 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/static//image/success.svg HTTP/1.1" 200 1156
+INFO 2025-05-26 16:22:59,653 basehttp 38552 106520 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/log/1748247753899_small.jpg HTTP/1.1" 200 49933
+INFO 2025-05-26 16:22:59,654 basehttp 38552 68088 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/log/1748247758633_small.jpg HTTP/1.1" 200 50303
+INFO 2025-05-26 16:22:59,657 basehttp 38552 33952 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/static//image/eye.svg HTTP/1.1" 200 1935
+INFO 2025-05-26 16:23:01,392 basehttp 38552 33952 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/static//image/step_success.svg HTTP/1.1" 200 1144
+INFO 2025-05-26 16:23:03,627 basehttp 38552 68088 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/static//image/target.png HTTP/1.1" 200 25732
+INFO 2025-05-26 16:23:03,630 basehttp 38552 33952 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/log/1748247703008.jpg HTTP/1.1" 200 967266
+INFO 2025-05-26 16:23:04,177 basehttp 38552 33952 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/log/1748247712590.jpg HTTP/1.1" 200 955857
+INFO 2025-05-26 16:23:04,677 basehttp 38552 33952 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/log/1748247721950.jpg HTTP/1.1" 200 1050630
+INFO 2025-05-26 16:23:05,362 basehttp 38552 33952 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/log/1748247731046.jpg HTTP/1.1" 200 1061777
+INFO 2025-05-26 16:23:06,159 basehttp 38552 33952 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/log/1748247740109.jpg HTTP/1.1" 200 1070675
+INFO 2025-05-26 16:23:06,672 basehttp 38552 33952 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-21-26/log/1748247744650.jpg HTTP/1.1" 200 1062028
+INFO 2025-05-26 16:24:37,085 basehttp 38552 118172 "POST /api/scripts/replay/ HTTP/1.1" 200 639
+INFO 2025-05-26 16:27:49,713 basehttp 38552 118172 "POST /api/reports/summary_list/ HTTP/1.1" 200 26873
+INFO 2025-05-26 16:27:51,366 basehttp 38552 118172 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-24-42/log.html HTTP/1.1" 200 19855
+INFO 2025-05-26 16:27:51,382 basehttp 38552 118172 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-24-42/static//css/report.css HTTP/1.1" 200 18004
+INFO 2025-05-26 16:27:51,384 basehttp 38552 118172 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-24-42/static//js/jquery-1.10.2.min.js HTTP/1.1" 200 93111
+INFO 2025-05-26 16:27:51,385 basehttp 38552 118172 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-24-42/static//js/jquery-lang.js HTTP/1.1" 200 25588
+INFO 2025-05-26 16:27:51,387 basehttp 38552 118172 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-24-42/static//js/langpack/zh_CN.js HTTP/1.1" 200 2701
+INFO 2025-05-26 16:27:51,388 basehttp 38552 118172 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-24-42/static//js/lazyload.js HTTP/1.1" 200 5587
+INFO 2025-05-26 16:27:51,389 basehttp 38552 118172 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-24-42/static//image/download_log.svg HTTP/1.1" 200 2550
+INFO 2025-05-26 16:27:51,390 basehttp 38552 118172 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-24-42/static//image/copy.svg HTTP/1.1" 200 1013
+INFO 2025-05-26 16:27:51,717 basehttp 38552 118172 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-24-42/static//image/Airtest.png HTTP/1.1" 200 1947
+INFO 2025-05-26 16:27:51,718 basehttp 38552 74724 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-24-42/static//image/poco.png HTTP/1.1" 200 1385
+INFO 2025-05-26 16:27:51,725 basehttp 38552 118172 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-24-42/static//css/monokai_sublime.min.css HTTP/1.1" 200 2017
+INFO 2025-05-26 16:27:51,727 basehttp 38552 74724 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-24-42/static//image/AirtestIDE.png HTTP/1.1" 200 3181
+INFO 2025-05-26 16:27:51,728 basehttp 38552 5136 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-24-42/static//image/AirLab.png HTTP/1.1" 200 1954
+INFO 2025-05-26 16:27:51,729 basehttp 38552 18268 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-24-42/static//js/report.js HTTP/1.1" 200 31059
+INFO 2025-05-26 16:27:51,729 basehttp 38552 77388 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-24-42/static//js/paging.js HTTP/1.1" 200 13030
+INFO 2025-05-26 16:27:51,730 basehttp 38552 74724 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-24-42/static//image/minimize.svg HTTP/1.1" 200 1031
+INFO 2025-05-26 16:27:51,730 basehttp 38552 118172 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-24-42/static//image/netease.png HTTP/1.1" 200 7949
+INFO 2025-05-26 16:27:51,732 basehttp 38552 5136 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-24-42/static//image/close.svg HTTP/1.1" 200 729
+INFO 2025-05-26 16:27:51,732 basehttp 38552 63872 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-24-42/static//js/highlight.min.js HTTP/1.1" 200 184850
+INFO 2025-05-26 16:27:51,733 basehttp 38552 77388 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-24-42/static//image/maximize.svg HTTP/1.1" 200 1308
+INFO 2025-05-26 16:27:51,806 basehttp 38552 77388 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-24-42/log/1748247883567_small.jpg HTTP/1.1" 200 44832
+INFO 2025-05-26 16:27:51,806 basehttp 38552 118172 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-24-42/log/1748247888810_small.jpg HTTP/1.1" 200 60476
+INFO 2025-05-26 16:27:51,807 basehttp 38552 74724 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-24-42/log/1748247896932_small.jpg HTTP/1.1" 200 60219
+INFO 2025-05-26 16:27:51,807 basehttp 38552 5136 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-24-42/log/1748247886831_small.jpg HTTP/1.1" 200 60032
+INFO 2025-05-26 16:27:51,808 basehttp 38552 18268 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-24-42/log/1748247904496_small.jpg HTTP/1.1" 200 59838
+INFO 2025-05-26 16:27:51,808 basehttp 38552 63872 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-24-42/log/1748247890741_small.jpg HTTP/1.1" 200 60160
+INFO 2025-05-26 16:27:51,811 basehttp 38552 77388 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-24-42/log/1748247913773_small.jpg HTTP/1.1" 200 33769
+INFO 2025-05-26 16:27:51,811 basehttp 38552 118172 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-24-42/log/1748247909153_small.jpg HTTP/1.1" 200 44426
+INFO 2025-05-26 16:27:51,813 basehttp 38552 18268 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-24-42/log/1748247918423_small.jpg HTTP/1.1" 200 21665
+INFO 2025-05-26 16:27:51,816 basehttp 38552 63872 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-24-42/log/1748247922893_small.jpg HTTP/1.1" 200 36903
+INFO 2025-05-26 16:27:51,816 basehttp 38552 5136 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-24-42/log/1748247927811_small.jpg HTTP/1.1" 200 39838
+INFO 2025-05-26 16:27:51,817 basehttp 38552 74724 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-24-42/log/1748247932631_small.jpg HTTP/1.1" 200 36816
+INFO 2025-05-26 16:27:51,817 basehttp 38552 118172 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-24-42/static//image/time.svg HTTP/1.1" 200 820
+INFO 2025-05-26 16:27:51,819 basehttp 38552 77388 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-24-42/log/1748247951162_small.jpg HTTP/1.1" 200 39304
+INFO 2025-05-26 16:27:51,821 basehttp 38552 18268 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-24-42/static//image/step_fail.svg HTTP/1.1" 200 1274
+INFO 2025-05-26 16:27:51,821 basehttp 38552 5136 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-24-42/static//image/eye.svg HTTP/1.1" 200 1935
+INFO 2025-05-26 16:27:51,821 basehttp 38552 74724 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-24-42/log/1748247946455_small.jpg HTTP/1.1" 200 40899
+INFO 2025-05-26 16:27:51,822 basehttp 38552 63872 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-24-42/log/1748247941855_small.jpg HTTP/1.1" 200 37497
+INFO 2025-05-26 16:27:51,824 basehttp 38552 118172 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-24-42/static//image/success.svg HTTP/1.1" 200 1156
+INFO 2025-05-26 16:27:51,824 basehttp 38552 77388 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-24-42/log/1748247937167_small.jpg HTTP/1.1" 200 39133
+INFO 2025-05-26 16:27:54,170 basehttp 38552 77388 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-16-24-42/static//image/step_success.svg HTTP/1.1" 200 1144
+INFO 2025-05-26 16:30:54,972 basehttp 38552 77388 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-05-26 16:33:33,086 basehttp 38552 77388 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-26 16:33:33,102 log 38552 77388 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-26 16:33:33,102 basehttp 38552 77388 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-26 16:33:33,458 basehttp 38552 77388 "POST /api/scripts/ HTTP/1.1" 200 3475
+INFO 2025-05-26 16:33:37,074 basehttp 38552 77388 "POST /api/scripts/edit/ HTTP/1.1" 200 2794
+INFO 2025-05-26 16:34:08,539 basehttp 38552 77388 "POST /api/scripts/edit/ HTTP/1.1" 200 2794
+INFO 2025-05-26 16:34:10,454 basehttp 38552 77388 "POST /api/scripts/edit/ HTTP/1.1" 200 83
+INFO 2025-05-26 16:34:16,476 basehttp 38552 77388 "POST /api/scripts/copy/ HTTP/1.1" 200 280
+INFO 2025-05-26 16:34:21,448 basehttp 38552 77388 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-26 16:34:21,459 log 38552 77388 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-26 16:34:21,460 basehttp 38552 77388 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-26 16:34:21,820 basehttp 38552 77388 "POST /api/scripts/ HTTP/1.1" 200 3677
+INFO 2025-05-26 16:34:24,461 basehttp 38552 77388 "POST /api/scripts/delete/ HTTP/1.1" 200 118
+INFO 2025-05-26 16:34:27,435 basehttp 38552 77388 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-26 16:34:27,446 log 38552 77388 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-26 16:34:27,446 basehttp 38552 77388 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-26 16:34:27,789 basehttp 38552 77388 "POST /api/scripts/ HTTP/1.1" 200 3475
+INFO 2025-05-26 16:55:20,917 autoreload 38552 43996 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\urls.py changed, reloading.
+INFO 2025-05-26 16:55:21,521 autoreload 93060 47520 Watching for file changes with StatReloader
+INFO 2025-05-26 16:57:29,095 autoreload 93060 47520 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\app_lifecycle_api.py changed, reloading.
+INFO 2025-05-26 16:57:29,655 autoreload 108120 111760 Watching for file changes with StatReloader
+INFO 2025-05-26 16:57:40,819 autoreload 108120 111760 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\urls.py changed, reloading.
+INFO 2025-05-26 16:57:41,385 autoreload 35572 34212 Watching for file changes with StatReloader
+INFO 2025-05-26 16:59:46,175 basehttp 35572 100980 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-26 16:59:46,194 log 35572 100980 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-26 16:59:46,194 basehttp 35572 100980 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-26 16:59:46,537 basehttp 35572 100980 "POST /api/scripts/ HTTP/1.1" 200 3475
+INFO 2025-05-26 17:24:50,575 basehttp 35572 19404 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-05-26 17:28:49,345 basehttp 35572 19404 "POST /api/scripts/edit/ HTTP/1.1" 200 1479
+INFO 2025-05-26 17:39:26,641 basehttp 35572 11572 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-26 17:40:07,327 log 35572 11572 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-26 17:40:07,328 basehttp 35572 11572 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-26 17:40:07,330 basehttp 35572 101268 "POST /api/scripts/ HTTP/1.1" 200 3475
+INFO 2025-05-26 17:40:07,390 basehttp 35572 61120 - Broken pipe from ('127.0.0.1', 53158)
+INFO 2025-05-26 17:40:20,642 autoreload 63724 11248 Watching for file changes with StatReloader
+INFO 2025-05-26 17:40:29,267 basehttp 63724 69752 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-26 17:40:29,288 log 63724 69752 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-26 17:40:29,288 basehttp 63724 69752 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-26 17:40:29,637 basehttp 63724 69752 "POST /api/scripts/ HTTP/1.1" 200 3475
+INFO 2025-05-26 17:40:40,520 basehttp 63724 69752 "GET /api/docs/ HTTP/1.1" 200 788
+INFO 2025-05-26 17:40:41,266 basehttp 63724 69752 "GET /api/schema/ HTTP/1.1" 200 18870
+INFO 2025-05-26 17:40:55,060 basehttp 63724 69752 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-05-26 17:47:05,853 basehttp 63724 22832 "POST /api/scripts/edit/ HTTP/1.1" 200 2794
+INFO 2025-05-26 18:33:31,661 basehttp 63724 63524 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-26 18:33:31,677 log 63724 63524 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-26 18:33:31,677 basehttp 63724 63524 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-26 18:33:32,036 basehttp 63724 63524 "POST /api/scripts/ HTTP/1.1" 200 3791
+INFO 2025-05-26 18:33:37,079 basehttp 63724 63524 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-26 18:33:37,089 log 63724 63524 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-26 18:33:37,089 basehttp 63724 63524 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-26 18:33:37,431 basehttp 63724 63524 "POST /api/scripts/ HTTP/1.1" 200 3791
+INFO 2025-05-26 18:33:40,177 basehttp 63724 63524 "POST /api/scripts/edit/ HTTP/1.1" 200 1165
+INFO 2025-05-26 18:34:14,909 basehttp 63724 63524 "POST /api/scripts/edit/ HTTP/1.1" 200 1170
+INFO 2025-05-26 18:35:55,456 basehttp 63724 63524 "POST /api/scripts/edit/ HTTP/1.1" 200 83
+INFO 2025-05-26 18:36:01,292 basehttp 63724 63524 "POST /api/scripts/edit/ HTTP/1.1" 200 1150
+INFO 2025-05-26 18:36:06,963 basehttp 63724 63524 "POST /api/scripts/edit/ HTTP/1.1" 200 1165
+INFO 2025-05-26 18:36:41,429 basehttp 63724 63524 "POST /api/scripts/edit/ HTTP/1.1" 200 83
+INFO 2025-05-26 18:37:16,065 basehttp 63724 63524 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-26 18:37:16,495 basehttp 63724 63524 "POST /api/scripts/ HTTP/1.1" 200 3791
+INFO 2025-05-26 18:37:18,035 basehttp 63724 63524 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-05-26 18:37:38,819 basehttp 63724 63524 "POST /api/scripts/replay/ HTTP/1.1" 200 716
+INFO 2025-05-26 18:38:55,712 basehttp 63724 63524 "GET /pages/reports_template.html HTTP/1.1" 302 0
+INFO 2025-05-26 18:38:56,023 basehttp 63724 63524 "POST /api/reports/summary_list/ HTTP/1.1" 200 28185
+INFO 2025-05-26 18:38:57,923 basehttp 63724 63524 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-18-38-01/log.html HTTP/1.1" 200 14793
+INFO 2025-05-26 18:38:57,934 basehttp 63724 63524 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-18-38-01/static//css/report.css HTTP/1.1" 200 18004
+INFO 2025-05-26 18:38:57,934 basehttp 63724 85028 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-18-38-01/static//js/jquery-1.10.2.min.js HTTP/1.1" 200 93111
+INFO 2025-05-26 18:38:57,936 basehttp 63724 63524 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-18-38-01/static//js/jquery-lang.js HTTP/1.1" 200 25588
+INFO 2025-05-26 18:38:57,937 basehttp 63724 85028 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-18-38-01/static//js/langpack/zh_CN.js HTTP/1.1" 200 2701
+INFO 2025-05-26 18:38:57,937 basehttp 63724 63524 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-18-38-01/static//js/lazyload.js HTTP/1.1" 200 5587
+INFO 2025-05-26 18:38:57,939 basehttp 63724 85028 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-18-38-01/static//image/download_log.svg HTTP/1.1" 200 2550
+INFO 2025-05-26 18:38:57,939 basehttp 63724 63524 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-18-38-01/static//image/copy.svg HTTP/1.1" 200 1013
+INFO 2025-05-26 18:38:58,257 basehttp 63724 63524 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-18-38-01/static//image/Airtest.png HTTP/1.1" 200 1947
+INFO 2025-05-26 18:38:58,258 basehttp 63724 85028 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-18-38-01/static//image/poco.png HTTP/1.1" 200 1385
+INFO 2025-05-26 18:38:58,262 basehttp 63724 85028 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-18-38-01/static//image/AirtestIDE.png HTTP/1.1" 200 3181
+INFO 2025-05-26 18:38:58,262 basehttp 63724 63524 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-18-38-01/static//css/monokai_sublime.min.css HTTP/1.1" 200 2017
+INFO 2025-05-26 18:38:58,265 basehttp 63724 102432 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-18-38-01/static//image/AirLab.png HTTP/1.1" 200 1954
+INFO 2025-05-26 18:38:58,266 basehttp 63724 99644 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-18-38-01/static//js/paging.js HTTP/1.1" 200 13030
+INFO 2025-05-26 18:38:58,267 basehttp 63724 109736 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-18-38-01/static//js/report.js HTTP/1.1" 200 31059
+INFO 2025-05-26 18:38:58,267 basehttp 63724 85028 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-18-38-01/static//image/netease.png HTTP/1.1" 200 7949
+INFO 2025-05-26 18:38:58,267 basehttp 63724 63524 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-18-38-01/static//image/minimize.svg HTTP/1.1" 200 1031
+INFO 2025-05-26 18:38:58,268 basehttp 63724 102432 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-18-38-01/static//image/close.svg HTTP/1.1" 200 729
+INFO 2025-05-26 18:38:58,269 basehttp 63724 63524 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-18-38-01/static//image/maximize.svg HTTP/1.1" 200 1308
+INFO 2025-05-26 18:38:58,269 basehttp 63724 78036 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-18-38-01/static//js/highlight.min.js HTTP/1.1" 200 184850
+INFO 2025-05-26 18:38:58,313 basehttp 63724 78036 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-18-38-01/log/1748255881813_small.jpg HTTP/1.1" 200 21709
+INFO 2025-05-26 18:38:58,314 basehttp 63724 63524 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-18-38-01/log/1748255893831_small.jpg HTTP/1.1" 200 21685
+INFO 2025-05-26 18:38:58,314 basehttp 63724 109736 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-18-38-01/static//image/eye.svg HTTP/1.1" 200 1935
+INFO 2025-05-26 18:38:58,314 basehttp 63724 85028 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-18-38-01/static//image/time.svg HTTP/1.1" 200 820
+INFO 2025-05-26 18:38:58,314 basehttp 63724 102432 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-18-38-01/static//image/step_success.svg HTTP/1.1" 200 1144
+INFO 2025-05-26 18:38:58,314 basehttp 63724 99644 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-18-38-01/static//image/success.svg HTTP/1.1" 200 1156
+INFO 2025-05-26 18:39:00,074 basehttp 63724 99644 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-18-38-01/log/1748255881813.jpg HTTP/1.1" 200 944897
+INFO 2025-05-26 18:39:09,261 basehttp 63724 102432 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-18-38-01/static//image/target.png HTTP/1.1" 200 25732
+INFO 2025-05-26 18:39:09,263 basehttp 63724 99644 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-18-38-01/log/1748255893831.jpg HTTP/1.1" 200 936792
+INFO 2025-05-26 18:39:28,186 basehttp 63724 99644 "POST /api/scripts/edit/ HTTP/1.1" 200 1150
+WARNING 2025-05-26 18:40:18,516 log 63724 99644 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-26 18:40:18,516 basehttp 63724 99644 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-26 18:40:50,195 basehttp 63724 99644 "POST /api/scripts/replay/ HTTP/1.1" 200 447
+INFO 2025-05-26 18:45:41,373 autoreload 63724 11248 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\app_lifecycle_manager.py changed, reloading.
+INFO 2025-05-26 18:45:41,950 autoreload 31368 26196 Watching for file changes with StatReloader
+INFO 2025-05-26 18:45:47,828 autoreload 31368 26196 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\app_lifecycle_manager.py changed, reloading.
+INFO 2025-05-26 18:45:48,419 autoreload 19652 24956 Watching for file changes with StatReloader
+INFO 2025-05-26 18:49:15,180 autoreload 19652 24956 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\app_lifecycle_manager.py changed, reloading.
+INFO 2025-05-26 18:49:15,726 autoreload 21616 92020 Watching for file changes with StatReloader
+INFO 2025-05-26 19:01:19,524 basehttp 21616 106036 "POST /api/reports/summary_list/ HTTP/1.1" 200 32121
+INFO 2025-05-26 19:01:21,429 basehttp 21616 106036 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-19-00-58/log.html HTTP/1.1" 200 12535
+INFO 2025-05-26 19:01:21,441 basehttp 21616 106036 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-19-00-58/static//css/report.css HTTP/1.1" 200 18004
+INFO 2025-05-26 19:01:21,442 basehttp 21616 79948 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-19-00-58/static//js/jquery-1.10.2.min.js HTTP/1.1" 200 93111
+INFO 2025-05-26 19:01:21,443 basehttp 21616 106036 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-19-00-58/static//js/jquery-lang.js HTTP/1.1" 200 25588
+INFO 2025-05-26 19:01:21,444 basehttp 21616 79948 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-19-00-58/static//js/langpack/zh_CN.js HTTP/1.1" 200 2701
+INFO 2025-05-26 19:01:21,445 basehttp 21616 106036 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-19-00-58/static//js/lazyload.js HTTP/1.1" 200 5587
+INFO 2025-05-26 19:01:21,446 basehttp 21616 79948 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-19-00-58/static//image/download_log.svg HTTP/1.1" 200 2550
+INFO 2025-05-26 19:01:21,446 basehttp 21616 106036 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-19-00-58/static//image/copy.svg HTTP/1.1" 200 1013
+INFO 2025-05-26 19:01:21,757 basehttp 21616 106036 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-19-00-58/static//image/Airtest.png HTTP/1.1" 200 1947
+INFO 2025-05-26 19:01:21,757 basehttp 21616 79948 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-19-00-58/static//image/poco.png HTTP/1.1" 200 1385
+INFO 2025-05-26 19:01:21,764 basehttp 21616 106036 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-19-00-58/static//css/monokai_sublime.min.css HTTP/1.1" 200 2017
+INFO 2025-05-26 19:01:21,764 basehttp 21616 79948 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-19-00-58/static//image/AirtestIDE.png HTTP/1.1" 200 3181
+INFO 2025-05-26 19:01:21,765 basehttp 21616 55032 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-19-00-58/static//image/AirLab.png HTTP/1.1" 200 1954
+INFO 2025-05-26 19:01:21,765 basehttp 21616 48260 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-19-00-58/static//js/paging.js HTTP/1.1" 200 13030
+INFO 2025-05-26 19:01:21,765 basehttp 21616 88424 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-19-00-58/static//js/report.js HTTP/1.1" 200 31059
+INFO 2025-05-26 19:01:21,768 basehttp 21616 79948 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-19-00-58/static//image/netease.png HTTP/1.1" 200 7949
+INFO 2025-05-26 19:01:21,768 basehttp 21616 106036 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-19-00-58/static//image/minimize.svg HTTP/1.1" 200 1031
+INFO 2025-05-26 19:01:21,769 basehttp 21616 88424 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-19-00-58/static//image/maximize.svg HTTP/1.1" 200 1308
+INFO 2025-05-26 19:01:21,769 basehttp 21616 110812 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-19-00-58/static//js/highlight.min.js HTTP/1.1" 200 184850
+INFO 2025-05-26 19:01:21,769 basehttp 21616 55032 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-19-00-58/static//image/close.svg HTTP/1.1" 200 729
+INFO 2025-05-26 19:01:21,812 basehttp 21616 55032 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-19-00-58/log/1748257258657_small.jpg HTTP/1.1" 200 42556
+INFO 2025-05-26 19:01:21,812 basehttp 21616 110812 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-19-00-58/log/1748257265008_small.jpg HTTP/1.1" 200 42567
+INFO 2025-05-26 19:01:21,813 basehttp 21616 79948 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-19-00-58/static//image/time.svg HTTP/1.1" 200 820
+INFO 2025-05-26 19:01:21,813 basehttp 21616 88424 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-19-00-58/static//image/step_success.svg HTTP/1.1" 200 1144
+INFO 2025-05-26 19:01:21,813 basehttp 21616 48260 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-19-00-58/static//image/success.svg HTTP/1.1" 200 1156
+INFO 2025-05-26 19:01:21,814 basehttp 21616 106036 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-19-00-58/static//image/eye.svg HTTP/1.1" 200 1935
+INFO 2025-05-26 19:01:23,323 basehttp 21616 106036 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-19-00-58/log/1748257258657.jpg HTTP/1.1" 200 1056113
+INFO 2025-05-26 19:01:23,789 basehttp 21616 48260 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-19-00-58/static//image/target.png HTTP/1.1" 200 25732
+INFO 2025-05-26 19:01:23,794 basehttp 21616 106036 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-26-19-00-58/log/1748257265008.jpg HTTP/1.1" 200 1058744
+INFO 2025-05-26 19:03:22,494 basehttp 21616 106036 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-26 19:03:22,509 log 21616 106036 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-26 19:03:22,509 basehttp 21616 106036 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-26 19:03:22,855 basehttp 21616 106036 "POST /api/scripts/ HTTP/1.1" 200 3791
+INFO 2025-05-26 19:04:10,342 basehttp 21616 106036 "POST /api/scripts/replay/ HTTP/1.1" 200 446
+INFO 2025-05-26 19:04:19,336 basehttp 21616 106036 "GET /pages/reports_template.html HTTP/1.1" 302 0
+INFO 2025-05-26 19:04:26,775 basehttp 21616 106036 "POST /api/reports/summary_list/ HTTP/1.1" 200 33433
+INFO 2025-05-26 19:04:28,855 basehttp 21616 48260 "POST /api/reports/summary_list/ HTTP/1.1" 200 33433
+INFO 2025-05-26 19:04:44,207 basehttp 21616 48260 "POST /api/reports/summary_list/ HTTP/1.1" 200 33433
+INFO 2025-05-26 19:04:46,791 basehttp 21616 48260 "POST /api/reports/summary_list/ HTTP/1.1" 200 33433
+INFO 2025-05-26 19:04:48,485 basehttp 21616 48260 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-26 19:04:48,904 basehttp 21616 48260 "POST /api/scripts/ HTTP/1.1" 200 3791
+INFO 2025-05-26 19:08:15,458 basehttp 21616 48260 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-05-26 19:08:15,600 basehttp 21616 48260 "POST /api/scripts/ HTTP/1.1" 200 3791
+INFO 2025-05-27 10:13:55,564 autoreload 19948 87928 Watching for file changes with StatReloader
+INFO 2025-05-27 10:14:03,657 basehttp 19948 110420 "GET / HTTP/1.1" 200 9797
+INFO 2025-05-27 10:14:06,550 basehttp 19948 110420 "GET /pages/reports_template.html HTTP/1.1" 302 0
+INFO 2025-05-27 10:14:06,553 basehttp 19948 110420 "GET /static/pages/reports_template.html HTTP/1.1" 304 0
+INFO 2025-05-27 10:14:06,858 basehttp 19948 110420 "POST /api/reports/summary_list/ HTTP/1.1" 200 34745
+INFO 2025-05-27 10:14:10,064 basehttp 19948 110420 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-12-53/log.html HTTP/1.1" 200 12546
+INFO 2025-05-27 10:14:10,073 basehttp 19948 110420 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-12-53/static//css/report.css HTTP/1.1" 200 18004
+INFO 2025-05-27 10:14:10,074 basehttp 19948 95484 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-12-53/static//js/jquery-lang.js HTTP/1.1" 200 25588
+INFO 2025-05-27 10:14:10,076 basehttp 19948 110420 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-12-53/static//js/langpack/zh_CN.js HTTP/1.1" 200 2701
+INFO 2025-05-27 10:14:10,076 basehttp 19948 53880 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-12-53/static//js/jquery-1.10.2.min.js HTTP/1.1" 200 93111
+INFO 2025-05-27 10:14:10,076 basehttp 19948 95484 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-12-53/static//js/lazyload.js HTTP/1.1" 200 5587
+INFO 2025-05-27 10:14:10,078 basehttp 19948 110420 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-12-53/static//image/download_log.svg HTTP/1.1" 200 2550
+INFO 2025-05-27 10:14:10,078 basehttp 19948 53880 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-12-53/static//image/copy.svg HTTP/1.1" 200 1013
+INFO 2025-05-27 10:14:10,382 basehttp 19948 53880 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-12-53/static//image/Airtest.png HTTP/1.1" 200 1947
+INFO 2025-05-27 10:14:10,383 basehttp 19948 110420 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-12-53/static//image/poco.png HTTP/1.1" 200 1385
+INFO 2025-05-27 10:14:10,387 basehttp 19948 53880 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-12-53/static//css/monokai_sublime.min.css HTTP/1.1" 200 2017
+INFO 2025-05-27 10:14:10,387 basehttp 19948 110420 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-12-53/static//image/AirtestIDE.png HTTP/1.1" 200 3181
+INFO 2025-05-27 10:14:10,390 basehttp 19948 73440 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-12-53/static//image/AirLab.png HTTP/1.1" 200 1954
+INFO 2025-05-27 10:14:10,390 basehttp 19948 53880 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-12-53/static//image/minimize.svg HTTP/1.1" 200 1031
+INFO 2025-05-27 10:14:10,390 basehttp 19948 75208 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-12-53/static//js/paging.js HTTP/1.1" 200 13030
+INFO 2025-05-27 10:14:10,391 basehttp 19948 110420 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-12-53/static//image/netease.png HTTP/1.1" 200 7949
+INFO 2025-05-27 10:14:10,391 basehttp 19948 50364 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-12-53/static//js/report.js HTTP/1.1" 200 31059
+INFO 2025-05-27 10:14:10,392 basehttp 19948 73440 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-12-53/static//image/close.svg HTTP/1.1" 200 729
+INFO 2025-05-27 10:14:10,393 basehttp 19948 75208 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-12-53/static//image/maximize.svg HTTP/1.1" 200 1308
+INFO 2025-05-27 10:14:10,394 basehttp 19948 95484 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-12-53/static//js/highlight.min.js HTTP/1.1" 200 184850
+INFO 2025-05-27 10:14:10,435 basehttp 19948 95484 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-12-53/log/1748311978071_small.jpg HTTP/1.1" 200 19892
+INFO 2025-05-27 10:14:10,435 basehttp 19948 75208 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-12-53/log/1748311973684_small.jpg HTTP/1.1" 200 19892
+INFO 2025-05-27 10:14:10,436 basehttp 19948 73440 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-12-53/static//image/step_success.svg HTTP/1.1" 200 1144
+INFO 2025-05-27 10:14:10,436 basehttp 19948 53880 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-12-53/static//image/success.svg HTTP/1.1" 200 1156
+INFO 2025-05-27 10:14:10,436 basehttp 19948 110420 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-12-53/static//image/time.svg HTTP/1.1" 200 820
+INFO 2025-05-27 10:14:10,436 basehttp 19948 50364 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-12-53/static//image/eye.svg HTTP/1.1" 200 1935
+INFO 2025-05-27 10:14:14,530 basehttp 19948 110420 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-12-53/log/1748311973684.jpg HTTP/1.1" 200 387548
+INFO 2025-05-27 10:14:15,290 basehttp 19948 110420 "GET /api/docs/ HTTP/1.1" 200 788
+INFO 2025-05-27 10:14:16,035 basehttp 19948 110420 "GET /api/schema/ HTTP/1.1" 200 18870
+INFO 2025-05-27 10:14:35,746 basehttp 19948 110420 "POST /api/reports/summary_list/ HTTP/1.1" 200 34745
+INFO 2025-05-27 10:14:37,736 basehttp 19948 110420 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-12-56/log.html HTTP/1.1" 200 12554
+INFO 2025-05-27 10:14:37,749 basehttp 19948 73440 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-12-56/static//js/langpack/zh_CN.js HTTP/1.1" 200 2701
+INFO 2025-05-27 10:14:37,749 basehttp 19948 95484 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-12-56/static//image/download_log.svg HTTP/1.1" 200 2550
+INFO 2025-05-27 10:14:37,750 basehttp 19948 110420 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-12-56/static//css/report.css HTTP/1.1" 200 18004
+INFO 2025-05-27 10:14:37,750 basehttp 19948 75208 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-12-56/static//js/lazyload.js HTTP/1.1" 200 5587
+INFO 2025-05-27 10:14:37,751 basehttp 19948 50364 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-12-56/static//js/jquery-lang.js HTTP/1.1" 200 25588
+INFO 2025-05-27 10:14:37,751 basehttp 19948 95484 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-12-56/static//image/copy.svg HTTP/1.1" 200 1013
+INFO 2025-05-27 10:14:37,751 basehttp 19948 53880 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-12-56/static//js/jquery-1.10.2.min.js HTTP/1.1" 200 93111
+INFO 2025-05-27 10:14:38,047 basehttp 19948 95484 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-12-56/static//image/Airtest.png HTTP/1.1" 200 1947
+INFO 2025-05-27 10:14:38,049 basehttp 19948 53880 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-12-56/static//image/poco.png HTTP/1.1" 200 1385
+INFO 2025-05-27 10:14:38,056 basehttp 19948 53880 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-12-56/static//image/AirtestIDE.png HTTP/1.1" 200 3181
+INFO 2025-05-27 10:14:38,057 basehttp 19948 95484 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-12-56/static//css/monokai_sublime.min.css HTTP/1.1" 200 2017
+INFO 2025-05-27 10:14:38,059 basehttp 19948 75208 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-12-56/static//js/paging.js HTTP/1.1" 200 13030
+INFO 2025-05-27 10:14:38,059 basehttp 19948 110420 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-12-56/static//js/report.js HTTP/1.1" 200 31059
+INFO 2025-05-27 10:14:38,059 basehttp 19948 53880 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-12-56/static//image/netease.png HTTP/1.1" 200 7949
+INFO 2025-05-27 10:14:38,060 basehttp 19948 95484 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-12-56/static//image/minimize.svg HTTP/1.1" 200 1031
+INFO 2025-05-27 10:14:38,060 basehttp 19948 73440 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-12-56/static//image/AirLab.png HTTP/1.1" 200 1954
+INFO 2025-05-27 10:14:38,062 basehttp 19948 75208 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-12-56/static//image/close.svg HTTP/1.1" 200 729
+INFO 2025-05-27 10:14:38,062 basehttp 19948 95484 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-12-56/static//image/maximize.svg HTTP/1.1" 200 1308
+INFO 2025-05-27 10:14:38,063 basehttp 19948 50364 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-12-56/static//js/highlight.min.js HTTP/1.1" 200 184850
+INFO 2025-05-27 10:14:38,093 basehttp 19948 50364 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-12-56/log/1748311976587_small.jpg HTTP/1.1" 200 36246
+INFO 2025-05-27 10:14:38,094 basehttp 19948 95484 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-12-56/log/1748311981419_small.jpg HTTP/1.1" 200 36252
+INFO 2025-05-27 10:14:38,094 basehttp 19948 73440 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-12-56/static//image/eye.svg HTTP/1.1" 200 1935
+INFO 2025-05-27 10:14:38,094 basehttp 19948 110420 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-12-56/static//image/time.svg HTTP/1.1" 200 820
+INFO 2025-05-27 10:14:38,094 basehttp 19948 53880 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-12-56/static//image/success.svg HTTP/1.1" 200 1156
+INFO 2025-05-27 10:14:38,094 basehttp 19948 75208 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-12-56/static//image/step_success.svg HTTP/1.1" 200 1144
+INFO 2025-05-27 10:14:41,178 basehttp 19948 75208 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-12-56/log/1748311976587.jpg HTTP/1.1" 200 580272
+INFO 2025-05-27 10:14:42,212 basehttp 19948 53880 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-12-56/static//image/target.png HTTP/1.1" 200 25732
+INFO 2025-05-27 10:14:42,214 basehttp 19948 75208 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-12-56/log/1748311981419.jpg HTTP/1.1" 200 580620
+INFO 2025-05-27 10:14:42,366 basehttp 19948 75208 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-12-56/static//image/order.svg HTTP/1.1" 200 499
+INFO 2025-05-27 10:14:59,845 basehttp 19948 75208 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-12-53/log.html HTTP/1.1" 304 0
+INFO 2025-05-27 10:15:00,201 basehttp 19948 75208 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-12-53/log/1748311973684_small.jpg HTTP/1.1" 304 0
+INFO 2025-05-27 10:15:00,201 basehttp 19948 53880 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-12-53/log/1748311978071_small.jpg HTTP/1.1" 304 0
+INFO 2025-05-27 10:15:37,392 basehttp 19948 53880 "POST /api/reports/summary_list/ HTTP/1.1" 200 36057
+INFO 2025-05-27 10:15:38,159 basehttp 19948 53880 "POST /api/reports/summary_list/ HTTP/1.1" 200 36057
+INFO 2025-05-27 10:15:39,253 basehttp 19948 53880 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-15-20/log.html HTTP/1.1" 200 12535
+INFO 2025-05-27 10:15:39,266 basehttp 19948 73440 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-15-20/static//js/langpack/zh_CN.js HTTP/1.1" 200 2701
+INFO 2025-05-27 10:15:39,266 basehttp 19948 50364 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-15-20/static//image/download_log.svg HTTP/1.1" 200 2550
+INFO 2025-05-27 10:15:39,266 basehttp 19948 95484 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-15-20/static//js/lazyload.js HTTP/1.1" 200 5587
+INFO 2025-05-27 10:15:39,266 basehttp 19948 53880 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-15-20/static//css/report.css HTTP/1.1" 200 18004
+INFO 2025-05-27 10:15:39,267 basehttp 19948 110420 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-15-20/static//js/jquery-lang.js HTTP/1.1" 200 25588
+INFO 2025-05-27 10:15:39,268 basehttp 19948 75208 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-15-20/static//js/jquery-1.10.2.min.js HTTP/1.1" 200 93111
+INFO 2025-05-27 10:15:39,269 basehttp 19948 53880 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-15-20/static//image/copy.svg HTTP/1.1" 200 1013
+INFO 2025-05-27 10:15:39,558 basehttp 19948 53880 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-15-20/static//image/Airtest.png HTTP/1.1" 200 1947
+INFO 2025-05-27 10:15:39,560 basehttp 19948 75208 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-15-20/static//image/poco.png HTTP/1.1" 200 1385
+INFO 2025-05-27 10:15:39,564 basehttp 19948 53880 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-15-20/static//css/monokai_sublime.min.css HTTP/1.1" 200 2017
+INFO 2025-05-27 10:15:39,565 basehttp 19948 75208 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-15-20/static//image/AirtestIDE.png HTTP/1.1" 200 3181
+INFO 2025-05-27 10:15:39,566 basehttp 19948 50364 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-15-20/static//image/AirLab.png HTTP/1.1" 200 1954
+INFO 2025-05-27 10:15:39,567 basehttp 19948 95484 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-15-20/static//js/paging.js HTTP/1.1" 200 13030
+INFO 2025-05-27 10:15:39,567 basehttp 19948 73440 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-15-20/static//js/report.js HTTP/1.1" 200 31059
+INFO 2025-05-27 10:15:39,568 basehttp 19948 53880 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-15-20/static//image/netease.png HTTP/1.1" 200 7949
+INFO 2025-05-27 10:15:39,569 basehttp 19948 75208 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-15-20/static//image/minimize.svg HTTP/1.1" 200 1031
+INFO 2025-05-27 10:15:39,569 basehttp 19948 50364 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-15-20/static//image/close.svg HTTP/1.1" 200 729
+INFO 2025-05-27 10:15:39,570 basehttp 19948 73440 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-15-20/static//image/maximize.svg HTTP/1.1" 200 1308
+INFO 2025-05-27 10:15:39,570 basehttp 19948 110420 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-15-20/static//js/highlight.min.js HTTP/1.1" 200 184850
+INFO 2025-05-27 10:15:39,596 basehttp 19948 50364 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-15-20/static//image/step_success.svg HTTP/1.1" 200 1144
+INFO 2025-05-27 10:15:39,596 basehttp 19948 110420 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-15-20/log/1748312120099_small.jpg HTTP/1.1" 200 19883
+INFO 2025-05-27 10:15:39,597 basehttp 19948 73440 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-15-20/log/1748312126512_small.jpg HTTP/1.1" 200 19883
+INFO 2025-05-27 10:15:39,597 basehttp 19948 75208 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-15-20/static//image/eye.svg HTTP/1.1" 200 1935
+INFO 2025-05-27 10:15:39,597 basehttp 19948 53880 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-15-20/static//image/time.svg HTTP/1.1" 200 820
+INFO 2025-05-27 10:15:39,597 basehttp 19948 95484 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-27-10-15-20/static//image/success.svg HTTP/1.1" 200 1156
+INFO 2025-05-27 10:15:43,089 basehttp 19948 95484 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-15-22/log.html HTTP/1.1" 200 12543
+INFO 2025-05-27 10:15:43,103 basehttp 19948 110420 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-15-22/static//image/download_log.svg HTTP/1.1" 200 2550
+INFO 2025-05-27 10:15:43,104 basehttp 19948 73440 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-15-22/static//js/langpack/zh_CN.js HTTP/1.1" 200 2701
+INFO 2025-05-27 10:15:43,105 basehttp 19948 95484 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-15-22/static//css/report.css HTTP/1.1" 200 18004
+INFO 2025-05-27 10:15:43,105 basehttp 19948 50364 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-15-22/static//js/lazyload.js HTTP/1.1" 200 5587
+INFO 2025-05-27 10:15:43,106 basehttp 19948 75208 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-15-22/static//js/jquery-lang.js HTTP/1.1" 200 25588
+INFO 2025-05-27 10:15:43,106 basehttp 19948 110420 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-15-22/static//image/copy.svg HTTP/1.1" 200 1013
+INFO 2025-05-27 10:15:43,107 basehttp 19948 53880 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-15-22/static//js/jquery-1.10.2.min.js HTTP/1.1" 200 93111
+INFO 2025-05-27 10:15:43,398 basehttp 19948 110420 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-15-22/static//image/Airtest.png HTTP/1.1" 200 1947
+INFO 2025-05-27 10:15:43,400 basehttp 19948 53880 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-15-22/static//image/poco.png HTTP/1.1" 200 1385
+INFO 2025-05-27 10:15:43,403 basehttp 19948 110420 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-15-22/static//css/monokai_sublime.min.css HTTP/1.1" 200 2017
+INFO 2025-05-27 10:15:43,405 basehttp 19948 53880 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-15-22/static//image/AirtestIDE.png HTTP/1.1" 200 3181
+INFO 2025-05-27 10:15:43,407 basehttp 19948 110420 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-15-22/static//image/netease.png HTTP/1.1" 200 7949
+INFO 2025-05-27 10:15:43,407 basehttp 19948 73440 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-15-22/static//image/AirLab.png HTTP/1.1" 200 1954
+INFO 2025-05-27 10:15:43,408 basehttp 19948 53880 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-15-22/static//image/minimize.svg HTTP/1.1" 200 1031
+INFO 2025-05-27 10:15:43,408 basehttp 19948 75208 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-15-22/static//js/paging.js HTTP/1.1" 200 13030
+INFO 2025-05-27 10:15:43,408 basehttp 19948 95484 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-15-22/static//js/report.js HTTP/1.1" 200 31059
+INFO 2025-05-27 10:15:43,409 basehttp 19948 110420 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-15-22/static//image/close.svg HTTP/1.1" 200 729
+INFO 2025-05-27 10:15:43,410 basehttp 19948 75208 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-15-22/static//image/maximize.svg HTTP/1.1" 200 1308
+INFO 2025-05-27 10:15:43,410 basehttp 19948 50364 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-15-22/static//js/highlight.min.js HTTP/1.1" 200 184850
+INFO 2025-05-27 10:15:43,438 basehttp 19948 75208 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-15-22/log/1748312122888_small.jpg HTTP/1.1" 200 36256
+INFO 2025-05-27 10:15:43,438 basehttp 19948 50364 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-15-22/log/1748312129541_small.jpg HTTP/1.1" 200 36256
+INFO 2025-05-27 10:15:43,439 basehttp 19948 110420 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-15-22/static//image/step_success.svg HTTP/1.1" 200 1144
+INFO 2025-05-27 10:15:43,439 basehttp 19948 53880 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-15-22/static//image/time.svg HTTP/1.1" 200 820
+INFO 2025-05-27 10:15:43,439 basehttp 19948 95484 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-15-22/static//image/eye.svg HTTP/1.1" 200 1935
+INFO 2025-05-27 10:15:43,439 basehttp 19948 73440 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-15-22/static//image/success.svg HTTP/1.1" 200 1156
+INFO 2025-05-27 10:15:45,173 basehttp 19948 73440 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-15-22/log/1748312122888.jpg HTTP/1.1" 200 580329
+INFO 2025-05-27 10:15:45,856 basehttp 19948 95484 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-15-22/static//image/target.png HTTP/1.1" 200 25732
+INFO 2025-05-27 10:15:45,858 basehttp 19948 73440 "GET /static/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00-1228x2700_2025-05-27-10-15-22/log/1748312129541.jpg HTTP/1.1" 200 580329
+INFO 2025-05-27 10:17:37,158 basehttp 19948 73440 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-27 10:17:37,162 basehttp 19948 73440 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-05-27 10:17:37,588 basehttp 19948 73440 "POST /api/scripts/ HTTP/1.1" 200 3791
+INFO 2025-05-27 10:17:39,412 basehttp 19948 73440 "POST /api/scripts/debug/ HTTP/1.1" 200 90
+INFO 2025-05-27 10:19:04,959 basehttp 19948 73440 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-05-27 10:41:30,491 basehttp 19948 38416 "POST /api/scripts/debug/ HTTP/1.1" 200 90
+INFO 2025-05-27 13:27:43,471 autoreload 87116 84936 Watching for file changes with StatReloader
+INFO 2025-05-27 13:27:51,486 basehttp 87116 42532 "GET / HTTP/1.1" 200 9797
+WARNING 2025-05-27 13:27:51,511 log 87116 42532 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-27 13:27:51,512 basehttp 87116 42532 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-27 13:27:56,303 basehttp 87116 42532 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-27 13:27:56,305 basehttp 87116 42532 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-27 13:27:56,326 log 87116 42532 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-27 13:27:56,326 basehttp 87116 42532 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-27 13:27:56,666 basehttp 87116 42532 "POST /api/scripts/ HTTP/1.1" 200 3791
+INFO 2025-05-27 13:28:03,269 basehttp 87116 42532 "GET /api/docs/ HTTP/1.1" 200 788
+INFO 2025-05-27 13:28:04,190 basehttp 87116 42532 "GET /api/schema/ HTTP/1.1" 200 18870
+INFO 2025-05-27 13:28:09,620 basehttp 87116 42532 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-27 13:28:09,635 log 87116 42532 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-27 13:28:09,635 basehttp 87116 42532 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-27 13:28:09,968 basehttp 87116 42532 "POST /api/scripts/ HTTP/1.1" 200 3791
+INFO 2025-05-27 13:28:25,391 basehttp 87116 42532 "POST /api/scripts/edit/ HTTP/1.1" 200 1138
+INFO 2025-05-27 13:28:26,677 basehttp 87116 42532 "POST /api/scripts/edit/ HTTP/1.1" 200 83
+INFO 2025-05-27 13:28:31,662 basehttp 87116 42532 "POST /api/scripts/copy/ HTTP/1.1" 200 250
+INFO 2025-05-27 13:29:05,647 basehttp 87116 42532 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-05-27 13:40:29,466 autoreload 87116 84936 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-05-27 13:40:30,103 autoreload 101784 46560 Watching for file changes with StatReloader
+INFO 2025-05-27 13:40:38,141 autoreload 101784 46560 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-05-27 13:40:38,680 autoreload 57396 74620 Watching for file changes with StatReloader
+INFO 2025-05-27 13:40:48,825 autoreload 57396 74620 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-05-27 13:40:49,358 autoreload 24660 105864 Watching for file changes with StatReloader
+INFO 2025-05-27 13:41:59,184 autoreload 24660 105864 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-05-27 13:41:59,748 autoreload 111608 56788 Watching for file changes with StatReloader
+INFO 2025-05-27 13:42:10,944 autoreload 111608 56788 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\urls.py changed, reloading.
+INFO 2025-05-27 13:42:11,484 autoreload 38572 106196 Watching for file changes with StatReloader
+INFO 2025-05-27 13:46:12,292 autoreload 38572 106196 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-05-27 13:46:12,875 autoreload 3924 70536 Watching for file changes with StatReloader
+INFO 2025-05-27 13:46:17,681 autoreload 3924 70536 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\urls.py changed, reloading.
+INFO 2025-05-27 13:46:18,246 autoreload 83728 110380 Watching for file changes with StatReloader
+INFO 2025-05-27 13:46:32,557 autoreload 83728 110380 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\models.py changed, reloading.
+INFO 2025-05-27 13:46:33,104 autoreload 95872 71772 Watching for file changes with StatReloader
+INFO 2025-05-27 13:46:41,869 autoreload 95872 71772 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\models.py changed, reloading.
+INFO 2025-05-27 13:46:42,391 autoreload 78664 101448 Watching for file changes with StatReloader
+INFO 2025-05-27 13:48:57,885 basehttp 78664 105948 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-27 13:48:57,908 log 78664 105948 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-27 13:48:57,908 basehttp 78664 105948 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-27 13:48:58,251 basehttp 78664 105948 "POST /api/scripts/ HTTP/1.1" 200 3962
+INFO 2025-05-27 14:02:28,012 autoreload 78664 101448 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-05-27 14:02:28,579 autoreload 103428 66644 Watching for file changes with StatReloader
+INFO 2025-05-27 14:02:50,285 autoreload 103428 66644 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-05-27 14:02:50,823 autoreload 82476 62872 Watching for file changes with StatReloader
+INFO 2025-05-27 14:17:16,516 autoreload 67972 71420 Watching for file changes with StatReloader
+INFO 2025-05-27 14:17:23,312 basehttp 67972 89244 "GET / HTTP/1.1" 200 9797
+WARNING 2025-05-27 14:17:23,352 log 67972 89244 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-27 14:17:23,353 basehttp 67972 89244 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-27 14:17:25,198 basehttp 67972 89244 "GET /pages/scripts.html HTTP/1.1" 302 0
+WARNING 2025-05-27 14:17:25,222 log 67972 89244 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-27 14:17:25,222 basehttp 67972 89244 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-27 14:17:25,564 basehttp 67972 89244 "POST /api/scripts/ HTTP/1.1" 200 3962
+INFO 2025-05-27 14:17:36,329 basehttp 67972 89244 "GET /api/docs/ HTTP/1.1" 200 788
+INFO 2025-05-27 14:17:37,139 basehttp 67972 89244 "GET /api/schema/ HTTP/1.1" 200 18870
+INFO 2025-05-27 14:34:26,304 basehttp 67972 15140 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-05-27 16:20:37,669 basehttp 67972 42804 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-27 16:20:37,708 log 67972 42804 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-27 16:20:37,709 basehttp 67972 42804 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-27 16:20:38,043 basehttp 67972 42804 "POST /api/scripts/ HTTP/1.1" 200 4133
+INFO 2025-05-27 17:55:45,833 autoreload 67972 71420 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-27 18:16:10,613 autoreload 100480 39608 Watching for file changes with StatReloader
+WARNING 2025-05-27 18:17:18,975 log 100480 67568 Method Not Allowed: /api/scripts/
+WARNING 2025-05-27 18:17:18,976 basehttp 100480 67568 "GET /api/scripts/ HTTP/1.1" 405 45
+INFO 2025-05-27 18:18:44,360 autoreload 100480 39608 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-27 18:18:44,908 autoreload 104480 19624 Watching for file changes with StatReloader
+INFO 2025-05-27 18:20:33,210 basehttp 104480 39500 "GET / HTTP/1.1" 200 9797
+INFO 2025-05-27 18:20:35,377 basehttp 104480 111016 "GET / HTTP/1.1" 200 9797
+WARNING 2025-05-27 18:20:58,273 log 104480 39500 Bad Request: /api/scripts/replay/
+WARNING 2025-05-27 18:20:58,274 basehttp 104480 39500 "POST /api/scripts/replay/ HTTP/1.1" 400 75
+INFO 2025-05-27 18:21:40,353 basehttp 104480 39500 "POST /api/scripts/replay/ HTTP/1.1" 200 474
+WARNING 2025-05-27 18:21:40,377 log 104480 34348 Method Not Allowed: /api/scripts/replay/
+WARNING 2025-05-27 18:21:40,378 basehttp 104480 34348 "GET /api/scripts/replay/ HTTP/1.1" 405 45
+INFO 2025-05-27 18:22:01,866 basehttp 104480 39500 "POST /api/scripts/replay/ HTTP/1.1" 200 474
+WARNING 2025-05-27 18:22:01,883 log 104480 34348 Method Not Allowed: /api/scripts/replay/
+WARNING 2025-05-27 18:22:01,884 basehttp 104480 34348 "GET /api/scripts/replay/ HTTP/1.1" 405 45
+INFO 2025-05-27 18:22:10,881 basehttp 104480 31440 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+WARNING 2025-05-27 18:23:44,671 log 104480 68776 Not Found: /api/scripts/replay/
+WARNING 2025-05-27 18:23:44,671 basehttp 104480 68776 "POST /api/scripts/replay/ HTTP/1.1" 404 213
+INFO 2025-05-27 18:23:55,215 basehttp 104480 68776 "POST /api/scripts/replay/ HTTP/1.1" 200 475
+WARNING 2025-05-27 18:23:55,314 log 104480 25764 Method Not Allowed: /api/scripts/replay/
+WARNING 2025-05-27 18:23:55,315 basehttp 104480 25764 "GET /api/scripts/replay/ HTTP/1.1" 405 45
+WARNING 2025-05-27 18:27:40,146 log 104480 105960 Not Found: /api/scripts/1/replay/
+WARNING 2025-05-27 18:27:40,148 basehttp 104480 105960 "POST /api/scripts/1/replay/ HTTP/1.1" 404 21011
+WARNING 2025-05-27 18:28:03,136 log 104480 105960 Not Found: /api/scripts/scripts/1/execute
+WARNING 2025-05-27 18:28:03,136 basehttp 104480 105960 "POST /api/scripts/scripts/1/execute HTTP/1.1" 404 47
+INFO 2025-05-27 18:33:53,891 basehttp 104480 106780 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-27 18:33:53,919 log 104480 106780 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-27 18:33:53,919 basehttp 104480 106780 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-27 18:33:54,261 basehttp 104480 106780 "POST /api/scripts/ HTTP/1.1" 200 3358
+INFO 2025-05-27 18:34:09,176 basehttp 104480 106780 "POST /api/scripts/replay/ HTTP/1.1" 200 504
+INFO 2025-05-27 18:34:56,427 basehttp 104480 106780 "POST /api/scripts/edit/ HTTP/1.1" 200 445
+INFO 2025-05-27 18:45:50,629 basehttp 104480 101608 "POST /api/scripts/edit/ HTTP/1.1" 200 445
+INFO 2025-05-27 18:45:56,881 basehttp 104480 101608 "POST /api/scripts/edit/ HTTP/1.1" 200 445
+INFO 2025-05-27 18:47:00,989 basehttp 104480 101608 "GET /static/pages/scripts.html HTTP/1.1" 200 70905
+WARNING 2025-05-27 18:47:01,009 log 104480 101608 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-27 18:47:01,009 basehttp 104480 101608 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-27 18:47:01,346 basehttp 104480 101608 "POST /api/scripts/ HTTP/1.1" 200 3358
+INFO 2025-05-27 18:47:17,331 basehttp 104480 101608 "POST /api/scripts/delete/ HTTP/1.1" 200 105
+INFO 2025-05-27 18:47:20,169 basehttp 104480 101608 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-27 18:47:20,188 log 104480 101608 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-27 18:47:20,188 basehttp 104480 101608 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-27 18:47:20,517 basehttp 104480 101608 "POST /api/scripts/ HTTP/1.1" 200 3171
+INFO 2025-05-27 18:47:58,686 basehttp 104480 101608 "POST /api/scripts/edit/ HTTP/1.1" 200 1138
+INFO 2025-05-27 18:48:20,044 basehttp 104480 101608 "POST /api/scripts/edit/ HTTP/1.1" 200 1138
+INFO 2025-05-27 18:49:02,363 basehttp 104480 101608 "POST /api/scripts/edit/ HTTP/1.1" 200 83
+INFO 2025-05-27 18:49:06,930 basehttp 104480 101608 "POST /api/scripts/edit/ HTTP/1.1" 200 1133
+INFO 2025-05-27 18:49:27,441 basehttp 104480 101608 "POST /api/scripts/edit/ HTTP/1.1" 200 83
+INFO 2025-05-27 18:50:59,398 basehttp 104480 101608 "POST /api/scripts/edit/ HTTP/1.1" 200 592
+INFO 2025-05-28 10:13:52,035 autoreload 103280 56712 Watching for file changes with StatReloader
+INFO 2025-05-28 10:13:56,988 basehttp 103280 110280 "GET /static/pages/scripts.html HTTP/1.1" 200 70905
+WARNING 2025-05-28 10:13:57,008 log 103280 110280 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-28 10:13:57,008 basehttp 103280 110280 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-28 10:13:57,381 basehttp 103280 110280 "POST /api/scripts/ HTTP/1.1" 200 3171
+INFO 2025-05-28 10:13:58,992 basehttp 103280 110280 "POST /api/scripts/debug/ HTTP/1.1" 200 88
+INFO 2025-05-28 10:14:11,906 basehttp 103280 110280 "GET /api/docs/ HTTP/1.1" 200 788
+INFO 2025-05-28 10:14:12,684 basehttp 103280 110280 "GET /api/schema/ HTTP/1.1" 200 18870
+INFO 2025-05-28 10:16:29,740 basehttp 103280 110280 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-28 10:16:29,758 log 103280 110280 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-28 10:16:29,758 basehttp 103280 110280 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-28 10:16:30,095 basehttp 103280 110280 "POST /api/scripts/ HTTP/1.1" 200 3171
+INFO 2025-05-28 10:16:31,555 basehttp 103280 110280 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-05-28 13:29:51,489 autoreload 112576 44868 Watching for file changes with StatReloader
+INFO 2025-05-28 13:29:53,605 basehttp 112576 101428 "GET / HTTP/1.1" 200 9797
+WARNING 2025-05-28 13:29:53,629 log 112576 101428 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-28 13:29:53,630 basehttp 112576 101428 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-28 13:29:55,313 basehttp 112576 101428 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-28 13:29:55,316 basehttp 112576 101428 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+WARNING 2025-05-28 13:29:55,341 log 112576 101428 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-05-28 13:29:55,341 basehttp 112576 101428 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4832
+INFO 2025-05-28 13:29:55,688 basehttp 112576 101428 "POST /api/scripts/ HTTP/1.1" 200 3171
+INFO 2025-05-28 13:30:05,169 basehttp 112576 101428 "POST /api/scripts/debug/ HTTP/1.1" 200 90
+INFO 2025-05-28 13:30:11,270 basehttp 112576 101428 "GET /api/docs/ HTTP/1.1" 200 788
+INFO 2025-05-28 13:30:12,009 basehttp 112576 101428 "GET /api/schema/ HTTP/1.1" 200 18870

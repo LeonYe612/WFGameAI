@@ -837,6 +837,29 @@ def replay_script(request):
             # 更新配置中的路径
             config['path'] = path_input
 
+            # 查找脚本文件的数据库记录以获取分类信息
+            try:
+                from .models import ScriptFile
+                # 尝试通过文件路径查找脚本记录
+                script_file = ScriptFile.objects.filter(file_path=path_input).first()
+                if not script_file:
+                    # 如果通过完整路径找不到，尝试通过文件名查找
+                    filename = os.path.basename(path_input)
+                    script_file = ScriptFile.objects.filter(filename=filename).first()
+
+                if script_file:
+                    config['script_id'] = script_file.pk
+                    config['category'] = script_file.category.name if script_file.category else None
+                    logger.info(f"找到脚本记录: ID={script_file.pk}, 分类={config['category']}")
+                else:
+                    config['script_id'] = None
+                    config['category'] = None
+                    logger.warning(f"未找到脚本文件的数据库记录: {path_input}")
+            except Exception as e:
+                logger.error(f"查询脚本分类时出错: {e}")
+                config['script_id'] = None
+                config['category'] = None
+
         # 获取Python解释器路径
         python_exec = get_persistent_python_path()
         logger.info(f"使用Python环境: {python_exec}")
@@ -858,6 +881,15 @@ def replay_script(request):
         for config in script_configs:
             script_path = config.get('path')
             cmd.extend(["--script", script_path])
+
+            # 添加脚本ID和分类信息
+            script_id = config.get('script_id')
+            if script_id:
+                cmd.extend(["--script-id", str(script_id)])
+
+            category = config.get('category')
+            if category:
+                cmd.extend(["--script-category", category])
 
             # 添加循环次数
             loop_count = config.get('loop_count')

@@ -39,7 +39,7 @@
     },
     "python.defaultInterpreterPath": "F:\\QA\\Software\\anaconda3\\envs\\py39_yolov10\\python.exe",
     "workbench.panel.defaultLocation": "right",
-    "terminal.integrated.defaultProfile.windows": "PowerShell",
+    "terminal.integrated.defaultProfile.windows": "Command Prompt",
     "terminal.integrated.profiles.windows": {
         "PowerShell": {
             "source": "PowerShell",

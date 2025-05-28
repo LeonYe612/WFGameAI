@@ -33,6 +33,19 @@ from .views import (
     delete_script
 )
 
+# 应用生命周期管理API
+from .app_lifecycle_api import (
+    get_app_templates,
+    create_app_template,
+    start_app,
+    stop_app,
+    restart_app,
+    get_app_status,
+    get_connected_devices,
+    batch_operation,
+    health_check
+)
+
 # 创建路由器并注册视图集
 router = DefaultRouter(trailing_slash=False)
 router.register(r'categories', ScriptCategoryViewSet)
@@ -58,7 +71,8 @@ urlpatterns = [
     # 新增API端点
     path('debug/', debug_script, name='debug-script'),
     path('start-record/', start_record, name='start-record'),
-    path('import/', import_script, name='import-script'),    path('edit/', edit_script_view, name='edit-script'),
+    path('import/', import_script, name='import-script'),
+    path('edit/', edit_script_view, name='edit-script'),
     path('edit/<path:script_path>/', edit_script_view, name='edit-script-with-path'),
     path('copy/', copy_script, name='copy-script'),
     path('delete/', delete_script, name='delete-script'),
@@ -66,4 +80,15 @@ urlpatterns = [
     # Python环境管理
     path('python-envs/', get_python_envs, name='get-python-envs'),
     path('switch-python-env/', switch_python_env, name='switch-python-env'),
+
+    # 应用生命周期管理API
+    path('app-lifecycle/templates/', get_app_templates, name='get-app-templates'),
+    path('app-lifecycle/templates/create/', create_app_template, name='create-app-template'),
+    path('app-lifecycle/start/', start_app, name='start-app'),
+    path('app-lifecycle/stop/', stop_app, name='stop-app'),
+    path('app-lifecycle/restart/', restart_app, name='restart-app'),
+    path('app-lifecycle/status/', get_app_status, name='get-app-status'),
+    path('app-lifecycle/devices/', get_connected_devices, name='get-connected-devices'),
+    path('app-lifecycle/batch/', batch_operation, name='batch-app-operation'),
+    path('app-lifecycle/health/', health_check, name='app-lifecycle-health'),
 ]
