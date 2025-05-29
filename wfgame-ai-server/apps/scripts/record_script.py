@@ -68,6 +68,11 @@ click_threads = []  # 存储点击线程，避免阻塞主线程
 last_click_time = 0  # 记录上次点击时间
 MIN_CLICK_INTERVAL = 0.1  # 最小点击间隔(秒)，防止点击过于频繁
 device_states = {}  # 存储每个设备的界面状态
+# 滑动相关变量
+drag_start_pos = {}  # 存储每个设备的拖拽起始位置 {serial: (x, y, time)}
+is_dragging = {}  # 存储每个设备的拖拽状态 {serial: bool}
+DRAG_MIN_DISTANCE = 10  # 最小拖拽距离(像素)，小于此距离视为点击
+SWIPE_DURATION = 300  # 默认滑动持续时间(毫秒)
 prev_frames = {}  # 存储每个设备的前一帧
 STATE_CHANGE_THRESHOLD = 5.0  # 界面变化判断阈值
 AUTO_INTERACTION = False  # 是否启用自动交互
@@ -401,9 +406,7 @@ def execute_tap(device, x, y, button_class=None):
         y = max(0, min(int(y), res["height"]))
 
         # 直接执行adb shell命令
-        device.shell(f"input tap {x} {y}")
-
-        # 可选的点击日志输出
+        device.shell(f"input tap {x} {y}")        # 可选的点击日志输出
         if button_class:
             print(f"点击设备 {get_device_name(device)}: {button_class} at ({x}, {y})")
         else:
@@ -412,6 +415,41 @@ def execute_tap(device, x, y, button_class=None):
         return True
     except Exception as e:
         print(f"点击设备 {get_device_name(device)} 失败: {e}")
+        return False
+
+def execute_swipe(device, start_x, start_y, end_x, end_y, duration=300):
+    """
+    以非阻塞方式执行滑动，增强错误处理
+    """
+    try:
+        # 确保设备连接正常
+        try:
+            device.shell("echo swipe_check", timeout=1)
+        except Exception as conn_err:
+            print(f"滑动前设备连接检查失败: {conn_err}")
+            # 尝试重连
+            if not check_device_health(device):
+                print(f"设备 {get_device_name(device)} 不可用，滑动操作取消")
+                return False
+
+        # 确保坐标在有效范围内
+        res = device_resolutions.get(device.serial, {"width": 1080, "height": 2400})
+        start_x = max(0, min(int(start_x), res["width"]))
+        start_y = max(0, min(int(start_y), res["height"]))
+        end_x = max(0, min(int(end_x), res["width"]))
+        end_y = max(0, min(int(end_y), res["height"]))
+
+        # 确保持续时间在合理范围内
+        duration = max(100, min(int(duration), 5000))  # 100ms到5000ms之间
+
+        # 执行adb shell滑动命令
+        device.shell(f"input swipe {start_x} {start_y} {end_x} {end_y} {duration}")
+
+        print(f"滑动设备 {get_device_name(device)}: ({start_x}, {start_y}) -> ({end_x}, {end_y}), {duration}ms")
+
+        return True
+    except Exception as e:
+        print(f"滑动设备 {get_device_name(device)} 失败: {e}")
         return False
 
 # 转换点击坐标，根据设备分辨率进行适配
@@ -437,6 +475,8 @@ def adapt_coordinates(source_serial, target_serial, x, y):
 # 鼠标点击回调
 def on_mouse(event, x, y, flags, param):
     global script, save_path, model, click_counts, multi_devices_control, click_threads, last_click_time
+    global drag_start_pos, is_dragging
+
     if event == cv2.EVENT_LBUTTONDOWN:
         serial = param["serial"]
         frame = param["frame"]
@@ -456,6 +496,10 @@ def on_mouse(event, x, y, flags, param):
         # 转换点击坐标到原始图像坐标
         orig_x = int(x * (orig_w / display_w))
         orig_y = int(y * (orig_h / display_h))
+
+        # 记录拖拽起始位置
+        drag_start_pos[serial] = (orig_x, orig_y, time.time())
+        is_dragging[serial] = False
 
         # 防止点击过于频繁导致设备反应不过来
         current_time = time.time()
@@ -597,6 +641,115 @@ def on_mouse(event, x, y, flags, param):
             t.daemon = True
             t.start()
             click_threads.append(t)
+
+    elif event == cv2.EVENT_MOUSEMOVE:
+        # 处理鼠标移动事件，检测拖拽
+        serial = param["serial"]
+        if serial in drag_start_pos and not is_dragging[serial]:
+            # 计算移动距离
+            start_x, start_y, start_time = drag_start_pos[serial]
+
+            # 获取当前显示尺寸并转换坐标
+            frame = param["frame"]
+            window_name = windows[serial]
+            current_size = get_window_size(window_name)
+            if not current_size:
+                current_size = USER_WINDOW_SIZES[serial]
+
+            orig_h, orig_w = frame.shape[:2]
+            display_w, display_h = current_size
+            orig_x = int(x * (orig_w / display_w))
+            orig_y = int(y * (orig_h / display_h))
+
+            distance = ((orig_x - start_x) ** 2 + (orig_y - start_y) ** 2) ** 0.5
+
+            if distance >= DRAG_MIN_DISTANCE:
+                is_dragging[serial] = True
+                print(f"检测到拖拽开始: {serial}, 距离: {distance:.1f}")
+
+    elif event == cv2.EVENT_LBUTTONUP:
+        # 处理鼠标松开事件，完成拖拽或点击
+        serial = param["serial"]
+        if serial in drag_start_pos:
+            start_x, start_y, start_time = drag_start_pos[serial]
+
+            # 获取当前显示尺寸并转换坐标
+            frame = param["frame"]
+            window_name = windows[serial]
+            current_size = get_window_size(window_name)
+            if not current_size:
+                current_size = USER_WINDOW_SIZES[serial]
+
+            orig_h, orig_w = frame.shape[:2]
+            display_w, display_h = current_size
+            orig_x = int(x * (orig_w / display_w))
+            orig_y = int(y * (orig_h / display_h))
+
+            # 如果是拖拽操作
+            if is_dragging.get(serial, False):
+                end_time = time.time()
+                duration = int((end_time - start_time) * 1000)  # 转换为毫秒
+                if duration < 100:  # 最小持续时间
+                    duration = SWIPE_DURATION
+
+                # 录制滑动操作
+                if is_recording:
+                    step = {
+                        "step": len(script["steps"]) + 1,
+                        "action": "swipe",
+                        "start_x": start_x,
+                        "start_y": start_y,
+                        "end_x": orig_x,
+                        "end_y": orig_y,
+                        "duration": duration,
+                        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f"),
+                        "remark": "滑动操作"
+                    }
+                    script["steps"].append(step)
+
+                    # 非阻塞方式更新JSON文件
+                    def save_json():
+                        with open(save_path, "w", encoding="utf-8") as f:
+                            json.dump(script, f, indent=4, ensure_ascii=False)
+                    json_thread = Thread(target=save_json)
+                    json_thread.daemon = True
+                    json_thread.start()
+
+                    print("\n" + "=" * 50)
+                    print(f"【滑动操作录入】: ({start_x}, {start_y}) -> ({orig_x}, {orig_y}), 持续{duration}ms")
+                    print(f"步骤 {step['step']} 已保存至 {save_path}")
+                    print("=" * 50 + "\n")
+
+                # 执行滑动操作
+                device = next(d for d in devices if d.serial == serial)
+                if multi_devices_control and device.serial == main_device.serial:
+                    # 首先处理主设备自身的滑动
+                    t = Thread(target=execute_swipe, args=(device, start_x, start_y, orig_x, orig_y, duration))
+                    t.daemon = True
+                    t.start()
+                    click_threads.append(t)
+
+                    # 并行处理其他设备的滑动
+                    for dev in devices:
+                        if dev.serial != device.serial:
+                            target_start_x, target_start_y = adapt_coordinates(device.serial, dev.serial, start_x, start_y)
+                            target_end_x, target_end_y = adapt_coordinates(device.serial, dev.serial, orig_x, orig_y)
+                            t = Thread(target=execute_swipe, args=(dev, target_start_x, target_start_y, target_end_x, target_end_y, duration))
+                            t.daemon = True
+                            t.start()
+                            click_threads.append(t)
+                else:
+                    # 单设备操作
+                    t = Thread(target=execute_swipe, args=(device, start_x, start_y, orig_x, orig_y, duration))
+                    t.daemon = True
+                    t.start()
+                    click_threads.append(t)
+
+            # 清理拖拽状态
+            if serial in drag_start_pos:
+                del drag_start_pos[serial]
+            if serial in is_dragging:
+                del is_dragging[serial]
 
 # 设备屏幕捕获和分析线程
 def capture_and_analyze_device(device, screenshot_queue):

@@ -64,11 +64,8 @@ SUMMARY_REPORTS_DIR = os.path.join(STATICFILES_REPORTS_DIR, "summary_reports")
 # 为兼容性保留UI_REPORTS_DIR变量，但指向新的设备报告目录
 UI_REPORTS_DIR = DEVICE_REPORTS_DIR
 
-# 备用报告目录 - 保留原有备用目录
-BACKUP_REPORTS_DIR = os.path.join(BASE_DIR, 'apps', 'reports', 'summary_reports')
 logger.info(f'统一报告目录: DEVICE_REPORTS_DIR={DEVICE_REPORTS_DIR}')
 logger.info(f'汇总报告目录: SUMMARY_REPORTS_DIR={SUMMARY_REPORTS_DIR}')
-logger.info(f'备用报告目录设置为: {BACKUP_REPORTS_DIR}')
 
 @api_view(['POST'])
 @csrf_exempt
@@ -84,7 +81,7 @@ def get_report_list(request):
         report_id = 1
 
         # 检查两个可能的报告目录
-        report_dirs = [UI_REPORTS_DIR, BACKUP_REPORTS_DIR]
+        report_dirs = [UI_REPORTS_DIR]
         logger.info(f"将在以下目录中查找报告: {report_dirs}")
 
         for reports_dir in report_dirs:
@@ -173,7 +170,7 @@ def report_detail(request, report_id):
 
         # 获取所有HTML报告文件，检查两个可能的目录
         report_files = []
-        report_dirs = [UI_REPORTS_DIR, BACKUP_REPORTS_DIR]
+        report_dirs = [UI_REPORTS_DIR]
 
         for reports_dir in report_dirs:
             if os.path.exists(reports_dir):
@@ -227,7 +224,7 @@ def report_delete(request, report_id):
 
         # 获取所有HTML报告文件，检查两个可能的目录
         report_files = []
-        report_dirs = [UI_REPORTS_DIR, BACKUP_REPORTS_DIR]
+        report_dirs = [UI_REPORTS_DIR]
 
         for reports_dir in report_dirs:
             if os.path.exists(reports_dir):
@@ -319,7 +316,7 @@ def summary_list(request):
         reports = []
 
         # 修改：优先使用新的统一目录结构，同时保留旧目录作为备用
-        report_dirs = [SUMMARY_REPORTS_DIR, UI_REPORTS_DIR, BACKUP_REPORTS_DIR]
+        report_dirs = [SUMMARY_REPORTS_DIR, UI_REPORTS_DIR]
         logger.info(f"将在以下目录中查找报告: {report_dirs}")
 
         found_reports = False
@@ -498,12 +495,12 @@ def summary_list(request):
                             if reports_dir == SUMMARY_REPORTS_DIR:
                                 # 新的统一目录结构
                                 url_base = '/static/reports/summary_reports/'
-                            elif reports_dir == UI_REPORTS_DIR:
-                                # 旧的UI报告目录
-                                url_base = '/static/reports/ui_run/WFGameAI.air/log/'
-                            else:
-                                # 备份目录
-                                url_base = '/static/reports/'
+                            elif reports_dir == UI_REPORTS_DIR: # This is now DEVICE_REPORTS_DIR
+                                # 设备报告目录
+                                url_base = '/static/reports/ui_run/WFGameAI.air/log/' # Should be this for device logs if UI_REPORTS_DIR points to DEVICE_REPORTS_DIR
+                            # else: # Removed BACKUP_REPORTS_DIR case
+                                # # 备份目录
+                                # url_base = '/static/reports/'
 
                             reports.append({
                                 'report_id': report_id,
@@ -522,12 +519,12 @@ def summary_list(request):
                             if reports_dir == SUMMARY_REPORTS_DIR:
                                 # 新的统一目录结构
                                 url_base = '/static/reports/summary_reports/'
-                            elif reports_dir == UI_REPORTS_DIR:
-                                # 旧的UI报告目录
-                                url_base = '/static/reports/ui_run/WFGameAI.air/log/'
-                            else:
-                                # 备份目录
-                                url_base = '/static/reports/'
+                            elif reports_dir == UI_REPORTS_DIR: # This is now DEVICE_REPORTS_DIR
+                                # 设备报告目录
+                                url_base = '/static/reports/ui_run/WFGameAI.air/log/' # Should be this for device logs
+                            # else: # Removed BACKUP_REPORTS_DIR case
+                                # # 备份目录
+                                # url_base = '/static/reports/'
 
                             reports.append({
                                 'report_id': report_id,

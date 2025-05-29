@@ -12,6 +12,7 @@ Version: 1.0
 
 import logging
 from datetime import datetime
+import traceback
 
 import json
 import uuid
@@ -928,7 +929,7 @@ def replay_script(request):
         def read_output(stream, log_func):
             for line in iter(stream.readline, ''):
                 if line:
-                    log_func(f"回放输出: {line.strip()}")
+                    pass # Added pass as the if block would be empty
             stream.close()
 
         # 启动输出读取线程
@@ -1931,7 +1932,11 @@ def edit_script_view(request, script_path=None):
                     logger.warning(f"Content of '{final_absolute_path}' is not valid JSON. Serving raw.")
 
                 created_time = datetime.fromtimestamp(os.path.getctime(final_absolute_path))
+
                 modified_time = datetime.fromtimestamp(os.path.getmtime(final_absolute_path))
+
+
+
                 step_count = len(script_json_data.get('steps', [])) if isinstance(script_json_data, dict) else 0
 
                 response_data = {

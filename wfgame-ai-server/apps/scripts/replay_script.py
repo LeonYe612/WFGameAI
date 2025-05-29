@@ -1138,6 +1138,56 @@ def replay_device(device, scripts, screenshot_queue, action_queue, stop_event, d
                             f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
                         continue
 
+                    elif step.get("action") == "swipe":
+                        # 处理滑动步骤
+                        start_x = step.get("start_x")
+                        start_y = step.get("start_y")
+                        end_x = step.get("end_x")
+                        end_y = step.get("end_y")
+                        duration = step.get("duration", 300)
+
+                        if start_x is None or start_y is None or end_x is None or end_y is None:
+                            print(f"错误: swipe 步骤缺少必要的坐标参数")
+                            continue
+
+                        print(f"执行滑动操作: ({start_x}, {start_y}) -> ({end_x}, {end_y}), 持续{duration}ms: {step_remark}")
+
+                        # 执行ADB滑动命令
+                        device.shell(f"input swipe {int(start_x)} {int(start_y)} {int(end_x)} {int(end_y)} {int(duration)}")
+
+                        # 记录滑动日志
+                        timestamp = time.time()
+                        swipe_entry = {
+                            "tag": "function",
+                            "depth": 1,
+                            "time": timestamp,
+                            "data": {
+                                "name": "swipe",
+                                "call_args": {
+                                    "start": [int(start_x), int(start_y)],
+                                    "end": [int(end_x), int(end_y)],
+                                    "duration": int(duration)
+                                },
+                                "start_time": timestamp,
+                                "ret": {
+                                    "start_pos": [int(start_x), int(start_y)],
+                                    "end_pos": [int(end_x), int(end_y)]
+                                },
+                                "end_time": timestamp + (duration / 1000.0),
+                                "desc": step_remark or "滑动操作",
+                                "title": f"#{step_idx+1} {step_remark or '滑动操作'}"
+                            }
+                        }
+                        with open(log_txt_path, "a", encoding="utf-8") as f:
+                            f.write(json.dumps(swipe_entry, ensure_ascii=False) + "\n")
+
+                        has_executed_steps = True
+                        step_counter += 1
+
+                        # 滑动后等待一段时间让UI响应
+                        time.sleep(duration / 1000.0 + 0.5)
+                        continue
+
                     elif step_class == "app_start":
                         # 处理应用启动步骤
                         app_name = step.get("params", {}).get("app_name", "")

@@ -76,23 +76,30 @@ TEMPLATES = [
 WSGI_APPLICATION = 'wfgame_ai_server_main.wsgi.application'
 
 # 数据库配置
+import configparser
+
+# 读取config.ini配置
+config = configparser.ConfigParser()
+config_path = os.path.join(BASE_DIR.parent.parent, 'config.ini')
+config.read(config_path, encoding='utf-8')
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    },
-    # 生产环境数据库配置，暂时注释掉
-    'mysql': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'gogotest_data',
-        'USER': 'root',
-        'PASSWORD': 'qa123456',
-        'HOST': '172.28.133.134',
-        'PORT': '3306',
+        'NAME': config.get('database', 'dbname', fallback='gogotest_data'),
+        'USER': config.get('database', 'username', fallback='root'),
+        'PASSWORD': config.get('database', 'password', fallback='qa123456'),
+        'HOST': config.get('database', 'host', fallback='127.0.0.1'),
+        'PORT': config.get('database', 'port', fallback='3306'),
         'OPTIONS': {
             'charset': 'utf8mb4',
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
         },
+    },
+    # SQLite备用数据库配置
+    'sqlite': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 

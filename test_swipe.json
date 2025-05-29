@@ -1,0 +1,26 @@
+{
+    "steps": [
+        {
+            "step": 1,
+            "action": "swipe",
+            "start_x": 500,
+            "start_y": 800,
+            "end_x": 500,
+            "end_y": 400,
+            "duration": 500,
+            "timestamp": "2025-05-29 12:00:00.000000",
+            "remark": "向上滑动测试"
+        },
+        {
+            "step": 2,
+            "action": "swipe",
+            "start_x": 200,
+            "start_y": 600,
+            "end_x": 800,
+            "end_y": 600,
+            "duration": 300,
+            "timestamp": "2025-05-29 12:00:01.000000",
+            "remark": "向右滑动测试"
+        }
+    ]
+}
