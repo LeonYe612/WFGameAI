@@ -56,10 +56,18 @@ logger.info(f'UI_REPORTS_DIR将被设置为: {paths["ui_reports_dir"]}')
 
 # 从config.ini获取报告路径
 REPORTS_DIR = os.path.abspath(paths['reports_dir'])
-UI_REPORTS_DIR = os.path.abspath(paths['ui_reports_dir'])
 
-# 备用报告目录 - 用于解决路径配置问题
+# 使用新的统一报告目录结构
+STATICFILES_REPORTS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "staticfiles", "reports")
+DEVICE_REPORTS_DIR = os.path.join(STATICFILES_REPORTS_DIR, "ui_run", "WFGameAI.air", "log")
+SUMMARY_REPORTS_DIR = os.path.join(STATICFILES_REPORTS_DIR, "summary_reports")
+# 为兼容性保留UI_REPORTS_DIR变量，但指向新的设备报告目录
+UI_REPORTS_DIR = DEVICE_REPORTS_DIR
+
+# 备用报告目录 - 保留原有备用目录
 BACKUP_REPORTS_DIR = os.path.join(BASE_DIR, 'apps', 'reports', 'summary_reports')
+logger.info(f'统一报告目录: DEVICE_REPORTS_DIR={DEVICE_REPORTS_DIR}')
+logger.info(f'汇总报告目录: SUMMARY_REPORTS_DIR={SUMMARY_REPORTS_DIR}')
 logger.info(f'备用报告目录设置为: {BACKUP_REPORTS_DIR}')
 
 @api_view(['POST'])
@@ -310,8 +318,8 @@ def summary_list(request):
     try:
         reports = []
 
-        # 检查两个可能的报告目录
-        report_dirs = [UI_REPORTS_DIR, BACKUP_REPORTS_DIR]
+        # 修改：优先使用新的统一目录结构，同时保留旧目录作为备用
+        report_dirs = [SUMMARY_REPORTS_DIR, UI_REPORTS_DIR, BACKUP_REPORTS_DIR]
         logger.info(f"将在以下目录中查找报告: {report_dirs}")
 
         found_reports = False
@@ -415,10 +423,16 @@ def summary_list(request):
                             title_text = title.text.strip() if title else 'WFGameAI 自动化测试报告'
 
                             # 构建URL，确保URL路径正确
-                            url_base = '/static/reports/summary_reports/'
-                            if reports_dir == UI_REPORTS_DIR:
-                                # 如果是配置文件中的报告目录，使用相对于静态目录的路径
-                                url_base = '/static/WFGameAI-reports/ui_reports/'
+                            # 修改：根据目录设置不同的基础URL
+                            if reports_dir == SUMMARY_REPORTS_DIR:
+                                # 新的统一目录结构
+                                url_base = '/static/reports/summary_reports/'
+                            elif reports_dir == UI_REPORTS_DIR:
+                                # 旧的UI报告目录
+                                url_base = '/static/reports/ui_run/WFGameAI.air/log/'
+                            else:
+                                # 备份目录
+                                url_base = '/static/reports/'
 
                             reports.append({
                                 'report_id': report_id,
@@ -433,6 +447,17 @@ def summary_list(request):
                         except Exception as e:
                             # 如果解析失败，添加基本信息
                             logger.error(f"解析报告内容失败: {e}")
+                            # 修改：根据报告来源目录设置正确的URL
+                            if reports_dir == SUMMARY_REPORTS_DIR:
+                                # 新的统一目录结构
+                                url_base = '/static/reports/summary_reports/'
+                            elif reports_dir == UI_REPORTS_DIR:
+                                # 旧的UI报告目录
+                                url_base = '/static/reports/ui_run/WFGameAI.air/log/'
+                            else:
+                                # 备份目录
+                                url_base = '/static/reports/'
+
                             reports.append({
                                 'report_id': report_id,
                                 'title': 'WFGameAI 自动化测试报告',
@@ -440,7 +465,7 @@ def summary_list(request):
                                 'device_count': 0,
                                 'success_count': 0,
                                 'devices': [],
-                                'url': f'/static/reports/summary_reports/{filename}',
+                                'url': f'{url_base}{filename}',
                                 'filename': filename,
                                 'error': str(e)
                             })

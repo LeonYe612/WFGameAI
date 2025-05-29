@@ -123,8 +123,7 @@ USE_TZ = False
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'staticfiles'),
-    os.path.join(BASE_DIR, 'apps', 'reports'),
-    os.path.join(BASE_DIR, 'outputs'),  # 添加outputs目录以便能够访问WFGameAI-reports
+    os.path.join(BASE_DIR, 'apps', 'reports')
 ]
 # 重要：在开发模式下不要设置STATIC_ROOT，否则Django无法提供staticfiles目录中的文件
 # STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # 已注释掉，确保开发模式下直接使用staticfiles目录

@@ -19,11 +19,16 @@ import glob
 # 项目路径
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# 报告相关路径
-REPORTS_DIR = os.path.join(BASE_DIR, 'apps', 'reports', 'summary_reports')
-UI_REPORTS_DIR = os.path.join(BASE_DIR, 'apps', 'reports', 'ui_run', 'WFGameAI.air', 'log')
-STATIC_REPORTS_DIR = os.path.join(BASE_DIR, 'staticfiles', 'reports', 'summary_reports')
-STATIC_UI_REPORTS_DIR = os.path.join(BASE_DIR, 'staticfiles', 'reports', 'ui_run', 'WFGameAI.air', 'log')
+# 使用新的统一报告目录结构
+STATICFILES_REPORTS_DIR = os.path.join(BASE_DIR, 'staticfiles', 'reports')
+DEVICE_REPORTS_DIR = os.path.join(STATICFILES_REPORTS_DIR, 'ui_run', 'WFGameAI.air', 'log')
+SUMMARY_REPORTS_DIR = os.path.join(STATICFILES_REPORTS_DIR, 'summary_reports')
+
+# 为兼容性保留旧变量名，但指向新的统一目录
+REPORTS_DIR = SUMMARY_REPORTS_DIR
+UI_REPORTS_DIR = DEVICE_REPORTS_DIR
+STATIC_REPORTS_DIR = SUMMARY_REPORTS_DIR
+STATIC_UI_REPORTS_DIR = DEVICE_REPORTS_DIR
 
 def ensure_dir(dir_path):
     """确保目录存在"""

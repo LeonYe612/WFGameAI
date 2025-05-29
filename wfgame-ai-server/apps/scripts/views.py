@@ -87,12 +87,18 @@ logger.info(f'REPORTS_DIR将被设置为: {paths["reports_dir"]}')
 SCRIPTS_DIR = os.path.abspath(paths['scripts_dir'])
 TESTCASE_DIR = os.path.abspath(paths['testcase_dir'])
 REPORTS_DIR = os.path.abspath(paths['reports_dir'])
-UI_REPORTS_DIR = os.path.abspath(paths['ui_reports_dir'])
 
-# 确保所有目录存在
-# os.makedirs(TESTCASE_DIR, exist_ok=True)
-# os.makedirs(REPORTS_DIR, exist_ok=True)
-# os.makedirs(UI_REPORTS_DIR, exist_ok=True)
+# 使用新的统一报告目录结构
+STATICFILES_REPORTS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "staticfiles", "reports")
+DEVICE_REPORTS_DIR = os.path.join(STATICFILES_REPORTS_DIR, "ui_run", "WFGameAI.air", "log")
+SUMMARY_REPORTS_DIR = os.path.join(STATICFILES_REPORTS_DIR, "summary_reports")
+# 为兼容性保留UI_REPORTS_DIR变量，但指向新的设备报告目录
+UI_REPORTS_DIR = DEVICE_REPORTS_DIR
+
+# 确保统一报告目录存在
+os.makedirs(STATICFILES_REPORTS_DIR, exist_ok=True)
+os.makedirs(DEVICE_REPORTS_DIR, exist_ok=True)
+os.makedirs(SUMMARY_REPORTS_DIR, exist_ok=True)
 
 # 其余所有涉及目录引用的地方，全部使用上述变量，不允许静态拼接。
 # 例如：

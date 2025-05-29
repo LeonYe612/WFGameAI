@@ -222,9 +222,6 @@ WFGameAI/
 │   │   ├── devices/           # 设备管理App
 │   │   └── ...                # 其他App
 │   ├── testcase/              # 测试用例目录（config.ini: testcase_dir）
-│   ├── outputs/               # 输出目录（如报告，config.ini 的 reports_dir）
-│   │   └── WFGameAI-reports/  # 测试报告主目录（config.ini: reports_dir）
-│   │       └── ui_reports/    # UI报告目录（config.ini: ui_reports_dir）
 │   └── wfgame_ai_server/      # Django主项目目录（主urls.py/settings.py/wsgi.py等）
 ├── wfgame-ai-web/             # 前端Web界面（Vue3）
 ├── requirements.txt           # 依赖列表

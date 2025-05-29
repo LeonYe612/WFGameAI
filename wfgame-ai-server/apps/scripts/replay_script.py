@@ -29,11 +29,14 @@ import random
 
 # 导入统一路径管理工具
 
-# 定义默认路径（用于导入失败时的后备方案）
+# 统一报告目录配置 - 所有报告相关路径都基于staticfiles/reports
+STATICFILES_REPORTS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "staticfiles", "reports")
+DEVICE_REPORTS_DIR = os.path.join(STATICFILES_REPORTS_DIR, "ui_run", "WFGameAI.air", "log")
+SUMMARY_REPORTS_DIR = os.path.join(STATICFILES_REPORTS_DIR, "summary_reports")
+
+# 其他默认路径
 DEFAULT_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_TESTCASE_DIR = os.path.join(DEFAULT_BASE_DIR, "testcase")
-DEFAULT_REPORTS_DIR = os.path.join(DEFAULT_BASE_DIR, "outputs", "WFGameAI-reports")
-DEFAULT_UI_REPORTS_DIR = os.path.join(DEFAULT_REPORTS_DIR, "ui_reports")
 
 try:
     # 使用单独的配置导入文件
@@ -46,6 +49,7 @@ try:
     except ImportError:
         # 如果导入失败，提供一个空函数
         def load_yolo_model(*args, **kwargs):
+            return None
             print("警告: load_yolo_model 导入失败")
             return None
 
@@ -61,54 +65,25 @@ try:
         if not TESTCASE_DIR:
             TESTCASE_DIR = DEFAULT_TESTCASE_DIR
 
-        REPORTS_DIR = config_manager.get_path('reports_dir')
-        if not REPORTS_DIR:
-            REPORTS_DIR = DEFAULT_REPORTS_DIR
+        # 统一使用新的报告目录结构
+        REPORTS_DIR = DEVICE_REPORTS_DIR
+        UI_REPORTS_DIR = DEVICE_REPORTS_DIR
 
-        UI_REPORTS_DIR = config_manager.get_path('ui_reports_dir')
-        if not UI_REPORTS_DIR:
-            UI_REPORTS_DIR = DEFAULT_UI_REPORTS_DIR
-
-        print(f"使用路径配置: BASE_DIR={BASE_DIR}, TESTCASE_DIR={TESTCASE_DIR}, REPORTS_DIR={REPORTS_DIR}")
+        print(f"使用路径配置: BASE_DIR={BASE_DIR}, TESTCASE_DIR={TESTCASE_DIR}")
+        print(f"统一报告目录: DEVICE_REPORTS_DIR={DEVICE_REPORTS_DIR}, SUMMARY_REPORTS_DIR={SUMMARY_REPORTS_DIR}")
     else:
         raise ImportError("ConfigManager导入失败")
 except Exception as e:
-    # 如果导入失败，使用相对路径
+    # 如果导入失败，使用默认路径
     print(f"配置管理器错误: {e}")
     BASE_DIR = DEFAULT_BASE_DIR
     TESTCASE_DIR = DEFAULT_TESTCASE_DIR
-    REPORTS_DIR = DEFAULT_REPORTS_DIR
-    UI_REPORTS_DIR = DEFAULT_UI_REPORTS_DIR
-    print("警告: 未找到配置管理工具，使用相对路径")
+    # 统一使用新的报告目录结构
+    REPORTS_DIR = DEVICE_REPORTS_DIR
+    UI_REPORTS_DIR = DEVICE_REPORTS_DIR
+    print("警告: 未找到配置管理工具，使用默认路径")
+    print(f"统一报告目录: DEVICE_REPORTS_DIR={DEVICE_REPORTS_DIR}, SUMMARY_REPORTS_DIR={SUMMARY_REPORTS_DIR}")
 
-    # 使用配置管理器获取路径
-    config = ConfigManager()
-    BASE_DIR = config.get_path('scripts_dir')
-    if not BASE_DIR:
-        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-    TESTCASE_DIR = config.get_path('testcase_dir')
-
-    if not TESTCASE_DIR:
-        TESTCASE_DIR = os.path.join(BASE_DIR, "testcase")
-
-    REPORTS_DIR = config.get_path('reports_dir')
-    if not REPORTS_DIR:
-        REPORTS_DIR = os.path.join(BASE_DIR, "outputs", "WFGameAI-reports")
-
-    UI_REPORTS_DIR = config.get_path('ui_reports_dir')
-    if not UI_REPORTS_DIR:
-        UI_REPORTS_DIR = os.path.join(REPORTS_DIR, "ui_reports")
-
-    print(f"使用路径配置: BASE_DIR={BASE_DIR}, TESTCASE_DIR={TESTCASE_DIR}, REPORTS_DIR={REPORTS_DIR}")
-except (ImportError, FileNotFoundError) as e:
-    # 如果导入失败，使用相对路径
-    print(f"配置管理器错误: {e}")
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    TESTCASE_DIR = os.path.join(BASE_DIR, "testcase")
-    REPORTS_DIR = os.path.join(BASE_DIR, "outputs", "WFGameAI-reports")
-    UI_REPORTS_DIR = os.path.join(REPORTS_DIR, "ui_reports")
-    print("警告: 未找到配置管理工具，使用相对路径")
 # 禁用 Ultralytics 的日志输出
 logging.getLogger("ultralytics").setLevel(logging.CRITICAL)
 
@@ -118,31 +93,42 @@ devices = []
 CURRENT_TIME = "_" + time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))
 template_dir = os.path.join(BASE_DIR, "templates")  # 模板目录路径
 
-# 定义报告目录，使用配置中的路径
-reports_base_dir = REPORTS_DIR
-ui_reports_dir = UI_REPORTS_DIR
-# 定义运行代码目录
-ui_run_dir = os.path.join(reports_base_dir, "ui_run")
-# 定义项目目录
-project_air_dir = os.path.join(ui_run_dir, "WFGameAI.air")
-# 定义设备日志目录
-device_log_dir = os.path.join(project_air_dir, "log")
+# 统一报告目录配置 - 只使用staticfiles作为报告存储根目录
+STATICFILES_REPORTS_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+    "staticfiles", "reports"
+)
+
+# 设备报告目录
+DEVICE_REPORTS_DIR = os.path.join(STATICFILES_REPORTS_DIR, "ui_run", "WFGameAI.air", "log")
+
+# 汇总报告目录
+SUMMARY_REPORTS_DIR = os.path.join(STATICFILES_REPORTS_DIR, "summary_reports")
 
 # 确保目录存在
-os.makedirs(reports_base_dir, exist_ok=True)
-os.makedirs(ui_reports_dir, exist_ok=True)
-os.makedirs(ui_run_dir, exist_ok=True)
-os.makedirs(project_air_dir, exist_ok=True)
-os.makedirs(device_log_dir, exist_ok=True)
+os.makedirs(STATICFILES_REPORTS_DIR, exist_ok=True)
+os.makedirs(DEVICE_REPORTS_DIR, exist_ok=True)
+os.makedirs(SUMMARY_REPORTS_DIR, exist_ok=True)
 os.makedirs(template_dir, exist_ok=True)
 
-# 设置Airtest日志存储目录，避免在根目录生成日志文件
-set_logdir(project_air_dir)
-airtest.core.api.ST.LOG_DIR = project_air_dir  # 显式设置静态变量
-
-# 旧目录结构（保留以兼容现有代码）
-report_dir = os.path.join(BASE_DIR, "outputs/device_reports")
-os.makedirs(report_dir, exist_ok=True)
+# 设置Airtest日志存储目录为设备报告目录
+set_logdir(DEVICE_REPORTS_DIR)
+# 尝试设置全局日志目录
+try:
+    import airtest.core.api as airtest_api
+    # 使用更安全的方式设置LOG_DIR
+    if hasattr(airtest_api, 'ST') and airtest_api.ST is not None:
+        # 如果LOG_DIR属性可写，则设置它
+        try:
+            if hasattr(airtest_api.ST, 'LOG_DIR'):
+                airtest_api.ST.LOG_DIR = DEVICE_REPORTS_DIR
+            else:
+                print(f"警告：Airtest.ST没有LOG_DIR属性，使用set_logdir代替")
+        except (AttributeError, TypeError) as e:
+            # 如果无法设置，记录警告但继续执行
+            print(f"警告：无法设置Airtest LOG_DIR ({e})，将使用默认设置")
+except (ImportError, AttributeError) as e:
+    print(f"设置Airtest全局日志目录时出错: {e}")
 
 screenshot_queue = queue.Queue()
 action_queue = queue.Queue()
@@ -174,7 +160,7 @@ class AirtestJsonFormatter(logging.Formatter):
 
 # 日志函数
 def setup_device_logger(device_name):
-    log_file = os.path.join(report_dir, f"{device_name}_log.txt")
+    log_file = os.path.join(DEVICE_REPORTS_DIR, f"{device_name}_log.txt")
     logger = logging.getLogger(device_name)
     logger.setLevel(logging.INFO)
     handler = logging.FileHandler(log_file, encoding="utf-8")
@@ -213,14 +199,35 @@ def get_device_name(device):
 def detect_buttons(frame, target_class=None):
     frame_for_detection = cv2.resize(frame, (640, 640))
     try:
+        # 检查模型是否可用
+        if model is None:
+            print("警告：YOLO模型未加载，跳过按钮检测")
+            return False, (None, None, None)
+
         # 使用当前设备进行预测
         results = model.predict(source=frame_for_detection, imgsz=640, conf=0.3, verbose=False)
+
+        # 检查预测结果是否有效
+        if results is None or len(results) == 0:
+            print("警告：模型预测结果为空")
+            return False, (None, None, None)
+
+        # 检查结果中是否有boxes
+        if not hasattr(results[0], 'boxes') or results[0].boxes is None:
+            print("警告：预测结果中没有检测框")
+            return False, (None, None, None)
+
         orig_h, orig_w = frame.shape[:2]
         scale_x, scale_y = orig_w / 640, orig_h / 640
 
         for box in results[0].boxes:
             cls_id = int(box.cls.item())
-            detected_class = model.names[cls_id]
+            # 检查模型是否有names属性
+            if hasattr(model, 'names') and model.names is not None:
+                detected_class = model.names[cls_id]
+            else:
+                detected_class = f"class_{cls_id}"
+
             if detected_class == target_class:
                 box_x, box_y = box.xywh[0][:2].tolist()
                 x, y = box_x * scale_x, box_y * scale_y
@@ -269,8 +276,8 @@ def get_log_dir(dev):
     device_dir = "".join(c for c in dev if c.isalnum() or c in ('-', '_'))
     timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
 
-    # 使用新目录结构
-    log_dir = os.path.join(device_log_dir, f"{device_dir}_{timestamp}")
+    # 使用新的统一目录结构
+    log_dir = os.path.join(DEVICE_REPORTS_DIR, f"{device_dir}_{timestamp}")
     os.makedirs(log_dir, exist_ok=True)
 
     # 创建log子目录
@@ -284,28 +291,45 @@ def get_log_dir(dev):
             pass
 
     # 为每个设备单独设置日志目录，避免日志混乱
-    airtest.core.api.ST.LOG_DIR = log_dir
-    set_logdir(log_dir)
+    try:
+        import airtest.core.api as airtest_api
+        if hasattr(airtest_api, 'ST') and hasattr(airtest_api.ST, 'LOG_DIR'):
+            try:
+                airtest_api.ST.LOG_DIR = log_dir
+            except (AttributeError, TypeError) as e:
+                print(f"设置设备日志目录时出错: {e}")
+        else:
+            print(f"警告：Airtest.ST没有LOG_DIR属性，跳过设置")
+    except (ImportError, AttributeError) as e:
+        print(f"设置设备日志目录时出错: {e}")
+
+    # 使用set_logdir作为备用方法
+    try:
+        set_logdir(log_dir)
+    except Exception as e:
+        print(f"set_logdir失败: {e}")
 
     return log_dir
 
 
 # 清理日志目录
 def clear_log_dir():
-    if os.path.exists(report_dir):
-        shutil.rmtree(report_dir)
-    os.makedirs(report_dir, exist_ok=True)
+    if os.path.exists(DEVICE_REPORTS_DIR):
+        shutil.rmtree(DEVICE_REPORTS_DIR)
+    os.makedirs(DEVICE_REPORTS_DIR, exist_ok=True)
 
 
 # 加载测试进度数据
 def load_json_data(run_all):
-    json_file = os.path.join(BASE_DIR, 'data.json')
+    # 确保BASE_DIR有效
+    base_dir = BASE_DIR if BASE_DIR is not None else DEFAULT_BASE_DIR
+    json_file = os.path.join(base_dir, 'data.json')
     if not run_all and os.path.isfile(json_file):
         data = json.load(open(json_file))
         data['start'] = time.time()
         return data
     else:
-        print(f"清理日志目录: {report_dir}")
+        print(f"清理日志目录: {DEVICE_REPORTS_DIR}")
         clear_log_dir()
         return {
             'start': time.time(),
@@ -326,13 +350,27 @@ def replay_device(device, scripts, screenshot_queue, action_queue, stop_event, d
         action_queue (queue.Queue): 动作队列，用于记录操作。
         stop_event (threading.Event): 停止事件，用于控制检测服务。
         device_name (str): 设备名称，例如 "OnePlus-KB2000-1080x2400"。
-        log_dir (str): 日志目录，例如 "outputs/replaylogs/OnePlus-KB2000-1080x2400_2025-04-15-14-34-35"。
         show_screens (bool): 是否显示屏幕（默认 False）。
         loop_count (int): 循环次数（默认 1，从 scripts 中获取优先）。
     """
     # 为当前设备设置日志目录
-    set_logdir(log_dir)
-    airtest.core.api.ST.LOG_DIR = log_dir  # 确保Airtest使用正确的日志目录
+    try:
+        set_logdir(log_dir)
+    except Exception as e:
+        print(f"set_logdir失败: {e}")
+
+    # 直接设置全局日志目录，确保Airtest使用正确的日志目录
+    try:
+        import airtest.core.api as airtest_api
+        if hasattr(airtest_api, 'ST') and hasattr(airtest_api.ST, 'LOG_DIR'):
+            try:
+                airtest_api.ST.LOG_DIR = log_dir
+            except (AttributeError, TypeError) as e:
+                print(f"设置Airtest日志目录时出错: {e}")
+        else:
+            print(f"警告：Airtest.ST没有LOG_DIR属性，跳过设置")
+    except (ImportError, AttributeError) as e:
+        print(f"设置Airtest日志目录时出错: {e}")
 
     # 打印参数（用于调试）
     print(f"设备: {device_name}, 脚本: {scripts}, 日志目录: {log_dir}")
@@ -451,15 +489,23 @@ def replay_device(device, scripts, screenshot_queue, action_queue, stop_event, d
 
                     if script_category == '启动程序':
                         print(f"执行应用启动: {app_name or package_name}")
-                        success = app_lifecycle_manager.start_app(app_name or package_name, device.serial)
+                        app_identifier = app_name or package_name
+                        if app_identifier:
+                            success = app_lifecycle_manager.start_app(str(app_identifier), device.serial)
+                        else:
+                            success = False
                         operation_name = "start_app"
 
                     elif script_category == '停止程序':
                         print(f"执行应用停止: {app_name or package_name}")
                         if package_name:
-                            success = app_lifecycle_manager.force_stop_by_package(package_name, device.serial)
+                            success = app_lifecycle_manager.force_stop_by_package(str(package_name), device.serial)
                         else:
-                            success = app_lifecycle_manager.stop_app(app_name, device.serial)
+                            app_identifier = app_name
+                            if app_identifier:
+                                success = app_lifecycle_manager.stop_app(str(app_identifier), device.serial)
+                            else:
+                                success = False
                         operation_name = "stop_app"
 
                     print(f"{script_category}操作{'成功' if success else '失败'}")
@@ -977,7 +1023,7 @@ def replay_device(device, scripts, screenshot_queue, action_queue, stop_event, d
 
                         if app_name:
                             try:
-                                success = app_lifecycle_manager.start_app(app_name, device.serial)
+                                success = app_lifecycle_manager.start_app(str(app_name), device.serial)
                             except Exception as e:
                                 print(f"使用模板启动失败: {e}")
                                 success = False
@@ -1035,16 +1081,16 @@ def replay_device(device, scripts, screenshot_queue, action_queue, stop_event, d
                         if app_name:
                             # 首先尝试使用模板名称
                             try:
-                                success = app_lifecycle_manager.stop_app(app_name, device.serial)
+                                success = app_lifecycle_manager.stop_app(str(app_name), device.serial)
                                 if not success:
                                     # 如果模板停止失败，检查是否是包名格式，直接强制停止
-                                    if "." in app_name:  # 包名通常包含点号
+                                    if "." in str(app_name):  # 包名通常包含点号
                                         print(f"模板停止失败，尝试使用包名直接停止: {app_name}")
-                                        success = app_lifecycle_manager.force_stop_by_package(app_name, device.serial)
+                                        success = app_lifecycle_manager.force_stop_by_package(str(app_name), device.serial)
                             except Exception as e:
                                 print(f"使用模板停止失败: {e}，尝试使用包名直接停止")
-                                if "." in app_name:  # 包名通常包含点号
-                                    success = app_lifecycle_manager.force_stop_by_package(app_name, device.serial)
+                                if "." in str(app_name):  # 包名通常包含点号
+                                    success = app_lifecycle_manager.force_stop_by_package(str(app_name), device.serial)
                         else:
                             # 使用包名直接强制停止
                             success = app_lifecycle_manager.force_stop_by_package(package_name, device.serial)
@@ -2045,27 +2091,16 @@ $(document).ready(function() {{
 
 def sync_device_report_to_staticfiles(device_report_dir):
     """
-    同步单个设备报告目录到apps/reports/ui_run/WFGameAI.air/log/下，保证Web端可访问。
+    同步单个设备报告目录到新的统一报告目录结构中，保证Web端可访问。
+    现在直接生成到最终位置，无需同步操作。
     Args:
         device_report_dir (str): 设备报告目录的绝对路径
     Returns:
         None
     """
-    import shutil
-    # 更新为新的标准路径
-    static_ui_run_dir = os.path.join(os.path.dirname(__file__), "..", "reports", "ui_run", "WFGameAI.air", "log")
-    device_dir_name = os.path.basename(device_report_dir)
-    dst_dir = os.path.join(static_ui_run_dir, device_dir_name)
-    os.makedirs(dst_dir, exist_ok=True)
-    # 递归复制整个设备报告目录
-    for item in os.listdir(device_report_dir):
-        s = os.path.join(device_report_dir, item)
-        d = os.path.join(dst_dir, item)
-        if os.path.isdir(s):
-            shutil.copytree(s, d, dirs_exist_ok=True)
-        else:
-            shutil.copy2(s, d)
-    print(f"设备报告已同步到统一报告目录: {dst_dir}")
+    # 由于现在使用统一的目录结构直接生成报告到staticfiles/reports/，无需同步操作
+    print(f"设备报告已在统一目录中生成: {device_report_dir}")
+    print("已使用统一报告目录结构，无需额外同步操作")
 
 
 def _should_include_device_in_summary(report_path):
@@ -2085,18 +2120,22 @@ def _should_include_device_in_summary(report_path):
 # 生成汇总报告
 def run_summary(data):
     """
-    生成汇总报告
+    生成汇总报告（方案1：直接生成到静态目录）
     :param data: 测试数据，包含每个设备的测试结果
     :return: 汇总报告的路径
     """
     try:
-        # 确保汇总报告目录存在
-        os.makedirs(ui_reports_dir, exist_ok=True)
+        # 直接使用staticfiles目录作为生成目标，消除文件拷贝
+        staticfiles_reports_dir = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+            "staticfiles", "reports", "summary_reports"
+        )
+        os.makedirs(staticfiles_reports_dir, exist_ok=True)
 
         # 生成带时间戳的报告文件名
         timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
         report_file = f"summary_report_{timestamp}.html"
-        summary_report_path = os.path.join(ui_reports_dir, report_file)
+        summary_report_path = os.path.join(staticfiles_reports_dir, report_file)
 
         # 准备汇总数据
         summary = {
@@ -2124,15 +2163,16 @@ def run_summary(data):
 
             # 获取设备报告的相对路径
             report_rel_path = None
-            if report_generated:
+            if report_generated and report_path:
                 # 从绝对路径中提取设备目录名称
-                device_dir_name = os.path.basename(os.path.dirname(report_path))
+                device_dir_name = os.path.basename(os.path.dirname(str(report_path)))
 
                 # 计算汇总报告目录到设备报告目录的相对路径
-                # 汇总报告在 outputs/WFGameAI-reports/ui_reports/
-                # 设备报告在 outputs/WFGameAI-reports/ui_run/WFGameAI.air/log/设备目录/
+                # 汇总报告在 staticfiles/reports/summary_reports/
+                # 设备报告现在在 staticfiles/reports/ui_run/WFGameAI.air/log/设备目录/
+                # 相对路径只需要向上一级目录
                 report_rel_path = f"../ui_run/WFGameAI.air/log/{device_dir_name}/log.html"
-                print(f"设备 {dev_name} 报告路径: {report_rel_path}")
+                print(f"设备 {dev_name} 报告相对路径: {report_rel_path}")
 
             # 检查设备是否包含需要加入日志的脚本
             # 基于脚本的include_in_log属性决定是否在汇总报告中包含该设备
@@ -2179,42 +2219,11 @@ def run_summary(data):
             f.write(html_content)
 
         # 同时创建一个latest_report.html作为最新报告的快捷方式
-        latest_report_path = os.path.join(ui_reports_dir, "latest_report.html")
+        latest_report_path = os.path.join(staticfiles_reports_dir, "latest_report.html")
         shutil.copy(summary_report_path, latest_report_path)
 
         print(f"汇总报告已生成: {summary_report_path}")
         print(f"最新报告快捷方式: {latest_report_path}")
-
-        # --- 新增：自动同步到reports目录，便于Web访问 ---
-        try:
-            # 更新为统一的汇总报告目录
-            static_reports_dir = os.path.join(os.path.dirname(__file__), "..", "reports", "summary_reports")
-            os.makedirs(static_reports_dir, exist_ok=True)
-            # 复制汇总报告
-            shutil.copy2(summary_report_path, os.path.join(static_reports_dir, os.path.basename(summary_report_path)))
-            # 复制latest_report.html
-            shutil.copy2(latest_report_path, os.path.join(static_reports_dir, "latest_report.html"))
-            print(f"报告已同步到汇总报告目录: {static_reports_dir}")
-
-            # 确保同步到staticfiles目录，以便Web访问
-            staticfiles_reports_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "staticfiles", "reports", "summary_reports")
-            os.makedirs(staticfiles_reports_dir, exist_ok=True)
-            # 复制汇总报告
-            shutil.copy2(summary_report_path, os.path.join(staticfiles_reports_dir, os.path.basename(summary_report_path)))
-            # 复制latest_report.html
-            shutil.copy2(latest_report_path, os.path.join(staticfiles_reports_dir, "latest_report.html"))
-            print(f"报告已同步到Web静态目录: {staticfiles_reports_dir}")
-
-            # --- 新增：自动创建集成式报告 ---
-            try:
-                # 不再需要创建集成报告
-                print("概要报告已成功创建")
-            except Exception as int_e:
-                print(f"处理报告时出错: {int_e}")
-            # --- end ---
-        except Exception as sync_e:
-            print(f"报告同步到静态目录失败: {sync_e}")
-        # --- end ---
 
         return summary_report_path
     except Exception as e:
@@ -2230,19 +2239,23 @@ def normalize_script_path(script_path):
     if os.path.isabs(script_path) and os.path.exists(script_path):
         return script_path
 
+    # 确保路径变量不为None
+    testcase_dir = TESTCASE_DIR if TESTCASE_DIR is not None else DEFAULT_TESTCASE_DIR
+    base_dir = BASE_DIR if BASE_DIR is not None else DEFAULT_BASE_DIR
+
     # 相对路径处理策略
     # 1. 首先尝试相对于TESTCASE_DIR的路径
-    path_in_testcase = os.path.join(TESTCASE_DIR, os.path.basename(script_path))
+    path_in_testcase = os.path.join(testcase_dir, os.path.basename(script_path))
     if os.path.exists(path_in_testcase):
         return path_in_testcase
 
     # 2. 尝试相对于BASE_DIR的路径
-    path_in_base = os.path.join(BASE_DIR, script_path)
+    path_in_base = os.path.join(base_dir, script_path)
     if os.path.exists(path_in_base):
         return path_in_base
 
     # 3. 尝试相对于BASE_DIR/testcase的路径
-    path_in_base_testcase = os.path.join(BASE_DIR, "testcase", os.path.basename(script_path))
+    path_in_base_testcase = os.path.join(base_dir, "testcase", os.path.basename(script_path))
     if os.path.exists(path_in_base_testcase):
         return path_in_base_testcase
 
@@ -2461,16 +2474,18 @@ if __name__ == "__main__":
 
     if args['clear_logs']:
         print("清空所有历史日志...")
-        if os.path.exists(report_dir):
-            shutil.rmtree(report_dir)
-        if os.path.exists(ui_run_dir):
-            shutil.rmtree(ui_run_dir)
+        # 使用新的统一目录结构
+        if os.path.exists(DEVICE_REPORTS_DIR):
+            shutil.rmtree(DEVICE_REPORTS_DIR)
+        if os.path.exists(SUMMARY_REPORTS_DIR):
+            shutil.rmtree(SUMMARY_REPORTS_DIR)
 
         # 重新创建目录
-        os.makedirs(report_dir, exist_ok=True)
-        os.makedirs(ui_run_dir, exist_ok=True)
-        os.makedirs(project_air_dir, exist_ok=True)
-        os.makedirs(device_log_dir, exist_ok=True)
+        os.makedirs(DEVICE_REPORTS_DIR, exist_ok=True)
+        os.makedirs(SUMMARY_REPORTS_DIR, exist_ok=True)
+        print(f"已清空并重新创建统一报告目录")
+        print(f"设备报告目录: {DEVICE_REPORTS_DIR}")
+        print(f"汇总报告目录: {SUMMARY_REPORTS_DIR}")
 
     # 加载YOLO模型
     try:

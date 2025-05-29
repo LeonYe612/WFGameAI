@@ -50,3 +50,63 @@ INFO 2025-05-29 14:14:06,844 basehttp 16580 13076 "GET /static/ui_run/WFGameAI.a
 INFO 2025-05-29 14:14:06,845 basehttp 16580 13216 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-05-29-14-02-50/log/1748498580501_small.jpg HTTP/1.1" 200 45172
 INFO 2025-05-29 14:14:07,036 basehttp 16580 23532 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-05-29-14-02-50/static//image/time.svg HTTP/1.1" 200 820
 INFO 2025-05-29 14:14:07,037 basehttp 16580 11980 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-05-29-14-02-50/static//image/success.svg HTTP/1.1" 200 1156
+WARNING 2025-05-29 14:16:18,995 basehttp 16580 11980 "GET /static/WFGameAI-reports/ui_reports/summary_report_2025-05-29-14-03-09.html HTTP/1.1" 404 2061
+INFO 2025-05-29 14:33:04,425 basehttp 16580 22108 "GET /static/pages/reports_template.html?id=1e23ebd1-834c-470b-a2b8-f57362fbb146&vscodeBrowserReqId=1748500384105 HTTP/1.1" 200 15555
+INFO 2025-05-29 14:33:04,493 basehttp 16580 22108 "POST /api/reports/summary_list/ HTTP/1.1" 200 10545
+INFO 2025-05-29 15:18:06,563 autoreload 16580 13728 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-29 15:18:07,094 autoreload 26412 8128 Watching for file changes with StatReloader
+INFO 2025-05-29 15:18:25,713 autoreload 26412 8128 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\reports\views.py changed, reloading.
+INFO 2025-05-29 15:18:26,240 autoreload 12552 4612 Watching for file changes with StatReloader
+INFO 2025-05-29 15:31:55,736 autoreload 12552 4612 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-05-29 15:31:56,284 autoreload 19988 29472 Watching for file changes with StatReloader
+INFO 2025-05-29 15:58:20,133 autoreload 19988 29472 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\wfgame_ai_server_main\settings.py changed, reloading.
+INFO 2025-05-29 15:58:20,642 autoreload 19620 21464 Watching for file changes with StatReloader
+INFO 2025-05-29 15:58:22,234 autoreload 19620 21464 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\wfgame_ai_server_main\settings.py changed, reloading.
+INFO 2025-05-29 15:58:22,667 autoreload 8028 30048 Watching for file changes with StatReloader
+INFO 2025-05-29 15:59:25,087 basehttp 8028 25356 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-29 15:59:25,510 basehttp 8028 25356 "POST /api/scripts/ HTTP/1.1" 200 1673
+INFO 2025-05-29 16:00:05,346 basehttp 8028 25356 "POST /api/scripts/replay/ HTTP/1.1" 200 974
+INFO 2025-05-29 16:01:38,921 basehttp 8028 25356 "GET /pages/reports_template.html HTTP/1.1" 302 0
+INFO 2025-05-29 16:01:39,302 basehttp 8028 25356 "POST /api/reports/summary_list/ HTTP/1.1" 200 15
+INFO 2025-05-29 16:01:41,348 basehttp 8028 25356 "POST /api/reports/summary_list/ HTTP/1.1" 200 15
+INFO 2025-05-29 16:06:28,003 autoreload 8028 30048 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\reports\views.py changed, reloading.
+INFO 2025-05-29 16:06:28,527 autoreload 20304 29400 Watching for file changes with StatReloader
+INFO 2025-05-29 16:06:53,527 autoreload 20304 29400 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\reports\views.py changed, reloading.
+INFO 2025-05-29 16:06:54,076 autoreload 18172 30596 Watching for file changes with StatReloader
+INFO 2025-05-29 16:07:14,785 autoreload 18172 30596 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\reports\views.py changed, reloading.
+INFO 2025-05-29 16:07:15,316 autoreload 1644 4932 Watching for file changes with StatReloader
+INFO 2025-05-29 16:11:28,053 basehttp 1644 14432 "POST /api/reports/summary_list/ HTTP/1.1" 200 53779
+INFO 2025-05-29 16:13:26,886 basehttp 1644 14432 "GET /static/reports/summary_reports/summary_report_2025-05-15-17-08-44.html HTTP/1.1" 200 12197
+WARNING 2025-05-29 16:13:29,888 basehttp 1644 14432 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000-1080x2400_2025-05-15-17-08-25/log.html HTTP/1.1" 404 2115
+WARNING 2025-05-29 16:13:40,000 basehttp 1644 16160 "GET /static/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-05-29-16-00-24/log.html HTTP/1.1" 404 2061
+INFO 2025-05-29 16:13:53,281 basehttp 1644 17964 "GET /static/reports/summary_reports/summary_report_2025-05-29-16-00-42.html HTTP/1.1" 200 11744
+INFO 2025-05-29 16:13:55,055 basehttp 1644 17964 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-05-29-16-00-24/log.html HTTP/1.1" 200 14343
+INFO 2025-05-29 16:13:55,067 basehttp 1644 17964 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-05-29-16-00-24/static//css/report.css HTTP/1.1" 200 18004
+INFO 2025-05-29 16:13:55,067 basehttp 1644 17412 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-05-29-16-00-24/static//js/jquery-1.10.2.min.js HTTP/1.1" 200 93111
+INFO 2025-05-29 16:13:55,069 basehttp 1644 17964 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-05-29-16-00-24/static//js/jquery-lang.js HTTP/1.1" 200 25588
+INFO 2025-05-29 16:13:55,070 basehttp 1644 17412 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-05-29-16-00-24/static//js/langpack/zh_CN.js HTTP/1.1" 200 2701
+INFO 2025-05-29 16:13:55,070 basehttp 1644 17964 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-05-29-16-00-24/static//js/lazyload.js HTTP/1.1" 200 5587
+INFO 2025-05-29 16:13:55,072 basehttp 1644 17964 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-05-29-16-00-24/static//image/copy.svg HTTP/1.1" 200 1013
+INFO 2025-05-29 16:13:55,072 basehttp 1644 17412 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-05-29-16-00-24/static//image/download_log.svg HTTP/1.1" 200 2550
+INFO 2025-05-29 16:13:55,364 basehttp 1644 17964 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-05-29-16-00-24/static//image/Airtest.png HTTP/1.1" 200 1947
+INFO 2025-05-29 16:13:55,365 basehttp 1644 17412 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-05-29-16-00-24/static//image/poco.png HTTP/1.1" 200 1385
+INFO 2025-05-29 16:13:55,369 basehttp 1644 17412 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-05-29-16-00-24/static//image/AirtestIDE.png HTTP/1.1" 200 3181
+INFO 2025-05-29 16:13:55,369 basehttp 1644 17964 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-05-29-16-00-24/static//css/monokai_sublime.min.css HTTP/1.1" 200 2017
+INFO 2025-05-29 16:13:55,372 basehttp 1644 14072 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-05-29-16-00-24/static//image/AirLab.png HTTP/1.1" 200 1954
+INFO 2025-05-29 16:13:55,373 basehttp 1644 17964 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-05-29-16-00-24/static//image/minimize.svg HTTP/1.1" 200 1031
+INFO 2025-05-29 16:13:55,373 basehttp 1644 17412 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-05-29-16-00-24/static//image/netease.png HTTP/1.1" 200 7949
+INFO 2025-05-29 16:13:55,373 basehttp 1644 20432 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-05-29-16-00-24/static//js/report.js HTTP/1.1" 200 31059
+INFO 2025-05-29 16:13:55,373 basehttp 1644 20984 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-05-29-16-00-24/static//js/paging.js HTTP/1.1" 200 13030
+INFO 2025-05-29 16:13:55,378 basehttp 1644 17964 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-05-29-16-00-24/static//image/maximize.svg HTTP/1.1" 200 1308
+INFO 2025-05-29 16:13:55,378 basehttp 1644 14072 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-05-29-16-00-24/static//image/close.svg HTTP/1.1" 200 729
+INFO 2025-05-29 16:13:55,378 basehttp 1644 25452 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-05-29-16-00-24/static//js/highlight.min.js HTTP/1.1" 200 184850
+INFO 2025-05-29 16:13:55,448 basehttp 1644 20984 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-05-29-16-00-24/static//image/eye.svg HTTP/1.1" 200 1935
+INFO 2025-05-29 16:13:55,448 basehttp 1644 20432 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-05-29-16-00-24/static//image/step_fail.svg HTTP/1.1" 200 1274
+INFO 2025-05-29 16:13:55,448 basehttp 1644 25452 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-05-29-16-00-24/log/1748505624044_small.jpg HTTP/1.1" 200 19977
+INFO 2025-05-29 16:13:55,449 basehttp 1644 17964 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-05-29-16-00-24/log/1748505634703_small.jpg HTTP/1.1" 200 45230
+INFO 2025-05-29 16:13:55,449 basehttp 1644 17412 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-05-29-16-00-24/log/1748505636471_small.jpg HTTP/1.1" 200 45234
+INFO 2025-05-29 16:13:55,449 basehttp 1644 14072 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-05-29-16-00-24/log/1748505631212_small.jpg HTTP/1.1" 200 59723
+INFO 2025-05-29 16:13:55,606 basehttp 1644 20984 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-05-29-16-00-24/static//image/time.svg HTTP/1.1" 200 820
+INFO 2025-05-29 16:13:55,606 basehttp 1644 20432 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-05-29-16-00-24/static//image/success.svg HTTP/1.1" 200 1156
+INFO 2025-05-29 16:14:02,614 autoreload 1644 4932 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\reports\views.py changed, reloading.
+INFO 2025-05-29 16:14:03,167 autoreload 22500 10280 Watching for file changes with StatReloader
