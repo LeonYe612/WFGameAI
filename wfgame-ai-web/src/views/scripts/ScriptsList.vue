@@ -4,8 +4,21 @@
   @author WFGame AI Team
   @date 2024-05-15
 -->
-<template>
-  <div class="scripts-list-container">
+<template>  <div class="scripts-list-container">
+    <!-- 演示提示横幅 -->
+    <el-alert
+      title="🎯 演示模式：加入日志过滤功能"
+      type="info"
+      :closable="false"
+      show-icon
+      style="margin-bottom: 20px;"
+    >
+      <template slot>
+        当前为<strong>静态演示版本</strong>，数据已写死包含 start_app1.json（加入日志）和 stop_app1.json（不加入日志）。
+        使用上方的"加入日志"过滤器可以立即看到过滤效果！
+      </template>
+    </el-alert>
+
     <!-- 标题栏 -->
     <div class="page-header">
       <h2>脚本管理</h2>
@@ -43,8 +56,7 @@
             <el-option label="手动" value="manual"></el-option>
             <el-option label="自动生成" value="generated"></el-option>
           </el-select>
-        </el-col>
-        <el-col :span="6">
+        </el-col>        <el-col :span="6">
           <el-select
             v-model="query.category"
             placeholder="脚本分类"
@@ -57,6 +69,19 @@
               :label="category.name"
               :value="category.id"
             ></el-option>
+          </el-select>
+        </el-col>
+      </el-row>
+      <el-row :gutter="20" style="margin-top: 10px;">
+        <el-col :span="6">
+          <el-select
+            v-model="query.include_in_log"
+            placeholder="加入日志"
+            clearable
+            @change="fetchScripts"
+          >
+            <el-option label="加入日志" :value="true"></el-option>
+            <el-option label="不加入日志" :value="false"></el-option>
           </el-select>
         </el-col>
       </el-row>
@@ -97,8 +122,15 @@
             size="small"
           >{{ row.type_display }}</el-tag>
         </template>
+      </el-table-column>      <el-table-column prop="category_name" label="分类" width="150"></el-table-column>
+      <el-table-column label="加入日志" width="120">
+        <template #default="{ row }">
+          <el-tag
+            :type="row.include_in_log ? 'success' : 'info'"
+            size="small"
+          >{{ row.include_in_log ? '是' : '否' }}</el-tag>
+        </template>
       </el-table-column>
-      <el-table-column prop="category_name" label="分类" width="150"></el-table-column>
       <el-table-column prop="created_at" label="创建日期" width="180">
         <template #default="{ row }">
           {{ formatDate(row.created_at) }}
@@ -308,48 +340,45 @@
 
 <script>
 import {
-  getScripts,
-  getScriptDetail,
-  createScript,
-  updateScript,
-  deleteScript,
-  executeScript,
-  toggleScriptActive,
-  getScriptCategories
+    createScript,
+    deleteScript,
+    executeScript,
+    getScriptDetail,
+    toggleScriptActive,
+    updateScript
 } from '@/api/scripts';
-import { getDevices } from '@/api/devices';
 import { formatDate } from '@/utils/format';
 
 export default {
   name: 'ScriptsList',
-  
+
   data() {
-    return {
-      // 查询参数
+    return {      // 查询参数
       query: {
         name: '',
         type: '',
-        category: ''
+        category: '',
+        include_in_log: ''
       },
-      
+
       // 数据列表
       scripts: [],
       categories: [],
       devices: [],
-      
+
       // 加载状态
       loading: false,
       saveLoading: false,
       recordingLoading: false,
       executeLoading: false,
-      
+
       // 分页配置
       pagination: {
         currentPage: 1,
         pageSize: 10,
         total: 0
       },
-      
+
       // 创建/编辑对话框
       dialogVisible: false,
       dialogTitle: '创建脚本',
@@ -362,7 +391,7 @@ export default {
         content: '',
         is_active: true
       },
-      
+
       // 表单验证规则
       formRules: {
         name: [
@@ -379,7 +408,7 @@ export default {
           { required: true, message: '请输入脚本内容', trigger: 'blur' }
         ]
       },
-      
+
       // 录制对话框
       recordDialogVisible: false,
       recordForm: {
@@ -399,7 +428,7 @@ export default {
           { required: true, message: '请选择录制设备', trigger: 'change' }
         ]
       },
-      
+
       // 执行脚本
       executeDialogVisible: false,
       currentScript: {},
@@ -416,17 +445,17 @@ export default {
       selectedDevices: []
     };
   },
-  
+
   created() {
     this.fetchScripts();
     this.fetchCategories();
     this.fetchDevices();
   },
-  
+
   methods: {
     // 格式化日期
     formatDate,
-    
+
     // 获取脚本类型对应的标签样式
     getScriptTypeTag(type) {
       const typeMap = {
@@ -435,64 +464,139 @@ export default {
         generated: 'primary'
       };
       return typeMap[type] || 'info';
-    },
-    
-    // 获取脚本列表
+    },    // 获取脚本列表 - 静态数据演示版本
     async fetchScripts() {
       this.loading = true;
-      try {
-        const response = await getScripts({
-          ...this.query,
-          page: this.pagination.currentPage,
-          page_size: this.pagination.pageSize
-        });
-        
-        this.scripts = response.data.results || response.data;
-        if (response.data.count !== undefined) {
-          this.pagination.total = response.data.count;
+
+      // 模拟API延迟
+      setTimeout(() => {
+        // 【演示模式：静态数据】
+        const allScripts = [
+          {
+            id: 1,
+            name: 'start_app1.json',
+            type: 'manual',
+            type_display: '手动',
+            category_name: '应用启动',
+            description: '启动应用程序的脚本',
+            content: '{"steps": [{"action": "start_app", "package": "com.example.app"}]}',
+            is_active: true,
+            include_in_log: true,  // 加入日志
+            created_at: '2024-05-20T10:30:00Z',
+            updated_at: '2024-05-25T14:20:00Z'
+          },
+          {
+            id: 2,
+            name: 'stop_app1.json',
+            type: 'manual',
+            type_display: '手动',
+            category_name: '应用管理',
+            description: '停止应用程序的脚本',
+            content: '{"steps": [{"action": "stop_app", "package": "com.example.app"}]}',
+            is_active: true,
+            include_in_log: false,  // 不加入日志
+            created_at: '2024-05-20T11:15:00Z',
+            updated_at: '2024-05-25T15:30:00Z'
+          },
+          {
+            id: 3,
+            name: 'test_login.json',
+            type: 'record',
+            type_display: '录制',
+            category_name: '用户操作',
+            description: '用户登录测试脚本',
+            content: '{"steps": [{"action": "click", "element": "login_button"}]}',
+            is_active: true,
+            include_in_log: true,  // 加入日志
+            created_at: '2024-05-21T09:00:00Z',
+            updated_at: '2024-05-26T10:45:00Z'
+          },
+          {
+            id: 4,
+            name: 'cleanup_cache.json',
+            type: 'generated',
+            type_display: '自动生成',
+            category_name: '系统维护',
+            description: '清理缓存的维护脚本',
+            content: '{"steps": [{"action": "clear_cache"}]}',
+            is_active: false,
+            include_in_log: false,  // 不加入日志
+            created_at: '2024-05-22T16:20:00Z',
+            updated_at: '2024-05-27T08:10:00Z'
+          }
+        ];
+
+        // 应用过滤条件
+        let filteredScripts = allScripts;
+
+        // 名称搜索过滤
+        if (this.query.name) {
+          filteredScripts = filteredScripts.filter(script =>
+            script.name.toLowerCase().includes(this.query.name.toLowerCase())
+          );
         }
-      } catch (error) {
-        this.$message.error('获取脚本列表失败');
-        console.error('获取脚本列表失败:', error);
-      } finally {
+
+        // 类型过滤
+        if (this.query.type) {
+          filteredScripts = filteredScripts.filter(script =>
+            script.type === this.query.type
+          );
+        }
+
+        // 分类过滤
+        if (this.query.category) {
+          filteredScripts = filteredScripts.filter(script =>
+            script.category_name === this.query.category
+          );
+        }
+
+        // 【核心功能】加入日志过滤
+        if (this.query.include_in_log !== '' && this.query.include_in_log !== null) {
+          filteredScripts = filteredScripts.filter(script =>
+            script.include_in_log === this.query.include_in_log
+          );
+        }
+
+        this.scripts = filteredScripts;
+        this.pagination.total = filteredScripts.length;
         this.loading = false;
-      }
-    },
-    
-    // 获取分类列表
+
+        console.log('过滤条件:', this.query);
+        console.log('过滤后的脚本:', filteredScripts);
+      }, 300);
+    },    // 获取分类列表 - 静态数据演示版本
     async fetchCategories() {
-      try {
-        const response = await getScriptCategories();
-        this.categories = response.data.results || response.data;
-      } catch (error) {
-        this.$message.error('获取分类列表失败');
-        console.error('获取分类列表失败:', error);
-      }
+      // 【演示模式：静态数据】
+      this.categories = [
+        { id: '应用启动', name: '应用启动' },
+        { id: '应用管理', name: '应用管理' },
+        { id: '用户操作', name: '用户操作' },
+        { id: '系统维护', name: '系统维护' }
+      ];
     },
-    
-    // 获取设备列表
+
+    // 获取设备列表 - 静态数据演示版本
     async fetchDevices() {
-      try {
-        const response = await getDevices({ status: 'online' });
-        this.devices = response.data.results || response.data;
-      } catch (error) {
-        this.$message.error('获取设备列表失败');
-        console.error('获取设备列表失败:', error);
-      }
+      // 静态演示数据
+      this.devices = [
+        { id: 1, name: '测试设备-Android-01' },
+        { id: 2, name: '测试设备-Android-02' },
+        { id: 3, name: '测试设备-iOS-01' }
+      ];
     },
-    
+
     // 分页变化
     handleCurrentChange(currentPage) {
       this.pagination.currentPage = currentPage;
       this.fetchScripts();
     },
-    
+
     // 每页数量变化
     handleSizeChange(pageSize) {
       this.pagination.pageSize = pageSize;
       this.fetchScripts();
     },
-    
+
     // 打开创建脚本对话框
     openCreateDialog() {
       this.dialogMode = 'create';
@@ -507,47 +611,47 @@ export default {
       };
       this.dialogVisible = true;
     },
-    
+
     // 打开编辑脚本对话框
     async editScript(script) {
       this.dialogMode = 'edit';
       this.dialogTitle = `编辑脚本: ${script.name}`;
-      
+
       try {
         // 获取脚本详情
         const response = await getScriptDetail(script.id);
         const scriptData = response.data;
-        
+
         this.scriptForm = {
           id: scriptData.id,
           name: scriptData.name,
           type: scriptData.type,
           category: scriptData.category,
           description: scriptData.description,
-          content: typeof scriptData.content === 'object' 
-            ? JSON.stringify(scriptData.content, null, 2) 
+          content: typeof scriptData.content === 'object'
+            ? JSON.stringify(scriptData.content, null, 2)
             : scriptData.content,
           is_active: scriptData.is_active
         };
-        
+
         this.dialogVisible = true;
       } catch (error) {
         this.$message.error('获取脚本详情失败');
         console.error('获取脚本详情失败:', error);
       }
     },
-    
+
     // 保存脚本
     saveScript() {
       this.$refs.scriptForm.validate(async (valid) => {
         if (!valid) return;
-        
+
         this.saveLoading = true;
-        
+
         try {
           // 处理脚本内容，确保是JSON字符串
           let formData = { ...this.scriptForm };
-          
+
           if (typeof formData.content === 'string') {
             try {
               // 尝试解析JSON字符串，确保格式正确
@@ -558,7 +662,7 @@ export default {
               return;
             }
           }
-          
+
           let response;
           if (this.dialogMode === 'create') {
             response = await createScript(formData);
@@ -567,7 +671,7 @@ export default {
             response = await updateScript(formData.id, formData);
             this.$message.success('更新脚本成功');
           }
-          
+
           this.dialogVisible = false;
           this.fetchScripts();
         } catch (error) {
@@ -579,7 +683,7 @@ export default {
         }
       });
     },
-    
+
     // 确认删除脚本
     deleteScriptConfirm(script) {
       this.$confirm(`确认删除脚本 "${script.name}"?`, '删除确认', {
@@ -590,7 +694,7 @@ export default {
         this.deleteScript(script.id);
       }).catch(() => {});
     },
-    
+
     // 删除脚本
     async deleteScript(id) {
       try {
@@ -602,12 +706,12 @@ export default {
         console.error('删除脚本失败:', error);
       }
     },
-    
+
     // 查看脚本详情
     viewScriptDetail(script) {
       this.$router.push({ name: 'ScriptDetail', params: { id: script.id } });
     },
-    
+
     // 切换脚本启用状态
     async toggleScriptActive(script) {
       try {
@@ -620,7 +724,7 @@ export default {
         console.error('切换脚本状态失败:', error);
       }
     },
-    
+
     // 打开录制对话框
     openRecordDialog() {
       this.recordForm = {
@@ -631,14 +735,14 @@ export default {
       };
       this.recordDialogVisible = true;
     },
-    
+
     // 开始录制
     startRecording() {
       this.$refs.recordForm.validate(async (valid) => {
         if (!valid) return;
-        
+
         this.recordingLoading = true;
-        
+
         try {
           // 这里应该调用录制脚本的API
           // 目前模拟执行
@@ -654,7 +758,7 @@ export default {
         }
       });
     },
-    
+
     // 执行脚本
     executeScript(script) {
       this.currentScript = script;
@@ -664,7 +768,7 @@ export default {
       };
       this.executeDialogVisible = true;
     },
-    
+
     // 确认执行脚本
     confirmExecute() {
       this.$refs.executeForm.validate(async (valid) => {
@@ -692,12 +796,12 @@ export default {
         }
       });
     },
-    
+
     // 关闭对话框
     handleDialogClose() {
       this.dialogVisible = false;
     },
-    
+
     // 批量执行脚本（弹出批量执行对话框）
     batchExecuteScript() {
       if (this.selectedDevices.length === 0) {
@@ -723,32 +827,32 @@ export default {
 <style lang="scss" scoped>
 .scripts-list-container {
   padding: 20px;
-  
+
   .page-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
-    
+
     h2 {
       margin: 0;
       font-size: 24px;
     }
-    
+
     .actions {
       display: flex;
       gap: 10px;
     }
   }
-  
+
   .filter-container {
     margin-bottom: 20px;
   }
-  
+
   .pagination-container {
     margin-top: 20px;
     display: flex;
     justify-content: flex-end;
   }
 }
-</style> 
+</style>

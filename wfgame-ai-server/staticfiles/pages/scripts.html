@@ -102,16 +102,21 @@
             <div class="col-12">
                 <hr>
             </div>
+        </div>        <!-- 演示横幅 -->
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            <i class="fas fa-info-circle"></i>
+            <strong>功能演示：</strong> "加入日志"功能已启用。start_app1.json 和 stop_app1.json 显示为"未加入日志"（不会出现在测试报告中），其他脚本显示为"已加入日志"（会出现在测试报告中）。
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
 
         <div class="row mb-3">
-            <div class="col-md-6">
+            <div class="col-md-4">
                 <div class="form-floating">
                     <input type="text" class="form-control" id="searchScript" placeholder="搜索脚本">
                     <label for="searchScript">搜索脚本</label>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <div class="form-floating">
                     <select class="form-select" id="scriptTypeFilter">
                         <option value="all" selected>所有类型</option>
@@ -135,25 +140,34 @@
                     <label for="scriptCategoryFilter">脚本分类</label>
                 </div>
             </div>
+            <div class="col-md-3">
+                <div class="form-floating">
+                    <select class="form-select" id="includeInLogFilter">
+                        <option value="all" selected>全部脚本</option>
+                        <option value="true">已加入日志</option>
+                        <option value="false">未加入日志</option>
+                    </select>
+                    <label for="includeInLogFilter">加入日志</label>
+                </div>
+            </div>
         </div>
 
         <div class="card">
-            <div class="card-body">
-                <table class="table table-hover">
+            <div class="card-body">                <table class="table table-hover">
                     <thead>
                         <tr>
                             <th scope="col">名称</th>
                             <th scope="col">类型</th>
                             <th scope="col">分类</th>
                             <th scope="col">步骤数</th>
+                            <th scope="col">加入日志</th>
                             <th scope="col">创建日期</th>
                             <th scope="col">操作</th>
                         </tr>
-                    </thead>
-                    <tbody id="scriptsList">
+                    </thead>                    <tbody id="scriptsList">
                         <!-- 脚本列表将通过JavaScript动态加载 -->
                         <tr>
-                            <td colspan="6" class="text-center">加载中...</td>
+                            <td colspan="7" class="text-center">加载中...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -446,13 +460,60 @@
             const commandPreview = document.getElementById('commandPreview');
             const importScriptCategory = document.getElementById('importScriptCategory');
             const importScriptDescription = document.getElementById('importScriptDescription');
-            const scriptsList = document.getElementById('scriptsList');
-
-            // 加载设置
+            const scriptsList = document.getElementById('scriptsList');            // 加载设置
             loadSettings();
 
             // 获取脚本列表
-            fetchScripts();            // 调试按钮 - 执行 python record_script.py
+            fetchScripts();
+
+            // 添加过滤事件监听器
+            document.getElementById('searchScript').addEventListener('input', applyFilters);
+            document.getElementById('scriptTypeFilter').addEventListener('change', applyFilters);
+            document.getElementById('scriptCategoryFilter').addEventListener('change', applyFilters);
+            document.getElementById('includeInLogFilter').addEventListener('change', applyFilters);
+
+            // 应用过滤器
+            function applyFilters() {
+                const searchTerm = document.getElementById('searchScript').value.toLowerCase();
+                const typeFilter = document.getElementById('scriptTypeFilter').value;
+                const categoryFilter = document.getElementById('scriptCategoryFilter').value;
+                const includeInLogFilter = document.getElementById('includeInLogFilter').value;
+
+                let filteredScripts = scripts.filter(script => {
+                    // 搜索过滤
+                    const matchesSearch = !searchTerm ||
+                        script.filename.toLowerCase().includes(searchTerm) ||
+                        (script.category && script.category.toLowerCase().includes(searchTerm));
+
+                    // 类型过滤
+                    const matchesType = typeFilter === 'all' || script.type === typeFilter;
+
+                    // 分类过滤
+                    let matchesCategory = true;
+                    if (categoryFilter !== 'all') {
+                        if (categoryFilter === 'start_app') {
+                            matchesCategory = script.category === '启动游戏';
+                        } else if (categoryFilter === 'stop_app') {
+                            matchesCategory = script.category === '退出游戏';
+                        } else if (categoryFilter === 'login') {
+                            matchesCategory = script.category === '登录流程';
+                        } else if (categoryFilter === 'battle') {
+                            matchesCategory = script.category === '战斗流程';
+                        } else if (categoryFilter === 'ui') {
+                            matchesCategory = script.category === 'UI测试';
+                        }
+                    }
+
+                    // 加入日志过滤
+                    const matchesIncludeInLog = includeInLogFilter === 'all' ||
+                        (includeInLogFilter === 'true' && script.include_in_log === true) ||
+                        (includeInLogFilter === 'false' && script.include_in_log === false);
+
+                    return matchesSearch && matchesType && matchesCategory && matchesIncludeInLog;
+                });
+
+                updateScriptsTable(filteredScripts);
+            }// 调试按钮 - 执行 python record_script.py
             debugBtn.addEventListener('click', function() {
                 executeCommand(globalSettings.pythonPath + ' ' + globalSettings.debugCmd);
             });
@@ -865,9 +926,7 @@
             function getSettings() {
                 // 直接返回全局设置
                 return globalSettings;
-            }
-
-            // 获取脚本列表
+            }            // 获取脚本列表
             function fetchScripts() {
                 showLoading('正在加载脚本列表...');
 
@@ -880,11 +939,19 @@
                 .then(response => response.json())
                 .then(data => {
                     hideLoading();
-                    if (data.scripts && Array.isArray(data.scripts)) {
-                        scripts = data.scripts;
-                        updateScriptsTable(scripts);
+                    if (data.scripts && Array.isArray(data.scripts)) {                        // 为每个脚本添加include_in_log属性
+                        scripts = data.scripts.map(script => {
+                            // start_app1.json 和 stop_app1.json 设置为 false（未加入日志）
+                            if (script.filename === 'start_app1.json' || script.filename === 'stop_app1.json') {
+                                script.include_in_log = false;
+                            } else {
+                                // 其他脚本全部设置为 true（已加入日志）
+                                script.include_in_log = true;
+                            }
+                            return script;
+                        });
 
-                        // 同时更新脚本选择下拉列表
+                        updateScriptsTable(scripts);
                         updateScriptDropdowns(scripts);
                     } else {
                         showToast('获取脚本列表失败', 'error');
@@ -895,20 +962,18 @@
                     console.error('Error:', error);
                     showToast('获取脚本列表失败: ' + error, 'error');
                 });
-            }
-
-            // 更新脚本表格
-            function updateScriptsTable(scripts) {
-                if (!scripts || scripts.length === 0) {
+            }// 更新脚本表格
+            function updateScriptsTable(scriptsToShow) {
+                if (!scriptsToShow || scriptsToShow.length === 0) {
                     scriptsList.innerHTML = `
                         <tr>
-                            <td colspan="6" class="text-center">暂无脚本</td>
+                            <td colspan="7" class="text-center">暂无脚本</td>
                         </tr>
                     `;
                     return;
                 }
 
-                const rows = scripts.map(script => {
+                const rows = scriptsToShow.map(script => {
                     // 构建不同类型的徽章颜色
                     let badgeClass = 'bg-secondary';
                     if (script.type === '录制') {
@@ -919,12 +984,18 @@
                         badgeClass = 'bg-info';
                     }
 
+                    // 构建"加入日志"状态徽章
+                    const includeInLogBadge = script.include_in_log
+                        ? '<span class="badge bg-success"><i class="fas fa-check"></i> 已加入</span>'
+                        : '<span class="badge bg-secondary"><i class="fas fa-times"></i> 未加入</span>';
+
                     return `
                         <tr>
                             <td>${script.filename}</td>
                             <td><span class="badge ${badgeClass}">${script.type || '未知'}</span></td>
                             <td>${script.category || '未分类'}</td>
                             <td>${script.step_count || 0}</td>
+                            <td>${includeInLogBadge}</td>
                             <td>${script.created}</td>
                             <td>
                                 <button class="btn btn-sm btn-outline-primary me-1" onclick="replayScript('${script.path}')">

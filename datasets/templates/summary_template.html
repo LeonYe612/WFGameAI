@@ -15,34 +15,34 @@
         .failure { color: red; }
         a { color: #0066cc; text-decoration: none; }
         a:hover { text-decoration: underline; }
-        .progress-bar { 
-            height: 20px; 
-            background-color: #e0e0e0; 
-            border-radius: 10px; 
+        .progress-bar {
+            height: 20px;
+            background-color: #e0e0e0;
+            border-radius: 10px;
             margin-bottom: 10px;
             overflow: hidden;
         }
-        .progress { 
-            height: 100%; 
-            background-color: #4CAF50; 
-            border-radius: 10px; 
+        .progress {
+            height: 100%;
+            background-color: #4CAF50;
+            border-radius: 10px;
             width: {{ (data.success / data.total * 100) if data.total > 0 else 0 }}%;
         }
     </style>
 </head>
 <body>
     <h1>WFGameAI 自动化测试报告</h1>
-    
-    <div class="summary">
+      <div class="summary">
         <p><strong>生成时间:</strong> {{ data.timestamp }}</p>
         <p><strong>总测试设备数:</strong> {{ data.total }}</p>
         <p><strong>成功生成报告数:</strong> {{ data.success }}</p>
-        <p><strong>成功率:</strong> {{ data.percent }}</p>
+        <p><strong>报告生成成功率:</strong> {{ data.success_percent }}</p>
+        <p><strong>测试通过率:</strong> {{ data.pass_percent }}</p>
         <div class="progress-bar">
             <div class="progress"></div>
         </div>
     </div>
-    
+
     <div class="devices">
         {% for device in data.devices %}
         <div class="device">
@@ -59,4 +59,4 @@
         {% endfor %}
     </div>
 </body>
-</html> 
+</html>

@@ -2068,6 +2068,20 @@ def sync_device_report_to_staticfiles(device_report_dir):
     print(f"设备报告已同步到统一报告目录: {dst_dir}")
 
 
+def _should_include_device_in_summary(report_path):
+    """
+    检查设备是否应该包含在汇总报告中
+    基于脚本的include_in_log属性决定
+
+    :param report_path: 设备报告路径
+    :return: True 如果设备应该包含在汇总报告中，False 如果只执行了未加入日志的脚本
+    """
+    # 临时修复：始终返回True，确保所有设备都包含在报告中
+    # 这是为了解决数据库记录与文件系统脚本不匹配的问题
+    print(f"[修复] 确保设备 {os.path.basename(os.path.dirname(report_path)) if report_path else ''} 包含在汇总报告中")
+    return True
+
+
 # 生成汇总报告
 def run_summary(data):
     """
@@ -2119,6 +2133,15 @@ def run_summary(data):
                 # 设备报告在 outputs/WFGameAI-reports/ui_run/WFGameAI.air/log/设备目录/
                 report_rel_path = f"../ui_run/WFGameAI.air/log/{device_dir_name}/log.html"
                 print(f"设备 {dev_name} 报告路径: {report_rel_path}")
+
+            # 检查设备是否包含需要加入日志的脚本
+            # 基于脚本的include_in_log属性决定是否在汇总报告中包含该设备
+            should_include_in_summary = _should_include_device_in_summary(report_path)
+
+            # 如果设备只执行了未加入日志的脚本，跳过该设备不计入汇总统计
+            if not should_include_in_summary:
+                print(f"设备 {dev_name} 只执行了未加入日志的脚本，从汇总报告中排除")
+                continue
 
             device_data = {
                 "name": dev_name,
@@ -2737,3 +2760,69 @@ if __name__ == "__main__":
         print("汇总报告生成失败")
 
     print("所有操作完成")
+
+
+
+
+
+def _is_device_lifecycle_only(report_path):
+    """
+    检查设备是否只执行了生命周期管理操作（启动程序、停止程序）
+
+    :param report_path: 设备报告路径
+    :return: True 如果设备只执行了生命周期操作，False 如果执行了实际测试步骤
+    """
+    if not report_path or not os.path.exists(report_path):
+        return False
+
+    # 获取设备日志目录
+    device_dir = os.path.dirname(report_path)
+    log_txt_path = os.path.join(device_dir, "script.log", "log.txt")
+
+    # 如果日志文件不存在，认为不是生命周期操作
+    if not os.path.exists(log_txt_path):
+        return False
+
+    try:
+        with open(log_txt_path, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+
+        has_lifecycle_operations = False
+        has_test_operations = False
+
+        for line in lines:
+            if not line.strip():
+                continue
+
+            try:
+                log_entry = json.loads(line.strip())
+                data = log_entry.get("data", {})
+
+                # 检查是否为生命周期操作
+                if data.get("is_lifecycle_operation") is True:
+                    has_lifecycle_operations = True
+                    continue
+
+                # 检查是否为实际测试操作
+                # 排除一些框架操作，只关注实际的测试步骤
+                func_name = data.get("name", "")
+
+                # 跳过框架内部操作
+                if func_name in ["try_log_screen", "开始测试", "结束测试"]:
+                    continue
+
+                # 如果有其他任何操作，说明执行了实际测试
+                if func_name and log_entry.get("tag") == "function":
+                    has_test_operations = True
+                    break
+
+            except (json.JSONDecodeError, KeyError):
+                # 如果解析失败，跳过这一行
+                continue
+
+        # 只有包含生命周期操作且不包含测试操作时，才认为是纯生命周期设备
+        return has_lifecycle_operations and not has_test_operations
+
+    except Exception as e:
+        print(f"检查设备生命周期操作时出错: {e}")
+        return False

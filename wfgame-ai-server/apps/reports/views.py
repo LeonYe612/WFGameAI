@@ -350,26 +350,61 @@ def summary_list(request):
                                     time_text = time_tag.text.split(':', 1)[-1].strip()
                                     created_at = time_text
 
-                            # 设备详情
+                            # 设备详情 - 更新解析逻辑以匹配新的HTML结构
                             devices = []
-                            for dev in soup.select('.device'):
-                                h2 = dev.find('h2')
-                                name = h2.text.replace('设备: ', '').strip() if h2 else ''
-                                status = '通过' if '通过' in dev.text else '失败'
 
-                                # 安全地获取链接 - 使用简单的文本查找方式
-                                detail_link = ''
-                                a_tag = dev.find('a')
-                                if a_tag:
-                                    href_match = re.search(r'href=["\'](.*?)["\']', str(a_tag))
-                                    if href_match:
-                                        detail_link = href_match.group(1)
+                            # 尝试新的表格结构
+                            table_rows = soup.select('tbody tr')
+                            if table_rows:
+                                for row in table_rows:
+                                    # 从表格行中提取设备名称、状态和链接
+                                    device_name_cell = row.find('td', class_='device-name')
+                                    status_cell = row.select_one('td .status')
+                                    link_cell = row.find('a', class_='report-link')
 
-                                devices.append({
-                                    'name': name,
-                                    'status': status,
-                                    'detail_url': detail_link
-                                })
+                                    if device_name_cell:
+                                        name = device_name_cell.get_text(strip=True)
+
+                                        # 从状态span中提取状态
+                                        if status_cell:
+                                            status_text = status_cell.get_text(strip=True)
+                                            status = '通过' if status_text == '通过' else '失败'
+                                        else:
+                                            status = '失败'
+
+                                        # 提取详细报告链接
+                                        detail_link = ''
+                                        if link_cell:
+                                            try:
+                                                detail_link = link_cell.get('href', '') or ''
+                                            except (AttributeError, TypeError):
+                                                detail_link = ''
+
+                                        devices.append({
+                                            'name': name,
+                                            'status': status,
+                                            'detail_url': detail_link
+                                        })
+                            else:
+                                # 如果没有找到表格结构，尝试旧的.device类结构
+                                for dev in soup.select('.device'):
+                                    h2 = dev.find('h2')
+                                    name = h2.text.replace('设备: ', '').strip() if h2 else ''
+                                    status = '通过' if '通过' in dev.text else '失败'
+
+                                    # 安全地获取链接 - 使用简单的文本查找方式
+                                    detail_link = ''
+                                    a_tag = dev.find('a')
+                                    if a_tag:
+                                        href_match = re.search(r'href=["\'](.*?)["\']', str(a_tag))
+                                        if href_match:
+                                            detail_link = href_match.group(1)
+
+                                    devices.append({
+                                        'name': name,
+                                        'status': status,
+                                        'detail_url': detail_link
+                                    })
 
                             # 计算设备数和成功数 - 从设备列表中统计
                             device_count = len(devices)

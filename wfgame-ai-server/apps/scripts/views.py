@@ -1430,6 +1430,12 @@ class ScriptViewSet(viewsets.ModelViewSet):
             is_active = is_active.lower() == 'true'
             queryset = queryset.filter(is_active=is_active)
 
+        # 加入日志过滤
+        include_in_log = self.request.query_params.get('include_in_log')
+        if include_in_log is not None:
+            include_in_log = include_in_log.lower() == 'true'
+            queryset = queryset.filter(include_in_log=include_in_log)
+
         return queryset
 
     def perform_create(self, serializer):
