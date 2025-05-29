@@ -383,10 +383,81 @@ def summary_list(request):
                                         # 提取详细报告链接
                                         detail_link = ''
                                         if link_cell:
-                                            try:
-                                                detail_link = link_cell.get('href', '') or ''
-                                            except (AttributeError, TypeError):
-                                                detail_link = ''
+                                            # Ensure link_cell is a Tag, is an 'a' tag, and has an 'href' attribute
+                                            detail_link = ''
+                                            if link_cell and hasattr(link_cell, 'name') and link_cell.name == 'a' and isinstance(link_cell.attrs, dict) and 'href' in link_cell.attrs:
+                                                href_val = link_cell.attrs['href']
+                                                if isinstance(href_val, str):
+                                                    detail_link = href_val
+                                                elif isinstance(href_val, list): # Handle case where href might be a list (though unusual for href)
+                                                    if href_val:
+                                                        detail_link = str(href_val[0])
+                                                        if len(href_val) > 1:
+                                                            logger.warning(f"link_cell in {filename} had multiple href values: {href_val}. Using the first one.")
+                                                    else:
+                                                        detail_link = ''
+                                                elif href_val is not None:
+                                                    detail_link = str(href_val) # Fallback for other types
+                                                else:
+                                                    detail_link = '' # href attribute exists but is None
+                                            elif link_cell:
+                                                logger.warning(f"link_cell in {filename} was found but was not a valid 'a' tag with an 'href' attribute. Tag: {str(link_cell)[:100]}")
+
+                                        # Correct relative detail_link to be an absolute URL
+                                        if detail_link: # Proceed only if detail_link is not empty
+                                            detail_link = detail_link.strip().replace('\\\\', '/') # Normalize and clean
+
+                                            # Check if it's already an absolute URL or a data URI, etc.
+                                            if not detail_link.startswith(("/", "http://", "https://", "data:")):
+                                                # Handle paths like ../ui_run/... or ui_run/...
+                                                # These are relative to the summary report's directory.
+                                                # Summary reports are at /static/reports/summary_reports/
+                                                # Device reports are expected at /static/reports/ui_run/...
+
+                                                if detail_link.startswith("../"):
+                                                    path_suffix = detail_link[len("../"):]
+                                                    if path_suffix.startswith("ui_run/WFGameAI.air/log/"):
+                                                        detail_link = f"/static/reports/{path_suffix}"
+                                                    else:
+                                                        logger.warning(f"Unexpected detail_link structure '{detail_link}' in {filename}. Expected '../ui_run/...'.")
+                                                        # Attempt to make it relative to /static/ if it's just ../
+                                                        # This is a guess and might need adjustment based on actual relative links found
+                                                        if not path_suffix.startswith("/"): # Avoid /static//
+                                                            detail_link = f"/static/{path_suffix}"
+                                                        else:
+                                                            detail_link = f"/static{path_suffix}"
+
+
+                                                elif detail_link.startswith("./"):
+                                                    path_suffix = detail_link[len("./"):]
+                                                    if path_suffix.startswith("ui_run/WFGameAI.air/log/"):
+                                                         detail_link = f"/static/reports/summary_reports/{path_suffix}" # Path relative to summary_reports
+                                                         # This should actually be:
+                                                         detail_link = f"/static/reports/{path_suffix}" # Corrected: relative to static/reports/
+                                                    else:
+                                                        logger.warning(f"Unexpected detail_link structure '{detail_link}' in {filename} after './'.")
+                                                        # Similar guess for ./
+                                                        if not path_suffix.startswith("/"):
+                                                            detail_link = f"/static/reports/summary_reports/{path_suffix}"
+                                                        else:
+                                                            detail_link = f"/static/reports/summary_reports{path_suffix}"
+
+
+                                                elif detail_link.startswith("ui_run/WFGameAI.air/log/"):
+                                                    # e.g., ui_run/WFGameAI.air/log/DEVICE/log.html
+                                                    # Assumed to be relative to /static/reports/
+                                                    detail_link = f"/static/reports/{detail_link}"
+                                                else:
+                                                    # Other relative paths not matching the expected patterns
+                                                    logger.warning(
+                                                        f"Unrecognized relative detail_link format from {filename}: {detail_link}. "
+                                                        f"Cannot reliably convert to absolute. Check report template. It will be served as is."
+                                                    )
+
+                                            # Final check for double slashes that might have been introduced
+                                            if "//" in detail_link:
+                                                if not detail_link.startswith("data:") and "://" not in detail_link[:8]:
+                                                    detail_link = re.sub(r'/(/)+', '/', detail_link)
 
                                         devices.append({
                                             'name': name,
