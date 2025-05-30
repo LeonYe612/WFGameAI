@@ -33,6 +33,7 @@ class ScriptCategory(models.Model):
     updated_at = models.DateTimeField(_('更新时间'), auto_now=True)
 
     class Meta:
+        db_table = 'ai_script_category'
         verbose_name = _('脚本分类')
         verbose_name_plural = _('脚本分类')
         ordering = ['name']
@@ -74,6 +75,7 @@ class Script(models.Model):
     updated_at = models.DateTimeField(_('更新时间'), auto_now=True)
 
     class Meta:
+        db_table = 'ai_script'
         verbose_name = _('测试脚本')
         verbose_name_plural = _('测试脚本')
         ordering = ['-updated_at']
@@ -120,6 +122,7 @@ class ScriptFile(models.Model):
     updated_at = models.DateTimeField(_('更新时间'), auto_now=True)
 
     class Meta:
+        db_table = 'ai_script_file'
         verbose_name = _('脚本文件')
         verbose_name_plural = _('脚本文件')
         ordering = ['-created_at']
@@ -164,6 +167,7 @@ class ScriptExecution(models.Model):
     created_at = models.DateTimeField(_('创建时间'), auto_now_add=True)
 
     class Meta:
+        db_table = 'ai_script_execution'
         verbose_name = _('脚本执行记录')
         verbose_name_plural = _('脚本执行记录')
         ordering = ['-created_at']
@@ -175,26 +179,27 @@ class ScriptExecution(models.Model):
 class ScriptVersion(models.Model):
     """脚本版本历史"""
     script = models.ForeignKey(Script,
-                              verbose_name=_('脚本'),
-                              on_delete=models.CASCADE,
-                              related_name='versions')
+                            verbose_name=_('脚本'),
+                            on_delete=models.CASCADE,
+                            related_name='versions')
     version = models.CharField(_('版本'), max_length=50)
     content = models.JSONField(_('脚本内容'), default=dict)
     comment = models.TextField(_('版本说明'), blank=True)
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL,
-                                  verbose_name=_('创建者'),
-                                  on_delete=models.SET_NULL,
-                                  null=True, blank=True)
     created_at = models.DateTimeField(_('创建时间'), auto_now_add=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL,
+                             verbose_name=_('创建者'),
+                             on_delete=models.SET_NULL,
+                             null=True, blank=True)
 
     class Meta:
+        db_table = 'ai_script_version'
         verbose_name = _('脚本版本')
         verbose_name_plural = _('脚本版本')
         ordering = ['-created_at']
-        unique_together = [['script', 'version']]
+        unique_together = ('script', 'version')
 
     def __str__(self):
-        return f"{self.script.name} v{self.version}"
+        return f"{self.script.name} - v{self.version}"
 
 
 class SystemConfig(models.Model):
@@ -217,6 +222,7 @@ class SystemConfig(models.Model):
     updated_at = models.DateTimeField('更新时间', auto_now=True)
 
     class Meta:
+        db_table = 'ai_system_config'
         verbose_name = '系统配置'
         verbose_name_plural = '系统配置'
         ordering = ['key']

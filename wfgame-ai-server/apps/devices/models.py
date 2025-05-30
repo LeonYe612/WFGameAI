@@ -15,6 +15,7 @@ class DeviceType(models.Model):
     updated_at = models.DateTimeField(_('更新时间'), auto_now=True)
 
     class Meta:
+        db_table = 'ai_devicetype'
         verbose_name = _('设备类型')
         verbose_name_plural = _('设备类型')
         ordering = ['name']
@@ -31,32 +32,33 @@ class Device(models.Model):
         ('busy', _('占用中')),
         ('error', _('故障')),
     )
-    
+
     name = models.CharField(_('设备名称'), max_length=255)
     device_id = models.CharField(_('设备ID'), max_length=255, unique=True)
-    type = models.ForeignKey(DeviceType, 
-                            verbose_name=_('设备类型'), 
-                            on_delete=models.SET_NULL, 
-                            null=True, 
+    type = models.ForeignKey(DeviceType,
+                            verbose_name=_('设备类型'),
+                            on_delete=models.SET_NULL,
+                            null=True,
                             related_name='devices')
     status = models.CharField(_('状态'), max_length=20, choices=STATUS_CHOICES, default='offline')
     ip_address = models.CharField(_('IP地址'), max_length=50, blank=True)
     last_online = models.DateTimeField(_('最后在线时间'), null=True, blank=True)
     description = models.TextField(_('设备描述'), blank=True)
-    owner = models.ForeignKey(settings.AUTH_USER_MODEL, 
-                             verbose_name=_('所有者'), 
-                             on_delete=models.SET_NULL, 
-                             null=True, blank=True, 
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL,
+                             verbose_name=_('所有者'),
+                             on_delete=models.SET_NULL,
+                             null=True, blank=True,
                              related_name='owned_devices')
-    current_user = models.ForeignKey(settings.AUTH_USER_MODEL, 
-                                    verbose_name=_('当前使用者'), 
-                                    on_delete=models.SET_NULL, 
-                                    null=True, blank=True, 
+    current_user = models.ForeignKey(settings.AUTH_USER_MODEL,
+                                    verbose_name=_('当前使用者'),
+                                    on_delete=models.SET_NULL,
+                                    null=True, blank=True,
                                     related_name='using_devices')
     created_at = models.DateTimeField(_('创建时间'), auto_now_add=True)
     updated_at = models.DateTimeField(_('更新时间'), auto_now=True)
 
     class Meta:
+        db_table = 'ai_device'
         verbose_name = _('设备')
         verbose_name_plural = _('设备')
         ordering = ['-updated_at']
@@ -77,19 +79,20 @@ class DeviceLog(models.Model):
         ('error', _('错误')),
         ('critical', _('严重')),
     )
-    
-    device = models.ForeignKey(Device, 
-                              verbose_name=_('设备'), 
-                              on_delete=models.CASCADE, 
+
+    device = models.ForeignKey(Device,
+                              verbose_name=_('设备'),
+                              on_delete=models.CASCADE,
                               related_name='logs')
     level = models.CharField(_('日志级别'), max_length=20, choices=LOG_LEVEL_CHOICES, default='info')
     message = models.TextField(_('日志内容'))
     created_at = models.DateTimeField(_('创建时间'), auto_now_add=True)
 
     class Meta:
+        db_table = 'ai_devicelog'
         verbose_name = _('设备日志')
         verbose_name_plural = _('设备日志')
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"{self.device.name} - {self.get_level_display()} - {self.created_at}" 
+        return f"{self.device.name} - {self.get_level_display()} - {self.created_at}"

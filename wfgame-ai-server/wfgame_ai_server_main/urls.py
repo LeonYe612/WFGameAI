@@ -81,10 +81,11 @@ urlpatterns = [
 
     # 页面路由 - 使用静态页面视图
     path('pages/<path:template_name>', static_page_view, name='static_page_view'),    # 设备管理API - 包含所有设备相关的端点
-    path('api/', include('apps.devices.urls')),
-
-    # 脚本管理API
+    path('api/', include('apps.devices.urls')),    # 脚本管理API
     path('api/scripts/', include('apps.scripts.urls')),
+
+    # 任务管理API
+    path('api/tasks/', include('apps.tasks.urls')),
 
     # 报告管理API
     path('api/reports/', include('apps.reports.urls')),
