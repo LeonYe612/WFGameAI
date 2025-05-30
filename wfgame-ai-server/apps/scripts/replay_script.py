@@ -121,7 +121,8 @@ try:
         # 如果LOG_DIR属性可写，则设置它
         try:
             if hasattr(airtest_api.ST, 'LOG_DIR'):
-                airtest_api.ST.LOG_DIR = DEVICE_REPORTS_DIR
+                # 使用setattr来避免类型检查错误
+                setattr(airtest_api.ST, 'LOG_DIR', DEVICE_REPORTS_DIR)
             else:
                 print(f"警告：Airtest.ST没有LOG_DIR属性，使用set_logdir代替")
         except (AttributeError, TypeError) as e:
@@ -295,7 +296,7 @@ def get_log_dir(dev):
         import airtest.core.api as airtest_api
         if hasattr(airtest_api, 'ST') and hasattr(airtest_api.ST, 'LOG_DIR'):
             try:
-                airtest_api.ST.LOG_DIR = log_dir
+                setattr(airtest_api.ST, 'LOG_DIR', log_dir)
             except (AttributeError, TypeError) as e:
                 print(f"设置设备日志目录时出错: {e}")
         else:
@@ -364,7 +365,7 @@ def replay_device(device, scripts, screenshot_queue, action_queue, stop_event, d
         import airtest.core.api as airtest_api
         if hasattr(airtest_api, 'ST') and hasattr(airtest_api.ST, 'LOG_DIR'):
             try:
-                airtest_api.ST.LOG_DIR = log_dir
+                setattr(airtest_api.ST, 'LOG_DIR', log_dir)
             except (AttributeError, TypeError) as e:
                 print(f"设置Airtest日志目录时出错: {e}")
         else:

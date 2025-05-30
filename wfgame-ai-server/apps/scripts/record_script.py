@@ -131,15 +131,13 @@ def safe_cleanup():
         try:
             cv2.destroyAllWindows()
         except:
-            pass
-
-        # 重置ADB连接
+            pass        # 重置ADB连接
         try:
             for device in devices:
                 try:
                     # 尝试断开连接，确保下次连接正常
                     device_id = device.serial
-                    if ":" in device_id:  # 无线设备
+                    if device_id and ":" in device_id:  # 无线设备
                         subprocess.run(['adb', 'disconnect', device_id], check=False)
                 except:
                     pass
@@ -213,11 +211,11 @@ def analyze_ui_state(device_serial, frame, detection_results):
 
     # 基于检测结果判断界面状态
     if detection_results and len(detection_results[0].boxes) > 0:
-        boxes = detection_results[0].boxes
-
-        # 检查是否有加载图标
+        boxes = detection_results[0].boxes        # 检查是否有加载图标
         for box in boxes:
             cls_id = int(box.cls.item())
+            if not model or not hasattr(model, 'names') or model.names is None:
+                continue  # 跳过无效的模型
             if cls_id >= len(model.names):
                 continue  # 跳过无效的类别ID
             class_name = model.names[cls_id]
@@ -258,6 +256,8 @@ def extract_ui_elements(frame, detection_results):
         for box in detection_results[0].boxes:
             cls_id = int(box.cls.item())
             conf = box.conf.item()
+            if not model or not hasattr(model, 'names') or model.names is None:
+                continue  # 跳过无效的模型
             class_name = model.names[cls_id]
 
             box_x, box_y, box_w, box_h = box.xywh[0].tolist()
@@ -363,10 +363,9 @@ def check_device_health(device):
 
         # 尝试重连
         try:
-            print(f"尝试重新连接设备 {get_device_name(device)}...")
-            # 使用adb命令重新连接
+            print(f"尝试重新连接设备 {get_device_name(device)}...")            # 使用adb命令重新连接
             device_id = device.serial
-            if ":" in device_id:  # 无线设备
+            if device_id and ":" in device_id:  # 无线设备
                 subprocess.run(['adb', 'disconnect', device_id], check=False)
                 time.sleep(1)
                 subprocess.run(['adb', 'connect', device_id], check=False)
@@ -519,12 +518,12 @@ def on_mouse(event, x, y, flags, param):
                 box_x, box_y, box_w, box_h = box.xywh[0].tolist()
                 box_x, box_y, box_w, box_h = box_x * orig_w/640, box_y * orig_h/640, box_w * orig_w/640, box_h * orig_h/640
                 left, top = int(box_x - box_w/2), int(box_y - box_h/2)
-                right, bottom = int(box_x + box_w/2), int(box_y + box_h/2)
-
-                # 使用转换后的坐标进行碰撞检测
+                right, bottom = int(box_x + box_w/2), int(box_y + box_h/2)                # 使用转换后的坐标进行碰撞检测
                 if left <= orig_x <= right and top <= orig_y <= bottom:
                     cls_id = int(box.cls.item())
                     conf = box.conf.item()
+                    if not model or not hasattr(model, 'names') or model.names is None:
+                        continue  # 跳过无效的模型
                     button_class = model.names[cls_id]
                     matched = True
 
@@ -853,11 +852,13 @@ def capture_and_analyze_device(device, screenshot_queue):
             has_changed = detect_screen_change(device.serial, frame)
 
             # 只有在屏幕变化或没有之前的帧时才执行完整分析
-            if has_changed or device.serial not in prev_frames:
-                # 使用YOLO模型预测
+            if has_changed or device.serial not in prev_frames:                # 使用YOLO模型预测
                 frame_for_detection = cv2.resize(frame, (640, 640))
                 try:
-                    results_for_detection = model.predict(source=frame_for_detection, device=DEVICE, imgsz=640, conf=0.6)
+                    if model and hasattr(model, 'predict'):
+                        results_for_detection = model.predict(source=frame_for_detection, device=DEVICE, imgsz=640, conf=0.6)
+                    else:
+                        results_for_detection = None
                 except Exception as model_err:
                     print(f"模型预测失败: {model_err}")
                     results_for_detection = None
@@ -953,8 +954,14 @@ def init_window_size(device_serial):
 def get_window_size(window_name):
     """获取窗口当前大小"""
     try:
-        return (cv2.getWindowImageSize(window_name)[0],
-                cv2.getWindowImageSize(window_name)[1])
+        # 使用cv2.getWindowProperty替代已弃用的getWindowImageSize
+        width = int(cv2.getWindowProperty(window_name, cv2.WND_PROP_AUTOSIZE))
+        height = int(cv2.getWindowProperty(window_name, cv2.WND_PROP_ASPECT_RATIO))
+        if width > 0 and height > 0:
+            return (width, height)
+        else:
+            # 如果无法获取，返回默认大小
+            return (800, 600)
     except:
         return None
 
@@ -1200,14 +1207,16 @@ while True:
             alive_threads = [t.is_alive() for t in threads]
             if not any(alive_threads):
                 print("所有设备线程已停止，退出主循环")
-                break
-            continue
+                break            continue
 
         frame_for_detection = cv2.resize(frame, (640, 640))
 
         try:
             # 使用try/except包装模型预测，防止模型错误导致整个程序崩溃
-            results_for_detection = model.predict(source=frame_for_detection, device=DEVICE, imgsz=640, conf=0.6)
+            if model and hasattr(model, 'predict'):
+                results_for_detection = model.predict(source=frame_for_detection, device=DEVICE, imgsz=640, conf=0.6)
+            else:
+                results_for_detection = None
         except Exception as model_err:
             print(f"模型预测失败: {model_err}")
             results_for_detection = None
@@ -1238,8 +1247,7 @@ while True:
                 display_w, display_h = USER_WINDOW_SIZES[serial]
 
                 for box in results_for_detection[0].boxes:
-                    x, y, w, h = box.xywh[0].tolist()
-                    # 转换检测框坐标到显示尺寸
+                    x, y, w, h = box.xywh[0].tolist()                    # 转换检测框坐标到显示尺寸
                     x = x * display_w/640
                     y = y * display_h/640
                     w = w * display_w/640
@@ -1251,9 +1259,14 @@ while True:
                                 (int(x - w/2), int(y - h/2)),
                                 (int(x + w/2), int(y + h/2)),
                                 (0, 255, 0), 2)
-                    cv2.putText(annotated_frame, f"{model.names[cls_id]} {conf:.2f}",
-                                (int(x - w/2), int(y - h/2 - 10)),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                    if model and hasattr(model, 'names') and model.names is not None and cls_id < len(model.names):
+                        cv2.putText(annotated_frame, f"{model.names[cls_id]} {conf:.2f}",
+                                    (int(x - w/2), int(y - h/2 - 10)),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                    else:
+                        cv2.putText(annotated_frame, f"Unknown {conf:.2f}",
+                                    (int(x - w/2), int(y - h/2 - 10)),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
         except Exception as annotate_err:
             print(f"标注图像失败: {annotate_err}")
             # 使用未标注的帧

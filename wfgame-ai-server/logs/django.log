@@ -482,3 +482,13 @@ INFO 2025-05-29 17:49:38,417 basehttp 44196 39100 "POST /api/devices/scan/ HTTP/
 INFO 2025-05-29 17:49:45,413 basehttp 44196 39100 "POST /api/devices/scan/ HTTP/1.1" 200 474
 INFO 2025-05-29 17:49:46,729 basehttp 44196 39100 "GET /pages/reports_template.html HTTP/1.1" 302 0
 INFO 2025-05-29 17:49:46,957 basehttp 44196 39100 "POST /api/reports/summary_list/ HTTP/1.1" 200 4608
+INFO 2025-05-29 18:53:16,353 autoreload 41344 44388 Watching for file changes with StatReloader
+INFO 2025-05-29 19:03:51,444 autoreload 32296 43852 Watching for file changes with StatReloader
+INFO 2025-05-29 19:12:33,840 autoreload 32296 43852 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\wfgame_ai_server_main\__init__.py changed, reloading.
+INFO 2025-05-30 10:15:13,264 autoreload 41860 35852 Watching for file changes with StatReloader
+INFO 2025-05-30 10:15:17,393 basehttp 41860 30200 "GET / HTTP/1.1" 200 9797
+INFO 2025-05-30 10:15:22,201 basehttp 41860 30200 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-05-30 10:15:22,202 basehttp 41860 30200 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-05-30 10:15:22,431 basehttp 41860 30200 "POST /api/scripts/ HTTP/1.1" 200 1673
+INFO 2025-05-30 10:15:33,117 basehttp 41860 30200 "GET /api/docs/ HTTP/1.1" 200 788
+INFO 2025-05-30 10:15:33,873 basehttp 41860 30200 "GET /api/schema/ HTTP/1.1" 200 19173
