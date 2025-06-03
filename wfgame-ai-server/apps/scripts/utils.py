@@ -36,7 +36,7 @@ def update_best_model(base_dir):
     weights_dir = os.path.join(base_dir, "datasets", "train", "weights")
     if not os.path.exists(weights_dir):
         os.makedirs(weights_dir, exist_ok=True)
-        print(f"创建weights目录: {weights_dir}")
+        # print(f"创建weights目录: {weights_dir}")  # 已静默
         return None
     
     # 查找所有.pt文件(除了best.pt)
@@ -50,13 +50,13 @@ def update_best_model(base_dir):
             pt_files.append((file_path, mod_time))
     
     if not pt_files:
-        print("未找到任何模型文件(.pt)")
+        # print("未找到任何模型文件(.pt)  # 已静默")
         return None
     
     # 按修改时间排序(从新到旧)
     pt_files.sort(key=lambda x: x[1], reverse=True)
     latest_model = pt_files[0][0]
-    print(f"找到最新的模型文件: {latest_model}")
+    # print(f"找到最新的模型文件: {latest_model}")  # 已静默
     
     try:
         # 备份当前的best.pt(如果存在)
@@ -68,19 +68,19 @@ def update_best_model(base_dir):
             
             # 复制为备份
             shutil.copy2(best_path, backup_path)
-            print(f"已将当前best.pt备份为: {backup_name}")
+            # print(f"已将当前best.pt备份为: {backup_name}")  # 已静默
             
             # 删除原来的best.pt
             os.remove(best_path)
-            print("已删除原来的best.pt")
+            # print("已删除原来的best.pt")  # 已静默
         
         # 将最新模型复制为best.pt
         shutil.copy2(latest_model, best_path)
-        print(f"已将{os.path.basename(latest_model)}更新为best.pt")
+        # print(f"已将{os.path.basename(latest_model)  # 已静默}更新为best.pt")
         
         return best_path
     except Exception as e:
-        print(f"更新best.pt时出错: {e}")
+        # print(f"更新best.pt时出错: {e}")  # 已静默
         return None
 
 def find_best_model(base_dir, specific_model=None, exit_on_failure=True):
@@ -104,17 +104,17 @@ def find_best_model(base_dir, specific_model=None, exit_on_failure=True):
     if specific_model:
         specific_path = os.path.join(weights_dir, specific_model)
         if os.path.exists(specific_path):
-            print(f"找到指定模型: {specific_path}")
+            # print(f"找到指定模型: {specific_path}")  # 已静默
             return specific_path
     
     # 2. 默认优先使用best.pt
     best_model_path = os.path.join(weights_dir, "best.pt")
     if os.path.exists(best_model_path):
-        print(f"找到best.pt模型: {best_model_path}")
+        # print(f"找到best.pt模型: {best_model_path}")  # 已静默
         return best_model_path
     
     # 3. 按修改时间查找最新的.pt文件
-    print("未找到best.pt模型，尝试查找其他模型文件...")
+    # print("未找到best.pt模型，尝试查找其他模型文件...")  # 已静默
     pt_files = []
     if os.path.exists(weights_dir):
         for file in os.listdir(weights_dir):
@@ -127,25 +127,25 @@ def find_best_model(base_dir, specific_model=None, exit_on_failure=True):
     # 按修改时间排序（从新到旧）
     if pt_files:
         pt_files.sort(key=lambda x: x[1], reverse=True)
-        print(f"找到最新模型: {pt_files[0][0]}")
+        # print(f"找到最新模型: {pt_files[0][0]}")  # 已静默
         return pt_files[0][0]
     
     # 4. 尝试备用路径
-    print("在主目录未找到模型，尝试备用路径...")
+    # print("在主目录未找到模型，尝试备用路径...")  # 已静默
     alternate_paths = [
         os.path.join(base_dir, "..", "GameAI", "outputs", "train", "weights", "best.pt")
     ]
     
     for alt_path in alternate_paths:
         if os.path.exists(alt_path):
-            print(f"找到备用模型: {alt_path}")
+            # print(f"找到备用模型: {alt_path}")  # 已静默
             return alt_path
     
     # 5. 如果所有尝试都失败
     if exit_on_failure:
-        print("错误：未找到可用的模型文件")
-        print("请确保至少一个模型文件位于正确的位置")
-        print(f"已尝试路径: {weights_dir}")
+        # print("错误：未找到可用的模型文件")  # 已静默
+        # print("请确保至少一个模型文件位于正确的位置")  # 已静默
+        # print(f"已尝试路径: {weights_dir}")  # 已静默
         sys.exit(1)
     
     return None
@@ -166,7 +166,7 @@ def load_yolo_model(base_dir, model_class, specific_model=None, exit_on_failure=
     """
     # 设置模型目录
     weights_dir = os.path.join(base_dir, "datasets", "train", "weights")
-    print(f"模型目录: {weights_dir}") # C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\datasets\train\weights
+    # print(f"模型目录: {weights_dir}")  # 已静默 # C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\scripts\datasets\train\weights
 
     # 搜索模型文件
     if specific_model:
@@ -175,7 +175,7 @@ def load_yolo_model(base_dir, model_class, specific_model=None, exit_on_failure=
         if not os.path.exists(model_path):
             model_path = os.path.join(base_dir, specific_model)  # 尝试从根目录查找
         if not os.path.exists(model_path):
-            print(f"指定的模型 {specific_model} 不存在")
+            # print(f"指定的模型 {specific_model} 不存在")  # 已静默
             if exit_on_failure:
                 sys.exit(1)
             return None
@@ -183,23 +183,23 @@ def load_yolo_model(base_dir, model_class, specific_model=None, exit_on_failure=
         # 按优先级查找模型: best.pt > last.pt > *.pt (最新)
         best_model = os.path.join(weights_dir, "best.pt")
         if os.path.exists(best_model):
-            print(f"找到best.pt模型: {best_model}")
+            # print(f"找到best.pt模型: {best_model}")  # 已静默
             model_path = best_model
         else:
             # 尝试找last.pt
             last_model = os.path.join(weights_dir, "last.pt")
             if os.path.exists(last_model):
-                print(f"找到last.pt模型: {last_model}")
+                # print(f"找到last.pt模型: {last_model}")  # 已静默
                 model_path = last_model
             else:
                 # 查找所有.pt文件并选择最新的
                 pt_files = [os.path.join(weights_dir, f) for f in os.listdir(weights_dir) if f.endswith('.pt') and not f.startswith('best_')]
                 if pt_files:
                     latest_model = max(pt_files, key=os.path.getmtime)
-                    print(f"使用最新的模型: {latest_model}")
+                    # print(f"使用最新的模型: {latest_model}")  # 已静默
                     model_path = latest_model
                 else:
-                    print(f"未找到任何.pt模型文件...")
+                    # print(f"未找到任何.pt模型文件...")  # 已静默
                     if exit_on_failure:
                         sys.exit(1)
                     return None
@@ -211,15 +211,15 @@ def load_yolo_model(base_dir, model_class, specific_model=None, exit_on_failure=
         # 加载后设置设备
         if device:
             try:
-                print(f"将模型移至设备: {device}")
+                # print(f"将模型移至设备: {device}")  # 已静默
                 model.to(device)  # 使用.to()方法设置设备
             except Exception as dev_err:
-                print(f"设置模型设备失败: {dev_err}，使用默认设备")
+                # print(f"设置模型设备失败: {dev_err}，使用默认设备")  # 已静默
         
-        print(f"模型加载成功: {model_path}")
+        # print(f"模型加载成功: {model_path}")  # 已静默
         return model
     except Exception as e:
-        print(f"模型加载失败: {e}")
+        # print(f"模型加载失败: {e}")  # 已静默
         if exit_on_failure:
             sys.exit(1)
         return None
@@ -245,15 +245,15 @@ def demo_update_best_model():
     """
     # 获取当前文件所在目录
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    print(f"当前目录: {current_dir}")
+    # print(f"当前目录: {current_dir}")  # 已静默
     
     # 更新best.pt模型
     result = update_best_model(current_dir)
     
     if result:
-        print(f"更新成功! best.pt路径: {result}")
+        # print(f"更新成功! best.pt路径: {result}")  # 已静默
     else:
-        print("更新失败，请确保weights目录中有至少一个.pt模型文件")
+        # print("更新失败，请确保weights目录中有至少一个.pt模型文件")  # 已静默
 
 # 如果直接运行此文件，则执行演示
 if __name__ == "__main__":

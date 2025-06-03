@@ -492,3 +492,96 @@ INFO 2025-05-30 10:15:22,202 basehttp 41860 30200 "GET /static/pages/scripts.htm
 INFO 2025-05-30 10:15:22,431 basehttp 41860 30200 "POST /api/scripts/ HTTP/1.1" 200 1673
 INFO 2025-05-30 10:15:33,117 basehttp 41860 30200 "GET /api/docs/ HTTP/1.1" 200 788
 INFO 2025-05-30 10:15:33,873 basehttp 41860 30200 "GET /api/schema/ HTTP/1.1" 200 19173
+INFO 2025-05-30 10:21:48,258 basehttp 41860 42868 "GET /pages/reports_template.html HTTP/1.1" 302 0
+INFO 2025-05-30 10:21:48,260 basehttp 41860 42868 "GET /static/pages/reports_template.html HTTP/1.1" 304 0
+INFO 2025-05-30 10:21:48,708 basehttp 41860 42868 "POST /api/reports/summary_list/ HTTP/1.1" 200 4608
+INFO 2025-05-30 10:37:12,539 autoreload 41860 35852 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\models.py changed, reloading.
+INFO 2025-05-30 10:37:13,050 autoreload 25120 1052 Watching for file changes with StatReloader
+INFO 2025-05-30 10:37:33,775 autoreload 25120 1052 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\models.py changed, reloading.
+INFO 2025-05-30 10:37:34,280 autoreload 42220 14584 Watching for file changes with StatReloader
+INFO 2025-05-30 10:37:49,658 autoreload 42220 14584 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\models.py changed, reloading.
+INFO 2025-05-30 10:37:50,185 autoreload 29468 34388 Watching for file changes with StatReloader
+INFO 2025-05-30 10:38:43,720 autoreload 29468 34388 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\models.py changed, reloading.
+INFO 2025-05-30 10:38:44,258 autoreload 34880 33276 Watching for file changes with StatReloader
+INFO 2025-05-30 10:39:42,815 autoreload 34880 33276 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\models.py changed, reloading.
+INFO 2025-05-30 10:39:43,339 autoreload 37572 19476 Watching for file changes with StatReloader
+INFO 2025-05-30 10:43:34,953 autoreload 37572 19476 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\models.py changed, reloading.
+INFO 2025-05-30 10:43:35,493 autoreload 37120 12324 Watching for file changes with StatReloader
+INFO 2025-05-30 14:02:04,548 basehttp 37120 29416 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-05-30 14:02:04,551 basehttp 37120 29416 "GET /static/pages/devices.html HTTP/1.1" 304 0
+INFO 2025-05-30 14:02:05,306 basehttp 37120 29416 "POST /api/devices/scan/ HTTP/1.1" 200 484
+INFO 2025-05-30 14:02:07,217 basehttp 37120 29416 "POST /api/devices/scan/ HTTP/1.1" 200 488
+INFO 2025-05-30 14:23:12,933 basehttp 37120 37204 "POST /api/devices/scan/ HTTP/1.1" 200 488
+INFO 2025-05-30 14:45:36,025 autoreload 37120 12324 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\wfgame_ai_server_main\urls.py changed, reloading.
+INFO 2025-05-30 14:45:36,600 autoreload 22180 39452 Watching for file changes with StatReloader
+INFO 2025-05-30 14:45:58,184 autoreload 22180 39452 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\tasks\urls.py changed, reloading.
+INFO 2025-05-30 14:45:58,700 autoreload 43300 35588 Watching for file changes with StatReloader
+INFO 2025-05-30 14:52:22,495 autoreload 43300 35588 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\tasks\serializers.py changed, reloading.
+INFO 2025-05-30 14:52:23,022 autoreload 25388 38604 Watching for file changes with StatReloader
+INFO 2025-05-30 15:08:31,123 autoreload 35308 20984 Watching for file changes with StatReloader
+INFO 2025-06-03 10:25:34,525 autoreload 39612 25880 Watching for file changes with StatReloader
+INFO 2025-06-03 10:26:53,089 autoreload 39612 25880 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\tasks\views.py changed, reloading.
+INFO 2025-06-03 10:26:53,640 autoreload 43312 43572 Watching for file changes with StatReloader
+INFO 2025-06-03 10:27:39,982 autoreload 43312 43572 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\tasks\views.py changed, reloading.
+INFO 2025-06-03 10:27:40,535 autoreload 11168 41840 Watching for file changes with StatReloader
+INFO 2025-06-03 10:29:48,896 autoreload 11168 41840 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\tasks\views.py changed, reloading.
+INFO 2025-06-03 10:29:49,452 autoreload 13412 41832 Watching for file changes with StatReloader
+INFO 2025-06-03 10:41:06,911 autoreload 13412 41832 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\tasks\views.py changed, reloading.
+INFO 2025-06-03 10:41:07,417 autoreload 32300 32652 Watching for file changes with StatReloader
+INFO 2025-06-03 10:41:39,455 autoreload 32300 32652 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\tasks\views.py changed, reloading.
+INFO 2025-06-03 10:41:39,974 autoreload 30568 21632 Watching for file changes with StatReloader
+INFO 2025-06-03 10:41:41,888 autoreload 41832 41536 Watching for file changes with StatReloader
+INFO 2025-06-03 10:42:47,572 autoreload 41832 41536 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\tasks\views.py changed, reloading.
+INFO 2025-06-03 10:42:47,956 autoreload 30568 21632 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\tasks\views.py changed, reloading.
+INFO 2025-06-03 10:42:48,087 autoreload 39432 5092 Watching for file changes with StatReloader
+INFO 2025-06-03 10:42:48,442 autoreload 25908 27688 Watching for file changes with StatReloader
+INFO 2025-06-03 10:44:32,100 autoreload 25908 27688 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\tasks\views.py changed, reloading.
+INFO 2025-06-03 10:44:32,110 autoreload 39432 5092 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\tasks\views.py changed, reloading.
+INFO 2025-06-03 10:44:32,641 autoreload 33656 13664 Watching for file changes with StatReloader
+INFO 2025-06-03 10:44:32,682 autoreload 7888 11776 Watching for file changes with StatReloader
+INFO 2025-06-03 10:53:16,872 autoreload 7888 11776 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\tasks\views.py changed, reloading.
+INFO 2025-06-03 10:53:16,900 autoreload 33656 13664 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\tasks\views.py changed, reloading.
+INFO 2025-06-03 10:53:17,452 autoreload 42224 21344 Watching for file changes with StatReloader
+INFO 2025-06-03 10:53:17,491 autoreload 8936 15224 Watching for file changes with StatReloader
+INFO 2025-06-03 10:53:25,332 autoreload 42224 21344 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\tasks\views.py changed, reloading.
+INFO 2025-06-03 10:53:25,403 autoreload 8936 15224 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\tasks\views.py changed, reloading.
+INFO 2025-06-03 10:53:25,899 autoreload 9360 37276 Watching for file changes with StatReloader
+INFO 2025-06-03 10:53:25,912 autoreload 7960 35792 Watching for file changes with StatReloader
+INFO 2025-06-03 10:54:21,644 autoreload 7960 35792 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\tasks\views.py changed, reloading.
+INFO 2025-06-03 10:54:21,704 autoreload 9360 37276 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\tasks\views.py changed, reloading.
+INFO 2025-06-03 10:54:22,248 autoreload 32948 43844 Watching for file changes with StatReloader
+INFO 2025-06-03 10:54:22,285 autoreload 21632 42268 Watching for file changes with StatReloader
+INFO 2025-06-03 10:55:10,629 autoreload 21632 42268 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\tasks\views.py changed, reloading.
+INFO 2025-06-03 10:55:10,638 autoreload 32948 43844 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\tasks\views.py changed, reloading.
+INFO 2025-06-03 10:55:11,220 autoreload 40896 40664 Watching for file changes with StatReloader
+INFO 2025-06-03 10:55:11,256 autoreload 15424 20832 Watching for file changes with StatReloader
+INFO 2025-06-03 10:55:16,131 autoreload 15424 20832 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\tasks\views.py changed, reloading.
+INFO 2025-06-03 10:55:16,689 autoreload 27064 11720 Watching for file changes with StatReloader
+INFO 2025-06-03 10:55:17,171 autoreload 40896 40664 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\tasks\views.py changed, reloading.
+INFO 2025-06-03 10:55:17,652 autoreload 36220 44928 Watching for file changes with StatReloader
+INFO 2025-06-03 10:56:39,682 basehttp 36220 42448 "GET / HTTP/1.1" 200 9797
+INFO 2025-06-03 10:56:41,254 basehttp 36220 42448 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-06-03 10:56:41,255 basehttp 36220 42448 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-06-03 10:56:41,500 basehttp 36220 42448 "POST /api/scripts/ HTTP/1.1" 200 1673
+INFO 2025-06-03 10:57:02,404 autoreload 27064 11720 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\tasks\views.py changed, reloading.
+INFO 2025-06-03 10:57:02,936 autoreload 30540 31256 Watching for file changes with StatReloader
+INFO 2025-06-03 10:57:03,144 autoreload 36220 44928 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\tasks\views.py changed, reloading.
+INFO 2025-06-03 10:57:03,654 autoreload 26808 36004 Watching for file changes with StatReloader
+INFO 2025-06-03 10:57:21,123 basehttp 26808 10124 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-06-03 10:57:21,254 basehttp 26808 10124 "POST /api/scripts/ HTTP/1.1" 200 1673
+INFO 2025-06-03 10:57:28,077 basehttp 30540 24144 "GET /pages/tasks_template.html HTTP/1.1" 302 0
+INFO 2025-06-03 10:57:28,079 basehttp 30540 24144 "GET /static/pages/tasks_template.html HTTP/1.1" 304 0
+INFO 2025-06-03 10:57:28,876 basehttp 30540 24144 "GET /pages/reports_template.html HTTP/1.1" 302 0
+INFO 2025-06-03 10:57:28,878 basehttp 30540 24144 "GET /static/pages/reports_template.html HTTP/1.1" 304 0
+INFO 2025-06-03 10:57:29,016 basehttp 30540 24144 "POST /api/reports/summary_list/ HTTP/1.1" 200 4608
+INFO 2025-06-03 10:57:31,074 basehttp 30540 24144 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-06-03 10:57:31,326 basehttp 30540 24144 "POST /api/scripts/ HTTP/1.1" 200 1673
+INFO 2025-06-03 10:57:35,272 basehttp 30540 24144 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-06-03 10:58:44,043 basehttp 30540 24144 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-06-03 10:58:44,211 basehttp 30540 24144 "POST /api/scripts/ HTTP/1.1" 200 1673
+INFO 2025-06-03 10:58:52,412 basehttp 30540 24144 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-06-03 11:07:47,145 basehttp 30540 22480 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-06-03 11:17:36,267 basehttp 30540 39616 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-06-03 11:17:36,572 basehttp 30540 39616 "POST /api/scripts/ HTTP/1.1" 200 1673
+INFO 2025-06-03 11:17:50,744 basehttp 30540 39616 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-06-03 11:47:14,041 basehttp 30540 22308 "POST /api/scripts/debug/ HTTP/1.1" 200 88

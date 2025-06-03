@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-n/env python3
+# -*- coding: utclass TaskViewSet(viewsets.ModelViewSet):
+
 """
 任务管理应用的视图
 """
@@ -30,7 +32,7 @@ class TaskGroupViewSet(viewsets.ModelViewSet):
     """任务组管理视图集"""
     queryset = TaskGroup.objects.all()
     serializer_class = TaskGroupSerializer
-    permission_classes = [AllowAny]
+    permission_classes = (AllowAny,)
     http_method_names = ['post']
 
     def perform_create(self, serializer):
@@ -41,9 +43,9 @@ class TaskGroupViewSet(viewsets.ModelViewSet):
 class TaskViewSet(viewsets.ModelViewSet):
     """任务管理视图集"""
     queryset = Task.objects.all()
-    permission_classes = [AllowAny]
+    permission_classes = (AllowAny,)
     http_method_names = ['post']
-    filter_backends = [DjangoFilterBackend, filters.SearchBackend, filters.OrderingFilter]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['status', 'priority', 'group']
     search_fields = ['name', 'description']
     ordering_fields = ['created_at', 'priority', 'start_time']
@@ -251,7 +253,7 @@ class TaskViewSet(viewsets.ModelViewSet):
 
 
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes((AllowAny,))
 def task_bulk_operations(request):
     """任务批量操作"""
     operation = request.data.get('operation')
@@ -316,7 +318,7 @@ def task_bulk_operations(request):
 
 
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes((AllowAny,))
 def task_execution_logs(request, task_id):
     """获取任务执行日志"""
     task = get_object_or_404(Task, id=task_id)

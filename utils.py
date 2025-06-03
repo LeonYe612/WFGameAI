@@ -1,4 +1,22 @@
 import os
+
+# 完全抑制日志输出
+import logging
+import sys
+import warnings
+
+warnings.filterwarnings("ignore")
+logging.getLogger(__name__).setLevel(logging.ERROR)
+logging.getLogger().setLevel(logging.ERROR)
+
+# 修复编码问题
+if sys.platform == "win32":
+    try:
+        if hasattr(sys.stdout, 'reconfigure'):
+            sys.stdout.reconfigure(encoding="utf-8", errors="ignore")
+            sys.stderr.reconfigure(encoding="utf-8", errors="ignore")
+    except:
+        pass
 import configparser
 from pathlib import Path
 import logging
@@ -6,8 +24,10 @@ import glob
 import glob
 import shutil
 
-logging.basicConfig(level=logging.INFO)
+# 减少日志输出，只在ERROR级别输出
+logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.WARNING)
 
 class ConfigManager:
     """

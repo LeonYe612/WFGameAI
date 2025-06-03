@@ -1,3 +1,27 @@
+# 完全抑制所有不必要的输出
+import warnings
+import logging
+import sys
+import os
+
+warnings.filterwarnings("ignore")
+os.environ["YOLO_VERBOSE"] = "False"
+os.environ["ULTRALYTICS_VERBOSE"] = "False"
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+os.environ["PYTHONIOENCODING"] = "utf-8"
+
+# 设置所有相关日志级别为ERROR
+logging.getLogger().setLevel(logging.ERROR)
+logging.getLogger("ultralytics").setLevel(logging.ERROR)
+logging.getLogger("utils").setLevel(logging.ERROR)
+logging.getLogger("yolov5").setLevel(logging.ERROR)
+logging.getLogger("PIL").setLevel(logging.ERROR)
+logging.getLogger("matplotlib").setLevel(logging.ERROR)
+logging.getLogger("torch").setLevel(logging.ERROR)
+logging.getLogger("torchvision").setLevel(logging.ERROR)
+
+
+
 import cv2
 import numpy as np
 from ultralytics import YOLO
@@ -14,6 +38,23 @@ from threading import Thread
 import queue
 import subprocess
 import importlib.util
+import warnings
+import logging
+
+# 完全抑制所有不必要的输出
+warnings.filterwarnings("ignore")
+os.environ["YOLO_VERBOSE"] = "False"
+os.environ["ULTRALYTICS_VERBOSE"] = "False"
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+
+# 设置日志级别
+logging.getLogger().setLevel(logging.ERROR)
+logging.getLogger("ultralytics").setLevel(logging.ERROR)
+logging.getLogger("utils").setLevel(logging.ERROR)
+logging.getLogger("yolov5").setLevel(logging.ERROR)
+logging.getLogger("PIL").setLevel(logging.ERROR)
+logging.getLogger("matplotlib").setLevel(logging.ERROR)
+
 
 # 导入我们的模型加载适配器
 try:
@@ -750,15 +791,24 @@ def on_mouse(event, x, y, flags, param):
             if serial in is_dragging:
                 del is_dragging[serial]
 
+# 全局退出标志
+exit_flag = False
+
 # 设备屏幕捕获和分析线程
 def capture_and_analyze_device(device, screenshot_queue):
+    global exit_flag
     last_time = time.time()
     error_count = 0  # 添加错误计数器
     last_error_time = time.time()  # 记录上次错误时间
     consecutive_errors = 0  # 连续错误计数
 
-    while True:
+    while not exit_flag:
         try:
+            # 检查退出标志
+            if exit_flag:
+                print(f"设备 {get_device_name(device)} 收到退出信号，停止捕获线程")
+                break
+
             # 检查设备连接状态（不使用device.connected属性，改用shell命令测试）
             try:
                 device.shell("echo connectivity_check", timeout=1)
@@ -856,7 +906,14 @@ def capture_and_analyze_device(device, screenshot_queue):
                 frame_for_detection = cv2.resize(frame, (640, 640))
                 try:
                     if model and hasattr(model, 'predict'):
-                        results_for_detection = model.predict(source=frame_for_detection, device=DEVICE, imgsz=640, conf=0.6)
+                        # 抑制YOLO模型的输出
+                        results_for_detection = model.predict(
+                            source=frame_for_detection,
+                            device=DEVICE,
+                            imgsz=640,
+                            conf=0.6,
+                            verbose=False  # 关闭详细输出
+                        )
                     else:
                         results_for_detection = None
                 except Exception as model_err:
@@ -971,7 +1028,7 @@ def device_monitor_thread():
     last_check_time = time.time()
     adb_restart_time = time.time() - 300  # 初始化为5分钟前，允许立即重启
 
-    while True:
+    while not exit_flag:
         try:
             # 动态更新设备列表
             global devices
@@ -1192,29 +1249,39 @@ monitor_thread.start()
 # 初始化主循环心跳检测时间戳
 last_heartbeat = time.time()
 
-while True:
+while not exit_flag:
     try:
         # 增加主循环心跳检测
         if time.time() - last_heartbeat > 5:
             print("主循环运行中...")
-            last_heartbeat = time.time()
-
-        # 修改队列获取逻辑，增加超时处理
+            last_heartbeat = time.time()        # 修改队列获取逻辑，增加超时处理
         try:
-            serial, frame, results = screenshot_queue.get(timeout=5)
+            serial, frame, results = screenshot_queue.get(timeout=1)  # 减少超时时间以提高响应速度
         except queue.Empty:
+            # 检查退出标志
+            if exit_flag:
+                print("收到退出信号，退出主循环")
+                break
+
             # 检查设备线程是否存活
             alive_threads = [t.is_alive() for t in threads]
             if not any(alive_threads):
                 print("所有设备线程已停止，退出主循环")
-                break            continue
+                break
+            continue
 
         frame_for_detection = cv2.resize(frame, (640, 640))
 
         try:
             # 使用try/except包装模型预测，防止模型错误导致整个程序崩溃
             if model and hasattr(model, 'predict'):
-                results_for_detection = model.predict(source=frame_for_detection, device=DEVICE, imgsz=640, conf=0.6)
+                results_for_detection = model.predict(
+                    source=frame_for_detection,
+                    device=DEVICE,
+                    imgsz=640,
+                    conf=0.6,
+                    verbose=False  # 关闭详细输出
+                )
             else:
                 results_for_detection = None
         except Exception as model_err:
@@ -1290,7 +1357,14 @@ while True:
         key = cv2.waitKey(50) & 0xFF
         if key == ord("q"):
             print("退出程序")
+            exit_flag = True  # 设置退出标志
             break
+
+        # 检查退出标志
+        if exit_flag:
+            print("收到退出信号，退出主循环")
+            break
+
     except Exception as e:
         print(f"主循环异常: {str(e)[:200]}")  # 截断过长错误信息
         traceback.print_exc(limit=1)  # 仅打印最后一级堆栈
@@ -1299,6 +1373,11 @@ while True:
         # 检查是否所有设备都已断开
         if not devices:
             print("所有设备已断开，退出程序")
+            break
+
+        # 检查退出标志
+        if exit_flag:
+            print("收到退出信号，退出主循环")
             break
 
 # 修改后的结束逻辑
@@ -1314,6 +1393,24 @@ try:
 
     # 执行资源释放
     print("正在释放资源...")
+
+    # 设置退出标志，强制所有线程退出
+    exit_flag = True
+
+    # 等待所有线程结束
+    print("等待线程结束...")
+    for t in threads:
+        if t.is_alive():
+            t.join(timeout=3)  # 最多等待3秒
+
+    # 强制清理模型资源，抑制后续输出
+    try:
+        import gc
+        if 'model' in globals():
+            del model
+        gc.collect()
+    except:
+        pass
 
     # 清理所有线程
     try:

@@ -546,6 +546,43 @@ python wfgame-ai-server/apps/scripts/replay_script.py \
    - 验证报告输出目录的写入权限
    - 检查磁盘空间是否充足
 
+## 开发工具说明
+
+### 提交信息生成工具
+
+为了规范化Git提交信息并突出代码变更的业务价值，项目提供了提交信息自动生成工具：
+
+```bash
+# 运行提交信息生成器
+python generate_commit_message.py
+```
+
+该工具会：
+1. 分析当前暂存区的文件变更
+2. 智能提取功能特性和业务价值
+3. 检测大文件并提示可能的推送问题
+4. 生成符合团队规范的、高质量的提交信息
+
+生成的提交信息保存在`commit_message.txt`中，可以通过以下命令直接使用：
+```bash
+git commit -F commit_message.txt
+```
+
+### Git大文件处理工具
+
+如果您遇到GitHub的"pre-receive hook declined"错误，可以使用项目提供的大文件清理工具：
+
+```bash
+# 在Windows环境下运行
+cleanup_large_files.bat
+```
+
+该工具会：
+1. 扫描并检测仓库中的大文件
+2. 智能生成.gitignore规则以避免提交大文件
+3. 帮助从暂存区移除大文件
+4. 提供清理Git历史中大文件的方案
+
 ## 项目结构（详细分层说明，2025年5月最新）
 
 ```

@@ -1,0 +1,48 @@
+fix(repo): 解决大文件推送问题
+
+实现任务管理功能，提升用户体验；优化数据模型：数据源模型, scripts数据库操作, 数据库结构，提高数据完整性和查询效率。
+优化代码优化，提升系统响应速度；改进系统工具和基础设施：更新Git忽略配置, 新增提交信息生成工具等，增强开发效率和代码质量。
+优化Git仓库结构，解决大文件问题，确保代码顺利推送和共享。
+
+重要变更：
+* 更新了.gitignore配置，优化对大文件的处理
+* 添加了大文件清理脚本，便于维护Git仓库
+* 改进了提交信息生成工具，更能反映代码变更的价值
+
+新增了 12 个文件、修改了 7 个文件、删除了 31 个文件。
+
+主要改动:
+
+__pycache__模块:
+  - 删除了 6 个文件
+devices模块:
+  - 新增: 0002_rename_devices_dev_device__e2c19e_idx_ai_device_device__88a0e8_idx_and_more.py
+  - 修改: models.py
+  - 删除了 7 个文件
+scripts模块:
+  - 修改: models.py
+  - 删除了 10 个文件
+任务管理模块:
+  - 新增了 6 个文件
+    - 模型定义: 1个
+    - 视图控制: 1个
+    - URL配置: 1个
+    - 序列化器: 1个
+    - 迁移文件: 2个
+数据源模块:
+  - 新增: models.py
+docs模块:
+  - 新增: 260_2025-05-30.md
+  - 修改: WFGameAI-Coding-Standards.md, 252.md
+other模块:
+  - 新增: cleanup_large_files.bat
+  - 删除了 6 个文件
+project模块:
+  - 修改: .gitignore, README.md
+python模块:
+  - 新增: restore_missing_tables.py
+  - 删除: cleanup_old_reports.py, start_wfgame_ai.py
+scripts模块:
+  - 新增: generate_commit_message.py
+wfgame_ai_server_main模块:
+  - 修改: urls.py
