@@ -1272,9 +1272,7 @@ def main():
             print(f"{line[:97]}...")
         else:
             print(line)
-    print("\n================================\n")
-
-    # 保存提交信息到文件
+    print("\n================================\n")    # 保存提交信息到文件
     commit_msg_file = "commit_message.txt"
     with open(commit_msg_file, 'w', encoding='utf-8') as f:
         f.write(commit_msg)
@@ -1283,6 +1281,43 @@ def main():
     print("\n💻 使用方法:")
     print(f'  1. 直接使用：git commit -F "{commit_msg_file}"')
     print(f'  2. 编辑后使用：用编辑器打开 {commit_msg_file}，修改后再使用')
+
+    # 交互式提交功能
+    print("\n🚀 自动执行功能:")
+    try:
+        commit_choice = input("是否立即执行 git commit？(y/n): ").strip().lower()
+        if commit_choice in ['y', 'yes']:
+            print(f"正在执行：git commit -F \"{commit_msg_file}\"")
+            import subprocess
+            result = subprocess.run(['git', 'commit', '-F', commit_msg_file],
+                                  capture_output=True, text=True, cwd='.')
+            if result.returncode == 0:
+                print("✅ Git commit 执行成功！")
+                print(result.stdout.strip())
+
+                # 询问是否执行 git push
+                push_choice = input("\n是否立即执行 git push？(y/n): ").strip().lower()
+                if push_choice in ['y', 'yes']:
+                    print("正在执行：git push")
+                    push_result = subprocess.run(['git', 'push'],
+                                               capture_output=True, text=True, cwd='.')
+                    if push_result.returncode == 0:
+                        print("✅ Git push 执行成功！")
+                        print(push_result.stdout.strip())
+                    else:
+                        print("❌ Git push 执行失败：")
+                        print(push_result.stderr.strip())
+                else:
+                    print("⏭️ 跳过 git push，您可以稍后手动执行")
+            else:
+                print("❌ Git commit 执行失败：")
+                print(result.stderr.strip())
+        else:
+            print("⏭️ 跳过 git commit，您可以稍后手动执行")
+    except KeyboardInterrupt:
+        print("\n⏹️ 操作已取消")
+    except Exception as e:
+        print(f"❌ 执行过程中出现错误：{str(e)}")
 
     # 添加新功能说明
     print("\n🌟 提交信息亮点:")

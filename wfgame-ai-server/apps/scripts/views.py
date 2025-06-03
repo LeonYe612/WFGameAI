@@ -923,13 +923,11 @@ def replay_script(request):
         )
 
         # 存储进程对象，以便后续管理
-        CHILD_PROCESSES[process.pid] = process
-
-        # 创建线程读取输出，避免缓冲区满
+        CHILD_PROCESSES[process.pid] = process        # 创建线程读取输出，避免缓冲区满
         def read_output(stream, log_func):
             for line in iter(stream.readline, ''):
                 if line:
-                    pass # Added pass as the if block would be empty
+                    log_func(line.strip())
             stream.close()
 
         # 启动输出读取线程

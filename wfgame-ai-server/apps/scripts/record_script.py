@@ -590,6 +590,7 @@ def on_mouse(event, x, y, flags, param):
 
                         step = {
                             "step": len(script["steps"]) + 1,
+                            "action": "click",  # 默认动作类型
                             "class": button_class,
                             "confidence": conf,
                             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f"),
@@ -638,6 +639,7 @@ def on_mouse(event, x, y, flags, param):
             rel_x, rel_y = x / orig_w, y / orig_h
             step = {
                 "step": len(script["steps"]) + 1,
+                "action": "click",  # 默认动作类型
                 "class": "unknown",
                 "confidence": 0.0,
                 "relative_x": rel_x,

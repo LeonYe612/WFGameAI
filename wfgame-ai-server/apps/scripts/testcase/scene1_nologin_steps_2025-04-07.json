@@ -2,20 +2,29 @@
   "steps": [
     {
       "step": 1,
+      "class": "system-newResources",
+      "action": "wait",
+      "duration": 5000,
+      "confidence": 0.7135645747184753,
+      "timestamp": "2025-04-07 18:40:19.816964",
+      "remark": "判断启动APP后是否出现“热更资源”图标，如果存在则需要等待新资源加载完成"
+    },
+    {
+      "step": 2,
       "class": "operation-close",
       "confidence": 0.9356675744056702,
       "timestamp": "2025-04-07 18:40:12.664292",
       "remark": "启动游戏后先有一个公告弹窗，点击关闭"
     },
     {
-      "step": 2,
+      "step": 3,
       "class": "system-cleanUpCache",
       "confidence": 0.7135645747184753,
       "timestamp": "2025-04-07 18:40:19.816964",
       "remark": "打开清理缓存弹窗"
     },
     {
-      "step": 3,
+      "step": 4,
       "class": "operation-close",
       "confidence": 0.9918168187141418,
       "timestamp": "2025-04-07 18:40:26.911667",

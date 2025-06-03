@@ -982,6 +982,9 @@ def replay_device(device, scripts, screenshot_queue, action_queue, stop_event, d
 
                     print(f"执行步骤 {step_idx+1}/{len(steps)}: {step_class}, 备注: {step_remark}")
 
+                    # 获取步骤的action类型，如果没有则默认为"click"
+                    step_action = step.get("action", "click")
+
                     # 处理特殊步骤类型
                     if step_class == "delay":
                         # 处理延时步骤
@@ -1139,7 +1142,149 @@ def replay_device(device, scripts, screenshot_queue, action_queue, stop_event, d
                             f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
                         continue
 
-                    elif step.get("action") == "swipe":
+                    elif step_action == "wait_if_exists":
+                        # 处理条件等待步骤
+                        element_class = step_class
+                        polling_interval = step.get("polling_interval", 1000) / 1000.0  # 转换为秒
+                        max_duration = step.get("max_duration", 30)  # 默认30秒超时
+                        confidence = step.get("confidence", 0.7)  # 默认置信度
+
+                        print(f"\n🚀 [步骤 {step_idx+1}] 开始执行 wait_if_exists 操作")
+                        print(f"📋 元素类型: '{element_class}'")
+                        print(f"⚙️ 轮询间隔: {polling_interval}秒")
+                        print(f"⏰ 最大等待: {max_duration}秒")
+                        print(f"🎯 置信度: {confidence}")
+                        print(f"📝 备注: {step_remark}")
+                        print(f"⏱️ 步骤开始时间: {time.strftime('%H:%M:%S', time.localtime())}")
+
+                        wait_start_time = time.time()
+                        element_found = False
+                        wait_result = "not_found"  # not_found, disappeared, timeout
+
+                        try:
+                            # 第一步：检查元素是否存在
+                            print(f"\n🔍 [阶段1] 检查元素 '{element_class}' 是否存在...")
+
+                            # 获取当前屏幕截图
+                            print(f"📱 正在获取屏幕截图...")
+                            screenshot = device.screenshot()
+                            if screenshot is None:
+                                print(f"❌ 警告: 无法获取屏幕截图，跳过条件等待")
+                                wait_result = "screenshot_failed"
+                            else:
+                                print(f"✅ 屏幕截图获取成功，尺寸: {screenshot.shape}")
+
+                                # 使用YOLO模型检测元素（与detect_buttons函数一致）
+                                print(f"🤖 正在使用YOLO模型检测元素 '{element_class}'...")
+                                success, detection_result = detect_buttons(screenshot, target_class=element_class)
+                                print(f"🔍 检测结果: success={success}, detection_result={detection_result}")
+
+                                if success and detection_result[0] is not None:
+                                    element_found = True
+                                    x, y, detected_class = detection_result
+                                    print(f"✅ [阶段1-成功] 元素 '{element_class}' 已找到!")
+                                    print(f"📍 位置: ({x:.1f}, {y:.1f})")
+                                    print(f"🏷️ 检测类别: {detected_class}")
+                                    print(f"\n⏳ [阶段2] 开始等待元素消失...")
+
+                                    loop_count = 0
+
+                                    # 第二步：等待元素消失
+                                    while (time.time() - wait_start_time) < max_duration:
+                                        loop_count += 1
+                                        elapsed_before_sleep = time.time() - wait_start_time
+                                        print(f"🔄 [循环 {loop_count}] 等待 {polling_interval}秒... (已等待: {elapsed_before_sleep:.1f}秒)")
+
+                                        time.sleep(polling_interval)
+
+                                        elapsed_after_sleep = time.time() - wait_start_time
+                                        print(f"⏰ [循环 {loop_count}] 睡眠结束，检查超时... (已等待: {elapsed_after_sleep:.1f}秒)")
+
+                                        # 检查是否超过等待最大时间
+                                        if (time.time() - wait_start_time) >= max_duration:
+                                            print(f"⏰ [超时] 等待已达到最大时间 {max_duration}秒，停止等待")
+                                            wait_result = "timeout"
+                                            break
+
+                                        # 重新获取截图检查元素是否还存在
+                                        print(f"📱 [循环 {loop_count}] 重新获取截图...")
+                                        current_screenshot = device.screenshot()
+                                        if current_screenshot is not None:
+                                            print(f"🤖 [循环 {loop_count}] 重新检测元素...")
+                                            current_success, current_detection_result = detect_buttons(current_screenshot, target_class=element_class)
+                                            print(f"🔍 [循环 {loop_count}] 重新检测结果: success={current_success}, result={current_detection_result}")
+
+                                            if not current_success or current_detection_result[0] is None:
+                                                wait_result = "disappeared"
+                                                elapsed_time = time.time() - wait_start_time
+                                                print(f"✅ [循环 {loop_count}] 元素 '{element_class}' 已消失! (等待时间: {elapsed_time:.1f}秒)")
+                                                break
+                                            else:
+                                                elapsed_time = time.time() - wait_start_time
+                                                curr_x, curr_y, curr_class = current_detection_result
+                                                print(f"🔄 [循环 {loop_count}] 元素 '{element_class}' 仍然存在")
+                                                print(f"📍 当前位置: ({curr_x:.1f}, {curr_y:.1f})")
+                                                print(f"⏰ 已等待: {elapsed_time:.1f}秒")
+                                        else:
+                                            print(f"❌ [循环 {loop_count}] 无法获取当前截图")
+
+                                    if wait_result == "not_found":  # 如果循环结束但没有设置结果，说明超时
+                                        wait_result = "timeout"
+                                        print(f"⏰ [超时-最终] 元素 '{element_class}' 在 {max_duration}秒内未消失")
+                                else:
+                                    print(f"✅ [阶段1-跳过] 元素 '{element_class}' 不存在，直接继续")
+                                    wait_result = "not_found"
+
+                        except Exception as e:
+                            print(f"❌ 错误: 条件等待执行失败: {e}")
+                            import traceback
+                            print(f"📋 错误详情:\n{traceback.format_exc()}")
+                            wait_result = "error"
+
+                        # 计算总等待时间
+                        timestamp = time.time()
+                        total_wait_time = timestamp - wait_start_time
+
+                        print(f"\n🏁 [步骤 {step_idx+1}] wait_if_exists 执行完成")
+                        print(f"📊 最终结果:")
+                        print(f"   - 元素发现: {element_found}")
+                        print(f"   - 等待结果: {wait_result}")
+                        print(f"   - 总等待时间: {total_wait_time:.1f}秒")
+                        print(f"⏱️ 步骤结束时间: {time.strftime('%H:%M:%S', time.localtime())}")
+                        print(f"{'='*60}")
+
+                        # 记录条件等待日志
+                        wait_entry = {
+                            "tag": "function",
+                            "depth": 1,
+                            "time": timestamp,
+                            "data": {
+                                "name": "wait_if_exists",
+                                "call_args": {
+                                    "element_class": element_class,
+                                    "polling_interval": polling_interval,
+                                    "max_duration": max_duration,
+                                    "confidence": confidence
+                                },
+                                "start_time": wait_start_time,
+                                "ret": {
+                                    "element_found": element_found,
+                                    "wait_result": wait_result,
+                                    "total_wait_time": total_wait_time
+                                },
+                                "end_time": timestamp,
+                                "desc": step_remark or "条件等待操作",
+                                "title": f"#{step_idx+1} {step_remark or '条件等待操作'}"
+                            }
+                        }
+                        with open(log_txt_path, "a", encoding="utf-8") as f:
+                            f.write(json.dumps(wait_entry, ensure_ascii=False) + "\n")
+
+                        has_executed_steps = True
+                        step_counter += 1
+                        continue
+
+                    elif step_action == "swipe":
                         # 处理滑动步骤
                         start_x = step.get("start_x")
                         start_y = step.get("start_y")
