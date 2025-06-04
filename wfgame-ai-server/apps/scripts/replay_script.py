@@ -608,7 +608,7 @@ def replay_device(device, scripts, screenshot_queue, action_queue, stop_event, d
                             print(f"优先级模式已达到最大执行时间 {max_duration}秒，停止执行")
                             break
 
-                        step_class = step["class"]
+                        step_class = step.get("class", "")
                         step_remark = step.get("remark", "")
                         priority = step.get("Priority", 999)
 
@@ -977,13 +977,15 @@ def replay_device(device, scripts, screenshot_queue, action_queue, stop_event, d
 
                         step_counter += 1
                     total_step_counter += 1
-                    step_class = step["class"]
+                    step_class = step.get("class", "")
                     step_remark = step.get("remark", "")
-
-                    print(f"执行步骤 {step_idx+1}/{len(steps)}: {step_class}, 备注: {step_remark}")
 
                     # 获取步骤的action类型，如果没有则默认为"click"
                     step_action = step.get("action", "click")
+
+                    # 如果没有class字段，使用action作为显示名称
+                    display_name = step_class if step_class else step_action
+                    print(f"执行步骤 {step_idx+1}/{len(steps)}: {display_name}, 备注: {step_remark}")
 
                     # 处理特殊步骤类型
                     if step_class == "delay":

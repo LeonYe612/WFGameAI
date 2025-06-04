@@ -1,13 +1,19 @@
 变更文件列表:
 ========================================
+A	ACTION_IMPROVEMENTS_COMPLETED.md
 M	README.md
-M	cleanup_large_files.bat
-A	commit_message.txt
+M	commit_message.txt
+M	config.ini
 M	generate_commit_message.py
-A	git_changes.txt
-M	utils.py
-A	value_formatter.py
+M	git_changes.txt
+A	test_action_improvements.py
+A	test_action_improvements_fixed.py
+A	test_output.txt
+A	test_wait_if_exists.py
 M	wfgame-ai-server/apps/scripts/record_script.py
-M	wfgame-ai-server/apps/scripts/utils.py
-M	wfgame-ai-server/apps/tasks/views.py
+M	wfgame-ai-server/apps/scripts/replay_script.py
+M	wfgame-ai-server/apps/scripts/testcase/scene1_login_steps_2025-04-07.json
+M	wfgame-ai-server/apps/scripts/testcase/scene1_nologin_steps_2025-04-07.json
+M	wfgame-ai-server/apps/scripts/testcase/scene2_guide_steps_2025-04-07.json
+M	wfgame-ai-server/apps/scripts/views.py
 M	wfgame-ai-server/logs/django.log

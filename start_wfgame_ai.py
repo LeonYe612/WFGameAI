@@ -43,12 +43,55 @@ def print_colored(text, color):
         'white': '\033[97m',
         'reset': '\033[0m'
     }
-    
+
     # Windows命令行需要特殊处理才能显示彩色文本
     if platform.system() == 'Windows':
         os.system('color')
-    
+
     print(f"{colors.get(color, '')}{text}{colors['reset']}")
+
+def prepare_devices():
+    """
+    启动前预处理设备，解决ADB连接和权限问题
+    """
+    print_colored("🔧 正在预处理设备连接和权限...", 'yellow')
+
+    try:
+        # 检查是否存在设备预处理脚本
+        project_root = get_project_root()
+        device_prep_script = os.path.join(project_root, "wfgame-ai-server", "apps", "scripts", "device_preparation_manager.py")
+
+        if os.path.exists(device_prep_script):
+            print_colored("📱 正在检查和配置连接的设备...", 'blue')
+
+            # 执行设备预处理
+            result = subprocess.run([
+                sys.executable, device_prep_script
+            ], capture_output=True, text=True, timeout=60)
+
+            if result.returncode == 0:
+                print_colored("✅ 设备预处理完成", 'green')
+
+                # 显示处理结果摘要
+                if "成功处理" in result.stdout:
+                    print_colored(f"   {result.stdout.split('成功处理')[1].split('个设备')[0].strip()}个设备已准备就绪", 'green')
+
+                return True
+            else:
+                print_colored("⚠️  设备预处理出现问题，但不影响服务启动", 'yellow')
+                if result.stderr:
+                    print_colored(f"   错误信息: {result.stderr.strip()}", 'yellow')
+                return False
+        else:
+            print_colored("⚠️  未找到设备预处理脚本，跳过设备预处理", 'yellow')
+            return False
+
+    except subprocess.TimeoutExpired:
+        print_colored("⚠️  设备预处理超时，继续启动服务", 'yellow')
+        return False
+    except Exception as e:
+        print_colored(f"⚠️  设备预处理异常: {str(e)}", 'yellow')
+        return False
 
 def show_banner():
     """
@@ -61,7 +104,7 @@ def show_banner():
     ██║███╗██║██╔══╝  ██║   ██║██╔══██║██║╚██╔╝██║██╔══╝      ██╔══██║██║
     ╚███╔███╔╝██║     ╚██████╔╝██║  ██║██║ ╚═╝ ██║███████╗    ██║  ██║██║
      ╚══╝╚══╝ ╚═╝      ╚═════╝ ╚═╝  ╚═╝╚═╝     ╚═╝╚══════╝    ╚═╝  ╚═╝╚═╝
-                                                                          
+
     自动化测试平台服务启动工具 v1.0
     """
     print_colored(banner, 'cyan')
@@ -76,10 +119,10 @@ def get_project_root():
     """
     # 获取当前脚本的绝对路径
     current_path = os.path.abspath(__file__)
-    
+
     # 获取当前脚本所在的目录，即项目根目录
     project_root = os.path.dirname(current_path)
-    
+
     return project_root
 
 def run_command(command, cwd=None, name=None):
@@ -96,12 +139,12 @@ def run_command(command, cwd=None, name=None):
     """
     if not cwd:
         cwd = get_project_root()
-    
+
     log_prefix = f"[{name}] " if name else ""
-    
+
     print_colored(f"{log_prefix}执行命令: {' '.join(command)}", 'blue')
     print_colored(f"{log_prefix}工作目录: {cwd}", 'blue')
-    
+
     # 创建进程，设置不同的输出管道
     process = subprocess.Popen(
         command,
@@ -112,26 +155,26 @@ def run_command(command, cwd=None, name=None):
         bufsize=1,
         universal_newlines=True
     )
-    
+
     # 将进程添加到全局列表
     processes.append(process)
-    
+
     # 创建输出处理线程
     def handle_output(stream, is_error=False):
         prefix_color = 'red' if is_error else 'green'
         for line in stream:
             print_colored(f"{log_prefix}{line.rstrip()}", prefix_color)
-    
+
     # 启动输出处理线程
     stdout_thread = threading.Thread(target=handle_output, args=(process.stdout, False))
     stderr_thread = threading.Thread(target=handle_output, args=(process.stderr, True))
-    
+
     stdout_thread.daemon = True
     stderr_thread.daemon = True
-    
+
     stdout_thread.start()
     stderr_thread.start()
-    
+
     return process
 
 def start_backend():
@@ -142,18 +185,18 @@ def start_backend():
         subprocess.Popen: 后端进程对象
     """
     print_colored("\n====== 启动后端服务 ======", 'yellow')
-    
+
     backend_dir = os.path.join(get_project_root(), 'wfgame-ai-server')
-    
+
     # 检查后端目录是否存在
     if not os.path.exists(backend_dir):
         print_colored(f"错误: 后端目录不存在: {backend_dir}", 'red')
-        return None
-    
+        return None    # 统一使用localhost:8000，但仍绑定到0.0.0.0以允许外部访问
     command = [sys.executable, 'manage.py', 'runserver', '0.0.0.0:8000']
     process = run_command(command, cwd=backend_dir, name="后端")
-    
+
     print_colored("后端服务启动中，请稍后...", 'yellow')
+    print_colored("注意: 服务绑定到0.0.0.0:8000，推荐使用localhost:8000访问", 'cyan')
     return process
 
 def start_frontend():
@@ -166,7 +209,7 @@ def start_frontend():
     # 暂时跳过前端启动
     print_colored("\n====== 暂时跳过前端服务启动 ======", 'yellow')
     print_colored("当前仅启动后端服务，前端服务暂不启动", 'cyan')
-    
+
     return None
 
 def wait_for_services(frontend_process, backend_process):
@@ -180,31 +223,31 @@ def wait_for_services(frontend_process, backend_process):
     # 等待前端服务启动（检测"Compiled successfully"消息）
     frontend_ready = True  # 由于跳过前端，默认为True
     backend_ready = False
-    
+
     print_colored("\n等待服务启动...", 'yellow')
-    
+
     # 计数器，用于超时检测
     timeout_count = 0
     max_timeout = 60  # 最长等待60秒
-    
+
     try:
         while (not backend_ready) and timeout_count < max_timeout:
             # 检查进程是否仍在运行
             if backend_process and backend_process.poll() is not None:
                 print_colored("后端进程意外退出", 'red')
                 return
-            
+
             time.sleep(1)
             timeout_count += 1
-            
+
             # 每10秒显示一次等待消息
             if timeout_count % 10 == 0:
                 print_colored(f"仍在等待后端服务启动... ({timeout_count}秒)", 'yellow')
-            
+
             # 20秒后自动认为服务已启动
             if timeout_count >= 20:
                 backend_ready = True
-        
+
         if timeout_count >= max_timeout:
             print_colored("等待服务启动超时", 'red')
         else:
@@ -212,10 +255,10 @@ def wait_for_services(frontend_process, backend_process):
             print_colored("\n访问地址:", 'green')
             print_colored("- 后端: http://localhost:8000", 'cyan')
             print_colored("- API文档: http://localhost:8000/api/docs/", 'cyan')
-            
+
             # 自动打开浏览器访问后端
             webbrowser.open('http://localhost:8000/api/docs/')
-    
+
     except KeyboardInterrupt:
         pass
 
@@ -224,21 +267,20 @@ def cleanup():
     清理所有启动的进程
     """
     print_colored("\n正在关闭服务...", 'yellow')
-    
+
     for process in processes:
         if process and process.poll() is None:  # 检查进程是否仍在运行
             try:
                 if platform.system() == 'Windows':
                     # Windows上使用taskkill强制终止进程及其子进程
-                    subprocess.run(['taskkill', '/F', '/T', '/PID', str(process.pid)], 
+                    subprocess.run(['taskkill', '/F', '/T', '/PID', str(process.pid)],
                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 else:
-                    # 在Unix系统上，发送SIGTERM信号
-                    os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+                    # 在Unix系统上，使用terminate方法
                     process.terminate()
             except Exception as e:
                 print_colored(f"关闭进程时出错: {e}", 'red')
-    
+
     print_colored("所有服务已关闭", 'green')
 
 def signal_handler(sig, frame):
@@ -260,33 +302,36 @@ def main():
     # 注册信号处理器，用于捕获Ctrl+C
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
-    
+
     try:
         # 显示启动横幅
         show_banner()
-        
+
         # 启动后端服务
         backend_process = start_backend()
         if not backend_process:
             print_colored("后端服务启动失败", 'red')
             return
-        
+
         # 跳过前端服务启动
         frontend_process = None
-        
+
+        # 预处理设备
+        prepare_devices()
+
         # 等待服务启动
         wait_for_services(frontend_process, backend_process)
-        
+
         # 保持脚本运行，直到用户按下Ctrl+C
         print_colored("\n服务正在运行中，按Ctrl+C停止...", 'green')
-        
+
         # 等待进程结束
         backend_process.wait()
-        
+
     except KeyboardInterrupt:
         print_colored("\n接收到用户中断，关闭服务...", 'yellow')
     finally:
         cleanup()
 
 if __name__ == "__main__":
-    main() 
+    main()

@@ -785,3 +785,140 @@ INFO 2025-06-03 19:49:42,159 autoreload 6628 38672 Watching for file changes wit
 INFO 2025-06-03 19:50:36,888 autoreload 6628 38672 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
 INFO 2025-06-03 19:50:37,395 autoreload 28632 42380 Watching for file changes with StatReloader
 INFO 2025-06-03 19:50:54,269 basehttp 28632 3864 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-06-03 20:00:23,110 basehttp 28632 31236 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-06-03 20:00:23,421 basehttp 28632 31236 "POST /api/scripts/ HTTP/1.1" 200 2072
+INFO 2025-06-03 20:06:15,182 basehttp 28632 33456 "POST /api/scripts/replay/ HTTP/1.1" 200 583
+INFO 2025-06-04 10:24:33,554 basehttp 28632 4480 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-06-04 10:24:33,851 basehttp 28632 4480 "POST /api/scripts/ HTTP/1.1" 200 2072
+INFO 2025-06-04 13:43:33,675 basehttp 28632 12376 "GET /pages/dashboard_template.html HTTP/1.1" 302 0
+INFO 2025-06-04 13:43:33,677 basehttp 28632 12376 "GET /static/pages/dashboard_template.html HTTP/1.1" 304 0
+INFO 2025-06-04 14:55:43,528 autoreload 38040 20552 Watching for file changes with StatReloader
+INFO 2025-06-04 14:57:03,743 basehttp 28632 16128 "GET /api/docs/ HTTP/1.1" 200 788
+INFO 2025-06-04 14:57:04,642 basehttp 28632 16128 "GET /api/schema/ HTTP/1.1" 200 30381
+INFO 2025-06-04 15:13:51,528 basehttp 28632 34624 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-04 15:13:51,530 basehttp 28632 34624 "GET /static/pages/devices.html HTTP/1.1" 304 0
+INFO 2025-06-04 15:13:51,540 basehttp 28632 34624 "GET /static/js/pages/devices_vue.js HTTP/1.1" 304 0
+INFO 2025-06-04 15:13:52,046 basehttp 28632 34624 "POST /api/devices/scan/ HTTP/1.1" 200 1047
+INFO 2025-06-04 15:14:09,332 basehttp 28632 34624 "POST /api/devices/scan/ HTTP/1.1" 200 1052
+INFO 2025-06-04 15:23:32,081 basehttp 28632 14808 "POST /api/devices/scan/ HTTP/1.1" 200 1052
+INFO 2025-06-04 15:23:42,328 basehttp 28632 14808 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-06-04 15:23:42,733 basehttp 28632 14808 "POST /api/scripts/ HTTP/1.1" 200 2072
+INFO 2025-06-04 15:23:57,722 basehttp 28632 14808 "POST /api/scripts/replay/ HTTP/1.1" 200 590
+INFO 2025-06-04 15:31:47,339 autoreload 28632 42380 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 15:31:47,854 autoreload 42936 35144 Watching for file changes with StatReloader
+INFO 2025-06-04 15:32:44,662 autoreload 42936 35144 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 15:32:45,185 autoreload 31188 18960 Watching for file changes with StatReloader
+INFO 2025-06-04 15:33:39,793 autoreload 31188 18960 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 15:33:40,282 autoreload 43468 36952 Watching for file changes with StatReloader
+INFO 2025-06-04 15:34:49,223 autoreload 43468 36952 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 15:34:49,734 autoreload 42288 32352 Watching for file changes with StatReloader
+INFO 2025-06-04 16:14:49,515 autoreload 18848 39128 Watching for file changes with StatReloader
+INFO 2025-06-04 16:15:14,193 autoreload 18848 39128 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 16:15:14,702 autoreload 38556 40812 Watching for file changes with StatReloader
+INFO 2025-06-04 16:15:21,387 basehttp 38556 32284 "GET / HTTP/1.1" 200 9797
+INFO 2025-06-04 16:15:23,218 basehttp 38556 32284 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-04 16:15:24,006 basehttp 38556 32284 "POST /api/devices/scan/ HTTP/1.1" 200 813
+INFO 2025-06-04 16:15:24,665 basehttp 38556 32284 "GET /api/docs/ HTTP/1.1" 200 788
+INFO 2025-06-04 16:15:25,162 basehttp 38556 32284 "GET /api/schema/ HTTP/1.1" 200 31109
+INFO 2025-06-04 16:15:31,107 basehttp 38556 32284 "POST /api/devices/scan/ HTTP/1.1" 200 814
+INFO 2025-06-04 16:15:51,458 basehttp 38556 44344 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-04 16:15:51,586 basehttp 38556 44344 "GET /static/pages/devices.html HTTP/1.1" 200 6770
+INFO 2025-06-04 16:15:51,605 basehttp 38556 44344 "GET /static/js/pages/devices_table_vue.js HTTP/1.1" 200 28221
+INFO 2025-06-04 16:15:52,709 basehttp 38556 44344 "POST /api/devices/scan/ HTTP/1.1" 200 814
+WARNING 2025-06-04 16:15:52,892 log 38556 44344 Not Found: /favicon.ico
+WARNING 2025-06-04 16:15:52,893 basehttp 38556 44344 "GET /favicon.ico HTTP/1.1" 404 4831
+INFO 2025-06-04 16:16:10,678 basehttp 38556 32284 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-04 16:16:10,978 basehttp 38556 32284 "POST /api/devices/scan/ HTTP/1.1" 200 814
+INFO 2025-06-04 16:16:11,894 basehttp 38556 32284 "GET / HTTP/1.1" 200 9797
+INFO 2025-06-04 16:16:13,757 basehttp 38556 32284 "GET /pages/dashboard_template.html HTTP/1.1" 302 0
+INFO 2025-06-04 16:16:16,700 basehttp 38556 32284 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-04 16:16:16,922 basehttp 38556 32284 "POST /api/devices/scan/ HTTP/1.1" 200 814
+INFO 2025-06-04 16:16:40,978 basehttp 38556 44344 "POST /api/devices/scan/ HTTP/1.1" 200 814
+INFO 2025-06-04 16:16:55,357 basehttp 38556 32284 "GET / HTTP/1.1" 200 9797
+INFO 2025-06-04 16:16:57,020 basehttp 38556 32284 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-04 16:16:57,342 basehttp 38556 32284 "POST /api/devices/scan/ HTTP/1.1" 200 814
+INFO 2025-06-04 16:18:08,210 basehttp 38556 44344 "POST /api/devices/scan/ HTTP/1.1" 200 814
+INFO 2025-06-04 16:18:10,644 basehttp 38556 44344 "POST /api/devices/scan/ HTTP/1.1" 200 814
+INFO 2025-06-04 16:18:29,934 basehttp 38556 32284 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-04 16:18:29,936 basehttp 38556 32284 "GET /static/pages/devices.html HTTP/1.1" 200 6770
+INFO 2025-06-04 16:18:29,950 basehttp 38556 32284 "GET /static/js/pages/devices_table_vue.js HTTP/1.1" 200 28221
+INFO 2025-06-04 16:18:30,425 basehttp 38556 32284 "POST /api/devices/scan/ HTTP/1.1" 200 1392
+INFO 2025-06-04 16:18:35,604 basehttp 38556 32284 "POST /api/devices/scan/ HTTP/1.1" 200 814
+INFO 2025-06-04 16:18:37,180 basehttp 38556 32284 "POST /api/devices/scan/ HTTP/1.1" 200 814
+INFO 2025-06-04 16:18:40,099 basehttp 38556 32284 "GET / HTTP/1.1" 200 9797
+INFO 2025-06-04 16:18:41,708 basehttp 38556 32284 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-04 16:18:41,952 basehttp 38556 32284 "POST /api/devices/scan/ HTTP/1.1" 200 1392
+INFO 2025-06-04 16:18:45,814 basehttp 38556 32284 "POST /api/devices/scan/ HTTP/1.1" 200 1392
+INFO 2025-06-04 16:18:46,430 basehttp 38556 32284 "POST /api/devices/scan/ HTTP/1.1" 200 1392
+INFO 2025-06-04 16:18:46,883 basehttp 38556 32284 "POST /api/devices/scan/ HTTP/1.1" 200 1705
+INFO 2025-06-04 16:18:53,832 basehttp 38556 32284 "POST /api/devices/scan/ HTTP/1.1" 200 1392
+INFO 2025-06-04 16:18:58,751 basehttp 38556 44344 "POST /api/devices/scan/ HTTP/1.1" 200 1705
+INFO 2025-06-04 16:19:02,066 basehttp 38556 44344 "POST /api/devices/scan/ HTTP/1.1" 200 1705
+INFO 2025-06-04 16:19:53,050 basehttp 38556 44344 "POST /api/devices/scan/ HTTP/1.1" 200 1392
+INFO 2025-06-04 16:19:55,912 basehttp 38556 44344 "POST /api/devices/scan/ HTTP/1.1" 200 814
+INFO 2025-06-04 16:19:56,662 basehttp 38556 44344 "POST /api/devices/scan/ HTTP/1.1" 200 814
+INFO 2025-06-04 16:19:57,285 basehttp 38556 44344 "POST /api/devices/scan/ HTTP/1.1" 200 1392
+INFO 2025-06-04 16:19:57,955 basehttp 38556 44344 "POST /api/devices/scan/ HTTP/1.1" 200 1392
+INFO 2025-06-04 16:19:58,515 basehttp 38556 44344 "POST /api/devices/scan/ HTTP/1.1" 200 1392
+INFO 2025-06-04 16:19:59,020 basehttp 38556 44344 "POST /api/devices/scan/ HTTP/1.1" 200 1392
+INFO 2025-06-04 16:19:59,515 basehttp 38556 44344 "POST /api/devices/scan/ HTTP/1.1" 200 1392
+INFO 2025-06-04 16:19:59,946 basehttp 38556 44344 "POST /api/devices/scan/ HTTP/1.1" 200 1392
+INFO 2025-06-04 16:20:00,365 basehttp 38556 44344 "POST /api/devices/scan/ HTTP/1.1" 200 1392
+INFO 2025-06-04 16:20:08,475 basehttp 38556 44344 "POST /api/devices/scan/ HTTP/1.1" 200 1705
+INFO 2025-06-04 16:20:10,346 basehttp 38556 44344 "POST /api/devices/scan/ HTTP/1.1" 200 1705
+INFO 2025-06-04 16:20:14,682 basehttp 38556 44344 "POST /api/devices/scan/ HTTP/1.1" 200 814
+INFO 2025-06-04 16:20:15,466 basehttp 38556 44344 "POST /api/devices/scan/ HTTP/1.1" 200 814
+INFO 2025-06-04 16:20:16,033 basehttp 38556 44344 "POST /api/devices/scan/ HTTP/1.1" 200 814
+INFO 2025-06-04 16:20:16,673 basehttp 38556 44344 "POST /api/devices/scan/ HTTP/1.1" 200 814
+INFO 2025-06-04 16:20:18,638 basehttp 38556 44344 "POST /api/devices/scan/ HTTP/1.1" 200 1705
+INFO 2025-06-04 16:20:21,455 basehttp 38556 44344 "POST /api/devices/scan/ HTTP/1.1" 200 814
+INFO 2025-06-04 16:20:22,220 basehttp 38556 44344 "POST /api/devices/scan/ HTTP/1.1" 200 814
+INFO 2025-06-04 16:21:02,956 basehttp 38556 44344 "POST /api/devices/scan/ HTTP/1.1" 200 1705
+INFO 2025-06-04 16:21:06,490 basehttp 38556 44344 "POST /api/devices/scan/ HTTP/1.1" 200 1705
+INFO 2025-06-04 16:21:48,611 basehttp 38556 44344 "POST /api/devices/scan/ HTTP/1.1" 200 1705
+INFO 2025-06-04 16:21:49,802 basehttp 38556 44344 "POST /api/devices/scan/ HTTP/1.1" 200 1705
+INFO 2025-06-04 16:23:11,445 basehttp 38556 44344 "POST /api/devices/scan/ HTTP/1.1" 200 2331
+INFO 2025-06-04 16:23:36,619 basehttp 38556 32284 "POST /api/devices/scan/ HTTP/1.1" 200 2331
+INFO 2025-06-04 16:24:03,406 basehttp 38556 44344 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-06-04 16:24:03,408 basehttp 38556 44344 "GET /static/pages/scripts.html HTTP/1.1" 200 75807
+INFO 2025-06-04 16:24:03,831 basehttp 38556 44344 "POST /api/scripts/ HTTP/1.1" 200 2072
+INFO 2025-06-04 16:24:04,652 basehttp 38556 44344 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-06-04 16:24:04,793 basehttp 38556 44344 "POST /api/scripts/ HTTP/1.1" 200 2072
+INFO 2025-06-04 16:24:06,508 basehttp 38556 44344 "GET /pages/tasks_template.html HTTP/1.1" 302 0
+INFO 2025-06-04 16:24:06,511 basehttp 38556 44344 "GET /static/pages/tasks_template.html HTTP/1.1" 200 9783
+INFO 2025-06-04 16:24:08,468 basehttp 38556 44344 "GET /pages/reports_template.html HTTP/1.1" 302 0
+INFO 2025-06-04 16:24:08,471 basehttp 38556 44344 "GET /static/pages/reports_template.html HTTP/1.1" 200 15555
+INFO 2025-06-04 16:24:08,655 basehttp 38556 44344 "POST /api/reports/summary_list/ HTTP/1.1" 200 8597
+INFO 2025-06-04 16:24:09,741 basehttp 38556 44344 "GET /pages/data_template.html HTTP/1.1" 302 0
+INFO 2025-06-04 16:24:09,743 basehttp 38556 44344 "GET /static/pages/data_template.html HTTP/1.1" 200 9617
+INFO 2025-06-04 16:24:11,093 basehttp 38556 44344 "GET /pages/dashboard_template.html HTTP/1.1" 302 0
+INFO 2025-06-04 16:24:11,095 basehttp 38556 44344 "GET /static/pages/dashboard_template.html HTTP/1.1" 200 8479
+INFO 2025-06-04 16:24:14,693 basehttp 38556 32284 "GET /pages/dashboard_template.html HTTP/1.1" 302 0
+INFO 2025-06-04 16:24:44,437 basehttp 38556 44344 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-04 16:24:44,439 basehttp 38556 44344 "GET /static/pages/devices.html HTTP/1.1" 304 0
+INFO 2025-06-04 16:24:44,451 basehttp 38556 44344 "GET /static/js/pages/devices_table_vue.js HTTP/1.1" 304 0
+INFO 2025-06-04 16:24:44,780 basehttp 38556 44344 "POST /api/devices/scan/ HTTP/1.1" 200 2331
+INFO 2025-06-04 16:30:35,534 basehttp 38556 42832 "POST /api/devices/scan/ HTTP/1.1" 200 2331
+INFO 2025-06-04 16:30:43,278 basehttp 38556 4296 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-04 16:30:44,200 basehttp 38556 4296 "POST /api/devices/scan/ HTTP/1.1" 200 2331
+INFO 2025-06-04 16:38:19,869 autoreload 38396 31200 Watching for file changes with StatReloader
+INFO 2025-06-04 16:38:26,660 basehttp 38556 33912 "GET / HTTP/1.1" 200 9797
+WARNING 2025-06-04 16:38:28,030 log 38556 33912 Not Found: /favicon.ico
+WARNING 2025-06-04 16:38:28,030 basehttp 38556 33912 "GET /favicon.ico HTTP/1.1" 404 4829
+INFO 2025-06-04 16:38:28,413 basehttp 38556 33912 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-04 16:38:28,416 basehttp 38556 33912 "GET /static/pages/devices.html HTTP/1.1" 200 6770
+INFO 2025-06-04 16:38:28,425 basehttp 38556 33912 "GET /static/js/pages/devices_table_vue.js HTTP/1.1" 200 28221
+INFO 2025-06-04 16:38:29,321 basehttp 38556 33912 "POST /api/devices/scan/ HTTP/1.1" 200 2331
+INFO 2025-06-04 16:38:37,607 basehttp 38556 34064 "GET / HTTP/1.1" 200 9797
+INFO 2025-06-04 16:38:39,220 basehttp 38556 34064 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-04 16:38:42,143 basehttp 38556 34064 "POST /api/devices/scan/ HTTP/1.1" 200 2331
+INFO 2025-06-04 16:44:53,515 basehttp 38556 26464 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-04 16:44:53,820 basehttp 38556 26464 "POST /api/devices/scan/ HTTP/1.1" 200 2331
+INFO 2025-06-04 16:44:55,964 basehttp 38556 26464 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-04 16:44:56,280 basehttp 38556 26464 "POST /api/devices/scan/ HTTP/1.1" 200 2331
+INFO 2025-06-04 16:45:07,661 basehttp 38556 35468 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-04 16:45:07,664 basehttp 38556 35468 "GET /static/pages/devices.html HTTP/1.1" 304 0
+INFO 2025-06-04 16:45:07,674 basehttp 38556 35468 "GET /static/js/pages/devices_table_vue.js HTTP/1.1" 304 0
+INFO 2025-06-04 16:45:08,401 basehttp 38556 35468 "POST /api/devices/scan/ HTTP/1.1" 200 2331
+INFO 2025-06-04 16:45:20,203 basehttp 38556 35468 "POST /api/devices/scan/ HTTP/1.1" 200 2331
+INFO 2025-06-04 16:45:59,066 autoreload 26740 43644 Watching for file changes with StatReloader

@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>设备管理 - WFGame AI自动化测试平台</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: "stheitimedium", "Microsoft YaHei", "微软雅黑", sans-serif;
+            padding-top: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1400px;
+        }
+        .navbar {
+            margin-bottom: 20px;
+            border-radius: 5px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .card {
+            border: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .footer {
+            margin-top: 30px;
+            padding: 20px 0;
+            text-align: center;
+            color: #666;
+        }
+        .device-status {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .status-online {
+            background-color: #28a745;
+        }
+        .status-offline {
+            background-color: #dc3545;
+        }
+        .status-busy {
+            background-color: #ffc107;
+        }
+        .status-unauthorized {
+            background-color: #fd7e14;
+        }
+        .table-hover tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+        .device-table {
+            font-size: 0.9rem;
+        }
+        .device-table th {
+            border-top: none;
+            background-color: #f8f9fa;
+            font-weight: 600;
+            vertical-align: middle;
+        }
+        .device-table td {
+            vertical-align: middle;
+        }
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.8rem;
+        }
+        .text-truncate-custom {
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .alert-floating {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1050;
+            min-width: 300px;
+        }
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .stats-card .card-body {
+            padding: 1.5rem;
+        }
+        .stats-number {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="/">WFGame AI</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/pages/dashboard_template.html"><i class="fas fa-tachometer-alt"></i> 控制台</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="/pages/devices.html"><i class="fas fa-mobile-alt"></i> 设备管理</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/pages/scripts.html"><i class="fas fa-code"></i> 脚本管理</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/pages/tasks_template.html"><i class="fas fa-tasks"></i> 任务管理</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/pages/reports_template.html"><i class="fas fa-chart-bar"></i> 测试报告</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/pages/data_template.html"><i class="fas fa-database"></i> 数据管理</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/pages/settings_template.html"><i class="fas fa-cog"></i> 系统设置</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <!-- 页面标题和操作按钮 -->
+        <div class="row mb-4">
+            <div class="col-12 d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-mobile-alt"></i> 设备管理</h2>
+                    <p class="text-muted">管理和监控测试设备状态 - 表格视图</p>
+                </div>
+                <div>
+                    <button class="btn btn-primary me-2" id="refreshDeviceBtn">
+                        <i class="fas fa-sync-alt"></i> 刷新设备
+                    </button>
+                    <button class="btn btn-success me-2" id="usbCheckBtn">
+                        <i class="fas fa-usb"></i> USB检查
+                    </button>
+                    <button class="btn btn-info" id="deviceReportBtn">
+                        <i class="fas fa-chart-bar"></i> 设备报告
+                    </button>
+                </div>
+            </div>
+            <div class="col-12">
+                <hr>
+            </div>
+        </div>
+
+        <!-- 设备统计卡片 -->
+        <div class="row mb-4" id="statsCards" style="display: none;">
+            <div class="col-md-3">
+                <div class="card stats-card">
+                    <div class="card-body text-center">
+                        <div class="stats-number" id="totalDevices">0</div>
+                        <div>设备总数</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-success">
+                    <div class="card-body text-center">
+                        <div class="stats-number" id="onlineDevices">0</div>
+                        <div>在线设备</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-danger">
+                    <div class="card-body text-center">
+                        <div class="stats-number" id="offlineDevices">0</div>
+                        <div>离线设备</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-warning">
+                    <div class="card-body text-center">
+                        <div class="stats-number" id="busyDevices">0</div>
+                        <div>繁忙设备</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 设备管理主界面 -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-list"></i> 设备列表</h5>
+                <div>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <input type="radio" class="btn-check" name="viewMode" id="tableView" checked>
+                        <label class="btn btn-outline-primary" for="tableView">
+                            <i class="fas fa-table"></i> 表格
+                        </label>
+                        <input type="radio" class="btn-check" name="viewMode" id="cardView">
+                        <label class="btn btn-outline-primary" for="cardView">
+                            <i class="fas fa-th-large"></i> 卡片
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body position-relative">
+                <!-- 设备管理VUE3挂载点 -->
+                <div id="app"></div>
+            </div>
+        </div>
+
+        <!-- USB检查模态框 -->
+        <div class="modal fade" id="usbCheckModal" tabindex="-1">
+            <div class="modal-dialog modal-xl">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title"><i class="fas fa-usb"></i> USB连接检查</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="usbCheckContent">
+                            <div class="text-center">
+                                <div class="spinner-border text-primary" role="status"></div>
+                                <p class="mt-2">正在进行USB连接检查...</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                        <button type="button" class="btn btn-primary" id="runUsbCheckBtn">重新检查</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 设备报告模态框 -->
+        <div class="modal fade" id="deviceReportModal" tabindex="-1">
+            <div class="modal-dialog modal-xl">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title"><i class="fas fa-chart-bar"></i> 设备测试报告</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="deviceReportContent">
+                            <div class="text-center">
+                                <div class="spinner-border text-primary" role="status"></div>
+                                <p class="mt-2">正在生成设备测试报告...</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                        <button type="button" class="btn btn-success" id="exportReportBtn">导出报告</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>WFGame AI自动化测试平台 &copy; 2025 WFGame AI团队</p>
+        </div>
+    </div>
+
+    <!-- 先加载Vue3核心库 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+
+    <!-- 然后加载页面特定JS -->
+    <script src="/static/js/pages/devices_table_vue.js"></script>
+
+    <!-- 最后加载Bootstrap依赖 -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

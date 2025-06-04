@@ -3,12 +3,16 @@
 """
 
 import subprocess
+import json
+import os
+import sys
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, status, views
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from django.conf import settings
 
 from .models import DeviceType, Device, DeviceLog
 from .serializers import (
@@ -34,13 +38,13 @@ class DeviceViewSet(viewsets.ModelViewSet):
     filterset_fields = ['status', 'type']
     search_fields = ['name', 'device_id', 'ip_address']
     http_method_names = ['post']  # 只允许POST方法
-    
+
     def get_serializer_class(self):
         """根据操作选择适当的序列化器"""
         if self.action == 'retrieve' or self.action == 'create' or self.action == 'update':
             return DeviceDetailSerializer
         return DeviceSerializer
-    
+
     @action(detail=True, methods=['post'])
     def logs(self, request, pk=None):
         """获取指定设备的日志"""
@@ -67,7 +71,7 @@ class ConnectDeviceView(views.APIView):
     """连接设备（增强：连接前实时检测ADB状态并同步数据库）"""
     permission_classes = [AllowAny]  # 允许所有用户访问
     http_method_names = ['post']  # 只允许POST方法
-    
+
     def post(self, request, pk):
         device = get_object_or_404(Device, pk=pk)
 
@@ -136,7 +140,7 @@ class DisconnectDeviceView(views.APIView):
     """断开设备连接（增强：断开前实时检测ADB状态并同步数据库）"""
     permission_classes = [AllowAny]  # 允许所有用户访问
     http_method_names = ['post']  # 只允许POST方法
-    
+
     def post(self, request, pk):
         device = get_object_or_404(Device, pk=pk)
 
@@ -203,29 +207,29 @@ class ReserveDeviceView(views.APIView):
     """预约设备"""
     permission_classes = [AllowAny]  # 允许所有用户访问
     http_method_names = ['post']  # 只允许POST方法
-    
+
     def post(self, request, pk):
         device = get_object_or_404(Device, pk=pk)
-        
+
         # 检查设备是否已被预约
         if device.status == 'busy' and device.current_user != request.user:
             return Response(
                 {"detail": "设备已被其他用户预约"},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         # 预约设备
         device.status = 'busy'
         device.current_user = request.user if request.user.is_authenticated else None
         device.save()
-        
+
         # 创建日志
         DeviceLog.objects.create(
             device=device,
             level='info',
             message=f"设备 '{device.name}' 已被预约"
         )
-        
+
         # 返回成功响应
         return Response(
             {"detail": "设备预约成功"},
@@ -237,37 +241,37 @@ class ReleaseDeviceView(views.APIView):
     """释放设备"""
     permission_classes = [AllowAny]  # 允许所有用户访问
     http_method_names = ['post']  # 只允许POST方法
-    
+
     def post(self, request, pk):
         device = get_object_or_404(Device, pk=pk)
-        
+
         # 检查设备是否已被预约
         if device.status != 'busy':
             return Response(
                 {"detail": "设备未被预约"},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         # 检查是否有权限释放设备
         if device.current_user != request.user and not request.user.is_staff:
             return Response(
                 {"detail": "无权释放此设备"},
                 status=status.HTTP_403_FORBIDDEN
             )
-        
+
         # 释放设备
         old_user = device.current_user
         device.status = 'online' if device.last_online and (timezone.now() - device.last_online).total_seconds() < 3600 else 'offline'
         device.current_user = None
         device.save()
-        
+
         # 创建日志
         DeviceLog.objects.create(
             device=device,
             level='info',
             message=f"设备 '{device.name}' 已被用户 '{request.user.username}' 释放，之前由用户 '{old_user.username if old_user else 'unknown'}' 使用"
         )
-        
+
         # 返回成功响应
         return Response(
             {"detail": "设备释放成功"},
@@ -276,12 +280,16 @@ class ReleaseDeviceView(views.APIView):
 
 
 class ScanDevicesView(views.APIView):
-    """扫描设备（增强：自动将未在ADB列表的设备状态设为offline）"""
+    """扫描设备（集成：USB连接检查和设备状态扫描）"""
     permission_classes = [AllowAny]  # 允许所有用户访问
     http_method_names = ['post']  # 只允许POST方法
-    
+
     def post(self, request):
         try:
+            # 步骤1：先进行USB连接检查
+            usb_check_result = self._perform_usb_check()
+
+            # 步骤2：然后进行ADB设备扫描
             result = subprocess.run(['adb', 'devices'], capture_output=True, text=True)
             if result.returncode != 0:
                 return Response(
@@ -313,14 +321,29 @@ class ScanDevicesView(views.APIView):
                         (device_status != 'device' and device.status == 'online')
                     ):
                         device.status = 'online' if device_status == 'device' else 'offline'
+                        if device.status == 'online':
+                            device.last_online = timezone.now()
                         device.save()
+
+                    # 查找是否在USB检查结果中有更多信息
+                    usb_info = {}
+                    for usb_device in usb_check_result.get('devices', []):
+                        if usb_device.get('device_id') == device_id:
+                            usb_info = usb_device
+                            break
+
                     devices_found.append({
                         'id': device.id,
                         'device_id': device.device_id,
                         'name': device.name,
                         'status': device.status,
-                        'created': created
+                        'created': created,
+                        'connection_status': usb_info.get('connection_status', 'unknown'),
+                        'authorization_status': usb_info.get('authorization_status', 'unknown'),
+                        'usb_path': usb_info.get('usb_path', ''),
+                        'ip_address': getattr(device, 'ip_address', '') or ''
                     })
+
             # --- 增强：自动将数据库中未在ADB列表的设备状态设为offline ---
             all_db_devices = Device.objects.all()
             for db_device in all_db_devices:
@@ -332,12 +355,294 @@ class ScanDevicesView(views.APIView):
                         level='info',
                         message=f"扫描时自动将设备 '{db_device.name}' 状态设为离线"
                     )
+
             return Response({
                 "detail": "扫描设备成功",
-                "devices_found": devices_found
+                "devices_found": devices_found,
+                "usb_check_result": usb_check_result
             })
         except Exception as e:
             return Response(
                 {"detail": "扫描设备失败", "error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            ) 
+            )
+    def _perform_usb_check(self):
+        """执行USB连接检查"""
+        try:
+            # 尝试导入USB连接检查器
+            scripts_path = os.path.join(settings.BASE_DIR, 'apps', 'scripts')
+            if scripts_path not in sys.path:
+                sys.path.append(scripts_path)
+
+            try:
+                # 首先尝试使用增强版设备管理器
+                try:
+                    from enhanced_device_preparation_manager import EnhancedDevicePreparationManager
+                    manager = EnhancedDevicePreparationManager()
+                    result = manager.check_usb_connections()
+                except (ImportError, AttributeError):
+                    raise ImportError("Enhanced device manager not available")
+            except ImportError:
+                try:
+                    # 然后尝试使用独立的USB检查脚本
+                    from usb_connection_checker import USBConnectionChecker
+                    checker = USBConnectionChecker()
+                    result = checker.check_all_connections()
+                except (ImportError, AttributeError):
+                    # 最后使用基础ADB检查
+                    adb_result = subprocess.run(['adb', 'devices'], capture_output=True, text=True, encoding='utf-8', errors='replace')
+                    lines = adb_result.stdout.strip().split('\n')[1:]
+                    devices = []
+
+                    for line in lines:
+                        if line.strip():
+                            parts = line.split('\t')
+                            if len(parts) >= 2:
+                                devices.append({
+                                    'device_id': parts[0].strip(),
+                                    'connection_status': 'connected' if parts[1].strip() == 'device' else 'disconnected',
+                                    'authorization_status': 'authorized' if parts[1].strip() == 'device' else 'unauthorized'
+                                })
+
+                    result = {
+                        'summary': {
+                            'total_devices': len(devices),
+                            'connected_devices': len([d for d in devices if d['connection_status'] == 'connected']),
+                            'authorized_devices': len([d for d in devices if d['authorization_status'] == 'authorized'])
+                        },
+                        'devices': devices,
+                        'check_method': 'basic_adb'
+                    }
+
+            return result
+
+        except Exception as e:
+            # 记录错误但不中断主流程
+            print(f"USB检查错误: {str(e)}")
+            return {
+                'success': False,
+                'error': str(e),
+                'devices': [],
+                'summary': {
+                    'total_devices': 0,
+                    'connected_devices': 0,
+                    'authorized_devices': 0
+                },
+                'check_method': 'failed'
+            }
+
+
+class USBConnectionCheckView(views.APIView):
+    """USB连接检查API"""
+    permission_classes = [AllowAny]
+    http_method_names = ['post']
+
+    def post(self, request):
+        try:
+            # Import the USB connection checker
+            scripts_path = os.path.join(settings.BASE_DIR, 'apps', 'scripts')
+            if scripts_path not in sys.path:
+                sys.path.append(scripts_path)            # Try to import and run USB connection check
+            try:
+                from usb_connection_checker import USBConnectionChecker
+                checker = USBConnectionChecker()
+                result = checker.check_all_connections()
+            except ImportError:
+                # Fallback to basic ADB scan if USB checker not available
+                adb_result = subprocess.run(['adb', 'devices'], capture_output=True, text=True)
+                if adb_result.returncode != 0:
+                    raise Exception(f"ADB command failed: {adb_result.stderr}")
+
+                lines = adb_result.stdout.strip().split('\n')[1:]
+                devices = []
+                for line in lines:
+                    if line.strip():
+                        parts = line.split('\t')
+                        if len(parts) >= 2:
+                            devices.append({
+                                'device_id': parts[0].strip(),
+                                'connection_status': 'connected' if parts[1].strip() == 'device' else 'disconnected',
+                                'authorization_status': 'authorized' if parts[1].strip() == 'device' else 'unauthorized'
+                            })
+
+                result = {
+                    'summary': {
+                        'total_devices': len(devices),
+                        'connected_devices': len([d for d in devices if d['connection_status'] == 'connected']),
+                        'authorized_devices': len([d for d in devices if d['authorization_status'] == 'authorized'])
+                    },
+                    'devices': devices
+                }
+
+            # Update device statuses in database based on check results
+            devices_updated = 0
+            for device_info in result.get('devices', []):
+                device_id = device_info.get('device_id')
+                connection_status = device_info.get('connection_status', 'unknown')
+                auth_status = device_info.get('authorization_status', 'unknown')
+
+                try:
+                    device = Device.objects.get(device_id=device_id)
+                    old_status = device.status
+
+                    # Update device status based on connection and authorization
+                    if connection_status == 'connected' and auth_status == 'authorized':
+                        device.status = 'online'
+                        device.last_online = timezone.now()
+                    elif connection_status == 'connected' and auth_status == 'unauthorized':
+                        device.status = 'offline'  # Connected but not authorized
+                    else:
+                        device.status = 'offline'  # Not connected
+
+                    # Save changes and create log if status changed
+                    if device.status != old_status:
+                        device.save()
+                        devices_updated += 1
+
+                        DeviceLog.objects.create(
+                            device=device,
+                            level='info',
+                            message=f"USB检查更新设备状态: {old_status} -> {device.status}"
+                        )
+
+                except Device.DoesNotExist:
+                    # Device not in database, could be a new device
+                    continue
+                except Exception as update_error:
+                    print(f"更新设备 {device_id} 状态失败: {str(update_error)}")
+
+            return Response({
+                'success': True,
+                'message': f'USB连接检查完成，更新了{devices_updated}台设备状态',
+                'usb_check_result': result,
+                'devices_updated': devices_updated
+            })
+
+        except Exception as e:
+            return Response({
+                'success': False,
+                'message': f'USB连接检查失败: {str(e)}',
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class EnhancedDeviceReportView(views.APIView):
+    """增强设备报告API"""
+    permission_classes = [AllowAny]
+    http_method_names = ['post']
+
+    def post(self, request, pk=None):
+        try:
+            # Import the enhanced device preparation manager
+            scripts_path = os.path.join(settings.BASE_DIR, 'apps', 'scripts')
+            if scripts_path not in sys.path:
+                sys.path.append(scripts_path)
+
+            try:
+                from enhanced_device_preparation_manager import EnhancedDevicePreparationManager
+                manager = EnhancedDevicePreparationManager()
+            except ImportError:
+                # Fallback to basic device info if enhanced manager not available
+                return Response({
+                    'success': False,
+                    'message': '增强设备管理模块未找到，请确保已正确安装',
+                    'error_type': 'module_not_found'
+                }, status=status.HTTP_404_NOT_FOUND)
+
+            if pk:
+                # Generate report for specific device
+                device = get_object_or_404(Device, pk=pk)
+
+                # Run comprehensive test for the specific device
+                try:
+                    report = manager.run_comprehensive_device_test(device.device_id)
+                except Exception as test_error:
+                    # Create basic report on test failure
+                    report = {
+                        'timestamp': timezone.now().isoformat(),
+                        'device_tests': {
+                            device.device_id: {
+                                'overall_status': 'error',
+                                'error_message': str(test_error)
+                            }
+                        }
+                    }
+
+                # Update device information in database
+                if report and 'device_tests' in report:
+                    device_test = report['device_tests'].get(device.device_id, {})
+
+                    # Update device status based on test results
+                    if device_test.get('overall_status') == 'healthy':
+                        device.status = 'online'
+                        device.last_online = timezone.now()
+                    elif device_test.get('overall_status') in ['issues', 'error']:
+                        device.status = 'offline'
+
+                    device.save()
+
+                    # Create device log entry
+                    DeviceLog.objects.create(
+                        device=device,
+                        level='info' if device_test.get('overall_status') == 'healthy' else 'warning',
+                        message=f"增强设备报告生成完成，状态: {device_test.get('overall_status', 'unknown')}"
+                    )
+
+                return Response({
+                    'success': True,
+                    'message': f'设备 {device.name} 的增强报告生成完成',
+                    'data': report,
+                    'device_id': device.device_id
+                })
+            else:
+                # Generate report for all devices
+                try:
+                    report = manager.run_comprehensive_device_test()
+                except Exception as test_error:
+                    return Response({
+                        'success': False,
+                        'message': f'全设备测试失败: {str(test_error)}',
+                        'error_type': 'test_failure'
+                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+                # Update all devices based on test results
+                devices_updated = 0
+                if report and 'device_tests' in report:
+                    for device_id, device_test in report['device_tests'].items():
+                        try:
+                            device = Device.objects.get(device_id=device_id)
+                            old_status = device.status
+
+                            if device_test.get('overall_status') == 'healthy':
+                                device.status = 'online'
+                                device.last_online = timezone.now()
+                            elif device_test.get('overall_status') in ['issues', 'error']:
+                                device.status = 'offline'
+
+                            device.save()
+                            devices_updated += 1
+
+                            # Create device log entry
+                            DeviceLog.objects.create(
+                                device=device,
+                                level='info' if device_test.get('overall_status') == 'healthy' else 'warning',
+                                message=f"增强设备报告更新: {old_status} -> {device.status}"
+                            )
+                        except Device.DoesNotExist:
+                            continue
+                        except Exception as update_error:
+                            print(f"更新设备 {device_id} 状态失败: {str(update_error)}")
+
+                return Response({
+                    'success': True,
+                    'message': f'增强设备报告生成完成，更新了{devices_updated}台设备状态',
+                    'data': report,
+                    'devices_updated': devices_updated
+                })
+
+        except Exception as e:
+            return Response({
+                'success': False,
+                'message': f'增强设备报告生成失败: {str(e)}',
+                'error_type': 'general_error'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
