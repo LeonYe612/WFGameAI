@@ -1,35 +1,29 @@
-security: 优化devices接口
+security(devices): 优化devices接口
 
-设计devices接口，为前端提供稳定数据接口；完善devices数据库操作，确保数据结构合理性；加强系统安全性，防止潜在数据泄露风险。
-改进系统工具和基础设施：自动化测试, 更新主URL配置等，增强开发效率和代码质量。
-修复usb connection checker fixed问题，消除系统不稳定因素。
+设计devices接口，为前端提供稳定数据接口；优化数据模型：数据库结构, devices数据库操作，提高数据完整性和查询效率。
+全面性能优化：包括代码优化, sync device cache性能等方面，显著改善用户体验；加强系统安全性，防止潜在数据泄露风险。
+改进系统工具和基础设施：自动化测试, 项目文档等，增强开发效率和代码质量。
 
-新增了 15 个文件、修改了 8 个文件。
+新增了 4 个文件、修改了 8 个文件、删除了 8 个文件。
 
 主要改动:
 
 devices模块:
-  - 修改: urls.py, views.py
-scripts模块:
-  - 修改: replay_script.py
+  - 新增: 0003_device_android_version_device_brand_device_model.py
+  - 修改: models.py, serializers.py, views.py
 config模块:
-  - 新增: device_preparation_cache.json
-docs模块:
-  - 新增了 6 个文件
+  - 删除: test_swipe.json
 js模块:
-  - 新增: devices_table_vue.js
+  - 修改: devices_table_vue.js
 logs模块:
   - 修改: django.log
 other模块:
-  - 新增: device_preparation.bat
   - 修改: commit_message.txt, git_changes.txt
-pages模块:
-  - 新增: devices_table.html
-  - 修改: devices.html
+  - 删除: test_output.txt
 scripts模块:
-  - 新增了 4 个文件
-    - 单元测试: 2个
-    - 其他: 2个
-  - 修改: start_wfgame_ai.py
+  - 新增: scan_devices_view.py, sync_device_cache.py, test_device_api.py
+  - 删除了 5 个文件
 templates模块:
-  - 新增: DevicesList.vue
+  - 删除: DevicesList.vue
+wfgame_ai_server_main模块:
+  - 修改: urls.py

@@ -1207,3 +1207,6 @@ INFO 2025-06-04 18:29:38,245 basehttp 2984 3232 "GET /static/pages/devices.html 
 INFO 2025-06-04 18:29:38,362 basehttp 2984 3232 "GET /static/js/pages/devices_table_vue.js HTTP/1.1" 200 31351
 INFO 2025-06-04 18:29:39,040 basehttp 2984 3232 "POST /api/devices/scan/ HTTP/1.1" 200 4868
 INFO 2025-06-04 18:29:41,235 basehttp 2984 3232 "POST /api/devices/scan/ HTTP/1.1" 200 4868
+INFO 2025-06-04 18:30:11,844 basehttp 2984 3232 "POST /api/devices/scan/ HTTP/1.1" 200 4868
+INFO 2025-06-04 18:31:50,339 basehttp 2984 3232 "POST /api/devices/scan/ HTTP/1.1" 200 4868
+INFO 2025-06-04 18:32:02,871 basehttp 2984 3232 "POST /api/devices/scan/ HTTP/1.1" 200 4868

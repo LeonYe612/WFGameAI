@@ -10,7 +10,6 @@ import time
 import sys
 import os
 import threading
-import argparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 def check_usb_connection():
@@ -328,69 +327,11 @@ def validate_test_result(cmd, desc, result, device_id):
 
     return success, details
 
-def execute_multi_direction_swipe_test(device_id, desc):
-    """执行严格的4方向滑动测试"""
-    print(f"    🔍 开始严格4方向滑动验证...")
-
-    # 4个方向的滑动测试（严格按要求：左-右，右-左，下-上，上-下）
-    swipe_tests = [
-        ("shell input swipe 300 800 700 800", "从左到右滑动"),    # 左到右 (left-right)
-        ("shell input swipe 700 800 300 800", "从右到左滑动"),    # 右到左 (right-left)
-        ("shell input swipe 500 1200 500 400", "从下往上滑动"),   # 下到上 (down-up)
-        ("shell input swipe 500 400 500 1200", "从上往下滑动")    # 上到下 (up-down)
-    ]
-
-    successful_swipes = 0
-    total_swipes = len(swipe_tests)
-
-    for swipe_cmd, swipe_desc in swipe_tests:
-        try:
-            # 执行滑动命令
-            swipe_result = subprocess.run(f"adb -s {device_id} {swipe_cmd}",
-                                        shell=True, capture_output=True, text=True,
-                                        timeout=10, encoding='utf-8', errors='ignore')
-
-            if swipe_result.returncode == 0:
-                time.sleep(0.5)  # 短暂等待滑动效果
-
-                # 验证滑动后UI状态
-                ui_check = subprocess.run(f"adb -s {device_id} shell dumpsys window | findstr \"mCurrentFocus\"",
-                                        shell=True, capture_output=True, text=True,
-                                        timeout=5, encoding='utf-8', errors='ignore')
-
-                if ui_check.returncode == 0 and ui_check.stdout.strip():
-                    successful_swipes += 1
-                    print(f"      ✅ {swipe_desc} - 成功")
-                else:
-                    print(f"      ❌ {swipe_desc} - 无响应")
-            else:
-                print(f"      ❌ {swipe_desc} - 执行失败")
-
-        except Exception as e:
-            print(f"      ❌ {swipe_desc} - 异常: {e}")
-
-    # 判断整体滑动测试结果（any-success validation：任一方向成功即为整体成功）
-    success_rate = successful_swipes / total_swipes
-    if successful_swipes >= 1:  # 任一滑动成功即视为功能正常
-        success = True
-        details = f"4方向滑动测试通过 ({successful_swipes}/{total_swipes} 成功, {success_rate*100:.1f}%)"
-        print(f"    ✅ 成功 - {details}")
-        return True, desc, details
-    else:
-        success = False
-        details = f"4方向滑动测试失败 ({successful_swipes}/{total_swipes} 成功, {success_rate*100:.1f}%)"
-        print(f"    ❌ 失败 - {details}")
-        return False, desc, details
-
 def execute_single_test(device_id, cmd, desc, test_index, total_tests):
     """执行单个测试项目（用于多线程）"""
     print(f"\n  📋 测试 {test_index}/{total_tests}: {desc}")
 
     try:
-        # 特殊处理4方向滑动验证
-        if cmd == "MULTI_DIRECTION_SWIPE":
-            return execute_multi_direction_swipe_test(device_id, desc)
-
         # 执行命令
         result = subprocess.run(f"adb -s {device_id} {cmd}",
                               shell=True, capture_output=True, text=True, timeout=15, encoding='utf-8', errors='ignore')
@@ -440,9 +381,11 @@ def test_adb_commands(device_id):
     if not os.path.exists(screenshot_dir):
         os.makedirs(screenshot_dir)
 
-    print(f"  📁 截图将保存到: {os.path.abspath(screenshot_dir)}")    # 优化后的测试序列，避免屏幕锁定问题
-    # 按照原始顺序执行所有测试项
-    tests = [
+    print(f"  📁 截图将保存到: {os.path.abspath(screenshot_dir)}")
+
+    # 优化后的测试序列，避免屏幕锁定问题
+    # 注意：有些测试需要按顺序执行，有些可以并行
+    sequential_tests = [
         ("shell echo 'Hello'", "基本shell命令"),
         ("shell ls /sdcard", "文件系统访问"),
         ("shell screencap /sdcard/screenshot.png", "屏幕截图功能"),
@@ -450,22 +393,43 @@ def test_adb_commands(device_id):
         ("shell sleep 1", "等待Home界面加载"),
         ("shell am start -a android.settings.SETTINGS", "打开系统设置"),
         ("shell sleep 2", "等待设置界面加载"),
-        ("shell input swipe 500 1500 500 100", "从下往上滑动"),
-        ("shell sleep 1", "等待滑动UI响应"),
-        ("MULTI_DIRECTION_SWIPE", "四方向滑动验证"),  # 特殊标记，触发4方向滑动测试
+    ]
+
+    # 滑动测试（可以并行执行的验证）
+    swipe_test = ("shell input swipe 500 1500 500 100", "多方向滑动验证")
+
+    # 最后的清理测试
+    cleanup_tests = [
         ("shell input keyevent 3", "返回Home键"),
         ("shell sleep 1", "等待返回Home界面"),
         ("shell input keyevent 26", "输入事件（电源键）")
     ]
 
+    all_tests = sequential_tests + [swipe_test] + cleanup_tests
     success_count = 0
-    total_tests = len(tests)
+    total_tests = len(all_tests)
 
     print(f"\n🔧 开始执行 {total_tests} 项测试...")
 
-    # 按顺序执行所有测试项
-    for i, (cmd, desc) in enumerate(tests, 1):
+    # 1. 执行顺序测试
+    print(f"\n📋 第1阶段：顺序执行基础测试 ({len(sequential_tests)} 项)")
+    for i, (cmd, desc) in enumerate(sequential_tests, 1):
         success, _, _ = execute_single_test(device_id, cmd, desc, i, total_tests)
+        if success:
+            success_count += 1
+
+    # 2. 执行滑动测试（包含多方向验证）
+    print(f"\n📋 第2阶段：滑动功能验证测试")
+    cmd, desc = swipe_test
+    success, _, _ = execute_single_test(device_id, cmd, desc, len(sequential_tests) + 1, total_tests)
+    if success:
+        success_count += 1
+
+    # 3. 执行清理测试
+    print(f"\n📋 第3阶段：清理和最终验证 ({len(cleanup_tests)} 项)")
+    for i, (cmd, desc) in enumerate(cleanup_tests, 1):
+        test_index = len(sequential_tests) + 1 + i
+        success, _, _ = execute_single_test(device_id, cmd, desc, test_index, total_tests)
         if success:
             success_count += 1
 
@@ -483,19 +447,14 @@ def test_adb_commands(device_id):
         print("❌ 设备功能测试未通过，存在重大问题")
         return False
 
-def test_multiple_devices_parallel(devices, max_workers=None):
+def test_multiple_devices_parallel(devices):
     """并行测试多个设备"""
-    # 如果没有指定最大工作线程数，则使用设备数量（允许所有设备同时检测）
-    if max_workers is None:
-        max_workers = len(devices)
-
     print(f"\n🚀 开始并行测试 {len(devices)} 个设备...")
-    print(f"⚡ 并发线程数: {max_workers}")
 
     results = {}
 
     # 使用线程池并行执行设备测试
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+    with ThreadPoolExecutor(max_workers=min(len(devices), 4)) as executor:
         # 提交所有设备检查任务
         future_to_device = {}
 
@@ -527,20 +486,6 @@ def test_multiple_devices_parallel(devices, max_workers=None):
 
 def main():
     """主函数"""
-    # 解析命令行参数
-    parser = argparse.ArgumentParser(description='WFGameAI USB连接检查工具')
-    parser.add_argument('--max-workers', type=int, default=None,
-                       help='最大并发线程数 (默认: 无限制，所有设备同时检测)')
-    parser.add_argument('--conservative', action='store_true',
-                       help='保守模式，限制最大4个并发线程 (等同于 --max-workers 4)')
-
-    args = parser.parse_args()
-
-    # 确定并发线程数
-    max_workers = args.max_workers
-    if args.conservative:
-        max_workers = 4
-
     if not check_usb_connection():
         print("\n❌ USB连接检查失败，请根据上述指南进行设置")
         return 1
@@ -557,7 +502,9 @@ def main():
 
         if not devices:
             print("\n⚠️ 没有可用的授权设备")
-            return 1        # 对每个设备进行详细检查
+            return 1
+
+        # 对每个设备进行详细检查
         print("\n" + "=" * 60)
         print("📋 设备详细检查")
         print("=" * 60)
@@ -572,9 +519,8 @@ def main():
             all_passed = detail_result and adb_result
         else:
             # 多设备并行处理
-            worker_info = f"所有设备同时" if max_workers is None else f"最多{max_workers}个"
-            print(f"⚡ 多设备模式：并行执行测试以提高效率 ({worker_info})")
-            results = test_multiple_devices_parallel(devices, max_workers)
+            print(f"⚡ 多设备模式：并行执行测试以提高效率")
+            results = test_multiple_devices_parallel(devices)
 
             # 分析结果
             all_passed = True
