@@ -35,6 +35,9 @@ class Device(models.Model):
 
     name = models.CharField(_('设备名称'), max_length=255)
     device_id = models.CharField(_('设备ID'), max_length=255, unique=True)
+    brand = models.CharField(_('品牌'), max_length=100, blank=True)
+    model = models.CharField(_('型号'), max_length=100, blank=True)
+    android_version = models.CharField(_('系统版本'), max_length=50, blank=True)
     type = models.ForeignKey(DeviceType,
                             verbose_name=_('设备类型'),
                             on_delete=models.SET_NULL,

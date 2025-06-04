@@ -922,3 +922,288 @@ INFO 2025-06-04 16:45:07,674 basehttp 38556 35468 "GET /static/js/pages/devices_
 INFO 2025-06-04 16:45:08,401 basehttp 38556 35468 "POST /api/devices/scan/ HTTP/1.1" 200 2331
 INFO 2025-06-04 16:45:20,203 basehttp 38556 35468 "POST /api/devices/scan/ HTTP/1.1" 200 2331
 INFO 2025-06-04 16:45:59,066 autoreload 26740 43644 Watching for file changes with StatReloader
+INFO 2025-06-04 16:46:07,921 basehttp 26740 20872 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-04 16:46:08,440 basehttp 26740 20872 "POST /api/devices/scan/ HTTP/1.1" 200 2331
+INFO 2025-06-04 16:46:09,628 basehttp 26740 20872 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-04 16:46:09,950 basehttp 26740 20872 "POST /api/devices/scan/ HTTP/1.1" 200 2331
+INFO 2025-06-04 16:46:10,485 basehttp 26740 20872 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-04 16:46:10,828 basehttp 26740 20872 "POST /api/devices/scan/ HTTP/1.1" 200 2331
+INFO 2025-06-04 16:46:46,700 basehttp 26740 31200 "GET / HTTP/1.1" 200 9797
+WARNING 2025-06-04 16:46:47,082 log 26740 31200 Not Found: /favicon.ico
+WARNING 2025-06-04 16:46:47,082 basehttp 26740 31200 "GET /favicon.ico HTTP/1.1" 404 4831
+INFO 2025-06-04 16:46:48,229 basehttp 26740 31200 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-04 16:46:48,541 basehttp 26740 31200 "POST /api/devices/scan/ HTTP/1.1" 200 3607
+WARNING 2025-06-04 16:47:09,366 log 26740 33824 Not Found: /favicon.ico
+WARNING 2025-06-04 16:47:09,366 basehttp 26740 33824 "GET /favicon.ico HTTP/1.1" 404 4831
+INFO 2025-06-04 16:47:09,453 basehttp 26740 40988 "POST /api/devices/scan/ HTTP/1.1" 200 3927
+INFO 2025-06-04 16:47:15,205 basehttp 26740 31200 "GET /api/docs/ HTTP/1.1" 200 788
+INFO 2025-06-04 16:47:16,414 basehttp 26740 31200 "GET /api/schema/ HTTP/1.1" 200 31109
+INFO 2025-06-04 16:57:57,337 autoreload 26740 43644 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\models.py changed, reloading.
+INFO 2025-06-04 16:57:57,858 autoreload 40408 21248 Watching for file changes with StatReloader
+INFO 2025-06-04 16:58:16,970 autoreload 40408 21248 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\models.py changed, reloading.
+INFO 2025-06-04 16:58:17,465 autoreload 21556 20684 Watching for file changes with StatReloader
+INFO 2025-06-04 16:58:29,696 autoreload 21556 20684 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\serializers.py changed, reloading.
+INFO 2025-06-04 16:58:30,227 autoreload 35896 42672 Watching for file changes with StatReloader
+INFO 2025-06-04 17:02:26,556 autoreload 35896 42672 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\models.py changed, reloading.
+INFO 2025-06-04 17:02:27,106 autoreload 4864 31708 Watching for file changes with StatReloader
+ERROR 2025-06-04 17:02:32,620 log 4864 15640 Internal Server Error: /api/devices/scan/
+ERROR 2025-06-04 17:02:32,620 basehttp 4864 15640 "POST /api/devices/scan/ HTTP/1.1" 500 102
+INFO 2025-06-04 17:02:45,338 basehttp 4864 15640 "GET /pages/dashboard_template.html HTTP/1.1" 302 0
+INFO 2025-06-04 17:02:46,500 basehttp 4864 15640 "GET /pages/dashboard_template.html HTTP/1.1" 302 0
+INFO 2025-06-04 17:02:47,435 basehttp 4864 15640 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-04 17:02:47,437 basehttp 4864 15640 "GET /static/pages/devices.html HTTP/1.1" 304 0
+INFO 2025-06-04 17:02:47,446 basehttp 4864 15640 "GET /static/js/pages/devices_table_vue.js HTTP/1.1" 304 0
+ERROR 2025-06-04 17:02:47,796 log 4864 15640 Internal Server Error: /api/devices/scan/
+ERROR 2025-06-04 17:02:47,796 basehttp 4864 15640 "POST /api/devices/scan/ HTTP/1.1" 500 102
+INFO 2025-06-04 17:02:55,371 basehttp 4864 15640 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-06-04 17:02:55,628 basehttp 4864 15640 "POST /api/scripts/ HTTP/1.1" 200 2072
+INFO 2025-06-04 17:02:56,612 basehttp 4864 15640 "GET /pages/tasks_template.html HTTP/1.1" 302 0
+INFO 2025-06-04 17:02:57,403 basehttp 4864 15640 "GET /pages/reports_template.html HTTP/1.1" 302 0
+INFO 2025-06-04 17:02:57,693 basehttp 4864 15640 "POST /api/reports/summary_list/ HTTP/1.1" 200 8597
+INFO 2025-06-04 17:02:58,468 basehttp 4864 15640 "GET /pages/data_template.html HTTP/1.1" 302 0
+INFO 2025-06-04 17:03:00,371 basehttp 4864 15640 "GET /pages/devices.html HTTP/1.1" 302 0
+ERROR 2025-06-04 17:03:00,769 log 4864 15640 Internal Server Error: /api/devices/scan/
+ERROR 2025-06-04 17:03:00,770 basehttp 4864 15640 "POST /api/devices/scan/ HTTP/1.1" 500 102
+WARNING 2025-06-04 17:03:03,844 log 4864 15640 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-06-04 17:03:03,845 basehttp 4864 15640 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4942
+ERROR 2025-06-04 17:03:05,827 log 4864 15640 Internal Server Error: /api/devices/scan/
+ERROR 2025-06-04 17:03:05,827 basehttp 4864 15640 "POST /api/devices/scan/ HTTP/1.1" 500 102
+INFO 2025-06-04 17:15:32,795 basehttp 4864 14432 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:17:07,799 basehttp 4864 30548 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:18:26,287 basehttp 4864 14340 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:18:29,876 basehttp 4864 14340 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-04 17:18:30,206 basehttp 4864 14340 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:18:32,084 basehttp 4864 30548 "GET /static/pages/devices.html HTTP/1.1" 304 0
+INFO 2025-06-04 17:18:32,098 basehttp 4864 30548 "GET /static/js/pages/devices_table_vue.js HTTP/1.1" 304 0
+INFO 2025-06-04 17:18:32,925 basehttp 4864 30548 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:21:00,082 basehttp 4864 30548 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:21:02,462 basehttp 4864 30548 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:27:15,642 basehttp 4864 33332 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:27:19,402 basehttp 4864 33332 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:28:48,181 basehttp 4864 33332 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:28:48,952 basehttp 4864 33332 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:28:50,740 basehttp 4864 33332 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-04 17:28:50,742 basehttp 4864 33332 "GET /static/pages/devices.html HTTP/1.1" 304 0
+INFO 2025-06-04 17:28:50,752 basehttp 4864 33332 "GET /static/js/pages/devices_table_vue.js HTTP/1.1" 304 0
+INFO 2025-06-04 17:28:51,523 basehttp 4864 33332 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:28:52,028 basehttp 4864 33332 "GET /pages/dashboard_template.html HTTP/1.1" 302 0
+INFO 2025-06-04 17:28:53,379 basehttp 4864 33332 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-04 17:28:53,722 basehttp 4864 33332 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:29:00,250 basehttp 4864 38152 "GET / HTTP/1.1" 200 9797
+INFO 2025-06-04 17:29:02,235 basehttp 4864 38152 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-04 17:29:02,973 basehttp 4864 38152 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:29:30,550 basehttp 4864 38152 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:29:34,148 basehttp 4864 33332 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:33:08,104 basehttp 4864 33332 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:33:10,726 basehttp 4864 33332 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:33:58,113 basehttp 4864 41276 "GET /pages/devices.html?id=4a4fa98f-b952-4d57-9f15-f1c74aeefbcc&vscodeBrowserReqId=1749029637795 HTTP/1.1" 302 0
+INFO 2025-06-04 17:33:58,221 basehttp 4864 41276 "GET /static/pages/devices.html HTTP/1.1" 200 6770
+INFO 2025-06-04 17:33:58,229 basehttp 4864 41276 "GET /static/js/pages/devices_table_vue.js HTTP/1.1" 200 29761
+INFO 2025-06-04 17:33:59,238 basehttp 4864 41276 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:34:10,349 basehttp 4864 33332 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:34:11,885 basehttp 4864 33332 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:34:12,420 basehttp 4864 33332 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:34:12,603 basehttp 4864 33332 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:34:12,784 basehttp 4864 33332 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:34:12,941 basehttp 4864 33332 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:34:13,121 basehttp 4864 33332 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:34:14,756 basehttp 4864 33332 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-06-04 17:34:15,186 basehttp 4864 33332 "POST /api/scripts/ HTTP/1.1" 200 2072
+INFO 2025-06-04 17:34:15,708 basehttp 4864 33332 "GET /pages/dashboard_template.html HTTP/1.1" 302 0
+INFO 2025-06-04 17:34:17,732 basehttp 4864 33332 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-04 17:34:18,107 basehttp 4864 33332 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:34:25,482 basehttp 4864 38152 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-04 17:34:26,018 basehttp 4864 38152 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:34:28,356 basehttp 4864 38152 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:35:14,768 autoreload 33368 21372 Watching for file changes with StatReloader
+INFO 2025-06-04 17:35:18,763 basehttp 4864 33332 "GET / HTTP/1.1" 200 9797
+INFO 2025-06-04 17:35:20,243 basehttp 4864 33332 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-04 17:35:20,577 basehttp 4864 33332 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:36:20,070 basehttp 4864 33332 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:36:20,757 basehttp 4864 33332 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:36:21,141 basehttp 4864 33332 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:36:21,327 basehttp 4864 33332 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:36:21,515 basehttp 4864 33332 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:36:23,352 basehttp 4864 33332 "GET /static/pages/devices.html HTTP/1.1" 304 0
+INFO 2025-06-04 17:36:23,659 basehttp 4864 33332 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:36:28,211 basehttp 4864 38152 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:37:40,276 autoreload 33368 21372 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\wfgame_ai_server_main\urls.py changed, reloading.
+INFO 2025-06-04 17:37:40,847 autoreload 35580 32476 Watching for file changes with StatReloader
+INFO 2025-06-04 17:37:40,932 autoreload 4864 31708 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\wfgame_ai_server_main\urls.py changed, reloading.
+INFO 2025-06-04 17:37:41,422 autoreload 37304 41336 Watching for file changes with StatReloader
+INFO 2025-06-04 17:38:44,313 autoreload 37304 41336 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\wfgame_ai_server_main\urls.py changed, reloading.
+INFO 2025-06-04 17:38:44,839 autoreload 43976 20956 Watching for file changes with StatReloader
+INFO 2025-06-04 17:38:45,059 autoreload 35580 32476 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\wfgame_ai_server_main\urls.py changed, reloading.
+INFO 2025-06-04 17:38:45,532 autoreload 18808 36340 Watching for file changes with StatReloader
+INFO 2025-06-04 17:39:05,902 basehttp 18808 32872 "HEAD /static/js/pages/devices_table_vue.js HTTP/1.1" 200 0
+INFO 2025-06-04 17:39:13,066 basehttp 18808 39556 "GET /pages/devices.html?id=700ff9f1-457f-4f90-bbe4-fe648893e4e2&vscodeBrowserReqId=1749029952754 HTTP/1.1" 302 0
+INFO 2025-06-04 17:39:13,076 basehttp 18808 39556 "GET /static/js/pages/devices_table_vue.js HTTP/1.1" 200 29764
+INFO 2025-06-04 17:39:13,352 basehttp 18808 39556 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:39:21,900 basehttp 18808 31748 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:39:40,951 basehttp 18808 31200 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:40:22,687 basehttp 18808 24284 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-04 17:40:31,246 basehttp 18808 10348 "HEAD /static/pages/devices.html HTTP/1.1" 200 0
+INFO 2025-06-04 17:40:37,976 basehttp 18808 39556 "GET /static/pages/devices.html?id=700ff9f1-457f-4f90-bbe4-fe648893e4e2&vscodeBrowserReqId=1749030037973 HTTP/1.1" 200 6770
+INFO 2025-06-04 17:40:37,980 basehttp 18808 39556 "GET /static/js/pages/devices_table_vue.js HTTP/1.1" 304 0
+INFO 2025-06-04 17:40:38,250 basehttp 18808 39556 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:40:51,390 basehttp 18808 13004 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:40:56,168 basehttp 18808 40528 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:40:57,078 basehttp 18808 40528 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:40:57,654 basehttp 18808 40528 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:41:08,963 basehttp 18808 13004 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+WARNING 2025-06-04 17:41:40,764 log 18808 13004 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-06-04 17:41:40,764 basehttp 18808 13004 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4942
+INFO 2025-06-04 17:41:42,821 basehttp 18808 13004 "GET /static/pages/devices.html HTTP/1.1" 200 6770
+INFO 2025-06-04 17:41:42,830 basehttp 18808 13004 "GET /static/js/pages/devices_table_vue.js HTTP/1.1" 200 29764
+WARNING 2025-06-04 17:41:42,835 log 18808 13004 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-06-04 17:41:42,835 basehttp 18808 13004 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4942
+INFO 2025-06-04 17:41:43,262 basehttp 18808 13004 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:43:09,296 basehttp 18808 13004 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:43:18,460 basehttp 18808 13004 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-04 17:43:18,470 basehttp 18808 13004 "GET /static/js/pages/devices_table_vue.js HTTP/1.1" 304 0
+INFO 2025-06-04 17:43:18,982 basehttp 18808 13004 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:43:20,147 basehttp 18808 13004 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-06-04 17:43:20,408 basehttp 18808 13004 "POST /api/scripts/ HTTP/1.1" 200 2072
+INFO 2025-06-04 17:43:22,850 basehttp 18808 13004 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-04 17:43:23,195 basehttp 18808 13004 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:43:26,967 basehttp 18808 40528 "GET /static/js/pages/devices_table_vue.js HTTP/1.1" 200 29764
+INFO 2025-06-04 17:43:27,795 basehttp 18808 40528 "POST /api/devices/scan/ HTTP/1.1" 200 3928
+INFO 2025-06-04 17:49:39,529 autoreload 43976 20956 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 17:49:40,055 autoreload 9688 37216 Watching for file changes with StatReloader
+INFO 2025-06-04 17:49:40,284 autoreload 18808 36340 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 17:49:40,774 autoreload 24172 34708 Watching for file changes with StatReloader
+INFO 2025-06-04 17:49:55,966 autoreload 24172 34708 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 17:49:56,384 autoreload 9688 37216 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 17:49:56,489 autoreload 17712 13052 Watching for file changes with StatReloader
+INFO 2025-06-04 17:49:56,872 autoreload 41344 37944 Watching for file changes with StatReloader
+INFO 2025-06-04 17:50:10,970 autoreload 41344 37944 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 17:50:11,480 autoreload 42928 34560 Watching for file changes with StatReloader
+INFO 2025-06-04 17:50:11,731 autoreload 17712 13052 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 17:50:12,229 autoreload 11632 28392 Watching for file changes with StatReloader
+INFO 2025-06-04 17:55:30,112 autoreload 11632 28392 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 17:55:30,618 autoreload 8380 33696 Watching for file changes with StatReloader
+INFO 2025-06-04 17:55:30,951 autoreload 42928 34560 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 17:55:31,416 autoreload 21800 32520 Watching for file changes with StatReloader
+ERROR 2025-06-04 17:55:36,645 log 8380 17824 Internal Server Error: /api/devices/scan/
+ERROR 2025-06-04 17:55:36,645 basehttp 8380 17824 "POST /api/devices/scan/ HTTP/1.1" 500 101
+WARNING 2025-06-04 17:55:39,300 log 8380 17824 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-06-04 17:55:39,300 basehttp 8380 17824 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4942
+ERROR 2025-06-04 17:55:40,739 log 8380 17824 Internal Server Error: /api/devices/scan/
+ERROR 2025-06-04 17:55:40,739 basehttp 8380 17824 "POST /api/devices/scan/ HTTP/1.1" 500 101
+INFO 2025-06-04 17:56:19,587 autoreload 41336 14900 Watching for file changes with StatReloader
+INFO 2025-06-04 18:01:36,170 basehttp 8380 38700 "POST /api/devices/scan/ HTTP/1.1" 200 4814
+INFO 2025-06-04 18:01:40,219 basehttp 8380 38700 "POST /api/devices/scan/ HTTP/1.1" 200 4820
+INFO 2025-06-04 18:04:05,311 autoreload 21800 32520 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:04:05,312 autoreload 8380 33696 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:04:05,636 autoreload 41336 14900 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:04:05,891 autoreload 13912 37752 Watching for file changes with StatReloader
+INFO 2025-06-04 18:04:05,935 autoreload 42852 32024 Watching for file changes with StatReloader
+INFO 2025-06-04 18:04:06,133 autoreload 13248 28812 Watching for file changes with StatReloader
+INFO 2025-06-04 18:04:14,842 autoreload 13912 37752 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:04:14,856 autoreload 42852 32024 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:04:14,983 autoreload 13248 28812 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:04:15,385 autoreload 39416 28940 Watching for file changes with StatReloader
+INFO 2025-06-04 18:04:15,425 autoreload 19404 20496 Watching for file changes with StatReloader
+INFO 2025-06-04 18:04:15,477 autoreload 16880 40488 Watching for file changes with StatReloader
+INFO 2025-06-04 18:04:51,774 autoreload 39416 28940 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:04:52,039 autoreload 19404 20496 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:04:52,047 autoreload 16880 40488 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:04:52,307 autoreload 4440 16824 Watching for file changes with StatReloader
+INFO 2025-06-04 18:04:52,578 autoreload 34000 17932 Watching for file changes with StatReloader
+INFO 2025-06-04 18:04:52,580 autoreload 26464 36264 Watching for file changes with StatReloader
+INFO 2025-06-04 18:05:20,256 autoreload 4440 16824 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:05:20,676 autoreload 34000 17932 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:05:20,678 autoreload 26464 36264 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:05:20,772 autoreload 7772 13372 Watching for file changes with StatReloader
+INFO 2025-06-04 18:05:21,227 autoreload 37604 18448 Watching for file changes with StatReloader
+INFO 2025-06-04 18:05:21,229 autoreload 36520 35728 Watching for file changes with StatReloader
+INFO 2025-06-04 18:06:38,284 autoreload 37604 18448 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:06:38,306 autoreload 7772 13372 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:06:38,312 autoreload 36520 35728 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:06:38,872 autoreload 34576 24264 Watching for file changes with StatReloader
+INFO 2025-06-04 18:06:38,883 autoreload 22656 42056 Watching for file changes with StatReloader
+INFO 2025-06-04 18:06:38,890 autoreload 18724 32488 Watching for file changes with StatReloader
+INFO 2025-06-04 18:06:46,463 basehttp 22656 38956 "POST /api/devices/scan/ HTTP/1.1" 200 4843
+INFO 2025-06-04 18:06:53,490 basehttp 22656 38956 "POST /api/devices/scan/ HTTP/1.1" 200 4843
+INFO 2025-06-04 18:06:57,313 basehttp 22656 38956 "POST /api/devices/scan/ HTTP/1.1" 200 4843
+INFO 2025-06-04 18:10:32,914 autoreload 34576 24264 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:10:33,459 autoreload 21056 38476 Watching for file changes with StatReloader
+INFO 2025-06-04 18:10:33,480 autoreload 22656 42056 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:10:33,494 autoreload 18724 32488 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:10:34,005 autoreload 2004 19756 Watching for file changes with StatReloader
+INFO 2025-06-04 18:10:34,021 autoreload 23592 32540 Watching for file changes with StatReloader
+INFO 2025-06-04 18:12:17,584 autoreload 2004 19756 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:12:17,609 autoreload 23592 32540 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:12:17,619 autoreload 21056 38476 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:12:18,151 autoreload 14808 11588 Watching for file changes with StatReloader
+INFO 2025-06-04 18:12:18,196 autoreload 41720 25340 Watching for file changes with StatReloader
+INFO 2025-06-04 18:12:18,232 autoreload 13012 40700 Watching for file changes with StatReloader
+INFO 2025-06-04 18:12:50,659 autoreload 14808 11588 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:12:50,731 autoreload 41720 25340 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:12:50,768 autoreload 13012 40700 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:12:51,216 autoreload 12172 43240 Watching for file changes with StatReloader
+INFO 2025-06-04 18:12:51,242 autoreload 22084 9340 Watching for file changes with StatReloader
+INFO 2025-06-04 18:12:51,278 autoreload 19248 13248 Watching for file changes with StatReloader
+INFO 2025-06-04 18:13:21,277 autoreload 12172 43240 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:13:21,509 autoreload 22084 9340 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:13:21,519 autoreload 19248 13248 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:13:21,822 autoreload 31808 30800 Watching for file changes with StatReloader
+INFO 2025-06-04 18:13:22,039 autoreload 38920 33260 Watching for file changes with StatReloader
+INFO 2025-06-04 18:13:22,044 autoreload 16812 10504 Watching for file changes with StatReloader
+INFO 2025-06-04 18:13:31,768 autoreload 31808 30800 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:13:32,077 autoreload 38920 33260 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:13:32,078 autoreload 16812 10504 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:13:32,297 autoreload 40948 31444 Watching for file changes with StatReloader
+INFO 2025-06-04 18:13:32,601 autoreload 42224 16468 Watching for file changes with StatReloader
+INFO 2025-06-04 18:13:32,602 autoreload 30508 16168 Watching for file changes with StatReloader
+INFO 2025-06-04 18:14:07,128 autoreload 42224 16468 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:14:07,140 autoreload 30508 16168 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:14:07,485 autoreload 40948 31444 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:14:07,673 autoreload 13608 33900 Watching for file changes with StatReloader
+INFO 2025-06-04 18:14:07,702 autoreload 26760 3020 Watching for file changes with StatReloader
+INFO 2025-06-04 18:14:07,970 autoreload 8904 36264 Watching for file changes with StatReloader
+INFO 2025-06-04 18:16:12,567 autoreload 8904 36264 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:16:12,620 autoreload 13608 33900 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:16:13,044 autoreload 26760 3020 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:16:13,154 autoreload 37860 31280 Watching for file changes with StatReloader
+INFO 2025-06-04 18:16:13,155 autoreload 22936 18924 Watching for file changes with StatReloader
+INFO 2025-06-04 18:16:13,528 autoreload 32288 43976 Watching for file changes with StatReloader
+INFO 2025-06-04 18:16:59,349 autoreload 22936 18924 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:16:59,362 autoreload 37860 31280 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:16:59,383 autoreload 32288 43976 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:16:59,909 autoreload 33056 8200 Watching for file changes with StatReloader
+INFO 2025-06-04 18:16:59,941 autoreload 18080 33364 Watching for file changes with StatReloader
+INFO 2025-06-04 18:16:59,984 autoreload 14408 25548 Watching for file changes with StatReloader
+INFO 2025-06-04 18:17:35,232 autoreload 33056 8200 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:17:35,496 autoreload 18080 33364 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:17:35,511 autoreload 14408 25548 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:17:35,771 autoreload 41420 39256 Watching for file changes with StatReloader
+INFO 2025-06-04 18:17:36,029 autoreload 37708 38040 Watching for file changes with StatReloader
+INFO 2025-06-04 18:17:36,032 autoreload 30508 6424 Watching for file changes with StatReloader
+INFO 2025-06-04 18:17:50,137 autoreload 41420 39256 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:17:50,494 autoreload 37708 38040 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:17:50,526 autoreload 30508 6424 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:17:50,691 autoreload 13456 1832 Watching for file changes with StatReloader
+INFO 2025-06-04 18:17:50,997 autoreload 34860 35680 Watching for file changes with StatReloader
+INFO 2025-06-04 18:17:51,029 autoreload 16564 24428 Watching for file changes with StatReloader
+INFO 2025-06-04 18:18:08,599 autoreload 34860 35680 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:18:08,634 autoreload 16564 24428 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:18:09,148 autoreload 2984 21192 Watching for file changes with StatReloader
+INFO 2025-06-04 18:18:09,193 autoreload 33272 27008 Watching for file changes with StatReloader
+INFO 2025-06-04 18:18:09,326 autoreload 13456 1832 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-04 18:18:09,808 autoreload 33912 30852 Watching for file changes with StatReloader
+INFO 2025-06-04 18:18:15,341 basehttp 2984 11084 "POST /api/devices/scan/ HTTP/1.1" 200 4868
+INFO 2025-06-04 18:18:17,508 basehttp 2984 11084 "POST /api/devices/scan/ HTTP/1.1" 200 4868
+INFO 2025-06-04 18:18:18,917 basehttp 2984 11084 "POST /api/devices/scan/ HTTP/1.1" 200 4868
+INFO 2025-06-04 18:18:47,289 basehttp 2984 11084 "POST /api/devices/scan/ HTTP/1.1" 200 4868
+INFO 2025-06-04 18:18:55,093 basehttp 2984 11084 "POST /api/devices/scan/ HTTP/1.1" 200 4868
+INFO 2025-06-04 18:21:39,263 basehttp 2984 11084 "POST /api/devices/scan/ HTTP/1.1" 200 4868
+INFO 2025-06-04 18:21:41,597 basehttp 2984 11084 "POST /api/devices/scan/ HTTP/1.1" 200 4868
+INFO 2025-06-04 18:29:30,080 basehttp 2984 11584 "POST /api/devices/scan/ HTTP/1.1" 200 4868
+INFO 2025-06-04 18:29:33,019 basehttp 2984 11584 "POST /api/devices/scan/ HTTP/1.1" 200 4868
+INFO 2025-06-04 18:29:33,640 basehttp 2984 11584 "POST /api/devices/scan/ HTTP/1.1" 200 4868
+INFO 2025-06-04 18:29:38,243 basehttp 2984 3232 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-04 18:29:38,245 basehttp 2984 3232 "GET /static/pages/devices.html HTTP/1.1" 304 0
+INFO 2025-06-04 18:29:38,362 basehttp 2984 3232 "GET /static/js/pages/devices_table_vue.js HTTP/1.1" 200 31351
+INFO 2025-06-04 18:29:39,040 basehttp 2984 3232 "POST /api/devices/scan/ HTTP/1.1" 200 4868
+INFO 2025-06-04 18:29:41,235 basehttp 2984 3232 "POST /api/devices/scan/ HTTP/1.1" 200 4868

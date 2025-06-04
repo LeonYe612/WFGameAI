@@ -35,11 +35,10 @@ function initVueApp() {
             // 响应式数据
             const devices = ref([]);
             const loading = ref(false);
-            const error = ref('');
-            const viewMode = ref('table'); // 'table' or 'card'
+            const error = ref('');            const viewMode = ref('table'); // 'table' or 'card'
             const searchQuery = ref('');
             const statusFilter = ref('');
-            const sortField = ref('name');
+            const sortField = ref('device_id');
             const sortDirection = ref('asc');
 
             // USB检查相关
@@ -63,15 +62,15 @@ function initVueApp() {
 
             // 过滤和排序的设备列表
             const filteredAndSortedDevices = computed(() => {
-                let result = devices.value;
-
-                // 搜索过滤
+                let result = devices.value;                // 搜索过滤
                 if (searchQuery.value) {
                     const query = searchQuery.value.toLowerCase();
                     result = result.filter(device =>
-                        (device.name || '').toLowerCase().includes(query) ||
+                        (device.brand || '').toLowerCase().includes(query) ||
+                        (device.model || '').toLowerCase().includes(query) ||
                         (device.device_id || '').toLowerCase().includes(query) ||
-                        (device.ip_address || '').toLowerCase().includes(query)
+                        (device.ip_address || '').toLowerCase().includes(query) ||
+                        (device.occupied_personnel || '').toLowerCase().includes(query)
                     );
                 }
 
@@ -145,21 +144,46 @@ function initVueApp() {
                     if (data && data.usb_check_result) {
                         usbCheckResult.value = data.usb_check_result;
                         console.log('已保存USB检查结果:', usbCheckResult.value);
-                    }
+                    }                    if (data && data.devices_found) {
+                        // 使用Map按device_id去重
+                        const deviceMap = new Map();
+                        data.devices_found.forEach(dev => {
+                            const deviceId = dev.device_id || dev.id || '';
+                            // 只有当设备ID非空时才处理
+                            if (deviceId) {
+                                const existingDevice = deviceMap.get(deviceId);
+                                if (existingDevice) {
+                                    // 如果新设备状态更好，用新设备的信息更新
+                                    if ((dev.status === 'online' || dev.status === 'device') &&
+                                        (existingDevice.status !== 'online' && existingDevice.status !== 'device')) {
+                                        deviceMap.set(deviceId, {
+                                            ...existingDevice,
+                                            ...dev,
+                                            last_online: new Date().toLocaleString()
+                                        });
+                                    }
+                                } else {
+                                    deviceMap.set(deviceId, {
+                                        id: dev.id,
+                                        device_id: deviceId,
+                                        brand: dev.brand || '',
+                                        model: dev.model || '',
+                                        android_version: dev.android_version || '',
+                                        occupied_personnel: dev.occupied_personnel || '',
+                                        status: dev.status,
+                                        last_online: new Date().toLocaleString(),
+                                        type_name: 'Android',
+                                        ip_address: dev.ip_address || '-',
+                                        connection_status: dev.connection_status || 'unknown',
+                                        authorization_status: dev.authorization_status || 'unknown',
+                                        usb_path: dev.usb_path || '-'
+                                    });
+                                }
+                            }
+                        });
 
-                    if (data && data.devices_found) {
-                        devices.value = data.devices_found.map(dev => ({
-                            id: dev.id,
-                            name: dev.name,
-                            device_id: dev.device_id,
-                            status: dev.status,
-                            last_online: new Date().toLocaleString(),
-                            type_name: 'Android',
-                            ip_address: dev.ip_address || '-',
-                            connection_status: dev.connection_status || 'unknown',
-                            authorization_status: dev.authorization_status || 'unknown',
-                            usb_path: dev.usb_path || '-'
-                        }));
+                        // 将Map中的值转换为数组
+                        devices.value = Array.from(deviceMap.values());
                         console.log(`加载了 ${devices.value.length} 台设备`);
                     } else {
                         console.warn('服务器返回了空数据或格式不正确:', data);
@@ -275,10 +299,8 @@ function initVueApp() {
                     }
 
                     const data = await response.json();
-                    deviceReportData.value = data.data;
-
-                    const message = deviceId ?
-                        `设备 ${selectedDevice.value?.name} 的报告已生成` :
+                    deviceReportData.value = data.data;                    const message = deviceId ?
+                        `设备 ${selectedDevice.value?.brand || selectedDevice.value?.device_id || 'Unknown'} ${selectedDevice.value?.model || ''} 的报告已生成` :
                         `已为${data.devices_updated || 0}台设备生成报告`;
 
                     showToast("设备报告生成完成", message, "success");
@@ -432,9 +454,8 @@ function initVueApp() {
             </div>
 
             <!-- 搜索和筛选 -->
-            <div class="row mb-3" v-if="!loading">
-                <div class="col-md-4">
-                    <input type="text" class="form-control" placeholder="搜索设备..." v-model="searchQuery">
+            <div class="row mb-3" v-if="!loading">                <div class="col-md-4">
+                    <input type="text" class="form-control" placeholder="搜索品牌、型号、设备ID..." v-model="searchQuery">
                 </div>
                 <div class="col-md-3">
                     <select class="form-select" v-model="statusFilter">
@@ -475,47 +496,51 @@ function initVueApp() {
             <!-- 表格视图 -->
             <div v-if="!loading && devices.length > 0 && viewMode === 'table'" class="card">
                 <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-dark">
+                    <table class="table table-hover mb-0">                        <thead class="table-dark">
                             <tr>
-                                <th @click="sortBy('name')" style="cursor: pointer;">
-                                    设备名称
-                                    <i v-if="sortField === 'name'" :class="sortDirection === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'"></i>
-                                </th>
                                 <th @click="sortBy('device_id')" style="cursor: pointer;">
                                     设备ID
                                     <i v-if="sortField === 'device_id'" :class="sortDirection === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'"></i>
+                                </th>
+                                <th @click="sortBy('brand')" style="cursor: pointer;">
+                                    品牌
+                                    <i v-if="sortField === 'brand'" :class="sortDirection === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'"></i>
+                                </th>
+                                <th @click="sortBy('model')" style="cursor: pointer;">
+                                    型号
+                                    <i v-if="sortField === 'model'" :class="sortDirection === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'"></i>
+                                </th>
+                                <th @click="sortBy('android_version')" style="cursor: pointer;">
+                                    系统版本
+                                    <i v-if="sortField === 'android_version'" :class="sortDirection === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'"></i>
+                                </th>
+                                <th @click="sortBy('occupied_personnel')" style="cursor: pointer;">
+                                    占用人员
+                                    <i v-if="sortField === 'occupied_personnel'" :class="sortDirection === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'"></i>
                                 </th>
                                 <th @click="sortBy('status')" style="cursor: pointer;">
                                     状态
                                     <i v-if="sortField === 'status'" :class="sortDirection === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'"></i>
                                 </th>
                                 <th>IP地址</th>
-                                <th>类型</th>
                                 <th>最后在线</th>
                                 <th>操作</th>
                             </tr>
-                        </thead>
-                        <tbody>
+                        </thead>                        <tbody>
                             <tr v-for="device in filteredAndSortedDevices" :key="device.id || device.device_id">
-                                <td>
-                                    <span class="device-status"
-                                        :class="{
-                                            'status-online': device.status === 'online' || device.status === 'device',
-                                            'status-offline': device.status === 'offline',
-                                            'status-busy': device.status === 'busy',
-                                            'status-unauthorized': device.status === 'unauthorized'
-                                        }"></span>
-                                    {{ device.name }}
-                                </td>
                                 <td><code>{{ device.device_id }}</code></td>
+                                <td>{{ device.brand || '-' }}</td>
+                                <td>{{ device.model || '-' }}</td>
+                                <td>
+                                    <span class="badge bg-info">{{ device.android_version || '-' }}</span>
+                                </td>
+                                <td>{{ device.occupied_personnel || '-' }}</td>
                                 <td>
                                     <span class="badge" :class="'bg-' + getStatusClass(device.status)">
                                         {{ getStatusText(device.status) }}
                                     </span>
                                 </td>
                                 <td>{{ device.ip_address || '-' }}</td>
-                                <td>{{ device.type_name || 'Android' }}</td>
                                 <td>{{ device.last_online || '刚刚' }}</td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
@@ -543,8 +568,7 @@ function initVueApp() {
             <div v-if="!loading && devices.length > 0 && viewMode === 'card'" class="row">
                 <div class="col-md-4" v-for="device in filteredAndSortedDevices" :key="device.id || device.device_id">
                     <div class="card device-card mb-3">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="card-body">                            <div class="d-flex justify-content-between align-items-center mb-3">
                                 <h5 class="card-title">
                                     <span class="device-status"
                                         :class="{
@@ -553,7 +577,7 @@ function initVueApp() {
                                             'status-busy': device.status === 'busy',
                                             'status-unauthorized': device.status === 'unauthorized'
                                         }"></span>
-                                    {{ device.name }}
+                                    {{ device.brand }} {{ device.model }}
                                 </h5>
                                 <span class="badge" :class="'bg-' + getStatusClass(device.status)">
                                     {{ getStatusText(device.status) }}
@@ -561,6 +585,10 @@ function initVueApp() {
                             </div>
                             <div class="card-text">
                                 <p class="text-muted mb-1">设备ID: <code>{{ device.device_id }}</code></p>
+                                <p class="text-muted mb-1">品牌: {{ device.brand || '-' }}</p>
+                                <p class="text-muted mb-1">型号: {{ device.model || '-' }}</p>
+                                <p class="text-muted mb-1">系统版本: <span class="badge bg-info">{{ device.android_version || '-' }}</span></p>
+                                <p class="text-muted mb-1">占用人员: {{ device.occupied_personnel || '-' }}</p>
                                 <p class="text-muted mb-1">IP地址: {{ device.ip_address || '-' }}</p>
                                 <p class="text-muted mb-3">最后在线: {{ device.last_online || '刚刚' }}</p>
                             </div>

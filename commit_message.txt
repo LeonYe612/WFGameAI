@@ -1,27 +1,35 @@
-api(scripts): 优化scripts接口
+security: 优化devices接口
 
-优化系统接口层：scripts接口, 接口，提升数据交互效率。
-优化数据模型：scripts数据库操作, 数据库操作，提高数据完整性和查询效率；优化代码优化，提升系统响应速度。
-改进系统工具和基础设施：更新提交信息生成工具, 自动化测试等，增强开发效率和代码质量。
+设计devices接口，为前端提供稳定数据接口；完善devices数据库操作，确保数据结构合理性；加强系统安全性，防止潜在数据泄露风险。
+改进系统工具和基础设施：自动化测试, 更新主URL配置等，增强开发效率和代码质量。
+修复usb connection checker fixed问题，消除系统不稳定因素。
 
-重要变更：
-* 改进了提交信息生成工具，更能反映代码变更的价值
-
-新增了 5 个文件、修改了 12 个文件。
+新增了 15 个文件、修改了 8 个文件。
 
 主要改动:
 
+devices模块:
+  - 修改: urls.py, views.py
 scripts模块:
-  - 修改了 6 个文件
+  - 修改: replay_script.py
 config模块:
-  - 修改: config.ini
+  - 新增: device_preparation_cache.json
+docs模块:
+  - 新增了 6 个文件
+js模块:
+  - 新增: devices_table_vue.js
 logs模块:
   - 修改: django.log
 other模块:
-  - 新增: ACTION_IMPROVEMENTS_COMPLETED.md, test_output.txt
+  - 新增: device_preparation.bat
   - 修改: commit_message.txt, git_changes.txt
-project模块:
-  - 修改: README.md
+pages模块:
+  - 新增: devices_table.html
+  - 修改: devices.html
 scripts模块:
-  - 新增: test_action_improvements.py, test_action_improvements_fixed.py, test_wait_if_exists.py
-  - 修改: generate_commit_message.py
+  - 新增了 4 个文件
+    - 单元测试: 2个
+    - 其他: 2个
+  - 修改: start_wfgame_ai.py
+templates模块:
+  - 新增: DevicesList.vue

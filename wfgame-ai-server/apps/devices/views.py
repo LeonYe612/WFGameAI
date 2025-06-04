@@ -284,6 +284,69 @@ class ScanDevicesView(views.APIView):
     permission_classes = [AllowAny]  # 允许所有用户访问
     http_method_names = ['post']  # 只允许POST方法
 
+    def _process_device_from_cache(self, raw_device_id, cache_data):
+        """从缓存中处理设备信息"""
+        if ':' in raw_device_id:  # IP地址格式
+            # 查找匹配IP的设备
+            for device_id, info in cache_data.items():
+                wireless = info.get('wireless_connection', {})
+                if wireless and f"{wireless.get('ip')}:{wireless.get('port', 5555)}" == raw_device_id:
+                    return {
+                        'device_id': device_id,
+                        'ip_address': raw_device_id,
+                        'name': f"{info.get('model', '')} ({device_id})",
+                        'brand': info.get('brand', ''),
+                        'model': info.get('model', ''),
+                        'android_version': info.get('android_version', '')
+                    }
+        else:  # 常规设备ID格式
+            if raw_device_id in cache_data:
+                info = cache_data[raw_device_id]
+                wireless = info.get('wireless_connection', {})
+                return {
+                    'device_id': raw_device_id,
+                    'ip_address': f"{wireless.get('ip')}:{wireless.get('port', 5555)}" if wireless else '',
+                    'name': f"{info.get('model', '')} ({raw_device_id})",
+                    'brand': info.get('brand', ''),
+                    'model': info.get('model', ''),
+                    'android_version': info.get('android_version', '')
+                }
+        return None
+
+    def _update_device_record(self, device_info, device_status):
+        """创建或更新设备记录"""
+        device, created = Device.objects.get_or_create(
+            device_id=device_info['device_id'],
+            defaults={
+                'name': device_info.get('name', ''),
+                'status': 'online' if device_status == 'device' else 'offline',
+                'ip_address': device_info.get('ip_address', ''),
+                'brand': device_info.get('brand', ''),
+                'model': device_info.get('model', ''),
+                'android_version': device_info.get('android_version', '')
+            }
+        )
+
+        if not created:
+            update_fields = []
+            for field, value in [
+                ('status', 'online' if device_status == 'device' else 'offline'),
+                ('ip_address', device_info.get('ip_address', '')),
+                ('brand', device_info.get('brand', '')),
+                ('model', device_info.get('model', '')),
+                ('android_version', device_info.get('android_version', ''))
+            ]:
+                if value and getattr(device, field) != value:
+                    setattr(device, field, value)
+                    update_fields.append(field)
+
+            if update_fields and device_status == 'device':
+                device.last_online = timezone.now()
+                update_fields.append('last_online')
+                device.save(update_fields=update_fields)
+
+        return device, created
+
     def post(self, request):
         try:
             # 步骤1：先进行USB连接检查
@@ -296,57 +359,76 @@ class ScanDevicesView(views.APIView):
                     {"detail": "扫描设备失败", "error": result.stderr},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
-            lines = result.stdout.strip().split('\n')
-            device_lines = lines[1:]
+
+            # 从缓存文件加载设备信息
+            cache_data = {}
+            try:
+                cache_file = os.path.join(settings.BASE_DIR, '..', 'device_preparation_cache.json')
+                if os.path.exists(cache_file):
+                    with open(cache_file, 'r', encoding='utf-8') as f:
+                        cache_data = json.load(f)
+            except Exception as e:
+                print(f"读取设备缓存文件失败: {e}")
+
+            # 处理设备列表
             devices_found = []
             adb_ids = set()
+            device_lines = result.stdout.strip().split('\n')[1:]  # 跳过第一行标题
+
             for line in device_lines:
                 if not line.strip():
                     continue
+
                 parts = line.split('\t')
-                if len(parts) >= 2:
-                    device_id = parts[0].strip()
-                    device_status = parts[1].strip()
-                    adb_ids.add(device_id)
-                    device, created = Device.objects.get_or_create(
-                        device_id=device_id,
-                        defaults={
-                            'name': f"Android设备 {device_id}",
-                            'status': 'online' if device_status == 'device' else 'offline'
-                        }
-                    )
-                    # 如果设备已存在但状态不同，更新状态
-                    if not created and (
-                        (device_status == 'device' and device.status != 'online') or
-                        (device_status != 'device' and device.status == 'online')
-                    ):
-                        device.status = 'online' if device_status == 'device' else 'offline'
-                        if device.status == 'online':
-                            device.last_online = timezone.now()
-                        device.save()
+                if len(parts) < 2:
+                    continue
 
-                    # 查找是否在USB检查结果中有更多信息
-                    usb_info = {}
-                    for usb_device in usb_check_result.get('devices', []):
-                        if usb_device.get('device_id') == device_id:
-                            usb_info = usb_device
-                            break
+                raw_device_id = parts[0].strip()
+                device_status = parts[1].strip()
 
-                    devices_found.append({
-                        'id': device.id,
-                        'device_id': device.device_id,
-                        'name': device.name,
-                        'status': device.status,
-                        'created': created,
-                        'connection_status': usb_info.get('connection_status', 'unknown'),
-                        'authorization_status': usb_info.get('authorization_status', 'unknown'),
-                        'usb_path': usb_info.get('usb_path', ''),
-                        'ip_address': getattr(device, 'ip_address', '') or ''
+                # 初始化设备信息
+                device_info = {'status': 'online' if device_status == 'device' else 'offline'}
+
+                # 从缓存获取设备信息
+                cached_info = self._process_device_from_cache(raw_device_id, cache_data)
+                if cached_info:
+                    device_info.update(cached_info)
+                else:
+                    # 使用基本信息
+                    device_info.update({
+                        'device_id': raw_device_id,
+                        'name': f"Android设备 {raw_device_id}",
+                        'ip_address': raw_device_id if ':' in raw_device_id else ''
                     })
 
-            # --- 增强：自动将数据库中未在ADB列表的设备状态设为offline ---
-            all_db_devices = Device.objects.all()
-            for db_device in all_db_devices:
+                # 更新数据库记录
+                device, created = self._update_device_record(device_info, device_status)
+                adb_ids.add(device_info['device_id'])
+
+                # 获取USB检查信息
+                usb_info = next((d for d in usb_check_result.get('devices', [])
+                              if d.get('device_id') == device_info['device_id']), {})
+
+                # 添加到结果列表
+                devices_found.append({
+                    'id': device.id,
+                    'device_id': device.device_id,
+                    'name': device.name,
+                    'brand': getattr(device, 'brand', '') or '',
+                    'model': getattr(device, 'model', '') or '',
+                    'android_version': getattr(device, 'android_version', '') or '',
+                    'occupied_personnel': getattr(device.current_user, 'username', '')
+                            if hasattr(device, 'current_user') and device.current_user else '',
+                    'status': device.status,
+                    'created': created,
+                    'connection_status': usb_info.get('connection_status', 'unknown'),
+                    'authorization_status': usb_info.get('authorization_status', 'unknown'),
+                    'usb_path': usb_info.get('usb_path', ''),
+                    'ip_address': getattr(device, 'ip_address', '') or ''
+                })
+
+            # 将数据库中未在ADB列表的设备状态设为offline
+            for db_device in Device.objects.all():
                 if db_device.device_id not in adb_ids and db_device.status != 'offline':
                     db_device.status = 'offline'
                     db_device.save()
@@ -374,45 +456,29 @@ class ScanDevicesView(views.APIView):
             if scripts_path not in sys.path:
                 sys.path.append(scripts_path)
 
-            try:
-                # 首先尝试使用增强版设备管理器
-                try:
-                    from enhanced_device_preparation_manager import EnhancedDevicePreparationManager
-                    manager = EnhancedDevicePreparationManager()
-                    result = manager.check_usb_connections()
-                except (ImportError, AttributeError):
-                    raise ImportError("Enhanced device manager not available")
-            except ImportError:
-                try:
-                    # 然后尝试使用独立的USB检查脚本
-                    from usb_connection_checker import USBConnectionChecker
-                    checker = USBConnectionChecker()
-                    result = checker.check_all_connections()
-                except (ImportError, AttributeError):
-                    # 最后使用基础ADB检查
-                    adb_result = subprocess.run(['adb', 'devices'], capture_output=True, text=True, encoding='utf-8', errors='replace')
-                    lines = adb_result.stdout.strip().split('\n')[1:]
-                    devices = []
+            result = None
 
-                    for line in lines:
-                        if line.strip():
-                            parts = line.split('\t')
-                            if len(parts) >= 2:
-                                devices.append({
-                                    'device_id': parts[0].strip(),
-                                    'connection_status': 'connected' if parts[1].strip() == 'device' else 'disconnected',
-                                    'authorization_status': 'authorized' if parts[1].strip() == 'device' else 'unauthorized'
-                                })
+            # 尝试所有检查方法
+            checkers = [
+                ('enhanced', lambda: self._check_with_enhanced_manager()),
+                ('basic', lambda: self._check_with_usb_checker()),
+                ('adb', lambda: self._check_with_adb())
+            ]
 
-                    result = {
-                        'summary': {
-                            'total_devices': len(devices),
-                            'connected_devices': len([d for d in devices if d['connection_status'] == 'connected']),
-                            'authorized_devices': len([d for d in devices if d['authorization_status'] == 'authorized'])
-                        },
-                        'devices': devices,
-                        'check_method': 'basic_adb'
-                    }
+            for name, checker in checkers:
+                try:
+                    result = checker()
+                    if result:
+                        result['check_method'] = name
+                        break
+                except Exception as checker_error:
+                    print(f"{name} checker failed: {str(checker_error)}")
+                    continue
+
+            if not result:
+                # 如果所有检查都失败，使用最基本的ADB检查
+                result = self._check_with_adb()
+                result['check_method'] = 'adb_fallback'
 
             return result
 
@@ -431,6 +497,63 @@ class ScanDevicesView(views.APIView):
                 'check_method': 'failed'
             }
 
+    def _check_with_enhanced_manager(self):
+        """使用增强版设备管理器检查"""
+        try:
+            from enhanced_device_preparation_manager import EnhancedDevicePreparationManager
+            manager = EnhancedDevicePreparationManager()
+            return manager.check_usb_connections()
+        except Exception as e:
+            raise Exception(f"Enhanced manager check failed: {str(e)}")
+
+    def _check_with_usb_checker(self):
+        """使用独立的USB检查器检查"""
+        try:
+            from usb_connection_checker import USBConnectionChecker
+            checker = USBConnectionChecker()
+            return checker.check_all_connections()
+        except Exception as e:
+            raise Exception(f"USB checker failed: {str(e)}")
+
+    def _check_with_adb(self):
+        """使用基础ADB命令检查"""
+        try:
+            adb_result = subprocess.run(
+                ['adb', 'devices'],
+                capture_output=True,
+                text=True,
+                encoding='utf-8',
+                errors='replace'
+            )
+
+            if adb_result.returncode != 0:
+                raise Exception(f"ADB command failed: {adb_result.stderr}")
+
+            lines = adb_result.stdout.strip().split('\n')[1:]
+            devices = []
+
+            for line in lines:
+                if not line.strip():
+                    continue
+
+                parts = line.split('\t')
+                if len(parts) >= 2:                    devices.append({
+                        'device_id': parts[0].strip(),
+                        'connection_status': 'connected' if parts[1].strip() == 'device' else 'disconnected',
+                        'authorization_status': 'authorized' if parts[1].strip() == 'device' else 'unauthorized'
+                    })
+            return {
+                'success': True,
+                'devices': devices,
+                'summary': {
+                    'total_devices': len(devices),
+                    'connected_devices': len([d for d in devices if d['connection_status'] == 'connected']),
+                    'authorized_devices': len([d for d in devices if d['authorization_status'] == 'authorized'])
+                }
+            }
+        except Exception as e:
+            raise Exception(f"ADB check failed: {str(e)}")
+
 
 class USBConnectionCheckView(views.APIView):
     """USB连接检查API"""
@@ -442,7 +565,8 @@ class USBConnectionCheckView(views.APIView):
             # Import the USB connection checker
             scripts_path = os.path.join(settings.BASE_DIR, 'apps', 'scripts')
             if scripts_path not in sys.path:
-                sys.path.append(scripts_path)            # Try to import and run USB connection check
+                sys.path.append(scripts_path)
+                # Try to import and run USB connection check
             try:
                 from usb_connection_checker import USBConnectionChecker
                 checker = USBConnectionChecker()
