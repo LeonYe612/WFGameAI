@@ -324,7 +324,6 @@ class ScanDevicesView(views.APIView):
                     'android_version': info.get('android_version', '')
                 }
         return None
-
     def _enhance_device_info(self, device_info, device_status):
         """增强设备信息，填充缺失的品牌、型号信息"""
         if not device_enhancer:
@@ -334,8 +333,8 @@ class ScanDevicesView(views.APIView):
         current_model = device_info.get('model', '')
         current_brand = device_info.get('brand', '')
 
-        # 如果品牌或型号缺失，且设备在线，尝试通过ADB获取和增强
-        if device_status == 'device' and (not current_brand or not current_model):
+        # 对于在线设备，总是尝试使用增强器来获取更好的显示信息
+        if device_status == 'device':
             try:
                 enhanced_info = device_enhancer.enhance_device_info(
                     device_id, current_model, current_brand

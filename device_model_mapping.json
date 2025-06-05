@@ -33,19 +33,23 @@
       "brand": "OnePlus",
       "series": "数字系列",
       "category": "旗舰机型"
-    },
-    "5c41023b": {
+    },    "5c41023b": {
       "commercial_name": "OPPO K9",
       "brand": "OPPO",
       "series": "K系列",
       "category": "性价比机型"
     },
-    "65WGZT7P9XHEKN7D": {
+    "a3833caf": {
+      "commercial_name": "OnePlus 5T",
+      "brand": "OnePlus",
+      "series": "数字系列",
+      "category": "旗舰机型"
+    },    "65WGZT7P9XHEKN7D": {
       "commercial_name": "Xiaomi 12",
       "brand": "Xiaomi",
       "series": "数字系列",
       "category": "旗舰机型"
-    },    "FVG0221729008356": {
+    },"FVG0221729008356": {
       "commercial_name": "MATE 40 PRO",
       "brand": "HUAWEI",
       "series": "MATE系列",

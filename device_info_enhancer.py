@@ -60,20 +60,15 @@ class DeviceInfoEnhancer:
                 detected_model, detected_brand = self._detect_device_info(device_id)
                 raw_model = raw_model or detected_model
                 raw_brand = raw_brand or detected_brand            # 查找商品名映射（优先使用设备ID映射，然后使用型号映射）
-            commercial_info = self._get_commercial_info_by_device_id(device_id, raw_model, raw_brand)
-
-            # 获取商品名（型号字段应显示商品名，如S16）
+            commercial_info = self._get_commercial_info_by_device_id(device_id, raw_model, raw_brand)            # 获取商品名（型号字段应显示商品名）
             full_commercial_name = commercial_info.get('commercial_name', raw_model)
 
             # 品牌字段优先使用映射配置中的正确品牌，否则使用原始检测的品牌
             mapped_brand = commercial_info.get('brand')
             brand_display = mapped_brand or raw_brand or 'Unknown'
 
-            # 如果商品名包含品牌，提取型号部分用于型号字段显示
-            if full_commercial_name and brand_display and full_commercial_name.startswith(brand_display):
-                model_display = full_commercial_name.replace(brand_display, '').strip()
-            else:
-                model_display = full_commercial_name
+            # 型号字段直接显示完整的商品名（如 "OnePlus 5T", "OPPO K9", "Xiaomi 12"）
+            model_display = full_commercial_name
 
             return {
                 'device_id': device_id,

@@ -1346,3 +1346,39 @@ INFO 2025-06-05 11:40:30,245 autoreload 44548 16828 C:\Users\Administrator\Pycha
 INFO 2025-06-05 11:40:30,740 autoreload 29752 40844 Watching for file changes with StatReloader
 INFO 2025-06-05 11:41:47,609 basehttp 29752 27364 "POST /api/devices/scan/ HTTP/1.1" 200 3690
 INFO 2025-06-05 11:42:06,852 basehttp 29752 27364 "POST /api/devices/scan/ HTTP/1.1" 200 3690
+INFO 2025-06-05 13:26:00,890 basehttp 29752 13108 "POST /api/devices/scan/ HTTP/1.1" 200 3690
+INFO 2025-06-05 13:26:06,148 basehttp 29752 13108 "POST /api/devices/scan/ HTTP/1.1" 200 3690
+INFO 2025-06-05 13:32:52,435 basehttp 29752 21524 "POST /api/devices/scan/ HTTP/1.1" 200 3690
+INFO 2025-06-05 13:42:18,578 basehttp 29752 17712 "POST /api/devices/scan/ HTTP/1.1" 200 3690
+INFO 2025-06-05 13:43:33,315 basehttp 29752 17712 "POST /api/devices/scan/ HTTP/1.1" 200 3690
+INFO 2025-06-05 13:43:38,507 basehttp 29752 17712 "POST /api/devices/scan/ HTTP/1.1" 200 3690
+INFO 2025-06-05 13:43:55,410 autoreload 29752 40844 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-05 13:43:55,968 autoreload 4456 28268 Watching for file changes with StatReloader
+INFO 2025-06-05 13:47:04,814 basehttp 4456 36524 "POST /api/devices/scan/ HTTP/1.1" 200 3668
+INFO 2025-06-05 13:47:08,374 basehttp 4456 36524 "POST /api/devices/scan/ HTTP/1.1" 200 3668
+INFO 2025-06-05 14:11:43,730 autoreload 4456 28268 C:\Users\Administrator\PycharmProjects\WFGameAI\device_info_enhancer.py changed, reloading.
+INFO 2025-06-05 14:11:44,272 autoreload 35872 11760 Watching for file changes with StatReloader
+INFO 2025-06-05 14:12:03,998 autoreload 35872 11760 C:\Users\Administrator\PycharmProjects\WFGameAI\device_info_enhancer.py changed, reloading.
+INFO 2025-06-05 14:12:04,548 autoreload 32492 21720 Watching for file changes with StatReloader
+INFO 2025-06-05 14:23:46,022 autoreload 32492 21720 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-05 14:23:46,586 autoreload 39208 18948 Watching for file changes with StatReloader
+INFO 2025-06-05 14:24:02,782 autoreload 39208 18948 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-05 14:24:03,310 autoreload 8988 13432 Watching for file changes with StatReloader
+INFO 2025-06-05 14:24:14,225 autoreload 8988 13432 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-05 14:24:14,740 autoreload 17356 39236 Watching for file changes with StatReloader
+INFO 2025-06-05 14:24:21,485 autoreload 17356 39236 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-05 14:24:21,995 autoreload 37364 13108 Watching for file changes with StatReloader
+INFO 2025-06-05 14:24:42,683 autoreload 37364 13108 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-05 14:24:43,191 autoreload 21640 33900 Watching for file changes with StatReloader
+INFO 2025-06-05 14:31:17,066 basehttp 21640 20900 "POST /api/devices/scan/ HTTP/1.1" 200 3723
+INFO 2025-06-05 14:31:21,277 basehttp 21640 41904 "POST /api/devices/scan/ HTTP/1.1" 200 3723
+WARNING 2025-06-05 14:31:25,324 log 21640 31808 Method Not Allowed: /api/devices/
+WARNING 2025-06-05 14:31:25,325 basehttp 21640 31808 "GET /api/devices/ HTTP/1.1" 405 45
+INFO 2025-06-05 14:32:27,539 basehttp 21640 36924 "POST /api/devices/scan/ HTTP/1.1" 200 3723
+INFO 2025-06-05 14:32:34,819 basehttp 21640 36924 "POST /api/devices/scan/ HTTP/1.1" 200 3723
+INFO 2025-06-05 14:37:25,295 basehttp 21640 36924 "POST /api/devices/scan/ HTTP/1.1" 200 3723
+INFO 2025-06-05 14:38:01,830 basehttp 21640 36924 "POST /api/devices/scan/ HTTP/1.1" 200 3723
+INFO 2025-06-05 14:38:24,593 basehttp 21640 36924 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-06-05 14:38:24,595 basehttp 21640 36924 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-06-05 14:38:25,015 basehttp 21640 36924 "POST /api/scripts/ HTTP/1.1" 200 2072
+INFO 2025-06-05 14:38:36,321 basehttp 21640 36924 "POST /api/scripts/edit/ HTTP/1.1" 200 1798
