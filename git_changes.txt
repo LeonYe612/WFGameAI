@@ -1,22 +1,14 @@
 变更文件列表:
 ========================================
 M	commit_message.txt
+R100	usb_connection_checker_fixed.py	device_screenshots/screenshot_172.20.19.130
+A	device_screenshots/screenshot_172.20.19.147
+A	device_screenshots/screenshot_172.20.19.214
+A	device_screenshots/screenshot_172.20.19.45
+A	device_screenshots/screenshot_172.20.20.123
+A	device_screenshots/screenshot_172.20.20.152
 M	git_changes.txt
-A	scan_devices_view.py
-A	sync_device_cache.py
-D	test_action_improvements.py
-D	test_action_improvements_fixed.py
-A	test_device_api.py
-D	test_keyerror_fix.py
-D	test_output.txt
-D	test_swipe.json
-D	test_url_access.py
-D	test_wait_if_exists.py
-A	wfgame-ai-server/apps/devices/migrations/0003_device_android_version_device_brand_device_model.py
-M	wfgame-ai-server/apps/devices/models.py
-M	wfgame-ai-server/apps/devices/serializers.py
-M	wfgame-ai-server/apps/devices/views.py
+M	usb_connection_checker.py
+A	usb_connection_checker_backup.py
+A	usb_connection_checker_new.py
 M	wfgame-ai-server/logs/django.log
-M	wfgame-ai-server/staticfiles/js/pages/devices_table_vue.js
-M	wfgame-ai-server/wfgame_ai_server_main/urls.py
-D	wfgame-ai-web/src/views/devices/DevicesList.vue

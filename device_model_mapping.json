@@ -1,0 +1,104 @@
+{
+  "device_model_mapping": {
+    "V2244A": {
+      "commercial_name": "vivo S16",
+      "brand": "vivo",
+      "series": "S系列",
+      "category": "中端机型"
+    },
+    "KB2000": {
+      "commercial_name": "OPPO K9",
+      "brand": "OPPO",
+      "series": "K系列",
+      "category": "性价比机型"
+    },
+    "JAD-AL00": {
+      "commercial_name": "HUAWEI P50 Pro",
+      "brand": "HUAWEI",
+      "series": "P系列",
+      "category": "旗舰机型"
+    },    "22041216C": {
+      "commercial_name": "Xiaomi 12",
+      "brand": "Xiaomi",
+      "series": "数字系列",
+      "category": "旗舰机型"
+    },
+    "NOH-AL10": {
+      "commercial_name": "MATE 40 PRO",
+      "brand": "HUAWEI",
+      "series": "MATE系列",
+      "category": "旗舰机型"
+    },
+    "5c41023b": {
+      "commercial_name": "OPPO K9",
+      "brand": "OPPO",
+      "series": "K系列",
+      "category": "性价比机型"
+    },
+    "65WGZT7P9XHEKN7D": {
+      "commercial_name": "Xiaomi 12",
+      "brand": "Xiaomi",
+      "series": "数字系列",
+      "category": "旗舰机型"
+    },    "FVG0221729008356": {
+      "commercial_name": "MATE 40 PRO",
+      "brand": "HUAWEI",
+      "series": "MATE系列",
+      "category": "旗舰机型"
+    }
+  },  "brand_mapping": {
+    "vivo": "vivo",
+    "OPPO": "OPPO",
+    "OnePlus": "OnePlus",
+    "HUAWEI": "HUAWEI",
+    "HONOR": "HONOR",
+    "Xiaomi": "Xiaomi",
+    "Redmi": "Redmi",
+    "realme": "realme",
+    "MEIZU": "MEIZU",
+    "samsung": "samsung",
+    "SAMSUNG": "SAMSUNG",
+    "Google": "Google",
+    "LG": "LG",
+    "Sony": "Sony",
+    "HTC": "HTC",
+    "Motorola": "Motorola",
+    "Nokia": "Nokia"
+  },
+  "fallback_detection": {
+    "model_patterns": {
+      "V\\d{4}[A-Z]": {
+        "brand": "vivo",
+        "series": "V系列"
+      },
+      "S\\d{4}[A-Z]": {
+        "brand": "vivo",
+        "series": "S系列"
+      },
+      "KB\\d{4}": {
+        "brand": "OPPO",
+        "series": "K系列"
+      },
+      "CPH\\d{4}": {
+        "brand": "OPPO",
+        "series": "A系列"
+      },
+      "JAD-[A-Z]{2}\\d{2}": {
+        "brand": "HUAWEI",
+        "series": "P系列"
+      },
+      "ELS-[A-Z]{2}\\d{2}": {
+        "brand": "HUAWEI",
+        "series": "P系列"
+      },
+      "\\d{8}[A-Z]": {
+        "brand": "Xiaomi",
+        "series": "数字系列"
+      },
+      "M\\d{6}[A-Z]{2,3}": {
+        "brand": "Xiaomi",
+        "series": "M系列"
+      }
+    }
+  }
+}

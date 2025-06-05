@@ -454,7 +454,7 @@ def test_adb_commands(device_id):
         ("shell sleep 1", "等待滑动UI响应"),
         ("MULTI_DIRECTION_SWIPE", "四方向滑动验证"),  # 特殊标记，触发4方向滑动测试
         ("shell input keyevent 3", "返回Home键"),
-        ("shell sleep 1", "等待返回Home界面"),
+        ("shell sleep 2", "等待返回Home界面"),
         ("shell input keyevent 26", "输入事件（电源键）")
     ]
 

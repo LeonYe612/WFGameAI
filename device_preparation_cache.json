@@ -50,12 +50,12 @@
       "port": 5555,
       "status": "configured"
     }
-  },
-  "FVG0221729008356": {
+  },  "FVG0221729008356": {
     "device_id": "FVG0221729008356",
     "timestamp": 1749026805.4747386,
     "preparation_status": "completed",
-    "model": "",
+    "model": "NOH-AL10",
+    "brand": "HUAWEI",
     "android_version": "",
     "wireless_connection": {
       "ip": "172.20.19.45",

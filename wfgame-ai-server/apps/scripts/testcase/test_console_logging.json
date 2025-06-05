@@ -1,0 +1,29 @@
+{
+  "steps": [
+    {
+      "step": 1,
+      "class": "log",
+      "action": "log",
+      "params": {
+        "message": "测试控制台日志输出 - 步骤1开始"
+      },
+      "remark": "测试日志输出功能"
+    },
+    {
+      "step": 2,
+      "class": "delay",
+      "action": "delay",
+      "duration": 2000,
+      "remark": "等待2秒测试延时功能"
+    },
+    {
+      "step": 3,
+      "class": "log",
+      "action": "log",
+      "params": {
+        "message": "测试控制台日志输出 - 步骤3完成"
+      },
+      "remark": "测试第二个日志输出"
+    }
+  ]
+}

@@ -20,7 +20,6 @@ wfgame-ai-server/apps/reports/*
 wfgame-ai-server/staticfiles/reports/*
 wfgame-ai-server/staticfiles/drf-yasg/*
 wfgame-ai-server/staticfiles/fonts/*
-wfgame-ai-server/apps/scripts/*
 
 # Python 缓存文件
 __pycache__/

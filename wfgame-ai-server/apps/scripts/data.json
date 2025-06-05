@@ -1,0 +1,32 @@
+{
+  "start": 1749038716.91598,
+  "script": "replay_script",
+  "tests": {
+    "OnePlus-KB2000": {
+      "report_path": null,
+      "test_passed": false
+    },
+    "HUAWEI-JAD-AL00": {
+      "report_path": "c:\\Users\\Administrator\\PycharmProjects\\WFGameAI\\wfgame-ai-server\\staticfiles\\reports\\ui_run\\WFGameAI.air\\log\\HUAWEI-JAD-AL00_2025-06-04-20-05-19\\log.html",
+      "test_passed": true
+    },
+    "HUAWEI-NOH-AL10": {
+      "report_path": "c:\\Users\\Administrator\\PycharmProjects\\WFGameAI\\wfgame-ai-server\\staticfiles\\reports\\ui_run\\WFGameAI.air\\log\\HUAWEI-NOH-AL10_2025-06-04-20-05-19\\log.html",
+      "test_passed": true
+    },
+    "OnePlus-ONEPLUSA5010": {
+      "report_path": "c:\\Users\\Administrator\\PycharmProjects\\WFGameAI\\wfgame-ai-server\\staticfiles\\reports\\ui_run\\WFGameAI.air\\log\\OnePlus-ONEPLUSA5010_2025-06-04-20-05-20\\log.html",
+      "test_passed": true
+    },
+    "Redmi-22041216C": {
+      "report_path": "c:\\Users\\Administrator\\PycharmProjects\\WFGameAI\\wfgame-ai-server\\staticfiles\\reports\\ui_run\\WFGameAI.air\\log\\Redmi-22041216C_2025-06-04-20-05-19\\log.html",
+      "test_passed": true
+    },
+    "vivo-V2244A": {
+      "report_path": "c:\\Users\\Administrator\\PycharmProjects\\WFGameAI\\wfgame-ai-server\\staticfiles\\reports\\ui_run\\WFGameAI.air\\log\\vivo-V2244A_2025-06-04-20-05-19\\log.html",
+      "test_passed": true
+    }
+  },
+  "end": 1749038726.7016037,
+  "duration": 9.785623550415039
+}

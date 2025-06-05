@@ -1,4 +1,3 @@
-# filepath: c:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\serializers.py
 """
 设备管理应用的序列化器
 """
@@ -94,7 +93,8 @@ class DeviceSerializer(serializers.ModelSerializer):
 
     def _get_fallback_info(self, obj):
         """获取回退的设备信息"""
-        return {'commercial_name': obj.model or 'Unknown Device',
+        return {
+            'commercial_name': obj.model or 'Unknown Device',
             'display_name': f"{obj.brand} {obj.model}" if obj.brand and obj.model else obj.model or 'Unknown Device',
             'enhanced_brand': obj.brand or 'Unknown Brand',
             'series': '未知系列',
@@ -102,19 +102,18 @@ class DeviceSerializer(serializers.ModelSerializer):
         }
 
     def get_commercial_name(self, obj):
-        """获取商品名（用于型号字段显示）"""
+        """获取商品名"""
         enhanced_info = self._get_enhanced_info(obj)
-        # 返回商品名作为型号字段显示，如 S16
         return enhanced_info.get('commercial_name', obj.model)
+
     def get_display_name(self, obj):
         """获取显示名称"""
         enhanced_info = self._get_enhanced_info(obj)
         return enhanced_info.get('display_name', f"{obj.brand} {obj.model}" if obj.brand and obj.model else obj.model)
 
     def get_enhanced_brand(self, obj):
-        """获取增强的品牌名（用于品牌字段显示）"""
+        """获取增强的品牌名"""
         enhanced_info = self._get_enhanced_info(obj)
-        # 返回原始英文品牌名，如 vivo, OPPO, HUAWEI
         return enhanced_info.get('enhanced_brand', obj.brand)
 
     def get_device_series(self, obj):
@@ -141,9 +140,7 @@ class DeviceDetailSerializer(serializers.ModelSerializer):
     display_name = serializers.SerializerMethodField()
     enhanced_brand = serializers.SerializerMethodField()
     device_series = serializers.SerializerMethodField()
-    device_category = serializers.SerializerMethodField()
-
-    class Meta:
+    device_category = serializers.SerializerMethodField()    class Meta:
         model = Device
         fields = ['id', 'name', 'device_id', 'brand', 'model', 'android_version',
                  'type', 'type_name', 'status', 'status_display', 'ip_address', 'last_online',
@@ -187,9 +184,8 @@ class DeviceDetailSerializer(serializers.ModelSerializer):
         }
 
     def get_commercial_name(self, obj):
-        """获取商品名（用于型号字段显示）"""
+        """获取商品名"""
         enhanced_info = self._get_enhanced_info(obj)
-        # 返回商品名作为型号字段显示，如 S16
         return enhanced_info.get('commercial_name', obj.model)
 
     def get_display_name(self, obj):
@@ -198,9 +194,8 @@ class DeviceDetailSerializer(serializers.ModelSerializer):
         return enhanced_info.get('display_name', f"{obj.brand} {obj.model}" if obj.brand and obj.model else obj.model)
 
     def get_enhanced_brand(self, obj):
-        """获取增强的品牌名（用于品牌字段显示）"""
+        """获取增强的品牌名"""
         enhanced_info = self._get_enhanced_info(obj)
-        # 返回原始英文品牌名，如 vivo, OPPO, HUAWEI
         return enhanced_info.get('enhanced_brand', obj.brand)
 
     def get_device_series(self, obj):

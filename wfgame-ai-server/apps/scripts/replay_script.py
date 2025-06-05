@@ -11,6 +11,7 @@ from threading import Thread, Event
 import queue
 import sys
 import argparse
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import logging
 import shutil
 from adbutils import adb
@@ -2468,181 +2469,13 @@ def normalize_script_path(script_path):
 
 def parse_script_args():
     """
-    自定义解析脚本参数，支持多脚本顺序执行，每个脚本可单独指定循环次数和最大执行时间
-    例如: --script script1.json --loop-count 1 --script script2.json --max-duration 30
+    使用 argparse 解析脚本参数，支持多脚本顺序执行，每个脚本可单独指定循环次数和最大执行时间
+    支持多线程并发执行控制
     """
-    import sys
-
-    # 初始化默认值
-    result = {
-        'script_list': None,
-        'device': None,
-        'show_screens': False,
-        'run_all': False,
-        'clear_logs': False,
-        'model': 'best.pt',
-        'scripts': []  # 存储脚本及其参数 [{'path': str, 'loop_count': int, 'max_duration': int}]
-    }
-
-    # 全局默认值
-    global_loop_count = 1
-    global_max_duration = None
-
-    args = sys.argv[1:]  # 跳过脚本名称
-    i = 0
-
-    while i < len(args):
-        arg = args[i]
-
-        if arg in ['--script', '-s']:
-            # 开始处理一个新脚本
-            if i + 1 >= len(args):
-                print("错误: --script 参数需要指定脚本路径")
-                sys.exit(1)
-
-            script_path = args[i + 1]
-            script_loop_count = global_loop_count
-            script_max_duration = global_max_duration
-            i += 2  # 跳过 --script 和路径
-
-            # 检查后续参数是否是此脚本的专用参数
-            while i < len(args) and not args[i].startswith('--'):
-                i += 1
-
-            # 处理脚本专用参数
-            script_id = None
-            script_category = None
-
-            while i < len(args):
-                if args[i] in ['--loop-count', '-c']:
-                    if i + 1 >= len(args):
-                        print("错误: --loop-count 参数需要指定数值")
-                        sys.exit(1)
-                    try:
-                        script_loop_count = int(args[i + 1])
-                    except ValueError:
-                        print(f"错误: --loop-count 参数必须是整数: {args[i + 1]}")
-                        sys.exit(1)
-                    i += 2
-                elif args[i] in ['--script-id']:
-                    if i + 1 >= len(args):
-                        print("错误: --script-id 参数需要指定数值")
-                        sys.exit(1)
-                    try:
-                        script_id = int(args[i + 1])
-                    except ValueError:
-                        print(f"错误: --script-id 参数必须是整数: {args[i + 1]}")
-                        sys.exit(1)
-                    i += 2
-                elif args[i] in ['--script-category']:
-                    if i + 1 >= len(args):
-                        print("错误: --script-category 参数需要指定分类名称")
-                        sys.exit(1)
-                    script_category = args[i + 1]
-                    i += 2
-                elif args[i] in ['--max-duration', '-t']:
-                    if i + 1 >= len(args):
-                        print("错误: --max-duration 参数需要指定数值")
-                        sys.exit(1)
-                    try:
-                        script_max_duration = int(args[i + 1])
-                    except ValueError:
-                        print(f"错误: --max-duration 参数必须是整数: {args[i + 1]}")
-                        sys.exit(1)
-                    i += 2
-                elif args[i] in ['--script', '-s', '--script-list', '-l', '--device', '-d',
-                               '--show-screens', '--run-all', '--clear', '--model', '-m']:
-                    # 遇到其他参数，结束当前脚本的参数解析
-                    break
-                else:
-                    print(f"错误: 未识别的参数: {args[i]}")
-                    sys.exit(1)
-
-            # 添加脚本到列表
-            result['scripts'].append({
-                'path': script_path,
-                'loop_count': script_loop_count,
-                'max_duration': script_max_duration,
-                'script_id': script_id,
-                'category': script_category
-            })
-
-        elif arg in ['--script-list', '-l']:
-            if i + 1 >= len(args):
-                print("错误: --script-list 参数需要指定文件路径")
-                sys.exit(1)
-            result['script_list'] = args[i + 1]
-            i += 2
-
-        elif arg in ['--device', '-d']:
-            if i + 1 >= len(args):
-                print("错误: --device 参数需要指定设备序列号")
-                sys.exit(1)
-            result['device'] = args[i + 1]
-            i += 2
-
-        elif arg in ['--loop-count', '-c']:
-            # 全局循环次数（作为默认值）
-            if i + 1 >= len(args):
-                print("错误: --loop-count 参数需要指定数值")
-                sys.exit(1)
-            try:
-                global_loop_count = int(args[i + 1])
-            except ValueError:
-                print(f"错误: --loop-count 参数必须是整数: {args[i + 1]}")
-                sys.exit(1)
-            i += 2
-
-        elif arg in ['--max-duration', '-t']:
-            # 全局最大执行时间（作为默认值）
-            if i + 1 >= len(args):
-                print("错误: --max-duration 参数需要指定数值")
-                sys.exit(1)
-            try:
-                global_max_duration = int(args[i + 1])
-            except ValueError:
-                print(f"错误: --max-duration 参数必须是整数: {args[i + 1]}")
-                sys.exit(1)
-            i += 2
-
-        elif arg == '--show-screens':
-            result['show_screens'] = True
-            i += 1
-
-        elif arg == '--run-all':
-            result['run_all'] = True
-            i += 1
-
-        elif arg == '--clear':
-            result['clear_logs'] = True
-            i += 1
-
-        elif arg in ['--model', '-m']:
-            if i + 1 >= len(args):
-                print("错误: --model 参数需要指定模型文件路径")
-                sys.exit(1)
-            result['model'] = args[i + 1]
-            i += 2
-
-        elif arg in ['--help', '-h']:
-            print("""
-回放游戏操作脚本
-
-用法:
-  replay_script.py [选项]
-
-选项:
-  --script, -s PATH         脚本文件路径（可多次指定，支持顺序执行）
-  --script-list, -l PATH    脚本列表文件路径
-  --device, -d SERIAL       指定设备序列号，不指定则使用所有已连接设备
-  --loop-count, -c COUNT    循环次数（默认为1，可作为全局默认值或紧跟--script后作为该脚本专用参数）
-  --max-duration, -t SEC    最大执行时间（秒，可作为全局默认值或紧跟--script后作为该脚本专用参数）
-  --show-screens            显示截图（默认为不显示）
-  --run-all                 忽略进度文件，全部重新测试
-  --clear                   清空所有历史日志
-  --model, -m PATH          指定YOLO模型文件路径（默认为best.pt）
-  --help, -h                显示此帮助信息
-
+    parser = argparse.ArgumentParser(
+        description='回放游戏操作脚本',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
 示例:
   # 单个脚本
   replay_script.py --script test.json --loop-count 5
@@ -2655,15 +2488,240 @@ def parse_script_args():
 
   # 使用脚本列表文件
   replay_script.py --script-list scripts.json
-            """)
-            sys.exit(0)
 
-        else:
-            print(f"错误: 未识别的参数: {arg}")
-            print("使用 --help 查看帮助信息")
-            sys.exit(1)
+  # 多线程执行控制
+  replay_script.py --script test.json --max-workers 4
+  replay_script.py --script test.json --conservative
+        """
+    )
 
-    return result
+    # 脚本相关参数
+    parser.add_argument('--script', '-s', action='append', dest='scripts',
+                       help='脚本文件路径（可多次指定，支持顺序执行）')
+    parser.add_argument('--script-list', '-l',
+                       help='脚本列表文件路径')
+    parser.add_argument('--loop-count', '-c', type=int, default=1,
+                       help='循环次数（默认为1）')
+    parser.add_argument('--max-duration', '-t', type=int,
+                       help='最大执行时间（秒）')
+
+    # 设备和显示参数
+    parser.add_argument('--device', '-d',
+                       help='指定设备序列号，不指定则使用所有已连接设备')
+    parser.add_argument('--show-screens', action='store_true',
+                       help='显示截图（默认为不显示）')
+
+    # 多线程参数
+    parser.add_argument('--max-workers', type=int, default=None,
+                       help='最大工作线程数，不指定则无限制并发（默认：无限制）')
+    parser.add_argument('--conservative', action='store_true',
+                       help='保守模式：限制为4个并发线程（等同于 --max-workers 4）')
+
+    # 其他参数
+    parser.add_argument('--run-all', action='store_true',
+                       help='忽略进度文件，全部重新测试')
+    parser.add_argument('--clear', dest='clear_logs', action='store_true',
+                       help='清空所有历史日志')
+    parser.add_argument('--model', '-m', default='best.pt',
+                       help='指定YOLO模型文件路径（默认为best.pt）')
+
+    args = parser.parse_args()
+
+    # 处理保守模式
+    if args.conservative:
+        args.max_workers = 4
+
+    # 验证参数
+    if not args.scripts and not args.script_list:
+        parser.error("必须指定 --script 或 --script-list 参数")
+
+    # 将简单的脚本列表转换为详细格式以保持兼容性
+    if args.scripts:
+        scripts_detailed = []
+        for script_path in args.scripts:
+            scripts_detailed.append({
+                'path': script_path,
+                'loop_count': args.loop_count,
+                'max_duration': args.max_duration,
+                'script_id': None,
+                'category': None
+            })
+        args.scripts = scripts_detailed
+
+    return vars(args)
+
+
+def execute_device_replay_parallel(devices, scripts_to_run, screenshot_queue, action_queue, args, model, max_workers=None):
+    """
+    并行执行多设备回放，支持线程池控制
+
+    :param devices: 设备列表
+    :param scripts_to_run: 要运行的脚本列表
+    :param screenshot_queue: 截图队列
+    :param action_queue: 动作队列
+    :param args: 命令行参数
+    :param model: YOLO模型
+    :param max_workers: 最大工作线程数，None表示无限制
+    :return: dict 包含每个设备的执行结果
+    """
+    if not devices:
+        print("没有可用的设备")
+        return {}, {}
+
+    device_count = len(devices)
+    print(f"开始并行处理 {device_count} 个设备")
+
+    # 确定实际的工作线程数
+    if max_workers is None:
+        actual_workers = device_count  # 无限制时，每个设备一个线程
+        print(f"并发模式：无限制 ({actual_workers} 个并发线程)")
+    else:
+        actual_workers = min(max_workers, device_count)
+        print(f"并发模式：限制为 {max_workers} 个工作线程 (实际 {actual_workers} 个)")
+
+    device_results = {}
+    device_reports = {}
+
+    def process_device(device):
+        """处理单个设备的回放 - 每个设备使用独立的检测队列和线程"""
+        device_name = None
+        device_screenshot_queue = None
+        device_action_queue = None
+        detection_thread = None
+        stop_event = None
+
+        try:
+            device_name = get_device_name(device)
+            print(f"设备 {device_name} 开始初始化...")
+
+            # 检查设备状态
+            if not check_device_status(device, device_name):
+                print(f"设备 {device_name} 状态异常，跳过")
+                return device_name, {'success': False, 'error': '设备状态异常'}
+
+            # 获取设备日志目录
+            log_dir = get_log_dir(device_name)
+            print(f"设备 {device_name} 日志目录: {log_dir}")
+
+            # 为每个设备创建独立的队列和停止事件（避免设备间干扰）
+            device_screenshot_queue = queue.Queue()
+            device_action_queue = queue.Queue()
+            stop_event = Event()
+
+            print(f"设备 {device_name} 创建独立检测队列和线程...")
+
+            # 为每个设备创建独立的检测服务线程
+            detection_thread = Thread(
+                target=detection_service,
+                args=(device_screenshot_queue, device_action_queue, stop_event),
+                daemon=True,
+                name=f"detection_service_{device_name}"
+            )
+            detection_thread.start()
+            print(f"设备 {device_name} 检测服务线程已启动")
+
+            # 执行设备回放
+            try:
+                print(f"设备 {device_name} 开始执行回放...")
+                replay_device(
+                    device,
+                    scripts_to_run,
+                    device_screenshot_queue,  # 使用设备专用队列
+                    device_action_queue,      # 使用设备专用队列
+                    stop_event,
+                    device_name,
+                    log_dir,
+                    args['show_screens'],
+                    1  # 传递默认循环次数，但实际使用脚本中的循环次数
+                )
+
+                print(f"设备 {device_name} 回放执行完成，正在清理资源...")
+
+                # 停止检测线程
+                stop_event.set()
+                if detection_thread and detection_thread.is_alive():
+                    detection_thread.join(timeout=5)
+                    if detection_thread.is_alive():
+                        print(f"警告：设备 {device_name} 检测线程未能在5秒内正常结束")
+
+                print(f"设备 {device_name} 开始生成报告...")
+
+                # 生成报告
+                report_generated, test_passed = run_one_report(
+                    log_dir=log_dir,
+                    report_dir=log_dir,
+                    script_path=[s['path'] for s in scripts_to_run]
+                )
+
+                result = {
+                    'success': True,
+                    'report_path': os.path.join(log_dir, "log.html") if report_generated else None,
+                    'test_passed': test_passed,
+                    'log_dir': log_dir
+                }
+
+                print(f"设备 {device_name} 完成 - 报告：{'成功' if report_generated else '失败'}, 测试：{'通过' if test_passed else '失败'}")
+                return device_name, result
+
+            except Exception as e:
+                print(f"设备 {device_name} 回放执行失败: {e}")
+                traceback.print_exc()
+                return device_name, {'success': False, 'error': str(e)}
+
+        except Exception as e:
+            error_msg = f"设备 {device_name or 'unknown'} 处理失败: {e}"
+            print(error_msg)
+            traceback.print_exc()
+            return device_name or str(device), {'success': False, 'error': str(e)}
+
+        finally:
+            # 确保资源被正确清理
+            try:
+                if stop_event:
+                    stop_event.set()
+                if detection_thread and detection_thread.is_alive():
+                    detection_thread.join(timeout=3)
+                # 清空队列
+                if device_screenshot_queue:
+                    while not device_screenshot_queue.empty():
+                        try:
+                            device_screenshot_queue.get_nowait()
+                        except queue.Empty:
+                            break
+                if device_action_queue:
+                    while not device_action_queue.empty():
+                        try:
+                            device_action_queue.get_nowait()
+                        except queue.Empty:
+                            break
+                print(f"设备 {device_name or 'unknown'} 资源清理完成")
+            except Exception as cleanup_e:
+                print(f"设备 {device_name or 'unknown'} 资源清理时出错: {cleanup_e}")
+
+    # 使用ThreadPoolExecutor并行执行
+    with ThreadPoolExecutor(max_workers=actual_workers) as executor:
+        # 提交所有设备任务
+        future_to_device = {executor.submit(process_device, device): device for device in devices}
+
+        # 收集结果
+        for future in as_completed(future_to_device):
+            device = future_to_device[future]
+            try:
+                device_name, result = future.result()
+                device_results[device_name] = result
+                if result.get('success'):
+                    device_reports[device_name] = {
+                        'report_path': result.get('report_path'),
+                        'log_dir': result.get('log_dir')
+                    }
+            except Exception as e:
+                device_name = get_device_name(device) if hasattr(device, 'serial') else str(device)
+                print(f"设备 {device_name} 执行异常: {e}")
+                traceback.print_exc()
+                device_results[device_name] = {'success': False, 'error': str(e)}
+
+    print(f"所有设备处理完成。成功：{sum(1 for r in device_results.values() if r.get('success'))}/{len(device_results)}")
+    return device_results, device_reports
 
 
 if __name__ == "__main__":
@@ -2861,97 +2919,35 @@ if __name__ == "__main__":
     # 加载测试进度数据
     data = load_json_data(args['run_all'])
 
-    # 创建线程和事件
-    threads = []
-    device_events = {}
-    device_reports = {}
-
-    # 对每个设备启动回放线程
-    for device in devices:
-        try:
-            device_name = get_device_name(device)
-            print(f"设备 {device_name} 初始化...")
-
-            # 检查设备状态
-            if not check_device_status(device, device_name):
-                print(f"设备 {device_name} 状态异常，跳过")
-                continue
-
-            # 获取设备日志目录
-            log_dir = get_log_dir(device_name)
-            print(f"设备 {device_name} 日志目录: {log_dir}")
-
-            # 为每个设备创建停止事件
-            stop_event = Event()
-            device_events[device_name] = stop_event
-
-            # 为每个设备创建检测服务线程
-            detection_thread = Thread(
-                target=detection_service,
-                args=(screenshot_queue, click_queue, stop_event),
-                daemon=True
-            )
-            detection_thread.start()
-            threads.append(detection_thread)
-
-            # 为每个设备创建回放线程
-            replay_thread = Thread(
-                target=replay_device,
-                args=(
-                    device,
-                    scripts_to_run,
-                    screenshot_queue,
-                    action_queue,
-                    stop_event,
-                    device_name,
-                    log_dir,
-                    args['show_screens'],
-                    1  # 传递默认循环次数，但实际使用脚本中的循环次数
-                ),
-                daemon=True
-            )
-            replay_thread.start()
-            threads.append(replay_thread)
-
-            # 记录设备报告路径
-            report_html_path = os.path.join(log_dir, "log.html")
-            device_reports[device_name] = {
-                'report_path': report_html_path,
-                'log_dir': log_dir
-            }
-
-            print(f"设备 {device_name} 回放线程已启动")
-        except Exception as e:
-            print(f"启动设备 {device.serial} 线程失败: {e}")
-            traceback.print_exc()
-
-    # 等待所有线程完成
-    for thread in threads:
-        thread.join()
+    # 使用并行执行处理所有设备
+    print("开始并行处理设备...")
+    device_results, device_reports = execute_device_replay_parallel(
+        devices=devices,
+        scripts_to_run=scripts_to_run,
+        screenshot_queue=screenshot_queue,
+        action_queue=action_queue,
+        args=args,
+        model=model,
+        max_workers=args.get('max_workers')
+    )
 
     # 生成报告
     print("所有设备回放完成，生成报告...")
 
     test_results = {}
-    for device_name, report_info in device_reports.items():
-        log_dir = report_info['log_dir']
-        report_dir = os.path.join(log_dir)  # 保持报告和日志在同一个目录
-
-        print(f"为设备 {device_name} 生成报告...")
-
-        report_generated, test_passed = run_one_report(
-            log_dir=log_dir,
-            report_dir=report_dir,
-            script_path=[s['path'] for s in scripts_to_run]  # 传递脚本路径列表
-        )
-
-        # 更新测试结果
-        test_results[device_name] = {
-            'report_path': os.path.join(report_dir, "log.html") if report_generated else None,
-            'test_passed': test_passed
-        }
-
-        print(f"设备 {device_name} 报告生成 {'成功' if report_generated else '失败'}, 测试 {'通过' if test_passed else '失败'}")
+    for device_name, result in device_results.items():
+        if result.get('success'):
+            test_results[device_name] = {
+                'report_path': result.get('report_path'),
+                'test_passed': result.get('test_passed', False)
+            }
+            print(f"设备 {device_name} 报告生成 {'成功' if result.get('report_path') else '失败'}, 测试 {'通过' if result.get('test_passed') else '失败'}")
+        else:
+            test_results[device_name] = {
+                'report_path': None,
+                'test_passed': False
+            }
+            print(f"设备 {device_name} 处理失败: {result.get('error', '未知错误')}")
 
     # 更新测试进度数据
     data['tests'].update(test_results)
@@ -2973,69 +2969,3 @@ if __name__ == "__main__":
         print("汇总报告生成失败")
 
     print("所有操作完成")
-
-
-
-
-
-def _is_device_lifecycle_only(report_path):
-    """
-    检查设备是否只执行了生命周期管理操作（启动程序、停止程序）
-
-    :param report_path: 设备报告路径
-    :return: True 如果设备只执行了生命周期操作，False 如果执行了实际测试步骤
-    """
-    if not report_path or not os.path.exists(report_path):
-        return False
-
-    # 获取设备日志目录
-    device_dir = os.path.dirname(report_path)
-    log_txt_path = os.path.join(device_dir, "script.log", "log.txt")
-
-    # 如果日志文件不存在，认为不是生命周期操作
-    if not os.path.exists(log_txt_path):
-        return False
-
-    try:
-        with open(log_txt_path, "r", encoding="utf-8") as f:
-            lines = f.readlines()
-
-        has_lifecycle_operations = False
-        has_test_operations = False
-
-        for line in lines:
-            if not line.strip():
-                continue
-
-            try:
-                log_entry = json.loads(line.strip())
-                data = log_entry.get("data", {})
-
-                # 检查是否为生命周期操作
-                if data.get("is_lifecycle_operation") is True:
-                    has_lifecycle_operations = True
-                    continue
-
-                # 检查是否为实际测试操作
-                # 排除一些框架操作，只关注实际的测试步骤
-                func_name = data.get("name", "")
-
-                # 跳过框架内部操作
-                if func_name in ["try_log_screen", "开始测试", "结束测试"]:
-                    continue
-
-                # 如果有其他任何操作，说明执行了实际测试
-                if func_name and log_entry.get("tag") == "function":
-                    has_test_operations = True
-                    break
-
-            except (json.JSONDecodeError, KeyError):
-                # 如果解析失败，跳过这一行
-                continue
-
-        # 只有包含生命周期操作且不包含测试操作时，才认为是纯生命周期设备
-        return has_lifecycle_operations and not has_test_operations
-
-    except Exception as e:
-        print(f"检查设备生命周期操作时出错: {e}")
-        return False

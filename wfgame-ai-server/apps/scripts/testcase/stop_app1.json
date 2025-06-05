@@ -1,0 +1,15 @@
+{
+  "type": "script",
+  "name": "stop_app1",
+  "description": "停止卡牌2app",
+  "author": "WFGameAI",
+  "date": "2025-05-26",
+  "steps": [    {
+      "class": "app_stop",
+      "remark": "停止卡牌2app",
+      "params": {
+        "package_name": "com.qyfhl.qxzf"
+      }
+    }
+  ]
+}

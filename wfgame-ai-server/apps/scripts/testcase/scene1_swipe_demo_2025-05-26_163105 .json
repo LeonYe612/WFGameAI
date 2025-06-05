@@ -1,0 +1,56 @@
+{
+  "steps": [
+    {
+      "step": 1,
+      "class": "system-newResources",
+      "confidence": 0.7135645747184753,
+      "timestamp": "2025-04-07 18:40:19.816964",
+      "remark": "判断启动APP后是否出现“热更资源”图标，如果存在则需要等待新资源加载完成"
+    },
+    {
+  "action": "swipe",
+  "start_x": 500,
+  "start_y": 500,
+  "end_x": 1000,
+  "end_y": 500,
+  "remark": "从左向右水平滑动"
+},
+    {
+      "step": 3,
+      "action": "swipe",
+      "start_x": 1000,
+      "start_y": 500,
+      "end_x": 500,
+      "end_y": 500,
+      "duration": 1000,
+      "timestamp": "2025-06-03 14:30:26.456",
+      "remark": "从右向左水平滑动"
+    },
+    {
+      "step": 5,
+      "action": "swipe",
+      "start_x": 1000,
+      "start_y": 700,
+      "end_x": 500,
+      "end_y": 300,
+      "duration": 1000,
+      "timestamp": "2025-06-03 14:30:26.456",
+      "remark": "从右下向左上方斜向拖动"
+    }, {
+  "action": "swipe",
+  "start_x": 500,
+  "start_y": 700,
+  "end_x": 500,
+  "end_y": 300,
+  "remark": "从下向上，垂直拖动"
+},
+{
+  "action": "swipe",
+  "start_x": 500,
+  "start_y": 300,
+  "end_x": 500,
+  "end_y": 700,
+  "remark": "从上向下，垂直拖动"
+}
+  ]
+}

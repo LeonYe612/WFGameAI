@@ -22,6 +22,18 @@ from .serializers import (
     DeviceLogSerializer
 )
 
+# 添加设备信息增强器的导入
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+if project_root not in sys.path:
+    sys.path.append(project_root)
+
+try:
+    from device_info_enhancer import DeviceInfoEnhancer
+    device_enhancer = DeviceInfoEnhancer()
+except ImportError:
+    device_enhancer = None
+    print("警告: 在views.py中无法导入设备信息增强器")
+
 
 class DeviceTypeViewSet(viewsets.ModelViewSet):
     """设备类型视图集"""
@@ -313,6 +325,37 @@ class ScanDevicesView(views.APIView):
                 }
         return None
 
+    def _enhance_device_info(self, device_info, device_status):
+        """增强设备信息，填充缺失的品牌、型号信息"""
+        if not device_enhancer:
+            return device_info
+
+        device_id = device_info.get('device_id', '')
+        current_model = device_info.get('model', '')
+        current_brand = device_info.get('brand', '')
+
+        # 如果品牌或型号缺失，且设备在线，尝试通过ADB获取和增强
+        if device_status == 'device' and (not current_brand or not current_model):
+            try:
+                enhanced_info = device_enhancer.enhance_device_info(
+                    device_id, current_model, current_brand
+                )
+
+                # 更新设备信息
+                if enhanced_info:
+                    device_info.update({
+                        'brand': enhanced_info.get('enhanced_brand', current_brand),
+                        'model': enhanced_info.get('commercial_name', current_model) or current_model,
+                        'name': enhanced_info.get('display_name', device_info.get('name', '')),
+                        'series': enhanced_info.get('series', ''),
+                        'category': enhanced_info.get('category', '')
+                    })
+
+            except Exception as e:
+                print(f"设备信息增强失败 {device_id}: {e}")
+
+        return device_info
+
     def _update_device_record(self, device_info, device_status):
         """创建或更新设备记录"""
         device, created = Device.objects.get_or_create(
@@ -387,9 +430,7 @@ class ScanDevicesView(views.APIView):
                 device_status = parts[1].strip()
 
                 # 初始化设备信息
-                device_info = {'status': 'online' if device_status == 'device' else 'offline'}
-
-                # 从缓存获取设备信息
+                device_info = {'status': 'online' if device_status == 'device' else 'offline'}                # 从缓存获取设备信息
                 cached_info = self._process_device_from_cache(raw_device_id, cache_data)
                 if cached_info:
                     device_info.update(cached_info)
@@ -400,6 +441,9 @@ class ScanDevicesView(views.APIView):
                         'name': f"Android设备 {raw_device_id}",
                         'ip_address': raw_device_id if ':' in raw_device_id else ''
                     })
+
+                # 增强设备信息（填充缺失的品牌、型号等信息）
+                device_info = self._enhance_device_info(device_info, device_status)
 
                 # 更新数据库记录
                 device, created = self._update_device_record(device_info, device_status)

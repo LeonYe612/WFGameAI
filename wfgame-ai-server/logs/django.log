@@ -1210,3 +1210,111 @@ INFO 2025-06-04 18:29:41,235 basehttp 2984 3232 "POST /api/devices/scan/ HTTP/1.
 INFO 2025-06-04 18:30:11,844 basehttp 2984 3232 "POST /api/devices/scan/ HTTP/1.1" 200 4868
 INFO 2025-06-04 18:31:50,339 basehttp 2984 3232 "POST /api/devices/scan/ HTTP/1.1" 200 4868
 INFO 2025-06-04 18:32:02,871 basehttp 2984 3232 "POST /api/devices/scan/ HTTP/1.1" 200 4868
+INFO 2025-06-04 19:55:02,741 basehttp 33272 35940 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-06-04 19:55:03,175 basehttp 33272 35940 "POST /api/scripts/ HTTP/1.1" 200 2072
+INFO 2025-06-04 19:55:09,659 basehttp 33272 35940 "POST /api/scripts/edit/ HTTP/1.1" 200 596
+INFO 2025-06-04 19:55:36,028 basehttp 33272 35940 "POST /api/scripts/replay/ HTTP/1.1" 200 699
+INFO 2025-06-04 20:07:05,357 basehttp 33272 32700 "GET /pages/reports_template.html HTTP/1.1" 302 0
+INFO 2025-06-04 20:07:05,690 basehttp 33272 32700 "POST /api/reports/summary_list/ HTTP/1.1" 200 12059
+INFO 2025-06-04 20:07:11,878 basehttp 33272 32700 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-04 20:07:11,881 basehttp 33272 32700 "GET /static/pages/devices.html HTTP/1.1" 304 0
+INFO 2025-06-04 20:07:11,998 basehttp 33272 32700 "GET /static/js/pages/devices_table_vue.js HTTP/1.1" 200 31348
+INFO 2025-06-04 20:07:12,812 basehttp 33272 32700 "POST /api/devices/scan/ HTTP/1.1" 200 4868
+INFO 2025-06-05 10:26:40,633 basehttp 33272 11108 "POST /api/devices/scan/ HTTP/1.1" 200 3686
+INFO 2025-06-05 10:26:41,917 basehttp 33272 11108 "POST /api/devices/scan/ HTTP/1.1" 200 3686
+INFO 2025-06-05 10:27:38,542 basehttp 33272 8128 "POST /api/devices/scan/ HTTP/1.1" 200 3686
+INFO 2025-06-05 10:27:44,865 basehttp 33272 11108 "POST /api/devices/scan/ HTTP/1.1" 200 3686
+INFO 2025-06-05 10:27:45,583 basehttp 33272 11108 "POST /api/devices/scan/ HTTP/1.1" 200 3686
+INFO 2025-06-05 10:37:16,842 autoreload 33272 27008 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\serializers.py changed, reloading.
+INFO 2025-06-05 10:37:17,437 autoreload 33040 28532 Watching for file changes with StatReloader
+INFO 2025-06-05 10:37:37,163 autoreload 33040 28532 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\serializers.py changed, reloading.
+INFO 2025-06-05 10:37:37,720 autoreload 20700 20236 Watching for file changes with StatReloader
+INFO 2025-06-05 10:38:33,534 autoreload 20700 20236 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\serializers.py changed, reloading.
+INFO 2025-06-05 10:38:34,078 autoreload 22320 3464 Watching for file changes with StatReloader
+INFO 2025-06-05 10:38:48,513 autoreload 22320 3464 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\serializers.py changed, reloading.
+INFO 2025-06-05 10:38:49,082 autoreload 16440 15896 Watching for file changes with StatReloader
+INFO 2025-06-05 10:39:26,318 autoreload 16440 15896 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\serializers.py changed, reloading.
+INFO 2025-06-05 10:39:26,857 autoreload 23872 32944 Watching for file changes with StatReloader
+INFO 2025-06-05 10:39:38,893 autoreload 23872 32944 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\serializers.py changed, reloading.
+INFO 2025-06-05 10:39:39,439 autoreload 17696 38784 Watching for file changes with StatReloader
+INFO 2025-06-05 10:40:59,940 autoreload 17696 38784 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\serializers.py changed, reloading.
+INFO 2025-06-05 10:41:00,499 autoreload 44772 44188 Watching for file changes with StatReloader
+INFO 2025-06-05 10:41:51,503 autoreload 44772 44188 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\serializers.py changed, reloading.
+INFO 2025-06-05 10:41:52,074 autoreload 24856 32752 Watching for file changes with StatReloader
+INFO 2025-06-05 10:42:35,126 autoreload 24856 32752 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-05 10:42:35,666 autoreload 2476 444 Watching for file changes with StatReloader
+INFO 2025-06-05 10:42:45,792 autoreload 2476 444 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-05 10:42:46,299 autoreload 8420 43096 Watching for file changes with StatReloader
+INFO 2025-06-05 10:42:55,386 autoreload 8420 43096 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-05 10:42:55,911 autoreload 44736 2296 Watching for file changes with StatReloader
+INFO 2025-06-05 10:43:40,963 autoreload 44736 2296 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-05 10:43:41,478 autoreload 25620 43368 Watching for file changes with StatReloader
+INFO 2025-06-05 10:44:15,320 basehttp 25620 35116 "POST /api/devices/scan/ HTTP/1.1" 200 3747
+INFO 2025-06-05 10:45:00,008 basehttp 25620 3500 "POST /api/devices/scan/ HTTP/1.1" 200 3747
+INFO 2025-06-05 10:55:23,264 autoreload 25620 43368 C:\Users\Administrator\PycharmProjects\WFGameAI\device_info_enhancer.py changed, reloading.
+INFO 2025-06-05 10:55:23,784 autoreload 17084 18436 Watching for file changes with StatReloader
+INFO 2025-06-05 10:56:43,144 autoreload 17084 18436 C:\Users\Administrator\PycharmProjects\WFGameAI\device_info_enhancer.py changed, reloading.
+INFO 2025-06-05 10:56:43,660 autoreload 23696 42240 Watching for file changes with StatReloader
+INFO 2025-06-05 10:57:54,692 autoreload 23696 42240 C:\Users\Administrator\PycharmProjects\WFGameAI\device_info_enhancer.py changed, reloading.
+INFO 2025-06-05 10:57:55,241 autoreload 40988 27808 Watching for file changes with StatReloader
+INFO 2025-06-05 10:59:42,934 autoreload 40988 27808 C:\Users\Administrator\PycharmProjects\WFGameAI\device_info_enhancer.py changed, reloading.
+INFO 2025-06-05 10:59:43,492 autoreload 15956 3232 Watching for file changes with StatReloader
+INFO 2025-06-05 11:00:56,326 autoreload 15956 3232 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\serializers.py changed, reloading.
+INFO 2025-06-05 11:00:56,892 autoreload 5464 44792 Watching for file changes with StatReloader
+INFO 2025-06-05 11:01:16,315 autoreload 5464 44792 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\serializers.py changed, reloading.
+INFO 2025-06-05 11:01:16,843 autoreload 44708 34280 Watching for file changes with StatReloader
+INFO 2025-06-05 11:01:35,174 autoreload 44708 34280 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\serializers.py changed, reloading.
+INFO 2025-06-05 11:01:35,702 autoreload 38544 42448 Watching for file changes with StatReloader
+INFO 2025-06-05 11:01:40,345 autoreload 38544 42448 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\serializers.py changed, reloading.
+INFO 2025-06-05 11:01:40,878 autoreload 31420 13672 Watching for file changes with StatReloader
+INFO 2025-06-05 11:02:22,402 autoreload 31420 13672 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\serializers.py changed, reloading.
+INFO 2025-06-05 11:02:22,920 autoreload 23556 39256 Watching for file changes with StatReloader
+INFO 2025-06-05 11:02:29,645 autoreload 23556 39256 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\serializers.py changed, reloading.
+INFO 2025-06-05 11:02:30,171 autoreload 26608 30088 Watching for file changes with StatReloader
+INFO 2025-06-05 11:02:37,946 autoreload 26608 30088 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\serializers.py changed, reloading.
+INFO 2025-06-05 11:02:38,440 autoreload 21684 41564 Watching for file changes with StatReloader
+INFO 2025-06-05 11:03:38,368 autoreload 21684 41564 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\serializers.py changed, reloading.
+INFO 2025-06-05 11:03:38,912 autoreload 41896 9432 Watching for file changes with StatReloader
+INFO 2025-06-05 11:03:54,168 autoreload 41896 9432 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\serializers.py changed, reloading.
+INFO 2025-06-05 11:03:54,703 autoreload 13988 16408 Watching for file changes with StatReloader
+INFO 2025-06-05 11:04:04,650 autoreload 13988 16408 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\serializers.py changed, reloading.
+INFO 2025-06-05 11:04:05,172 autoreload 17184 27900 Watching for file changes with StatReloader
+INFO 2025-06-05 11:04:17,184 autoreload 17184 27900 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\serializers.py changed, reloading.
+INFO 2025-06-05 11:04:17,714 autoreload 22996 25508 Watching for file changes with StatReloader
+INFO 2025-06-05 11:05:25,155 autoreload 22996 25508 C:\Users\Administrator\PycharmProjects\WFGameAI\device_info_enhancer.py changed, reloading.
+INFO 2025-06-05 11:05:25,659 autoreload 4076 21360 Watching for file changes with StatReloader
+INFO 2025-06-05 11:05:53,828 autoreload 4076 21360 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\serializers.py changed, reloading.
+INFO 2025-06-05 11:05:54,400 autoreload 5076 29828 Watching for file changes with StatReloader
+INFO 2025-06-05 11:05:59,192 basehttp 5076 28940 "POST /api/devices/scan/ HTTP/1.1" 200 3715
+INFO 2025-06-05 11:06:07,813 autoreload 5076 29828 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\serializers.py changed, reloading.
+INFO 2025-06-05 11:06:08,325 autoreload 44328 39772 Watching for file changes with StatReloader
+INFO 2025-06-05 11:06:16,143 autoreload 44328 39772 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\serializers.py changed, reloading.
+INFO 2025-06-05 11:06:16,672 autoreload 36468 33376 Watching for file changes with StatReloader
+INFO 2025-06-05 11:06:39,232 autoreload 36468 33376 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\serializers.py changed, reloading.
+INFO 2025-06-05 11:06:39,758 autoreload 35468 25528 Watching for file changes with StatReloader
+INFO 2025-06-05 11:06:53,943 autoreload 35468 25528 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\serializers.py changed, reloading.
+INFO 2025-06-05 11:06:54,469 autoreload 44988 42436 Watching for file changes with StatReloader
+INFO 2025-06-05 11:07:01,382 autoreload 44988 42436 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\serializers.py changed, reloading.
+INFO 2025-06-05 11:07:01,893 autoreload 29128 7848 Watching for file changes with StatReloader
+INFO 2025-06-05 11:07:28,119 basehttp 29128 38628 "POST /api/devices/scan/ HTTP/1.1" 200 3715
+INFO 2025-06-05 11:11:08,633 autoreload 29128 7848 C:\Users\Administrator\PycharmProjects\WFGameAI\device_info_enhancer.py changed, reloading.
+INFO 2025-06-05 11:11:09,174 autoreload 40176 25004 Watching for file changes with StatReloader
+INFO 2025-06-05 11:12:21,256 autoreload 40176 25004 C:\Users\Administrator\PycharmProjects\WFGameAI\device_info_enhancer.py changed, reloading.
+INFO 2025-06-05 11:12:21,767 autoreload 4556 32988 Watching for file changes with StatReloader
+INFO 2025-06-05 11:12:59,515 autoreload 4556 32988 C:\Users\Administrator\PycharmProjects\WFGameAI\device_info_enhancer.py changed, reloading.
+INFO 2025-06-05 11:13:00,020 autoreload 18384 34424 Watching for file changes with StatReloader
+INFO 2025-06-05 11:13:08,019 autoreload 18384 34424 C:\Users\Administrator\PycharmProjects\WFGameAI\device_info_enhancer.py changed, reloading.
+INFO 2025-06-05 11:13:08,546 autoreload 36924 38360 Watching for file changes with StatReloader
+INFO 2025-06-05 11:15:10,210 autoreload 36924 38360 C:\Users\Administrator\PycharmProjects\WFGameAI\device_info_enhancer.py changed, reloading.
+INFO 2025-06-05 11:15:10,740 autoreload 43780 18048 Watching for file changes with StatReloader
+INFO 2025-06-05 11:15:48,404 autoreload 43780 18048 C:\Users\Administrator\PycharmProjects\WFGameAI\device_info_enhancer.py changed, reloading.
+INFO 2025-06-05 11:15:48,917 autoreload 6844 13412 Watching for file changes with StatReloader
+INFO 2025-06-05 11:15:55,666 autoreload 6844 13412 C:\Users\Administrator\PycharmProjects\WFGameAI\device_info_enhancer.py changed, reloading.
+INFO 2025-06-05 11:15:56,167 autoreload 34396 38292 Watching for file changes with StatReloader
+INFO 2025-06-05 11:16:24,034 autoreload 34396 38292 C:\Users\Administrator\PycharmProjects\WFGameAI\device_info_enhancer.py changed, reloading.
+INFO 2025-06-05 11:16:24,551 autoreload 43004 18264 Watching for file changes with StatReloader
+INFO 2025-06-05 11:16:53,479 autoreload 43004 18264 C:\Users\Administrator\PycharmProjects\WFGameAI\device_info_enhancer.py changed, reloading.
+INFO 2025-06-05 11:16:54,008 autoreload 22208 28060 Watching for file changes with StatReloader
+INFO 2025-06-05 11:17:10,260 autoreload 22208 28060 C:\Users\Administrator\PycharmProjects\WFGameAI\device_info_enhancer.py changed, reloading.
+INFO 2025-06-05 11:17:10,792 autoreload 42120 34752 Watching for file changes with StatReloader
+INFO 2025-06-05 11:24:17,984 basehttp 42120 33548 "POST /api/devices/scan/ HTTP/1.1" 200 3700

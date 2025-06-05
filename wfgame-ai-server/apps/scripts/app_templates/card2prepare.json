@@ -1,0 +1,23 @@
+{
+    "name": "card2prepare",
+    "package_name": "com.qyfhl.qxzf",
+    "activity_name": "com.qyfhl.qxzf/com.beeplay.splash.ui.engine.EngineActivity",
+    "start_commands": [
+        "adb -s {device_serial} shell am force-stop {package_name}",
+        "adb -s {device_serial} shell am start -n {activity_name}",
+        "adb -s {device_serial} shell input keyevent KEYCODE_WAKEUP"
+    ],
+    "stop_commands": [
+        "adb -s {device_serial} shell am force-stop {package_name}"
+    ],
+    "check_commands": [
+        "adb -s {device_serial} shell pidof {package_name}"
+    ],
+    "startup_wait_time": 5,
+    "max_restart_attempts": 3,
+    "health_check_interval": 60,
+    "custom_params": {
+        "game_type": "card",
+        "requires_login": false
+    }
+}
