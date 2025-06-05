@@ -209,29 +209,36 @@ class AppLifecycleManager:
                 start_time=time.time()
             )
 
-            self.app_instances[instance_key] = instance
-
-            # 执行启动命令
+            self.app_instances[instance_key] = instance            # 执行启动命令
             success = self._execute_start_commands(template, device_serial, **kwargs)
 
             if success:
                 # 等待启动完成
+                logger.info(f"应用启动命令执行成功，等待 {template.startup_wait_time} 秒...")
                 time.sleep(template.startup_wait_time)
 
-                # 检查应用状态
-                if self._check_app_running(template, device_serial):
-                    instance.state = AppState.RUNNING
-                    instance.last_check_time = time.time()
-                    logger.info(f"应用 {template_name} 在设备 {device_serial} 上启动成功")
+                # 多次检查应用状态，给应用更多启动时间
+                max_check_attempts = 3
+                for attempt in range(max_check_attempts):
+                    if self._check_app_running(template, device_serial):
+                        instance.state = AppState.RUNNING
+                        instance.last_check_time = time.time()
+                        logger.info(f"应用 {template_name} 在设备 {device_serial} 上启动成功 (第 {attempt + 1} 次检查)")
 
-                    # 启动监控线程
-                    self._start_monitoring_if_needed()
-                    return True
-                else:
-                    instance.state = AppState.ERROR
-                    instance.error_message = "启动后检查失败"
-                    logger.error(f"应用 {template_name} 在设备 {device_serial} 上启动失败")
-                    return False
+                        # 启动监控线程
+                        self._start_monitoring_if_needed()
+                        return True
+                    else:
+                        if attempt < max_check_attempts - 1:
+                            logger.info(f"第 {attempt + 1} 次检查失败，等待 2 秒后重试...")
+                            time.sleep(2)
+                        else:
+                            logger.error(f"应用 {template_name} 启动后检查失败，已尝试 {max_check_attempts} 次")
+
+                instance.state = AppState.ERROR
+                instance.error_message = "启动后检查失败"
+                logger.error(f"应用 {template_name} 在设备 {device_serial} 上启动失败")
+                return False
             else:
                 instance.state = AppState.ERROR
                 instance.error_message = "启动命令执行失败"
@@ -376,14 +383,31 @@ class AppLifecycleManager:
                        for cmd in template.stop_commands]
 
         return self._execute_commands(commands, f"停止应用 {template.name}")
-
     def _check_app_running(self, template: AppTemplate, device_serial: str) -> bool:
         """检查应用是否在运行"""
         if template.check_commands:
-            # 使用模板定义的检查命令
-            commands = [cmd.format(device_serial=device_serial, package_name=template.package_name)
-                       for cmd in template.check_commands]
-            return self._execute_commands(commands, f"检查应用 {template.name}")
+            # 使用模板定义的检查命令，但改进处理逻辑
+            for cmd in template.check_commands:
+                try:
+                    formatted_cmd = cmd.format(device_serial=device_serial, package_name=template.package_name)
+                    logger.info(f"执行检查命令: {formatted_cmd}")
+
+                    result = subprocess.run(
+                        formatted_cmd.split(),
+                        capture_output=True, text=True, timeout=10
+                    )
+
+                    # 对于pidof命令，返回码0且有输出表示应用在运行
+                    if result.returncode == 0 and result.stdout.strip():
+                        logger.info(f"应用 {template.name} 检查通过，PID: {result.stdout.strip()}")
+                        return True
+                    else:
+                        logger.info(f"应用 {template.name} 检查失败，返回码: {result.returncode}, 输出: '{result.stdout.strip()}'")
+
+                except Exception as e:
+                    logger.error(f"检查命令执行异常: {e}")
+
+            return False
         else:
             # 默认检查命令
             try:

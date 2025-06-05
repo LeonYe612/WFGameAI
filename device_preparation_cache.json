@@ -14,7 +14,7 @@
   },
   "CWM0222215003786": {
     "device_id": "CWM0222215003786",
-    "timestamp": 1749026798.9794984,
+    "timestamp": 1749120267.9041607,
     "preparation_status": "completed",
     "model": "JAD-AL00",
     "android_version": "12",
@@ -50,7 +50,8 @@
       "port": 5555,
       "status": "configured"
     }
-  },  "FVG0221729008356": {
+  },
+  "FVG0221729008356": {
     "device_id": "FVG0221729008356",
     "timestamp": 1749026805.4747386,
     "preparation_status": "completed",
@@ -65,7 +66,7 @@
   },
   "a3833caf": {
     "device_id": "a3833caf",
-    "timestamp": 1749026814.182313,
+    "timestamp": 1749120281.0199594,
     "preparation_status": "completed",
     "model": "ONEPLUS A5010",
     "android_version": "9",

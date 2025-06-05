@@ -47,11 +47,12 @@ try:
     # 将load_yolo_model也正确导入
     try:
         from utils import load_yolo_model
+        print("成功导入load_yolo_model函数")
     except ImportError:
+        print("警告: 无法导入utils.load_yolo_model，将尝试直接使用YOLO")
         # 如果导入失败，提供一个空函数
         def load_yolo_model(*args, **kwargs):
-            return None
-            print("警告: load_yolo_model 导入失败")
+            print("警告: load_yolo_model 导入失败，返回None")
             return None
 
     if config_manager:
@@ -136,6 +137,9 @@ screenshot_queue = queue.Queue()
 action_queue = queue.Queue()
 click_queue = queue.Queue()  # 新增全局 click_queue
 
+# 全局YOLO模型变量
+model = None
+
 # 固定种子
 random.seed(42)
 np.random.seed(42)
@@ -199,24 +203,26 @@ def get_device_name(device):
 
 # 检测按钮
 def detect_buttons(frame, target_class=None):
+    global model  # 声明model为全局变量
     frame_for_detection = cv2.resize(frame, (640, 640))
     try:
         # 检查模型是否可用
         if model is None:
-            print("警告：YOLO模型未加载，跳过按钮检测")
+            print("❌ 错误：YOLO模型未加载，无法进行检测")
             return False, (None, None, None)
 
+        print(f"🔍 开始检测目标类别: {target_class}")
         # 使用当前设备进行预测
         results = model.predict(source=frame_for_detection, imgsz=640, conf=0.3, verbose=False)
 
         # 检查预测结果是否有效
         if results is None or len(results) == 0:
-            print("警告：模型预测结果为空")
+            print("⚠️ 警告：模型预测结果为空")
             return False, (None, None, None)
 
         # 检查结果中是否有boxes
         if not hasattr(results[0], 'boxes') or results[0].boxes is None:
-            print("警告：预测结果中没有检测框")
+            print("⚠️ 警告：预测结果中没有检测框")
             return False, (None, None, None)
 
         orig_h, orig_w = frame.shape[:2]
@@ -340,7 +346,7 @@ def load_json_data(run_all):
         }
 
 
-def replay_device(device, scripts, screenshot_queue, action_queue, stop_event, device_name, log_dir, show_screens=False,
+def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, stop_event, device_name, log_dir, show_screens=False,
                   loop_count=1):
     """
     回放设备脚本，记录日志并生成报告所需信息。
@@ -350,6 +356,7 @@ def replay_device(device, scripts, screenshot_queue, action_queue, stop_event, d
         scripts (list): 脚本配置列表，例如 [{"path": "path/to/script.json", "loop_count": 1}]。
         screenshot_queue (queue.Queue): 截图队列，用于传递屏幕截图给检测服务。
         action_queue (queue.Queue): 动作队列，用于记录操作。
+        click_queue (queue.Queue): 点击队列，用于处理点击操作。
         stop_event (threading.Event): 停止事件，用于控制检测服务。
         device_name (str): 设备名称，例如 "OnePlus-KB2000-1080x2400"。
         show_screens (bool): 是否显示屏幕（默认 False）。
@@ -650,7 +657,7 @@ def replay_device(device, scripts, screenshot_queue, action_queue, stop_event, d
 
                         # 等待检测结果
                         try:
-                            success, (x, y, detected_class) = click_queue.get(timeout=5)
+                            success, (x, y, detected_class) = click_queue.get(timeout=10)  # 使用设备专用click_queue，超时10秒
 
                             # 记录snapshot
                             snapshot_entry = {
@@ -1443,7 +1450,7 @@ def replay_device(device, scripts, screenshot_queue, action_queue, stop_event, d
 
                     # 等待检测结果
                     try:
-                        success, (x, y, detected_class) = click_queue.get(timeout=5)
+                        success, (x, y, detected_class) = click_queue.get(timeout=10)  # 使用设备专用click_queue，超时10秒
 
                         # 记录snapshot
                         snapshot_entry = {
@@ -1767,19 +1774,24 @@ def replay_device(device, scripts, screenshot_queue, action_queue, stop_event, d
 
 # 检测服务
 def detection_service(screenshot_queue, click_queue, stop_event):
+    print("🚀 检测服务已启动")
     while not stop_event.is_set():
         try:
             item = screenshot_queue.get(timeout=1)
             if len(item) != 5:
-                print(f"跳过无效数据: {item}")
+                print(f"⚠️ 跳过无效数据: {item}")
                 continue
             device_name, step_num, frame, target_class, all_classes_or_special = item
+            print(f"📸 设备 {device_name} 步骤 {step_num}: 检测 {target_class}")
             success, coords = detect_buttons(frame, target_class=target_class)
+            print(f"✅ 检测结果: {success}, 坐标: {coords}")
             click_queue.put((success, coords))
         except queue.Empty:
             continue
         except Exception as e:
-            print(f"检测服务错误: {e}")
+            print(f"❌ 检测服务错误: {e}")
+            import traceback
+            traceback.print_exc()
 
 
 def get_airtest_template_path():
@@ -2145,10 +2157,12 @@ def run_one_report(log_dir, report_dir, script_path=None):
         shutil.copy2(template_path, dest_template)
 
         # 生成HTML报告
+        # 修复：使用静态资源的绝对路径，避免Airtest在当前工作目录寻找资源
+        static_root_path = os.path.join(report_dir, "static")
         rpt = LogToHtml(
             script_root=report_dir,         # 项目根目录
             log_root=log_report_dir,        # log子目录
-            static_root="static",           # 静态资源目录名称（相对路径）
+            static_root=static_root_path,   # 使用绝对路径
             export_dir=report_dir,          # 导出HTML的目录
             script_name="script.py",        # 脚本文件名
             logfile="log.txt",              # 日志文件名
@@ -2585,10 +2599,11 @@ def execute_device_replay_parallel(devices, scripts_to_run, screenshot_queue, ac
     def process_device(device):
         """处理单个设备的回放 - 每个设备使用独立的检测队列和线程"""
         device_name = None
-        device_screenshot_queue = None
-        device_action_queue = None
+        device_screenshot_queue = queue.Queue()  # 立即初始化
+        device_action_queue = queue.Queue()      # 立即初始化
+        device_click_queue = queue.Queue()       # 立即初始化
         detection_thread = None
-        stop_event = None
+        stop_event = Event()                     # 立即初始化
 
         try:
             device_name = get_device_name(device)
@@ -2603,17 +2618,12 @@ def execute_device_replay_parallel(devices, scripts_to_run, screenshot_queue, ac
             log_dir = get_log_dir(device_name)
             print(f"设备 {device_name} 日志目录: {log_dir}")
 
-            # 为每个设备创建独立的队列和停止事件（避免设备间干扰）
-            device_screenshot_queue = queue.Queue()
-            device_action_queue = queue.Queue()
-            stop_event = Event()
-
             print(f"设备 {device_name} 创建独立检测队列和线程...")
 
             # 为每个设备创建独立的检测服务线程
             detection_thread = Thread(
                 target=detection_service,
-                args=(device_screenshot_queue, device_action_queue, stop_event),
+                args=(device_screenshot_queue, device_click_queue, stop_event),
                 daemon=True,
                 name=f"detection_service_{device_name}"
             )
@@ -2626,8 +2636,9 @@ def execute_device_replay_parallel(devices, scripts_to_run, screenshot_queue, ac
                 replay_device(
                     device,
                     scripts_to_run,
-                    device_screenshot_queue,  # 使用设备专用队列
-                    device_action_queue,      # 使用设备专用队列
+                    device_screenshot_queue,  # 设备专用
+                    device_action_queue,      # 设备专用
+                    device_click_queue,       # 设备专用
                     stop_event,
                     device_name,
                     log_dir,
@@ -2692,6 +2703,12 @@ def execute_device_replay_parallel(devices, scripts_to_run, screenshot_queue, ac
                     while not device_action_queue.empty():
                         try:
                             device_action_queue.get_nowait()
+                        except queue.Empty:
+                            break
+                if device_click_queue:
+                    while not device_click_queue.empty():
+                        try:
+                            device_click_queue.get_nowait()
                         except queue.Empty:
                             break
                 print(f"设备 {device_name or 'unknown'} 资源清理完成")
@@ -2818,7 +2835,9 @@ if __name__ == "__main__":
 
             print(f"加载模型: {model_path}")
             model = YOLO(model_path)
-        print(f"模型加载成功: {model}")
+            print(f"✅ 模型加载成功: {type(model)}")
+            print(f"📋 模型类别: {model.names if hasattr(model, 'names') else '未知'}")
+        # print(f"模型加载成功: {model}")
     except Exception as e:
         print(f"模型加载失败: {e}")
         traceback.print_exc()
