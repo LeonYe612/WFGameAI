@@ -30,7 +30,9 @@ def run_git_command(command):
             stderr=subprocess.PIPE,
             text=True,
             check=True,
-            shell=True
+            shell=True,
+            encoding='utf-8',
+            errors='ignore'
         )
         return result.stdout.strip()
     except subprocess.CalledProcessError as e:
@@ -1145,9 +1147,11 @@ def detect_large_files_in_history(limit_mb=5):
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
-            shell=True
+            shell=True,
+            encoding='utf-8',
+            errors='ignore'
         )
-        output = result.stdout.strip()
+        output = result.stdout.strip() if result.stdout else ""
 
         if not output:
             return []
@@ -1289,29 +1293,36 @@ def main():
         if commit_choice in ['y', 'yes']:
             print(f"正在执行：git commit -F \"{commit_msg_file}\"")
             import subprocess
+            # 使用UTF-8编码避免GBK编码错误
             result = subprocess.run(['git', 'commit', '-F', commit_msg_file],
-                                  capture_output=True, text=True, cwd='.')
+                                  capture_output=True, text=True, cwd='.',
+                                  encoding='utf-8', errors='ignore')
             if result.returncode == 0:
                 print("✅ Git commit 执行成功！")
-                print(result.stdout.strip())
+                if result.stdout:
+                    print(result.stdout.strip())
 
                 # 询问是否执行 git push
                 push_choice = input("\n是否立即执行 git push？(y/n): ").strip().lower()
                 if push_choice in ['y', 'yes']:
                     print("正在执行：git push")
                     push_result = subprocess.run(['git', 'push'],
-                                               capture_output=True, text=True, cwd='.')
+                                               capture_output=True, text=True, cwd='.',
+                                               encoding='utf-8', errors='ignore')
                     if push_result.returncode == 0:
                         print("✅ Git push 执行成功！")
-                        print(push_result.stdout.strip())
+                        if push_result.stdout:
+                            print(push_result.stdout.strip())
                     else:
                         print("❌ Git push 执行失败：")
-                        print(push_result.stderr.strip())
+                        if push_result.stderr:
+                            print(push_result.stderr.strip())
                 else:
                     print("⏭️ 跳过 git push，您可以稍后手动执行")
             else:
                 print("❌ Git commit 执行失败：")
-                print(result.stderr.strip())
+                if result.stderr:
+                    print(result.stderr.strip())
         else:
             print("⏭️ 跳过 git commit，您可以稍后手动执行")
     except KeyboardInterrupt:
