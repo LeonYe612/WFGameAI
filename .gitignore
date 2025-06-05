@@ -16,7 +16,7 @@ test_*.py
 *.svg
 
 # 静态文件和报告
-wfgame-ai-server/logs/django.log
+wfgame-ai-server/logs/*.log
 wfgame-ai-server/staticfiles/reports/*
 
 # Python 缓存文件

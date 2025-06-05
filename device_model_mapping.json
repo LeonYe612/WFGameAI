@@ -22,11 +22,16 @@
       "brand": "Xiaomi",
       "series": "数字系列",
       "category": "旗舰机型"
-    },
-    "NOH-AL10": {
+    },    "NOH-AL10": {
       "commercial_name": "MATE 40 PRO",
       "brand": "HUAWEI",
       "series": "MATE系列",
+      "category": "旗舰机型"
+    },
+    "ONEPLUS A5010": {
+      "commercial_name": "OnePlus 5T",
+      "brand": "OnePlus",
+      "series": "数字系列",
       "category": "旗舰机型"
     },
     "5c41023b": {
