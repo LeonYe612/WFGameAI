@@ -2,7 +2,8 @@ datasets/My First Project*
 external/
 train_results/
 *.log
-
+test_*.py
+*.txt
 # 大文件需要 Git LFS 跟踪或忽略
 *.pt
 *.png
@@ -16,10 +17,7 @@ train_results/
 
 # 静态文件和报告
 wfgame-ai-server/logs/django.log
-wfgame-ai-server/apps/reports/*
 wfgame-ai-server/staticfiles/reports/*
-wfgame-ai-server/staticfiles/drf-yasg/*
-wfgame-ai-server/staticfiles/fonts/*
 
 # Python 缓存文件
 __pycache__/

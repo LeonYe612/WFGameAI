@@ -52,7 +52,11 @@ class DeviceSerializer(serializers.ModelSerializer):
     current_user_name = serializers.ReadOnlyField(source='current_user.username')
     occupied_personnel = serializers.ReadOnlyField(source='current_user.username')  # 占用人员字段，引用当前使用者
 
-    # 增强的设备信息字段
+    # 覆盖原始字段以显示增强信息
+    brand = serializers.SerializerMethodField()
+    model = serializers.SerializerMethodField()
+
+    # 增强的设备信息字段（保留用于扩展）
     commercial_name = serializers.SerializerMethodField()
     display_name = serializers.SerializerMethodField()
     enhanced_brand = serializers.SerializerMethodField()
@@ -117,6 +121,16 @@ class DeviceSerializer(serializers.ModelSerializer):
         # 返回原始英文品牌名，如 vivo, OPPO, HUAWEI
         return enhanced_info.get('enhanced_brand', obj.brand)
 
+    def get_brand(self, obj):
+        """覆盖品牌字段，返回增强的品牌信息"""
+        enhanced_info = self._get_enhanced_info(obj)
+        return enhanced_info.get('enhanced_brand', obj.brand)
+
+    def get_model(self, obj):
+        """覆盖型号字段，返回商品名而不是技术型号"""
+        enhanced_info = self._get_enhanced_info(obj)
+        return enhanced_info.get('commercial_name', obj.model)
+
     def get_device_series(self, obj):
         """获取设备系列"""
         enhanced_info = self._get_enhanced_info(obj)
@@ -135,6 +149,10 @@ class DeviceDetailSerializer(serializers.ModelSerializer):
     owner_name = serializers.ReadOnlyField(source='owner.username')
     current_user_name = serializers.ReadOnlyField(source='current_user.username')
     recent_logs = serializers.SerializerMethodField()
+
+    # 覆盖原始字段以显示增强信息
+    brand = serializers.SerializerMethodField()
+    model = serializers.SerializerMethodField()
 
     # 增强的设备信息字段
     commercial_name = serializers.SerializerMethodField()
@@ -185,6 +203,16 @@ class DeviceDetailSerializer(serializers.ModelSerializer):
             'series': '未知系列',
             'category': '智能手机'
         }
+
+    def get_brand(self, obj):
+        """获取品牌字段的增强显示（覆盖原始字段）"""
+        enhanced_info = self._get_enhanced_info(obj)
+        return enhanced_info.get('enhanced_brand', obj.brand)
+
+    def get_model(self, obj):
+        """获取型号字段的增强显示（覆盖原始字段）"""
+        enhanced_info = self._get_enhanced_info(obj)
+        return enhanced_info.get('commercial_name', obj.model)
 
     def get_commercial_name(self, obj):
         """获取商品名（用于型号字段显示）"""
