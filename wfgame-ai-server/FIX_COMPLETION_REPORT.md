@@ -9,20 +9,32 @@ WFGameAI 自动化测试框架 - 关键问题修复完成报告
 ### 🎯 解决的核心问题
 
 #### ✅ 问题 1: Airtest静态资源路径错误
-**原始错误**: `FileNotFoundError: [WinError 3] 系统找不到指定的路径。: 'static\\image'` 和 `'static\\js'`
+**原始错误**:
+- `FileNotFoundError: [WinError 3] 系统找不到指定的路径。: 'static\\image'` 和 `'static\\js'`
+- `FileExistsError: [WinError 183] 当文件已存在时，无法创建该文件。: '...\\script.log\\static\\css'`
 
 **根本原因**:
 - LogToHtml配置中使用相对路径`static_root="static"`
 - Airtest基于当前工作目录而非报告目录查找静态资源
+- 多设备并发时，Airtest内部`shutil.copytree`尝试创建已存在的静态资源目录
 
 **修复方案**:
 ```python
+# 1. 修复静态资源路径配置
 # 修复前：
 static_root="static",           # 相对路径导致错误
 
 # 修复后：
 static_root_path = os.path.join(report_dir, "static")
 static_root=static_root_path,   # 使用绝对路径
+
+# 2. 添加线程锁防止并发冲突
+with REPORT_GENERATION_LOCK:
+    # 预处理：清理可能已存在的script.log/static目录
+    script_log_static = os.path.join(log_report_dir, "static")
+    if os.path.exists(script_log_static):
+        shutil.rmtree(script_log_static)
+    rpt.report()
 ```
 
 **验证结果**: ✅ **完全修复** - 所有静态资源目录存在，报告生成不再出现路径错误

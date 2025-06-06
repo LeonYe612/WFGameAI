@@ -7,7 +7,7 @@ import json
 import time
 import os
 import subprocess
-from threading import Thread, Event
+from threading import Thread, Event, Lock
 import queue
 import sys
 import argparse
@@ -28,6 +28,45 @@ import torch
 from datetime import datetime
 import random
 
+# 全局修补shutil.copytree以解决Airtest静态资源复制的FileExistsError问题
+# 这必须在所有其他操作之前进行，确保Airtest使用修补后的函数
+print("🔧 应用全局shutil.copytree修补，防止静态资源复制冲突")
+_original_copytree = shutil.copytree
+
+def _patched_copytree(src, dst, symlinks=False, ignore=None, copy_function=shutil.copy2,
+                     ignore_dangling_symlinks=False, dirs_exist_ok=True):
+    """全局修补的copytree函数，自动处理目录已存在的情况"""
+    try:
+        # Python 3.8+支持dirs_exist_ok参数
+        return _original_copytree(src, dst, symlinks=symlinks, ignore=ignore,
+                                 copy_function=copy_function,
+                                 ignore_dangling_symlinks=ignore_dangling_symlinks,
+                                 dirs_exist_ok=True)
+    except TypeError:
+        # Python 3.7及以下版本不支持dirs_exist_ok参数
+        try:
+            if os.path.exists(dst):
+                shutil.rmtree(dst)
+            return _original_copytree(src, dst, symlinks=symlinks, ignore=ignore,
+                                     copy_function=copy_function,
+                                     ignore_dangling_symlinks=ignore_dangling_symlinks)
+        except Exception as e:
+            print(f"🔧 全局copytree修补失败，忽略错误继续执行: {src} -> {dst}, 错误: {e}")
+            # 如果目标目录已存在，直接返回成功
+            if os.path.exists(dst):
+                return dst
+            raise e
+    except Exception as e:
+        print(f"🔧 全局copytree处理异常: {src} -> {dst}, 错误: {e}")
+        # 如果目标目录已存在，直接返回成功
+        if os.path.exists(dst):
+            return dst
+        raise e
+
+# 应用全局修补
+shutil.copytree = _patched_copytree
+print("✅ 全局shutil.copytree修补已应用")
+
 # 导入统一路径管理工具
 
 # 统一报告目录配置 - 所有报告相关路径都基于staticfiles/reports
@@ -38,6 +77,9 @@ SUMMARY_REPORTS_DIR = os.path.join(STATICFILES_REPORTS_DIR, "summary_reports")
 # 其他默认路径
 DEFAULT_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_TESTCASE_DIR = os.path.join(DEFAULT_BASE_DIR, "testcase")
+
+# 全局锁，用于防止多设备同时复制静态资源时的竞争条件
+REPORT_GENERATION_LOCK = Lock()
 
 try:
     # 使用单独的配置导入文件
@@ -2176,8 +2218,29 @@ def run_one_report(log_dir, report_dir, script_path=None):
         print(f"report_html_file: {report_html_file}")
         print(f"script_log_html_file: {script_log_html_file}")
 
-    # 生成报告
-        rpt.report()
+        # 生成报告 - 使用线程锁防止多设备同时复制静态资源导致的竞争条件
+        with REPORT_GENERATION_LOCK:
+            print(f"📊 开始生成报告，设备占用锁中...")
+
+            # 预处理：彻底清理script.log目录，避免Airtest copytree冲突
+            script_log_dir = os.path.dirname(script_log_html_file)
+            if os.path.exists(script_log_dir):
+                try:
+                    shutil.rmtree(script_log_dir)
+                    print(f"🧹 已清理现有的script.log目录: {script_log_dir}")
+                except Exception as e:
+                    print(f"⚠️ 清理script.log目录时出错: {e}")
+
+            # 直接生成报告，全局修补的shutil.copytree会自动处理目录冲突
+            try:
+                print(f"🚀 开始生成Airtest报告...")
+                rpt.report()
+                print(f"✅ Airtest报告生成完成")
+            except Exception as e:
+                print(f"⚠️ 报告生成时出现异常: {e}")
+                # 即使出现异常也继续，因为可能只是复制资源的问题
+                import traceback
+                traceback.print_exc()
 
         # 确定实际生成的HTML文件路径
         actual_html_file = script_log_html_file if os.path.exists(script_log_html_file) else report_html_file
@@ -2316,18 +2379,63 @@ def sync_device_report_to_staticfiles(device_report_dir):
     print("已使用统一报告目录结构，无需额外同步操作")
 
 
-def _should_include_device_in_summary(report_path):
+def _should_include_device_in_summary(report_path, test_session_start=None):
     """
     检查设备是否应该包含在汇总报告中
-    基于脚本的include_in_log属性决定
+    基于当前测试会话的时间范围进行过滤
 
     :param report_path: 设备报告路径
-    :return: True 如果设备应该包含在汇总报告中，False 如果只执行了未加入日志的脚本
+    :param test_session_start: 测试会话开始时间戳
+    :return: True 如果设备应该包含在汇总报告中，False 如果是之前测试会话的设备
     """
-    # 临时修复：始终返回True，确保所有设备都包含在报告中
-    # 这是为了解决数据库记录与文件系统脚本不匹配的问题
-    print(f"[修复] 确保设备 {os.path.basename(os.path.dirname(report_path)) if report_path else ''} 包含在汇总报告中")
-    return True
+    if not report_path or not os.path.exists(report_path):
+        print(f"[过滤] 设备报告路径无效或文件不存在: {report_path}")
+        return False
+
+    # 如果没有提供测试会话开始时间，包含所有设备（兼容旧版本）
+    if test_session_start is None:
+        print(f"[兼容] 未提供测试会话开始时间，包含设备: {os.path.basename(os.path.dirname(report_path))}")
+        return True
+
+    try:
+        # 从报告路径中提取设备目录名称和时间戳
+        device_dir_name = os.path.basename(os.path.dirname(report_path))
+
+        # 提取时间戳部分 (格式: 设备名_YYYY-MM-DD-HH-MM-SS)
+        import re
+        timestamp_match = re.search(r'_(\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2})$', device_dir_name)
+        if not timestamp_match:
+            print(f"[警告] 无法从设备目录名称中提取时间戳: {device_dir_name}")
+            return True  # 如果无法提取时间戳，保守地包含该设备
+
+        device_timestamp_str = timestamp_match.group(1)
+
+        # 将设备时间戳转换为时间戳进行比较
+        from datetime import datetime
+        device_time = datetime.strptime(device_timestamp_str, '%Y-%m-%d-%H-%M-%S')
+        device_timestamp = device_time.timestamp()
+
+        # 将测试会话开始时间转换为datetime以便比较
+        session_start_time = datetime.fromtimestamp(test_session_start)
+
+        # 计算时间差（分钟）
+        time_diff_minutes = abs(device_timestamp - test_session_start) / 60
+
+        # 如果设备时间戳在测试会话开始前后5分钟内，认为是当前会话的设备
+        is_current_session = time_diff_minutes <= 5
+
+        if is_current_session:
+            print(f"[包含] 设备 {device_dir_name} 属于当前测试会话 (时间差: {time_diff_minutes:.1f}分钟)")
+        else:
+            print(f"[排除] 设备 {device_dir_name} 不属于当前测试会话 (时间差: {time_diff_minutes:.1f}分钟)")
+            print(f"        设备时间: {device_time.strftime('%Y-%m-%d %H:%M:%S')}")
+            print(f"        会话开始: {session_start_time.strftime('%Y-%m-%d %H:%M:%S')}")
+
+        return is_current_session
+
+    except Exception as e:
+        print(f"[错误] 处理设备时间戳时出错: {e}, 设备: {device_dir_name if 'device_dir_name' in locals() else 'unknown'}")
+        return True  # 出错时保守地包含该设备
 
 
 # 生成汇总报告
@@ -2361,6 +2469,8 @@ def run_summary(data):
         }
 
         # 收集各设备的测试结果
+        test_session_start = data.get('start')  # 获取测试会话开始时间
+
         for dev_name, test_result in data['tests'].items():
             # 处理新的测试结果数据结构
             if isinstance(test_result, dict):
@@ -2387,13 +2497,13 @@ def run_summary(data):
                 report_rel_path = f"../ui_run/WFGameAI.air/log/{device_dir_name}/log.html"
                 print(f"设备 {dev_name} 报告相对路径: {report_rel_path}")
 
-            # 检查设备是否包含需要加入日志的脚本
-            # 基于脚本的include_in_log属性决定是否在汇总报告中包含该设备
-            should_include_in_summary = _should_include_device_in_summary(report_path)
+            # 检查设备是否包含在当前测试会话中
+            # 基于设备报告时间戳和测试会话开始时间进行过滤
+            should_include_in_summary = _should_include_device_in_summary(report_path, test_session_start)
 
-            # 如果设备只执行了未加入日志的脚本，跳过该设备不计入汇总统计
+            # 如果设备不属于当前测试会话，跳过该设备不计入汇总统计
             if not should_include_in_summary:
-                print(f"设备 {dev_name} 只执行了未加入日志的脚本，从汇总报告中排除")
+                print(f"设备 {dev_name} 不属于当前测试会话，从汇总报告中排除")
                 continue
 
             device_data = {
