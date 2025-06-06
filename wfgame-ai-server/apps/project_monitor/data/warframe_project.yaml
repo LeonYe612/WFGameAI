@@ -1,0 +1,75 @@
+project_info:
+  name: "Warframe Game AI"
+  version: "1.0.0"
+  created_date: "2025-06-06"
+  description: "Warframe游戏自动化AI项目"
+
+button_classes:
+  system-skip:
+    name: "系统跳过按钮"
+    description: "点击跳过按钮，跳过这一步"
+    category: "system"
+    expected_success_rate: 0.6
+    icon: "skip-forward"
+
+  hint-guide:
+    name: "引导提示按钮"
+    description: "点击引导弹窗/按钮，进入下个界面或下一步"
+    category: "guide"
+    expected_success_rate: 0.8
+    icon: "help-circle"
+
+  operation-back:
+    name: "返回按钮"
+    description: "点击返回按钮，返回上个界面"
+    category: "navigation"
+    expected_success_rate: 0.7
+    icon: "arrow-left"
+
+  operation-confirm:
+    name: "确认按钮"
+    description: "点击确定类按钮，完成选择或支付"
+    category: "action"
+    expected_success_rate: 0.7
+    icon: "check-circle"
+
+  operation-challenge:
+    name: "挑战按钮"
+    description: "进入挑战功能，开始战斗场景"
+    category: "action"
+    expected_success_rate: 0.6
+    icon: "sword"
+
+  navigation-fight:
+    name: "战斗导航按钮"
+    description: "点击进入战斗场景"
+    category: "navigation"
+    expected_success_rate: 0.5
+    icon: "target"
+
+scenarios:
+  scene2_guide_steps:
+    name: "场景2引导步骤"
+    description: "主要的游戏引导流程"
+    classes_used:
+      - "system-skip"
+      - "hint-guide"
+      - "operation-back"
+      - "operation-confirm"
+      - "operation-challenge"
+      - "navigation-fight"
+    execution_frequency: "high"
+
+categories:
+  system:
+    name: "系统控制"
+    color: "#6366f1"
+  guide:
+    name: "引导提示"
+    color: "#10b981"
+  navigation:
+    name: "导航控制"
+    color: "#f59e0b"
+  action:
+    name: "操作动作"
+    color: "#ef4444"

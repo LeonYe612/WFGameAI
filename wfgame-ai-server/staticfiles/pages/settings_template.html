@@ -73,9 +73,11 @@
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="/pages/tasks_template.html"><i class="fas fa-tasks"></i> 任务管理</a>
+                        </li>                        <li class="nav-item">
+                            <a class="nav-link" href="/pages/reports_template.html"><i class="fas fa-chart-bar"></i> 测试报告</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="/pages/reports_template.html"><i class="fas fa-chart-bar"></i> 测试报告</a>
+                            <a class="nav-link" href="/pages/project_monitor.html"><i class="fas fa-chart-line"></i> 识别统计</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="/pages/data_template.html"><i class="fas fa-database"></i> 数据管理</a>
@@ -171,7 +173,7 @@
                         </form>
                     </div>
                 </div>
-                
+
                 <div class="card d-none" id="pythonSettingsCard">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5>Python环境管理</h5>
@@ -181,16 +183,16 @@
                     </div>
                     <div class="card-body">
                         <div class="alert alert-info">
-                            <i class="fas fa-info-circle"></i> 
+                            <i class="fas fa-info-circle"></i>
                             检测系统中所有可用的Python环境，自动识别Anaconda/Miniconda环境，并可以切换当前环境。
                         </div>
-                        
+
                         <div id="pythonEnvsContainer">
                             <div class="text-center my-5">
                                 <p class="text-muted">点击"检测环境"按钮，开始扫描可用的Python环境</p>
                             </div>
                         </div>
-                        
+
                         <div id="loadingEnvs" class="d-none">
                             <div class="text-center my-5">
                                 <div class="spinner-border text-primary loading-spinner" role="status">
@@ -199,13 +201,13 @@
                                 <p class="mt-2">正在检测系统中的Python环境，请稍候...</p>
                             </div>
                         </div>
-                        
+
                         <div id="envError" class="alert alert-danger d-none">
                             <i class="fas fa-exclamation-triangle"></i> <span id="errorMessage"></span>
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="card d-none" id="userManagementCard">
                     <div class="card-header">
                         <h5>用户管理</h5>
@@ -214,7 +216,7 @@
                         <p>用户管理内容</p>
                     </div>
                 </div>
-                
+
                 <div class="card d-none" id="aiSettingsCard">
                     <div class="card-header">
                         <h5>AI设置</h5>
@@ -223,7 +225,7 @@
                         <p>AI设置内容</p>
                     </div>
                 </div>
-                
+
                 <div class="card d-none" id="backupRestoreCard">
                     <div class="card-header">
                         <h5>备份与恢复</h5>
@@ -232,7 +234,7 @@
                         <p>备份与恢复内容</p>
                     </div>
                 </div>
-                
+
                 <div class="card d-none" id="systemLogCard">
                     <div class="card-header">
                         <h5>系统日志</h5>
@@ -241,7 +243,7 @@
                         <p>系统日志内容</p>
                     </div>
                 </div>
-                
+
                 <div class="card d-none" id="apiSettingsCard">
                     <div class="card-header">
                         <h5>API配置</h5>
@@ -270,17 +272,17 @@
                 'systemLog': 'systemLogCard',
                 'apiSettings': 'apiSettingsCard'
             };
-            
+
             Object.keys(menuItems).forEach(menuId => {
                 const menuItem = document.getElementById(menuId);
                 menuItem.addEventListener('click', function(e) {
                     e.preventDefault();
-                    
+
                     document.querySelectorAll('.list-group-item').forEach(item => {
                         item.classList.remove('active');
                     });
                     menuItem.classList.add('active');
-                    
+
                     Object.values(menuItems).forEach(cardId => {
                         const card = document.getElementById(cardId);
                         if (cardId === menuItems[menuId]) {
@@ -291,37 +293,37 @@
                     });
                 });
             });
-            
+
             const detectPythonEnvsBtn = document.getElementById('detectPythonEnvsBtn');
             const pythonEnvsContainer = document.getElementById('pythonEnvsContainer');
             const loadingEnvs = document.getElementById('loadingEnvs');
             const envError = document.getElementById('envError');
             const errorMessage = document.getElementById('errorMessage');
-            
+
             detectPythonEnvsBtn.addEventListener('click', function() {
                 pythonEnvsContainer.classList.add('d-none');
                 loadingEnvs.classList.remove('d-none');
                 envError.classList.add('d-none');
-                
+
                 fetch('/api/system/python-envs/')
                     .then(response => response.json())
                     .then(data => {
                         loadingEnvs.classList.add('d-none');
-                        
+
                         if (data.success) {
                             pythonEnvsContainer.classList.remove('d-none');
-                            
+
                             if (data.envs && data.envs.length > 0) {
                                 pythonEnvsContainer.innerHTML = '';
-                                
+
                                 data.envs.forEach(env => {
                                     const envCard = document.createElement('div');
                                     envCard.className = `card mb-3 env-card ${env.active ? 'active' : ''}`;
-                                    
+
                                     let badgeClass = env.active ? 'bg-active' : 'bg-secondary';
                                     let badgeText = env.active ? '当前环境' : '可选环境';
                                     let pythonInfo = `Python ${env.version || '未知版本'}`;
-                                    
+
                                     envCard.innerHTML = `
                                         <div class="card-body">
                                             <div class="d-flex justify-content-between align-items-center">
@@ -332,22 +334,22 @@
                                             <p class="card-text text-muted small">${env.path}</p>
                                             <div class="d-flex justify-content-between align-items-center">
                                                 <span class="text-muted small">包含 ${env.packages?.length || 0} 个已安装包</span>
-                                                <button class="btn btn-sm ${env.active ? 'btn-success disabled' : 'btn-outline-primary'}" 
-                                                        ${env.active ? 'disabled' : ''} 
+                                                <button class="btn btn-sm ${env.active ? 'btn-success disabled' : 'btn-outline-primary'}"
+                                                        ${env.active ? 'disabled' : ''}
                                                         data-env-path="${env.path}">
                                                     ${env.active ? '<i class="fas fa-check"></i> 当前环境' : '切换到此环境'}
                                                 </button>
                                             </div>
                                         </div>
                                     `;
-                                    
+
                                     const switchBtn = envCard.querySelector('button[data-env-path]');
                                     if (switchBtn && !env.active) {
                                         switchBtn.addEventListener('click', function() {
                                             switchPythonEnv(env.path);
                                         });
                                     }
-                                    
+
                                     pythonEnvsContainer.appendChild(envCard);
                                 });
                             } else {
@@ -370,12 +372,12 @@
                         errorMessage.textContent = '请求失败，请检查网络连接';
                     });
             });
-            
+
             function switchPythonEnv(envPath) {
                 pythonEnvsContainer.classList.add('d-none');
                 loadingEnvs.classList.remove('d-none');
                 envError.classList.add('d-none');
-                
+
                 fetch('/api/system/switch-python-env/', {
                     method: 'POST',
                     headers: {
@@ -403,4 +405,4 @@
         });
     </script>
 </body>
-</html> 
+</html>

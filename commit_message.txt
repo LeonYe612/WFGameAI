@@ -1,14 +1,28 @@
-bugfix(scripts): 修复日志生成期间报错；修复错误复制多余设备的问题。
+fix(scripts): 修复debug priority detection问题
 
-改进项目文档，提升代码可维护性。
+改进系统工具和基础设施：项目文档, 自动化测试等，增强开发效率和代码质量。
+修复debug priority detection问题, debug detection flow问题问题，...。
 
-修改了 6 个文件。
+新增了 13 个文件、修改了 7 个文件。
 
 主要改动:
 
+243模块:
+  - 新增: 227.md
 scripts模块:
-  - 修改: data.json, replay_script.py
+  - 新增了 5 个文件
+    - 数据处理: 2个
+  - 修改: data.json, replay_script.py, scene2_guide_steps_2025-04-07.json
+config模块:
+  - 修改: device_preparation_cache.json
+docs模块:
+  - 新增: 210-0606.md
 logs模块:
   - 修改: django.log
 other模块:
-  - 修改: commit_message.txt, git_changes.txt, FIX_COMPLETION_REPORT.md
+  - 修改: commit_message.txt, git_changes.txt
+scripts模块:
+  - 新增了 6 个文件
+    - 模型定义: 1个
+    - URL配置: 2个
+    - 其他: 3个

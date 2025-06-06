@@ -1,8 +1,22 @@
 变更文件列表:
 ========================================
+A	"Priority\346\243\200\346\265\213\350\260\203\350\257\225\346\214\207\345\215\227.md"
+A	analyze_latest_logs.py
 M	commit_message.txt
+A	debug_detection_flow.py
+A	debug_priority_detection.py
+M	device_preparation_cache.json
+A	diagnose_detection_consistency.py
+A	"docs/WFGameAI\350\207\252\345\212\250\345\214\226\346\265\213\350\257\225\346\241\206\346\236\266 - \351\225\277\346\234\237\344\274\230\345\214\226\346\226\271\346\241\210-0606.md"
 M	git_changes.txt
-M	wfgame-ai-server/FIX_COMPLETION_REPORT.md
+A	monitor_priority_detection.py
+A	train_model.py
 M	wfgame-ai-server/apps/scripts/data.json
 M	wfgame-ai-server/apps/scripts/replay_script.py
+A	wfgame-ai-server/apps/scripts/screen_analysis_results/DEVICE_SCREEN_ANALYZER_COMPLETION_REPORT.md
+A	wfgame-ai-server/apps/scripts/screen_analysis_results/analysis_data_5c41023b_20250606_153152.json
+A	wfgame-ai-server/apps/scripts/screen_analysis_results/device_screen_analyzer.py
+A	wfgame-ai-server/apps/scripts/screen_analysis_results/device_screen_analyzer_guide.md
+A	wfgame-ai-server/apps/scripts/simple_device_analyzer.py
+M	wfgame-ai-server/apps/scripts/testcase/scene2_guide_steps_2025-04-07.json
 M	wfgame-ai-server/logs/django.log

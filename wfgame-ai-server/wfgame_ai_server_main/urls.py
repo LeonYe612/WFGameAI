@@ -85,10 +85,11 @@ urlpatterns = [
     path('api/scripts/', include('apps.scripts.urls')),
 
     # 任务管理API
-    path('api/tasks/', include('apps.tasks.urls')),
-
-    # 报告管理API
+    path('api/tasks/', include('apps.tasks.urls')),    # 报告管理API
     path('api/reports/', include('apps.reports.urls')),
+
+    # 项目监控API
+    path('api/project-monitor/', include('apps.project_monitor.urls')),
 
     # 保留原有的直接API访问路径，以确保兼容性
     path('api/reports/summary_list/', summary_list),

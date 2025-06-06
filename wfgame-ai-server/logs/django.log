@@ -2450,3 +2450,575 @@ INFO 2025-06-06 16:08:59,330 basehttp 62992 73360 "GET /api/docs/ HTTP/1.1" 200 
 INFO 2025-06-06 16:09:00,387 basehttp 62992 73360 "GET /api/schema/ HTTP/1.1" 200 32448
 INFO 2025-06-06 16:11:21,501 basehttp 62992 62580 "POST /api/scripts/replay/ HTTP/1.1" 200 596
 INFO 2025-06-06 16:23:55,302 basehttp 62992 69712 "POST /api/scripts/replay/ HTTP/1.1" 200 595
+WARNING 2025-06-06 17:04:52,821 log 62992 85296 Not Found: /api/project-monitor/dashboard
+WARNING 2025-06-06 17:04:52,821 basehttp 62992 85296 "GET /api/project-monitor/dashboard?id=49d779eb-ced6-4b14-89b5-cd197220e509&vscodeBrowserReqId=1749200692497 HTTP/1.1" 404 10558
+WARNING 2025-06-06 17:04:54,479 log 62992 85296 Not Found: /docs
+WARNING 2025-06-06 17:04:54,480 basehttp 62992 85296 "GET /docs?id=49d779eb-ced6-4b14-89b5-cd197220e509&vscodeBrowserReqId=1749200694474 HTTP/1.1" 404 4887
+INFO 2025-06-06 17:05:03,705 basehttp 62992 85612 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-06-06 17:05:04,148 basehttp 62992 85612 "POST /api/scripts/ HTTP/1.1" 200 2072
+INFO 2025-06-06 17:05:05,031 basehttp 62992 85612 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-06-06 17:05:05,211 basehttp 62992 85612 "POST /api/scripts/ HTTP/1.1" 200 2072
+WARNING 2025-06-06 17:05:14,785 log 62992 88832 Not Found: /api/project-monitor/dashboard
+WARNING 2025-06-06 17:05:14,786 basehttp 62992 88832 "GET /api/project-monitor/dashboard HTTP/1.1" 404 10481
+WARNING 2025-06-06 17:11:05,549 log 62992 101592 Not Found: /api/project-monitor/projects
+WARNING 2025-06-06 17:11:05,549 basehttp 62992 101592 "GET /api/project-monitor/projects HTTP/1.1" 404 10478
+INFO 2025-06-06 17:11:08,151 basehttp 62992 82656 "GET /health HTTP/1.1" 301 0
+INFO 2025-06-06 17:15:50,155 autoreload 62992 63328 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\wfgame_ai_server_main\settings.py changed, reloading.
+INFO 2025-06-06 17:15:50,670 autoreload 112480 111704 Watching for file changes with StatReloader
+INFO 2025-06-06 17:16:25,329 autoreload 112480 111704 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\project_monitor\django_models.py changed, reloading.
+INFO 2025-06-06 17:16:25,793 autoreload 90780 113568 Watching for file changes with StatReloader
+INFO 2025-06-06 17:28:04,723 autoreload 51928 99696 Watching for file changes with StatReloader
+INFO 2025-06-06 17:28:09,331 basehttp 51928 52556 "GET /api/project-monitor/dashboard HTTP/1.1" 301 0
+WARNING 2025-06-06 17:28:09,354 log 51928 45924 Method Not Allowed: /api/project-monitor/dashboard/
+WARNING 2025-06-06 17:28:09,355 basehttp 51928 45924 "GET /api/project-monitor/dashboard/ HTTP/1.1" 405 10668
+INFO 2025-06-06 17:28:09,366 basehttp 51928 45924 "GET /static/rest_framework/css/bootstrap.min.css HTTP/1.1" 304 0
+INFO 2025-06-06 17:28:09,370 basehttp 51928 45924 "GET /static/rest_framework/css/bootstrap-tweaks.css HTTP/1.1" 304 0
+INFO 2025-06-06 17:28:09,370 basehttp 51928 45924 "GET /static/rest_framework/css/prettify.css HTTP/1.1" 304 0
+INFO 2025-06-06 17:28:09,371 basehttp 51928 45924 "GET /static/rest_framework/css/default.css HTTP/1.1" 304 0
+INFO 2025-06-06 17:28:09,372 basehttp 51928 45924 "GET /static/rest_framework/js/jquery-3.7.1.min.js HTTP/1.1" 304 0
+INFO 2025-06-06 17:28:09,373 basehttp 51928 45924 "GET /static/rest_framework/js/ajax-form.js HTTP/1.1" 304 0
+INFO 2025-06-06 17:28:09,374 basehttp 51928 45924 "GET /static/rest_framework/js/csrf.js HTTP/1.1" 304 0
+INFO 2025-06-06 17:28:09,375 basehttp 51928 45924 "GET /static/rest_framework/js/bootstrap.min.js HTTP/1.1" 304 0
+INFO 2025-06-06 17:28:09,375 basehttp 51928 45924 "GET /static/rest_framework/js/prettify-min.js HTTP/1.1" 304 0
+INFO 2025-06-06 17:28:09,376 basehttp 51928 45924 "GET /static/rest_framework/js/default.js HTTP/1.1" 304 0
+INFO 2025-06-06 17:28:09,377 basehttp 51928 45924 "GET /static/rest_framework/js/load-ajax-form.js HTTP/1.1" 304 0
+INFO 2025-06-06 17:28:09,676 basehttp 51928 45924 "GET /static/rest_framework/img/grid.png HTTP/1.1" 304 0
+INFO 2025-06-06 17:28:48,209 basehttp 51928 45924 "GET /api/docs/ HTTP/1.1" 200 788
+INFO 2025-06-06 17:28:49,161 basehttp 51928 45924 "GET /api/schema/ HTTP/1.1" 200 34219
+INFO 2025-06-06 17:29:17,702 autoreload 51928 99696 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\project_monitor\django_api.py changed, reloading.
+INFO 2025-06-06 17:29:18,229 autoreload 60872 129716 Watching for file changes with StatReloader
+WARNING 2025-06-06 17:29:23,448 log 60872 61880 Method Not Allowed: /api/project-monitor/dashboard/
+WARNING 2025-06-06 17:29:23,448 basehttp 60872 61880 "GET /api/project-monitor/dashboard/ HTTP/1.1" 405 10583
+INFO 2025-06-06 17:29:33,327 basehttp 60872 89264 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-06-06 17:29:33,635 basehttp 60872 89264 "POST /api/scripts/ HTTP/1.1" 200 2072
+INFO 2025-06-06 17:29:34,686 basehttp 60872 89264 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-06-06 17:29:34,817 basehttp 60872 89264 "POST /api/scripts/ HTTP/1.1" 200 2072
+INFO 2025-06-06 17:29:43,334 autoreload 60872 129716 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\project_monitor\django_api.py changed, reloading.
+INFO 2025-06-06 17:29:43,840 autoreload 63000 59204 Watching for file changes with StatReloader
+INFO 2025-06-06 17:30:54,522 autoreload 63000 59204 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\project_monitor\django_api.py changed, reloading.
+INFO 2025-06-06 17:30:55,061 autoreload 59448 65864 Watching for file changes with StatReloader
+INFO 2025-06-06 17:32:03,400 basehttp 59448 69056 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-06-06 17:32:03,540 basehttp 59448 69056 "POST /api/scripts/ HTTP/1.1" 200 2072
+INFO 2025-06-06 17:32:04,453 basehttp 59448 69056 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-06-06 17:32:04,583 basehttp 59448 69056 "POST /api/scripts/ HTTP/1.1" 200 2072
+INFO 2025-06-06 17:32:08,206 basehttp 59448 69056 "GET /pages/data_template.html HTTP/1.1" 302 0
+INFO 2025-06-06 17:32:08,208 basehttp 59448 69056 "GET /static/pages/data_template.html HTTP/1.1" 304 0
+INFO 2025-06-06 17:32:09,617 basehttp 59448 69056 "GET /pages/reports_template.html HTTP/1.1" 302 0
+INFO 2025-06-06 17:32:09,620 basehttp 59448 69056 "GET /static/pages/reports_template.html HTTP/1.1" 304 0
+INFO 2025-06-06 17:32:09,918 basehttp 59448 69056 "POST /api/reports/summary_list/ HTTP/1.1" 200 39675
+INFO 2025-06-06 17:32:10,480 basehttp 59448 69056 "GET /pages/tasks_template.html HTTP/1.1" 302 0
+INFO 2025-06-06 17:32:10,482 basehttp 59448 69056 "GET /static/pages/tasks_template.html HTTP/1.1" 304 0
+INFO 2025-06-06 17:32:12,880 basehttp 59448 69056 "GET /pages/settings_template.html HTTP/1.1" 302 0
+INFO 2025-06-06 17:32:12,988 basehttp 59448 69056 "GET /static/pages/settings_template.html HTTP/1.1" 200 21031
+INFO 2025-06-06 17:32:15,681 basehttp 59448 69056 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-06 17:32:15,683 basehttp 59448 69056 "GET /static/pages/devices.html HTTP/1.1" 304 0
+INFO 2025-06-06 17:32:15,692 basehttp 59448 69056 "GET /static/js/pages/devices_table_vue.js HTTP/1.1" 304 0
+INFO 2025-06-06 17:32:17,361 basehttp 59448 69056 "POST /api/devices/scan/ HTTP/1.1" 200 1749
+INFO 2025-06-06 17:37:19,176 basehttp 59448 84292 "GET /static/pages/devices.html HTTP/1.1" 200 6981
+INFO 2025-06-06 17:37:20,318 basehttp 59448 84292 "POST /api/devices/scan/ HTTP/1.1" 200 1749
+INFO 2025-06-06 17:37:23,720 basehttp 59448 84292 "GET /pages/project_monitor.html HTTP/1.1" 302 0
+INFO 2025-06-06 17:37:23,723 basehttp 59448 84292 "GET /static/pages/project_monitor.html HTTP/1.1" 200 25972
+INFO 2025-06-06 17:37:23,941 basehttp 59448 84292 "POST /api/project-monitor/projects/list/ HTTP/1.1" 200 30
+INFO 2025-06-06 17:38:41,271 basehttp 59448 84292 "GET /static/pages/project_monitor.html HTTP/1.1" 200 25866
+INFO 2025-06-06 17:38:41,410 basehttp 59448 84292 "POST /api/project-monitor/projects/list/ HTTP/1.1" 200 30
+INFO 2025-06-06 17:38:43,168 basehttp 59448 84292 "GET /static/pages/project_monitor.html HTTP/1.1" 304 0
+INFO 2025-06-06 17:38:43,320 basehttp 59448 84292 "POST /api/project-monitor/projects/list/ HTTP/1.1" 200 30
+INFO 2025-06-06 17:38:43,773 basehttp 59448 84292 "GET /static/pages/project_monitor.html HTTP/1.1" 304 0
+INFO 2025-06-06 17:38:43,902 basehttp 59448 84292 "POST /api/project-monitor/projects/list/ HTTP/1.1" 200 30
+INFO 2025-06-06 17:38:43,950 basehttp 59448 84292 "GET /static/pages/project_monitor.html HTTP/1.1" 304 0
+INFO 2025-06-06 17:38:44,071 basehttp 59448 84292 "POST /api/project-monitor/projects/list/ HTTP/1.1" 200 30
+INFO 2025-06-06 17:38:44,119 basehttp 59448 84292 "GET /static/pages/project_monitor.html HTTP/1.1" 304 0
+INFO 2025-06-06 17:38:44,241 basehttp 59448 84292 "POST /api/project-monitor/projects/list/ HTTP/1.1" 200 30
+INFO 2025-06-06 17:38:44,269 basehttp 59448 84292 "GET /static/pages/project_monitor.html HTTP/1.1" 304 0
+INFO 2025-06-06 17:38:44,392 basehttp 59448 84292 "POST /api/project-monitor/projects/list/ HTTP/1.1" 200 30
+INFO 2025-06-06 17:38:44,920 basehttp 59448 84292 "GET /pages/tasks_template.html HTTP/1.1" 302 0
+INFO 2025-06-06 17:38:48,272 basehttp 59448 84292 "GET /pages/dashboard_template.html HTTP/1.1" 302 0
+INFO 2025-06-06 17:38:48,275 basehttp 59448 84292 "GET /static/pages/dashboard_template.html HTTP/1.1" 200 8689
+INFO 2025-06-06 17:38:51,311 basehttp 59448 84292 "GET /pages/project_monitor.html HTTP/1.1" 302 0
+INFO 2025-06-06 17:38:51,314 basehttp 59448 84292 "GET /static/pages/project_monitor.html HTTP/1.1" 304 0
+INFO 2025-06-06 17:38:51,547 basehttp 59448 84292 "POST /api/project-monitor/projects/list/ HTTP/1.1" 200 30
+INFO 2025-06-06 17:38:58,352 basehttp 59448 84292 "GET /pages/tasks_template.html HTTP/1.1" 302 0
+INFO 2025-06-06 17:38:59,320 basehttp 59448 84292 "GET /pages/reports_template.html HTTP/1.1" 302 0
+INFO 2025-06-06 17:38:59,557 basehttp 59448 84292 "POST /api/reports/summary_list/ HTTP/1.1" 200 39675
+INFO 2025-06-06 17:39:00,320 basehttp 59448 84292 "GET /pages/tasks_template.html HTTP/1.1" 302 0
+INFO 2025-06-06 17:39:01,208 basehttp 59448 84292 "GET /pages/data_template.html HTTP/1.1" 302 0
+INFO 2025-06-06 17:39:02,016 basehttp 59448 84292 "GET /pages/settings_template.html HTTP/1.1" 302 0
+INFO 2025-06-06 17:39:04,433 basehttp 59448 84292 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-06 17:39:04,435 basehttp 59448 84292 "GET /static/pages/devices.html HTTP/1.1" 200 6981
+INFO 2025-06-06 17:39:05,665 basehttp 59448 84292 "POST /api/devices/scan/ HTTP/1.1" 200 1749
+INFO 2025-06-06 17:39:06,345 basehttp 59448 84292 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-06-06 17:39:06,623 basehttp 59448 84292 "POST /api/scripts/ HTTP/1.1" 200 2072
+WARNING 2025-06-06 17:39:32,542 log 59448 84292 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-06-06 17:39:32,542 basehttp 59448 84292 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 5062
+INFO 2025-06-06 17:39:38,131 basehttp 59448 84292 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-06 17:39:38,135 basehttp 59448 84292 "GET /static/pages/devices.html HTTP/1.1" 304 0
+WARNING 2025-06-06 17:39:38,169 log 59448 84292 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-06-06 17:39:38,169 basehttp 59448 84292 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 5062
+INFO 2025-06-06 17:39:39,548 basehttp 59448 84292 "POST /api/devices/scan/ HTTP/1.1" 200 1749
+INFO 2025-06-06 17:39:47,417 basehttp 59448 84292 "GET /pages/project_monitor.html HTTP/1.1" 302 0
+INFO 2025-06-06 17:39:47,421 basehttp 59448 84292 "GET /static/pages/project_monitor.html HTTP/1.1" 304 0
+WARNING 2025-06-06 17:39:47,457 log 59448 84292 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-06-06 17:39:47,457 basehttp 59448 84292 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 5062
+INFO 2025-06-06 17:39:47,803 basehttp 59448 84292 "POST /api/project-monitor/projects/list/ HTTP/1.1" 200 30
+INFO 2025-06-06 17:43:28,205 basehttp 59448 84292 "GET /static/pages/project_monitor.html HTTP/1.1" 304 0
+WARNING 2025-06-06 17:43:28,223 log 59448 84292 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-06-06 17:43:28,223 basehttp 59448 84292 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 5062
+INFO 2025-06-06 17:43:28,557 basehttp 59448 84292 "POST /api/project-monitor/projects/list/ HTTP/1.1" 200 30
+INFO 2025-06-06 17:43:33,841 basehttp 59448 84292 "GET /pages/reports_template.html HTTP/1.1" 302 0
+INFO 2025-06-06 17:43:34,335 basehttp 59448 84292 "POST /api/reports/summary_list/ HTTP/1.1" 200 39675
+INFO 2025-06-06 17:43:39,170 basehttp 59448 84292 "GET / HTTP/1.1" 200 10874
+INFO 2025-06-06 17:43:42,938 basehttp 59448 84292 "GET /pages/project_monitor.html HTTP/1.1" 302 0
+INFO 2025-06-06 17:43:43,245 basehttp 59448 84292 "POST /api/project-monitor/projects/list/ HTTP/1.1" 200 30
+INFO 2025-06-06 17:43:55,038 basehttp 59448 84292 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-06 17:43:55,043 basehttp 59448 84292 "GET /static/pages/devices.html HTTP/1.1" 304 0
+INFO 2025-06-06 17:43:56,184 basehttp 59448 107248 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-06-06 17:43:56,229 basehttp 59448 84292 "POST /api/devices/scan/ HTTP/1.1" 200 1749
+INFO 2025-06-06 17:43:56,435 basehttp 59448 84292 "POST /api/scripts/ HTTP/1.1" 200 2072
+INFO 2025-06-06 17:43:58,801 basehttp 59448 84292 "GET /pages/tasks_template.html HTTP/1.1" 302 0
+INFO 2025-06-06 17:44:00,401 basehttp 59448 84292 "GET /pages/reports_template.html HTTP/1.1" 302 0
+INFO 2025-06-06 17:44:00,781 basehttp 59448 84292 "POST /api/reports/summary_list/ HTTP/1.1" 200 39675
+INFO 2025-06-06 17:44:01,312 basehttp 59448 84292 "GET /pages/data_template.html HTTP/1.1" 302 0
+INFO 2025-06-06 17:44:02,448 basehttp 59448 84292 "GET /pages/settings_template.html HTTP/1.1" 302 0
+INFO 2025-06-06 17:44:04,089 basehttp 59448 84292 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-06-06 17:44:04,226 basehttp 59448 84292 "POST /api/scripts/ HTTP/1.1" 200 2072
+INFO 2025-06-06 17:44:04,809 basehttp 59448 84292 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-06 17:44:05,959 basehttp 59448 84292 "POST /api/devices/scan/ HTTP/1.1" 200 1749
+INFO 2025-06-06 17:44:06,151 basehttp 59448 84292 "GET /pages/dashboard_template.html HTTP/1.1" 302 0
+INFO 2025-06-06 17:44:06,153 basehttp 59448 84292 "GET /static/pages/dashboard_template.html HTTP/1.1" 304 0
+INFO 2025-06-06 17:44:07,520 basehttp 59448 84292 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-06 17:44:08,699 basehttp 59448 84292 "POST /api/devices/scan/ HTTP/1.1" 200 1749
+INFO 2025-06-06 17:44:08,897 basehttp 59448 84292 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-06-06 17:44:09,035 basehttp 59448 84292 "POST /api/scripts/ HTTP/1.1" 200 2072
+INFO 2025-06-06 17:44:11,992 basehttp 59448 84292 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-06 17:44:13,134 basehttp 59448 84292 "POST /api/devices/scan/ HTTP/1.1" 200 1749
+INFO 2025-06-06 17:44:14,048 basehttp 59448 84292 "GET /pages/project_monitor.html HTTP/1.1" 302 0
+INFO 2025-06-06 17:44:14,051 basehttp 59448 84292 "GET /static/pages/project_monitor.html HTTP/1.1" 304 0
+INFO 2025-06-06 17:44:14,205 basehttp 59448 84292 "POST /api/project-monitor/projects/list/ HTTP/1.1" 200 30
+INFO 2025-06-06 18:59:43,942 basehttp 59448 111620 "GET /static/pages/project_monitor.html HTTP/1.1" 304 0
+INFO 2025-06-06 18:59:44,252 basehttp 59448 111620 "POST /api/project-monitor/projects/list/ HTTP/1.1" 200 892
+INFO 2025-06-06 18:59:45,328 basehttp 59448 111620 "GET /pages/tasks_template.html HTTP/1.1" 302 0
+INFO 2025-06-06 18:59:47,151 basehttp 59448 111620 "GET /pages/dashboard_template.html HTTP/1.1" 302 0
+INFO 2025-06-06 18:59:47,154 basehttp 59448 111620 "GET /static/pages/dashboard_template.html HTTP/1.1" 304 0
+INFO 2025-06-06 18:59:48,526 basehttp 59448 111620 "GET /pages/project_monitor.html HTTP/1.1" 302 0
+INFO 2025-06-06 18:59:48,759 basehttp 59448 111620 "POST /api/project-monitor/projects/list/ HTTP/1.1" 200 892
+WARNING 2025-06-06 19:00:05,955 log 59448 111620 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-06-06 19:00:05,955 basehttp 59448 111620 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 5062
+INFO 2025-06-06 19:00:08,285 basehttp 59448 111620 "GET /static/pages/project_monitor.html HTTP/1.1" 304 0
+WARNING 2025-06-06 19:00:08,297 log 59448 111620 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-06-06 19:00:08,298 basehttp 59448 111620 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 5062
+INFO 2025-06-06 19:00:08,657 basehttp 59448 111620 "POST /api/project-monitor/projects/list/ HTTP/1.1" 200 892
+INFO 2025-06-06 19:04:19,045 basehttp 59448 111620 "GET /pages/dashboard_template.html HTTP/1.1" 302 0
+INFO 2025-06-06 19:04:21,774 basehttp 59448 111620 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-06 19:04:21,776 basehttp 59448 111620 "GET /static/pages/devices.html HTTP/1.1" 304 0
+INFO 2025-06-06 19:04:23,054 basehttp 59448 111620 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-06-06 19:04:23,315 basehttp 59448 111620 "POST /api/scripts/ HTTP/1.1" 200 2072
+INFO 2025-06-06 19:04:24,910 basehttp 59448 111620 "GET /pages/tasks_template.html HTTP/1.1" 302 0
+INFO 2025-06-06 19:04:25,686 basehttp 59448 111620 "GET /pages/reports_template.html HTTP/1.1" 302 0
+INFO 2025-06-06 19:04:25,926 basehttp 59448 111620 "POST /api/reports/summary_list/ HTTP/1.1" 200 39675
+INFO 2025-06-06 19:04:26,383 basehttp 59448 111620 "GET /pages/data_template.html HTTP/1.1" 302 0
+INFO 2025-06-06 19:04:27,270 basehttp 59448 111620 "GET /pages/settings_template.html HTTP/1.1" 302 0
+INFO 2025-06-06 19:05:41,612 basehttp 59448 130000 "POST /api/project-monitor/projects/list/ HTTP/1.1" 200 892
+INFO 2025-06-06 19:05:48,092 basehttp 59448 132540 "GET /pages/project_monitor.html?id=416463aa-a5cc-44a5-96ed-9c24024b03c2&vscodeBrowserReqId=1749207948089 HTTP/1.1" 302 0
+INFO 2025-06-06 19:05:48,094 basehttp 59448 132540 "GET /static/pages/project_monitor.html HTTP/1.1" 200 25866
+INFO 2025-06-06 19:05:48,161 basehttp 59448 132540 "POST /api/project-monitor/projects/list/ HTTP/1.1" 200 892
+INFO 2025-06-06 19:07:11,088 basehttp 59448 132540 "GET /pages/project_monitor.html?id=7d4fed5b-e6c7-4575-907b-5eb35e344fc7&vscodeBrowserReqId=1749208031086 HTTP/1.1" 302 0
+INFO 2025-06-06 19:07:11,175 basehttp 59448 132540 "POST /api/project-monitor/projects/list/ HTTP/1.1" 200 892
+ERROR 2025-06-06 19:07:26,943 log 59448 132540 Internal Server Error: /api/project-monitor/dashboard/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\decorators\csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\decorators.py", line 50, in handler
+    return func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\decorators\csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 498, in dispatch
+    request = self.initialize_request(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 397, in initialize_request
+    return Request(
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\request.py", line 154, in __init__
+    assert isinstance(request, HttpRequest), (
+AssertionError: The `request` argument must be an instance of `django.http.HttpRequest`, not `rest_framework.request.Request`.
+ERROR 2025-06-06 19:07:26,944 basehttp 59448 132540 "POST /api/project-monitor/dashboard/ HTTP/1.1" 500 132354
+ERROR 2025-06-06 19:07:28,626 log 59448 132540 Internal Server Error: /api/project-monitor/dashboard/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\decorators\csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\decorators.py", line 50, in handler
+    return func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\decorators\csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 498, in dispatch
+    request = self.initialize_request(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 397, in initialize_request
+    return Request(
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\request.py", line 154, in __init__
+    assert isinstance(request, HttpRequest), (
+AssertionError: The `request` argument must be an instance of `django.http.HttpRequest`, not `rest_framework.request.Request`.
+ERROR 2025-06-06 19:07:29,199 basehttp 59448 132540 "POST /api/project-monitor/dashboard/ HTTP/1.1" 500 132354
+ERROR 2025-06-06 19:07:30,198 log 59448 132540 Internal Server Error: /api/project-monitor/dashboard/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\decorators\csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\decorators.py", line 50, in handler
+    return func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\decorators\csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 498, in dispatch
+    request = self.initialize_request(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 397, in initialize_request
+    return Request(
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\request.py", line 154, in __init__
+    assert isinstance(request, HttpRequest), (
+AssertionError: The `request` argument must be an instance of `django.http.HttpRequest`, not `rest_framework.request.Request`.
+ERROR 2025-06-06 19:07:31,371 basehttp 59448 132540 "POST /api/project-monitor/dashboard/ HTTP/1.1" 500 132354
+INFO 2025-06-06 19:07:38,006 basehttp 59448 111620 "GET /pages/reports_template.html HTTP/1.1" 302 0
+INFO 2025-06-06 19:07:38,342 basehttp 59448 111620 "POST /api/reports/summary_list/ HTTP/1.1" 200 39675
+INFO 2025-06-06 19:07:38,743 basehttp 59448 111620 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-06 19:07:40,071 basehttp 59448 111620 "POST /api/devices/scan/ HTTP/1.1" 200 967
+INFO 2025-06-06 19:07:40,215 basehttp 59448 111620 "GET /pages/project_monitor.html HTTP/1.1" 302 0
+INFO 2025-06-06 19:07:40,525 basehttp 59448 111620 "POST /api/project-monitor/projects/list/ HTTP/1.1" 200 892
+ERROR 2025-06-06 19:07:42,570 log 59448 111620 Internal Server Error: /api/project-monitor/dashboard/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\decorators\csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\decorators.py", line 50, in handler
+    return func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\decorators\csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 498, in dispatch
+    request = self.initialize_request(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 397, in initialize_request
+    return Request(
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\request.py", line 154, in __init__
+    assert isinstance(request, HttpRequest), (
+AssertionError: The `request` argument must be an instance of `django.http.HttpRequest`, not `rest_framework.request.Request`.
+ERROR 2025-06-06 19:07:42,570 basehttp 59448 111620 "POST /api/project-monitor/dashboard/ HTTP/1.1" 500 132408
+ERROR 2025-06-06 19:07:43,969 log 59448 111620 Internal Server Error: /api/project-monitor/dashboard/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\decorators\csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\decorators.py", line 50, in handler
+    return func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\decorators\csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 498, in dispatch
+    request = self.initialize_request(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 397, in initialize_request
+    return Request(
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\request.py", line 154, in __init__
+    assert isinstance(request, HttpRequest), (
+AssertionError: The `request` argument must be an instance of `django.http.HttpRequest`, not `rest_framework.request.Request`.
+ERROR 2025-06-06 19:07:44,822 basehttp 59448 111620 "POST /api/project-monitor/dashboard/ HTTP/1.1" 500 132408
+ERROR 2025-06-06 19:07:45,795 log 59448 111620 Internal Server Error: /api/project-monitor/dashboard/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\decorators\csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\decorators.py", line 50, in handler
+    return func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\decorators\csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 498, in dispatch
+    request = self.initialize_request(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 397, in initialize_request
+    return Request(
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\request.py", line 154, in __init__
+    assert isinstance(request, HttpRequest), (
+AssertionError: The `request` argument must be an instance of `django.http.HttpRequest`, not `rest_framework.request.Request`.
+ERROR 2025-06-06 19:07:46,950 basehttp 59448 111620 "POST /api/project-monitor/dashboard/ HTTP/1.1" 500 132408
+ERROR 2025-06-06 19:07:48,456 log 59448 111620 Internal Server Error: /api/project-monitor/dashboard/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\decorators\csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\decorators.py", line 50, in handler
+    return func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\decorators\csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 498, in dispatch
+    request = self.initialize_request(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 397, in initialize_request
+    return Request(
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\request.py", line 154, in __init__
+    assert isinstance(request, HttpRequest), (
+AssertionError: The `request` argument must be an instance of `django.http.HttpRequest`, not `rest_framework.request.Request`.
+ERROR 2025-06-06 19:07:49,209 basehttp 59448 111620 "POST /api/project-monitor/dashboard/ HTTP/1.1" 500 132408
+INFO 2025-06-06 19:07:57,763 basehttp 59448 132540 "GET /pages/dashboard.html?id=8830dadf-f28d-45a8-a838-d73d825bb218&vscodeBrowserReqId=1749208077761 HTTP/1.1" 302 0
+INFO 2025-06-06 19:07:57,765 basehttp 59448 132540 "GET /static/pages/dashboard.html HTTP/1.1" 200 8690
+INFO 2025-06-06 19:08:00,790 basehttp 59448 132540 "GET /?id=8830dadf-f28d-45a8-a838-d73d825bb218&vscodeBrowserReqId=1749208080788 HTTP/1.1" 200 10874
+INFO 2025-06-06 19:08:04,228 basehttp 59448 132540 "GET /pages/project_monitor.html?id=8830dadf-f28d-45a8-a838-d73d825bb218&vscodeBrowserReqId=1749208084226 HTTP/1.1" 302 0
+INFO 2025-06-06 19:08:04,250 basehttp 59448 132540 "POST /api/project-monitor/projects/list/ HTTP/1.1" 200 892
+ERROR 2025-06-06 19:08:12,742 log 59448 62948 Internal Server Error: /api/project-monitor/dashboard/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\decorators\csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\decorators.py", line 50, in handler
+    return func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\decorators\csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 498, in dispatch
+    request = self.initialize_request(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 397, in initialize_request
+    return Request(
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\request.py", line 154, in __init__
+    assert isinstance(request, HttpRequest), (
+AssertionError: The `request` argument must be an instance of `django.http.HttpRequest`, not `rest_framework.request.Request`.
+ERROR 2025-06-06 19:08:12,743 basehttp 59448 62948 "POST /api/project-monitor/dashboard/ HTTP/1.1" 500 130566
+ERROR 2025-06-06 19:08:37,873 log 59448 135288 Internal Server Error: /api/project-monitor/dashboard/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\decorators\csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\decorators.py", line 50, in handler
+    return func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\decorators\csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 498, in dispatch
+    request = self.initialize_request(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 397, in initialize_request
+    return Request(
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\request.py", line 154, in __init__
+    assert isinstance(request, HttpRequest), (
+AssertionError: The `request` argument must be an instance of `django.http.HttpRequest`, not `rest_framework.request.Request`.
+ERROR 2025-06-06 19:08:37,874 basehttp 59448 135288 "POST /api/project-monitor/dashboard/ HTTP/1.1" 500 130566
+INFO 2025-06-06 19:08:43,749 basehttp 59448 111620 "GET /static/pages/project_monitor.html HTTP/1.1" 200 25981
+INFO 2025-06-06 19:08:43,912 basehttp 59448 111620 "POST /api/project-monitor/projects/list/ HTTP/1.1" 200 892
+ERROR 2025-06-06 19:08:46,153 log 59448 111620 Internal Server Error: /api/project-monitor/dashboard/
+Traceback (most recent call last):
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\decorators\csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\decorators.py", line 50, in handler
+    return func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\decorators\csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 498, in dispatch
+    request = self.initialize_request(request, *args, **kwargs)
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\views.py", line 397, in initialize_request
+    return Request(
+  File "F:\QA\Software\anaconda3\envs\py39_yolov10\lib\site-packages\rest_framework\request.py", line 154, in __init__
+    assert isinstance(request, HttpRequest), (
+AssertionError: The `request` argument must be an instance of `django.http.HttpRequest`, not `rest_framework.request.Request`.
+ERROR 2025-06-06 19:08:46,154 basehttp 59448 111620 "POST /api/project-monitor/dashboard/ HTTP/1.1" 500 132408
+INFO 2025-06-06 19:08:49,140 basehttp 59448 111620 "GET /static/pages/project_monitor.html HTTP/1.1" 304 0
+INFO 2025-06-06 19:08:49,274 basehttp 59448 111620 "POST /api/project-monitor/projects/list/ HTTP/1.1" 200 892
+INFO 2025-06-06 19:08:51,058 autoreload 59448 65864 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\project_monitor\django_api.py changed, reloading.
+INFO 2025-06-06 19:08:51,597 autoreload 76580 91188 Watching for file changes with StatReloader
+WARNING 2025-06-06 19:08:58,275 log 76580 62148 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-06-06 19:08:58,275 basehttp 76580 62148 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 5062
+INFO 2025-06-06 19:09:01,176 basehttp 76580 62148 "POST /api/project-monitor/dashboard/ HTTP/1.1" 200 4671
+INFO 2025-06-06 19:09:33,720 autoreload 76580 91188 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\project_monitor\django_api.py changed, reloading.
+INFO 2025-06-06 19:09:34,252 autoreload 62788 51964 Watching for file changes with StatReloader
+INFO 2025-06-06 19:10:06,674 autoreload 62788 51964 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\project_monitor\django_api.py changed, reloading.
+INFO 2025-06-06 19:10:07,220 autoreload 73892 57764 Watching for file changes with StatReloader
+INFO 2025-06-06 19:10:15,227 autoreload 73892 57764 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\project_monitor\django_api.py changed, reloading.
+INFO 2025-06-06 19:10:15,810 autoreload 58732 74744 Watching for file changes with StatReloader
+INFO 2025-06-06 19:10:17,260 basehttp 58732 129232 "GET /static/pages/project_monitor.html HTTP/1.1" 304 0
+INFO 2025-06-06 19:10:17,584 basehttp 58732 129232 "POST /api/project-monitor/projects/list/ HTTP/1.1" 200 892
+INFO 2025-06-06 19:10:19,579 basehttp 58732 129232 "POST /api/project-monitor/dashboard/ HTTP/1.1" 200 4671
+INFO 2025-06-06 19:10:31,372 basehttp 58732 129232 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-06 19:10:32,356 basehttp 58732 129232 "POST /api/devices/scan/ HTTP/1.1" 200 967
+INFO 2025-06-06 19:10:33,061 basehttp 58732 129232 "GET /pages/tasks_template.html HTTP/1.1" 302 0
+INFO 2025-06-06 19:10:34,654 basehttp 58732 129232 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-06 19:10:35,400 basehttp 58732 129232 "POST /api/devices/scan/ HTTP/1.1" 200 967
+INFO 2025-06-06 19:10:36,326 basehttp 58732 129232 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-06-06 19:10:36,476 basehttp 58732 129232 "POST /api/scripts/ HTTP/1.1" 200 2072
+INFO 2025-06-06 19:10:37,790 basehttp 58732 129232 "GET /pages/tasks_template.html HTTP/1.1" 302 0
+INFO 2025-06-06 19:10:38,871 basehttp 58732 129232 "GET /pages/reports_template.html HTTP/1.1" 302 0
+INFO 2025-06-06 19:10:39,187 basehttp 58732 129232 "POST /api/reports/summary_list/ HTTP/1.1" 200 39675
+INFO 2025-06-06 19:10:39,742 basehttp 58732 129232 "GET /pages/data_template.html HTTP/1.1" 302 0
+INFO 2025-06-06 19:10:40,526 basehttp 58732 129232 "GET /pages/settings_template.html HTTP/1.1" 302 0
+INFO 2025-06-06 19:10:41,846 basehttp 58732 129232 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-06 19:10:42,678 basehttp 58732 129232 "POST /api/devices/scan/ HTTP/1.1" 200 967
+INFO 2025-06-06 19:10:44,503 basehttp 58732 129232 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-06-06 19:10:44,732 basehttp 58732 129232 "POST /api/scripts/ HTTP/1.1" 200 2072
+INFO 2025-06-06 19:10:46,447 basehttp 58732 129232 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-06 19:10:47,197 basehttp 58732 129232 "POST /api/devices/scan/ HTTP/1.1" 200 967
+INFO 2025-06-06 19:10:50,198 basehttp 58732 129232 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-06-06 19:10:50,408 basehttp 58732 129232 "POST /api/scripts/ HTTP/1.1" 200 2072
+INFO 2025-06-06 19:11:29,663 basehttp 58732 129232 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-06 19:11:30,557 basehttp 58732 129232 "POST /api/devices/scan/ HTTP/1.1" 200 967
+INFO 2025-06-06 19:11:33,399 basehttp 58732 129232 "GET /pages/project_monitor.html HTTP/1.1" 302 0
+INFO 2025-06-06 19:11:33,401 basehttp 58732 129232 "GET /static/pages/project_monitor.html HTTP/1.1" 304 0
+INFO 2025-06-06 19:11:33,621 basehttp 58732 129232 "POST /api/project-monitor/projects/list/ HTTP/1.1" 200 892
+INFO 2025-06-06 19:11:47,028 basehttp 58732 129232 "POST /api/project-monitor/dashboard/ HTTP/1.1" 200 4671
+INFO 2025-06-06 19:11:49,123 basehttp 58732 129232 "POST /api/project-monitor/dashboard/ HTTP/1.1" 200 4330
+INFO 2025-06-06 19:11:51,970 basehttp 58732 129232 "POST /api/project-monitor/dashboard/ HTTP/1.1" 200 4634
+INFO 2025-06-06 19:11:55,661 basehttp 58732 129232 "POST /api/project-monitor/dashboard/ HTTP/1.1" 200 4363
+INFO 2025-06-06 19:11:59,273 basehttp 58732 129232 "POST /api/project-monitor/dashboard/ HTTP/1.1" 200 4671
+INFO 2025-06-06 19:26:28,822 basehttp 58732 112932 "GET /static/pages/project_monitor.html HTTP/1.1" 200 25981
+INFO 2025-06-06 19:26:29,124 basehttp 58732 112932 "POST /api/project-monitor/projects/list/ HTTP/1.1" 200 264
+INFO 2025-06-06 19:26:30,786 basehttp 58732 112932 "POST /api/project-monitor/dashboard/ HTTP/1.1" 200 4671
+INFO 2025-06-06 19:26:40,583 basehttp 58732 112932 "GET /pages/reports_template.html HTTP/1.1" 302 0
+INFO 2025-06-06 19:26:40,892 basehttp 58732 112932 "POST /api/reports/summary_list/ HTTP/1.1" 200 39675
+INFO 2025-06-06 19:26:42,910 basehttp 58732 112932 "GET /pages/data_template.html HTTP/1.1" 302 0
+INFO 2025-06-06 19:26:44,229 basehttp 58732 112932 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-06-06 19:26:44,471 basehttp 58732 112932 "POST /api/scripts/ HTTP/1.1" 200 2072
+INFO 2025-06-06 19:26:45,702 basehttp 58732 112932 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-06 19:26:45,705 basehttp 58732 112932 "GET /static/pages/devices.html HTTP/1.1" 200 6981
+INFO 2025-06-06 19:26:47,022 basehttp 58732 112932 "POST /api/devices/scan/ HTTP/1.1" 200 967
+INFO 2025-06-06 19:26:49,950 basehttp 58732 112932 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-06-06 19:26:50,192 basehttp 58732 112932 "POST /api/scripts/ HTTP/1.1" 200 2072
+INFO 2025-06-06 19:26:51,670 basehttp 58732 112932 "GET /pages/tasks_template.html HTTP/1.1" 302 0
+INFO 2025-06-06 19:26:52,790 basehttp 58732 112932 "GET /pages/reports_template.html HTTP/1.1" 302 0
+INFO 2025-06-06 19:26:53,023 basehttp 58732 112932 "POST /api/reports/summary_list/ HTTP/1.1" 200 39675
+INFO 2025-06-06 19:26:53,558 basehttp 58732 112932 "GET /pages/data_template.html HTTP/1.1" 302 0
+INFO 2025-06-06 19:26:54,230 basehttp 58732 112932 "GET /pages/settings_template.html HTTP/1.1" 302 0
+INFO 2025-06-06 19:27:23,367 basehttp 58732 112932 "GET /pages/reports_template.html HTTP/1.1" 302 0
+INFO 2025-06-06 19:27:23,742 basehttp 58732 112932 "POST /api/reports/summary_list/ HTTP/1.1" 200 39675

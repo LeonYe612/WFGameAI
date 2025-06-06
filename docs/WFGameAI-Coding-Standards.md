@@ -17,6 +17,12 @@
 ## 常用路径
 - airtest 报告生成需要静态资源（CSS/JS 等静态资源目录）是在 airtest 包的 report/ 目录下。
 
+## 前端页面文件资源存放目录
+- WFGameAI\wfgame-ai-server\staticfiles
+
+## 前端web页面文件目录
+- WFGameAI\wfgame-ai-server\staticfiles\pages
+
 ## 代码修改规范
 
 ### 修改方式
