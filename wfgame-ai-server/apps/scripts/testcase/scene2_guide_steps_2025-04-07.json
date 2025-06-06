@@ -34,8 +34,6 @@
       "Priority": 6,
       "action": "click",
       "class": "navigation-fight",
-      "relative_x": 0.5,
-      "relative_y": 0.9,
       "remark": "点击进入战斗场景"
     },
     {

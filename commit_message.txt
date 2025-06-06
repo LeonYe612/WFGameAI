@@ -1,20 +1,14 @@
-fix(scripts): 修复verify fix问题
+bugfix(scripts): 修复日志生成期间报错；修复错误复制多余设备的问题。
 
 改进项目文档，提升代码可维护性。
-修复verify fix问题, comprehensive fix verification问题问题，增强系统稳定性。
 
-新增了 5 个文件、修改了 5 个文件。
+修改了 6 个文件。
 
 主要改动:
 
 scripts模块:
-  - 新增: check_syntax.py
-  - 修改了 4 个文件
-config模块:
-  - 修改: device_preparation_cache.json
+  - 修改: data.json, replay_script.py
+logs模块:
+  - 修改: django.log
 other模块:
-  - 新增: FIX_COMPLETION_REPORT.md
-python模块:
-  - 新增: comprehensive_fix_verification.py
-scripts模块:
-  - 新增: simple_verify.py, verify_fix.py
+  - 修改: commit_message.txt, git_changes.txt, FIX_COMPLETION_REPORT.md

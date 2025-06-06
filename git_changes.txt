@@ -1,12 +1,8 @@
 变更文件列表:
 ========================================
-M	device_preparation_cache.json
-A	simple_verify.py
-A	verify_fix.py
-A	wfgame-ai-server/FIX_COMPLETION_REPORT.md
-M	wfgame-ai-server/apps/scripts/app_lifecycle_manager.py
-A	wfgame-ai-server/apps/scripts/check_syntax.py
+M	commit_message.txt
+M	git_changes.txt
+M	wfgame-ai-server/FIX_COMPLETION_REPORT.md
 M	wfgame-ai-server/apps/scripts/data.json
 M	wfgame-ai-server/apps/scripts/replay_script.py
-M	wfgame-ai-server/apps/scripts/utils.py
-A	wfgame-ai-server/comprehensive_fix_verification.py
+M	wfgame-ai-server/logs/django.log

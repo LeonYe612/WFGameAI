@@ -255,7 +255,7 @@ def detect_buttons(frame, target_class=None):
 
         print(f"🔍 开始检测目标类别: {target_class}")
         # 使用当前设备进行预测
-        results = model.predict(source=frame_for_detection, imgsz=640, conf=0.3, verbose=False)
+        results = model.predict(source=frame_for_detection, imgsz=640, conf=0.6, verbose=False)
 
         # 检查预测结果是否有效
         if results is None or len(results) == 0:
@@ -699,7 +699,9 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
 
                         # 等待检测结果
                         try:
+                            print(f"正在等待AI检测结果: {step_class}")
                             success, (x, y, detected_class) = click_queue.get(timeout=10)  # 使用设备专用click_queue，超时10秒
+                            print(f"AI检测完成 - success: {success}, detected_class: {detected_class}, expected_class: {step_class}")
 
                             # 记录snapshot
                             snapshot_entry = {
@@ -935,7 +937,10 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
 
                     # 如果所有目标都未匹配，但有unknown备选步骤，则执行unknown步骤
                     if not matched_any_target and unknown_fallback_step is not None:
-                        print(f"未检测到任何目标，执行备选步骤 class=unknown: {unknown_fallback_step.get('remark', '')}")
+                        print(f"[FALLBACK] 开始执行备选步骤")
+                        print(f"[FALLBACK] - 所有优先级步骤都未检测到目标")
+                        print(f"[FALLBACK] - 执行Priority {unknown_fallback_step.get('Priority', 999)}的备选步骤: {unknown_fallback_step.get('remark', '')}")
+                        print(f"[FALLBACK] - 备选步骤配置: {json.dumps(unknown_fallback_step, ensure_ascii=False)}")
 
                         # 获取最后一次截图的分辨率
                         height, width = frame.shape[:2]
@@ -1488,11 +1493,16 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
                     resolution = [width, height]
 
                     # 将截图和检测任务放入队列
-                    screenshot_queue.put((device_name, total_step_counter, frame, step_class, None))
-
-                    # 等待检测结果
+                    screenshot_queue.put((device_name, total_step_counter, frame, step_class, None))                        # 等待检测结果
                     try:
+                        print(f"[DEBUG] 正在等待AI检测结果: 目标类别={step_class}, 优先级={priority}")
                         success, (x, y, detected_class) = click_queue.get(timeout=10)  # 使用设备专用click_queue，超时10秒
+                        print(f"[DEBUG] AI检测完成 - success={success}, detected_class='{detected_class}', expected_class='{step_class}', 坐标=({x}, {y})")
+
+                        if success:
+                            print(f"[DEBUG] ✓ AI成功检测到目标，匹配成功！")
+                        else:
+                            print(f"[DEBUG] ✗ AI未能成功检测到目标: 期望'{step_class}', 实际检测到'{detected_class}'")
 
                         # 记录snapshot
                         snapshot_entry = {
@@ -1634,7 +1644,6 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
                                     f.write(json.dumps(fail_assert_entry, ensure_ascii=False) + "\n")
 
                                 print(f"已记录步骤 {step_num} 失败: {step_remark}")
-
                     except queue.Empty:
                         print(f"检测 {step_class} 超时，跳过此步骤")
 
