@@ -60,7 +60,7 @@ const Dashboard = {
                     </div>
                 </div>
             </div>
-            
+
             <div class="row">
                 <div class="col col-8">
                     <div class="card">
@@ -83,7 +83,7 @@ const Dashboard = {
                     </div>
                 </div>
             </div>
-            
+
             <div class="row">
                 <div class="col col-12">
                     <div class="card">
@@ -201,7 +201,7 @@ const Dashboard = {
                     }
                 ]
             });
-            
+
             // 初始化设备状态图表
             const deviceChart = echarts.init(document.getElementById('deviceChart'));
             deviceChart.setOption({
@@ -244,7 +244,7 @@ const Dashboard = {
                     }
                 ]
             });
-            
+
             // 监听窗口大小变化，调整图表尺寸
             window.addEventListener('resize', () => {
                 trendChart.resize();

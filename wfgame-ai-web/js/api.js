@@ -1,7 +1,7 @@
 // API调用服务
 const api = {
     baseUrl: 'http://localhost:8000/api',
-    
+
     // 封装请求方法
     async request(endpoint, method = 'GET', data = null) {
         const url = `${this.baseUrl}${endpoint}`;
@@ -12,16 +12,16 @@ const api = {
                 'Authorization': `Bearer ${this.getToken()}`
             }
         };
-        
+
         if (data && (method === 'POST' || method === 'PUT')) {
             options.body = JSON.stringify(data);
         }
-        
+
         try {
             // 这里仅为演示，实际项目中应使用真实API
             console.log(`模拟API请求: ${method} ${url}`);
             console.log('请求数据:', data);
-            
+
             // 返回模拟数据
             return await this.getMockData(endpoint);
         } catch (error) {
@@ -29,12 +29,12 @@ const api = {
             throw error;
         }
     },
-    
+
     // 获取存储的Token
     getToken() {
         return localStorage.getItem('auth_token') || '';
     },
-    
+
     // 模拟数据方法
     async getMockData(endpoint) {
         // 根据不同endpoint返回不同的模拟数据
@@ -81,4 +81,4 @@ const api = {
             };
         }
     }
-}; 
+};

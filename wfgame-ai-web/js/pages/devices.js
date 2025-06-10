@@ -155,7 +155,7 @@ const DeviceManagement = {
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div class="row mt-3">
                                 <div class="col-md-6">
                                     <h6>系统信息</h6>
@@ -213,7 +213,7 @@ const DeviceManagement = {
                                                 <th>执行进度</th>
                                                 <td>
                                                     <div class="progress" style="height: 8px;">
-                                                        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                                        <div class="progress-bar progress-bar-striped progress-bar-animated"
                                                              role="progressbar" :style="{width: deviceTask.progress}"></div>
                                                     </div>
                                                     <small>{{ deviceTask.progress }}</small>
@@ -234,7 +234,7 @@ const DeviceManagement = {
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div class="row mt-3">
                                 <div class="col-12">
                                     <h6>历史任务</h6>
@@ -273,7 +273,7 @@ const DeviceManagement = {
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div class="row mt-3">
                                 <div class="col-12 d-flex justify-content-end">
                                     <button class="btn btn-secondary" @click="selectedDevice = null">关闭</button>
@@ -378,11 +378,11 @@ const DeviceManagement = {
             return this.devices.filter(device => {
                 const matchesSearch = device.name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
                                      device.model.toLowerCase().includes(this.searchQuery.toLowerCase());
-                                     
+
                 const matchesStatus = this.statusFilter ? device.status === this.statusFilter : true;
-                
+
                 const matchesModel = this.modelFilter ? device.model === this.modelFilter : true;
-                
+
                 return matchesSearch && matchesStatus && matchesModel;
             });
         }
@@ -434,7 +434,7 @@ const DeviceManagement = {
         },
         viewDeviceDetail(device) {
             this.selectedDevice = device;
-            
+
             // 如果设备正在执行任务，设置当前任务信息
             if (device.status === 'executing') {
                 this.deviceTask = {
@@ -493,7 +493,7 @@ const DeviceManagement = {
             console.log('添加设备:', this.newDevice);
             // 这里实现添加设备的逻辑
             this.addDeviceModal.hide();
-            
+
             // 重置表单
             this.newDevice = {
                 name: '',
@@ -508,4 +508,4 @@ const DeviceManagement = {
             this.showAdvanced = false;
         }
     }
-}; 
+};

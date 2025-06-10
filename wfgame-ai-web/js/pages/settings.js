@@ -10,32 +10,32 @@ const SystemSettings = {
                         </div>
                         <div class="card-body p-0">
                             <div class="list-group list-group-flush">
-                                <a href="#" class="list-group-item list-group-item-action" 
+                                <a href="#" class="list-group-item list-group-item-action"
                                    :class="{'active': activeTab === 'general'}"
                                    @click.prevent="activeTab = 'general'">
                                     <i class="fa fa-cog me-2"></i> 通用设置
                                 </a>
-                                <a href="#" class="list-group-item list-group-item-action" 
+                                <a href="#" class="list-group-item list-group-item-action"
                                    :class="{'active': activeTab === 'ai'}"
                                    @click.prevent="activeTab = 'ai'">
                                     <i class="fa fa-brain me-2"></i> AI设置
                                 </a>
-                                <a href="#" class="list-group-item list-group-item-action" 
+                                <a href="#" class="list-group-item list-group-item-action"
                                    :class="{'active': activeTab === 'device'}"
                                    @click.prevent="activeTab = 'device'">
                                     <i class="fa fa-mobile-alt me-2"></i> 设备设置
                                 </a>
-                                <a href="#" class="list-group-item list-group-item-action" 
+                                <a href="#" class="list-group-item list-group-item-action"
                                    :class="{'active': activeTab === 'notification'}"
                                    @click.prevent="activeTab = 'notification'">
                                     <i class="fa fa-bell me-2"></i> 通知设置
                                 </a>
-                                <a href="#" class="list-group-item list-group-item-action" 
+                                <a href="#" class="list-group-item list-group-item-action"
                                    :class="{'active': activeTab === 'security'}"
                                    @click.prevent="activeTab = 'security'">
                                     <i class="fa fa-shield-alt me-2"></i> 安全设置
                                 </a>
-                                <a href="#" class="list-group-item list-group-item-action" 
+                                <a href="#" class="list-group-item list-group-item-action"
                                    :class="{'active': activeTab === 'system'}"
                                    @click.prevent="activeTab = 'system'">
                                     <i class="fa fa-server me-2"></i> 系统信息
@@ -44,7 +44,7 @@ const SystemSettings = {
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="col-md-9">
                     <div class="card">
                         <div class="card-header">
@@ -71,7 +71,7 @@ const SystemSettings = {
                                         </select>
                                     </div>
                                 </div>
-                                
+
                                 <div class="mb-4">
                                     <h6>数据设置</h6>
                                     <div class="mb-3 form-check">
@@ -98,7 +98,7 @@ const SystemSettings = {
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <!-- AI设置 -->
                             <div v-if="activeTab === 'ai'">
                                 <div class="mb-4">
@@ -125,7 +125,7 @@ const SystemSettings = {
                                         <label class="form-check-label" for="enableGPU">启用GPU加速</label>
                                     </div>
                                 </div>
-                                
+
                                 <div class="mb-4">
                                     <h6>智能辅助设置</h6>
                                     <div class="mb-3 form-check">
@@ -142,7 +142,7 @@ const SystemSettings = {
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <!-- 设备设置 -->
                             <div v-if="activeTab === 'device'">
                                 <div class="mb-4">
@@ -163,7 +163,7 @@ const SystemSettings = {
                                         <label class="form-check-label" for="autoReconnect">自动重连设备</label>
                                     </div>
                                 </div>
-                                
+
                                 <div class="mb-4">
                                     <h6>截图设置</h6>
                                     <div class="mb-3">
@@ -183,7 +183,7 @@ const SystemSettings = {
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <!-- 通知设置 -->
                             <div v-if="activeTab === 'notification'">
                                 <div class="mb-4">
@@ -201,7 +201,7 @@ const SystemSettings = {
                                         <label class="form-check-label" for="emailNotification">邮件通知</label>
                                     </div>
                                 </div>
-                                
+
                                 <div class="mb-4" v-if="settings.notification.email && settings.notification.enabled">
                                     <h6>邮件设置</h6>
                                     <div class="mb-3">
@@ -209,7 +209,7 @@ const SystemSettings = {
                                         <input type="email" class="form-control" v-model="settings.notification.emailAddress">
                                     </div>
                                 </div>
-                                
+
                                 <div class="mb-4">
                                     <h6>通知事件</h6>
                                     <div class="mb-3 form-check">
@@ -226,7 +226,7 @@ const SystemSettings = {
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <!-- 安全设置 -->
                             <div v-if="activeTab === 'security'">
                                 <div class="mb-4">
@@ -248,7 +248,7 @@ const SystemSettings = {
                                         <button class="btn btn-primary" @click="changePassword">修改密码</button>
                                     </div>
                                 </div>
-                                
+
                                 <div class="mb-4">
                                     <h6>访问控制</h6>
                                     <div class="mb-3 form-check">
@@ -265,7 +265,7 @@ const SystemSettings = {
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <!-- 系统信息 -->
                             <div v-if="activeTab === 'system'">
                                 <div class="mb-4">
@@ -288,7 +288,7 @@ const SystemSettings = {
                                         <i class="fa fa-sync me-1"></i> 检查更新
                                     </button>
                                 </div>
-                                
+
                                 <div class="mb-4">
                                     <h6>系统资源</h6>
                                     <table class="table table-sm">
@@ -321,7 +321,7 @@ const SystemSettings = {
                                         </tr>
                                     </table>
                                 </div>
-                                
+
                                 <div class="mb-4">
                                     <h6>日志</h6>
                                     <div class="mb-3">
@@ -345,7 +345,7 @@ const SystemSettings = {
                                     </button>
                                 </div>
                             </div>
-                            
+
                             <div class="settings-actions d-flex justify-content-end mt-4">
                                 <button class="btn btn-outline-secondary me-2" @click="resetSettings">重置设置</button>
                                 <button class="btn btn-primary" @click="saveSettings">保存设置</button>
@@ -436,15 +436,15 @@ const SystemSettings = {
                 alert('请填写所有密码字段');
                 return;
             }
-            
+
             if (this.passwordForm.new !== this.passwordForm.confirm) {
                 alert('两次输入的新密码不一致');
                 return;
             }
-            
+
             console.log('修改密码');
             alert('密码已修改');
-            
+
             // 清空表单
             this.passwordForm = {
                 current: '',
@@ -465,4 +465,4 @@ const SystemSettings = {
             // 这里实现下载日志文件的逻辑
         }
     }
-}; 
+};

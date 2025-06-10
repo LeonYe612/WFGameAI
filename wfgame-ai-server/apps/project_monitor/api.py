@@ -1,20 +1,19 @@
 """
-项目监控API接口 - Django REST Framework实现
-严格遵循编码标准：MySQL数据库、ai_前缀表名、POST-only API
+项目监控API接口
 """
-from rest_framework import status, viewsets
-from rest_framework.decorators import api_view, permission_classes, action
-from rest_framework.permissions import AllowAny
-from rest_framework.response import Response
-from django.http import JsonResponse, HttpResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.db import models
-from django.utils import timezone
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi.responses import HTMLResponse
+from sqlalchemy.orm import Session
 from typing import List, Dict, Optional
 import json
-from datetime import datetime, timedelta
+import asyncio
+from datetime import datetime
 
-from .models import ProjectMonitor, ExecutionLog, ClassStatistics
+from .database import get_db
+from .models import (
+    Project, ExecutionLogCreate, ProjectInfo,
+    ClassStatisticsResponse, ProjectDashboard
+)
 from .monitor_service import monitor_service
 
 router = APIRouter(prefix="/api/project-monitor", tags=["Project Monitor"])
@@ -46,10 +45,9 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
-# 遵循项目规范：全部使用POST请求
-@router.post("/projects/list", response_model=List[ProjectInfo])
+@router.get("/projects", response_model=List[ProjectInfo])
 async def get_projects(db: Session = Depends(get_db)):
-    """获取所有项目列表 - 使用POST请求符合项目规范"""
+    """获取所有项目列表"""
     try:
         projects = db.query(Project).all()
         return [

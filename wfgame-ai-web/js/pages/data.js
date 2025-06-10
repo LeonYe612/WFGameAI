@@ -17,12 +17,12 @@ const DataDriven = {
                                     </button>
                                 </div>
                             </div>
-                            
+
                             <div class="dataset-list">
                                 <div class="list-group">
-                                    <a href="#" class="list-group-item list-group-item-action" 
-                                       v-for="dataset in filteredDatasets" 
-                                       :key="dataset.id" 
+                                    <a href="#" class="list-group-item list-group-item-action"
+                                       v-for="dataset in filteredDatasets"
+                                       :key="dataset.id"
                                        :class="{'active': selectedDataset && selectedDataset.id === dataset.id}"
                                        @click.prevent="selectDataset(dataset)">
                                         <div class="d-flex w-100 justify-content-between">
@@ -34,7 +34,7 @@ const DataDriven = {
                                     </a>
                                 </div>
                             </div>
-                            
+
                             <div class="dataset-actions mt-3">
                                 <button class="btn btn-primary btn-sm" @click="showCreateDatasetModal">
                                     <i class="fa fa-plus"></i> 新建数据集
@@ -46,7 +46,7 @@ const DataDriven = {
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="col-md-8">
                     <div class="card" v-if="selectedDataset">
                         <div class="card-header d-flex justify-content-between align-items-center">
@@ -64,7 +64,7 @@ const DataDriven = {
                             <div class="dataset-description mb-3">
                                 <p>{{ selectedDataset.description }}</p>
                             </div>
-                            
+
                             <div class="data-filter d-flex mb-3">
                                 <div class="me-3">
                                     <select class="form-select form-select-sm" v-model="dataTypeFilter">
@@ -83,7 +83,7 @@ const DataDriven = {
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div class="table-responsive">
                                 <table class="table table-hover">
                                     <thead>
@@ -128,7 +128,7 @@ const DataDriven = {
                                     </tbody>
                                 </table>
                             </div>
-                            
+
                             <div class="pagination-wrapper d-flex justify-content-between align-items-center mt-3">
                                 <div class="page-info">显示 {{ filteredData.length }} / {{ dataItems.length }} 条数据</div>
                                 <ul class="pagination pagination-sm">
@@ -141,7 +141,7 @@ const DataDriven = {
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="card" v-else>
                         <div class="card-body text-center py-5">
                             <i class="fa fa-database fa-3x text-muted mb-3"></i>
@@ -154,7 +154,7 @@ const DataDriven = {
                     </div>
                 </div>
             </div>
-            
+
             <!-- 数据预览弹窗 -->
             <div class="modal fade" id="dataPreviewModal" tabindex="-1" aria-hidden="true">
                 <div class="modal-dialog modal-lg">
@@ -173,7 +173,7 @@ const DataDriven = {
                                     </div>
                                     <div class="col-md-6">
                                         <p><strong>上传时间:</strong> {{ selectedDataItem.uploadTime }}</p>
-                                        <p><strong>标签:</strong> 
+                                        <p><strong>标签:</strong>
                                             <span class="badge bg-secondary me-1" v-for="(tag, index) in selectedDataItem.tags" :key="index">
                                                 {{ tag }}
                                             </span>
@@ -181,19 +181,19 @@ const DataDriven = {
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <h6>数据内容</h6>
                             <div class="data-preview p-3 border rounded bg-light">
                                 <!-- 图片类型 -->
                                 <div v-if="selectedDataItem.type === 'image'" class="text-center">
                                     <img :src="selectedDataItem.content" alt="图片数据" class="img-fluid">
                                 </div>
-                                
+
                                 <!-- 文本类型 -->
                                 <div v-else-if="selectedDataItem.type === 'text'" class="text-content">
                                     {{ selectedDataItem.content }}
                                 </div>
-                                
+
                                 <!-- JSON类型 -->
                                 <div v-else-if="selectedDataItem.type === 'json'" class="json-content">
                                     <pre>{{ formatJson(selectedDataItem.content) }}</pre>
@@ -206,7 +206,7 @@ const DataDriven = {
                     </div>
                 </div>
             </div>
-            
+
             <!-- 创建数据集模态框 -->
             <div class="modal fade" id="createDatasetModal" tabindex="-1" aria-hidden="true">
                 <div class="modal-dialog">
@@ -240,7 +240,7 @@ const DataDriven = {
                     </div>
                 </div>
             </div>
-            
+
             <!-- 添加数据模态框 -->
             <div class="modal fade" id="addDataModal" tabindex="-1" aria-hidden="true">
                 <div class="modal-dialog">
@@ -333,15 +333,15 @@ const DataDriven = {
         },
         filteredData() {
             if (!this.selectedDataset) return [];
-            
+
             return this.dataItems.filter(item => {
                 const matchesType = this.dataTypeFilter ? item.type === this.dataTypeFilter : true;
-                
-                const matchesSearch = this.dataSearchQuery ? 
-                    item.name.toLowerCase().includes(this.dataSearchQuery.toLowerCase()) || 
-                    item.tags.some(tag => tag.toLowerCase().includes(this.dataSearchQuery.toLowerCase())) : 
+
+                const matchesSearch = this.dataSearchQuery ?
+                    item.name.toLowerCase().includes(this.dataSearchQuery.toLowerCase()) ||
+                    item.tags.some(tag => tag.toLowerCase().includes(this.dataSearchQuery.toLowerCase())) :
                     true;
-                
+
                 return matchesType && matchesSearch;
             });
         }
@@ -350,7 +350,7 @@ const DataDriven = {
         this.dataPreviewModal = new bootstrap.Modal(document.getElementById('dataPreviewModal'));
         this.createDatasetModal = new bootstrap.Modal(document.getElementById('createDatasetModal'));
         this.addDataModal = new bootstrap.Modal(document.getElementById('addDataModal'));
-        
+
         // 默认选中第一个数据集
         if (this.datasets.length > 0) {
             this.selectDataset(this.datasets[0]);
@@ -412,7 +412,7 @@ const DataDriven = {
         createDataset() {
             console.log('创建数据集:', this.newDataset);
             // 这里实现创建数据集的逻辑
-            
+
             // 模拟创建
             const newId = this.datasets.length + 1;
             const dataset = {
@@ -423,17 +423,17 @@ const DataDriven = {
                 itemCount: 0,
                 lastUpdated: new Date().toISOString().split('T')[0]
             };
-            
+
             this.datasets.push(dataset);
             this.selectDataset(dataset);
-            
+
             // 重置表单
             this.newDataset = {
                 name: '',
                 description: '',
                 type: 'text'
             };
-            
+
             this.createDatasetModal.hide();
         },
         showAddDataModal() {
@@ -441,12 +441,12 @@ const DataDriven = {
         },
         addData() {
             console.log('添加数据:', this.newData);
-            
+
             // 处理标签
             const tags = this.newData.tagsString.split(',')
                 .map(tag => tag.trim())
                 .filter(tag => tag !== '');
-            
+
             // 模拟添加数据
             const newId = this.dataItems.length + 1;
             const newItem = {
@@ -457,15 +457,15 @@ const DataDriven = {
                 uploadTime: new Date().toLocaleString(),
                 content: this.newData.content
             };
-            
+
             this.dataItems.push(newItem);
-            
+
             // 更新数据集计数
             if (this.selectedDataset) {
                 this.selectedDataset.itemCount++;
                 this.selectedDataset.lastUpdated = new Date().toISOString().split('T')[0];
             }
-            
+
             // 重置表单
             this.newData = {
                 name: '',
@@ -473,8 +473,8 @@ const DataDriven = {
                 tagsString: '',
                 content: ''
             };
-            
+
             this.addDataModal.hide();
         }
     }
-}; 
+};

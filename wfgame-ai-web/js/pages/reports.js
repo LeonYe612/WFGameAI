@@ -44,7 +44,7 @@ const ReportCenter = {
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div class="table-responsive">
                                 <table class="table table-hover">
                                     <thead>
@@ -66,8 +66,8 @@ const ReportCenter = {
                                             <td>{{ report.executionTime }}</td>
                                             <td>
                                                 <div class="progress" style="height: 8px; width: 80px;">
-                                                    <div class="progress-bar" role="progressbar" 
-                                                         :style="{width: report.successRate}" 
+                                                    <div class="progress-bar" role="progressbar"
+                                                         :style="{width: report.successRate}"
                                                          :class="getSuccessRateClass(report.successRate)">
                                                     </div>
                                                 </div>
@@ -75,8 +75,8 @@ const ReportCenter = {
                                             </td>
                                             <td>
                                                 <div class="progress" style="height: 8px; width: 80px;">
-                                                    <div class="progress-bar" role="progressbar" 
-                                                         :style="{width: report.passRate}" 
+                                                    <div class="progress-bar" role="progressbar"
+                                                         :style="{width: report.passRate}"
                                                          :class="getPassRateClass(report.passRate)">
                                                     </div>
                                                 </div>
@@ -99,7 +99,7 @@ const ReportCenter = {
                                     </tbody>
                                 </table>
                             </div>
-                            
+
                             <div class="pagination-wrapper d-flex justify-content-between align-items-center mt-3">
                                 <div class="page-info">显示 {{ filteredReports.length }} / {{ reports.length }} 条报告</div>
                                 <ul class="pagination pagination-sm">
@@ -114,7 +114,7 @@ const ReportCenter = {
                     </div>
                 </div>
             </div>
-            
+
             <!-- 报告详情 -->
             <div class="row" v-if="selectedReport">
                 <div class="col">
@@ -183,7 +183,7 @@ const ReportCenter = {
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div class="report-charts mb-4">
                                 <div class="row">
                                     <div class="col-md-6">
@@ -208,7 +208,7 @@ const ReportCenter = {
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div class="report-details mb-4">
                                 <h6>设备测试详情</h6>
                                 <div class="table-responsive">
@@ -250,7 +250,7 @@ const ReportCenter = {
                                     </table>
                                 </div>
                             </div>
-                            
+
                             <div class="report-failures mb-4">
                                 <h6>失败详情分析</h6>
                                 <div class="accordion" id="failureAccordion">
@@ -284,7 +284,7 @@ const ReportCenter = {
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div class="row">
                                 <div class="col-12 d-flex justify-content-end">
                                     <button class="btn btn-secondary" @click="selectedReport = null">关闭</button>
@@ -310,19 +310,19 @@ const ReportCenter = {
                 { name: 'Samsung-S21', script: 'login_steps.json', startTime: '2025-05-12 15:48:46', endTime: '2025-05-12 15:49:59', totalSteps: 7, passedSteps: 7, failedSteps: 0, status: '通过' }
             ],
             failureDetails: [
-                { 
-                    device: 'OPPO-Find X3', 
-                    step: '点击登录按钮', 
-                    errorMessage: 'Error: 未找到目标元素 "login_button"，等待超时。', 
-                    analysis: '可能是界面加载延迟导致元素未及时出现，建议增加等待时间或添加元素存在检查。', 
-                    screenshot: 'images/failure1.png' 
+                {
+                    device: 'OPPO-Find X3',
+                    step: '点击登录按钮',
+                    errorMessage: 'Error: 未找到目标元素 "login_button"，等待超时。',
+                    analysis: '可能是界面加载延迟导致元素未及时出现，建议增加等待时间或添加元素存在检查。',
+                    screenshot: 'images/failure1.png'
                 },
-                { 
-                    device: 'OPPO-Find X3', 
-                    step: '等待登录完成', 
-                    errorMessage: 'Error: 登录失败，未检测到成功界面。', 
-                    analysis: '由于前一步骤失败，登录流程未完成，导致未能进入成功界面。', 
-                    screenshot: 'images/failure2.png' 
+                {
+                    device: 'OPPO-Find X3',
+                    step: '等待登录完成',
+                    errorMessage: 'Error: 登录失败，未检测到成功界面。',
+                    analysis: '由于前一步骤失败，登录流程未完成，导致未能进入成功界面。',
+                    screenshot: 'images/failure2.png'
                 }
             ]
         };
@@ -331,10 +331,10 @@ const ReportCenter = {
         filteredReports() {
             return this.reports.filter(report => {
                 // 搜索筛选
-                const matchesSearch = this.searchQuery ? 
-                    report.name.toLowerCase().includes(this.searchQuery.toLowerCase()) : 
+                const matchesSearch = this.searchQuery ?
+                    report.name.toLowerCase().includes(this.searchQuery.toLowerCase()) :
                     true;
-                
+
                 // 通过率筛选
                 let matchesPassRate = true;
                 if (this.selectedPassRate) {
@@ -347,12 +347,12 @@ const ReportCenter = {
                         matchesPassRate = passRateValue < 70;
                     }
                 }
-                
+
                 // 日期范围筛选
                 const reportDate = new Date(report.executionTime.split(' ')[0]);
                 const matchesStartDate = this.startDate ? new Date(this.startDate) <= reportDate : true;
                 const matchesEndDate = this.endDate ? new Date(this.endDate) >= reportDate : true;
-                
+
                 return matchesSearch && matchesPassRate && matchesStartDate && matchesEndDate;
             });
         }
@@ -455,7 +455,7 @@ const ReportCenter = {
                     }
                 ]
             });
-            
+
             // 初始化执行时间分布图表
             const executionTimeChart = echarts.init(document.getElementById('executionTimeChart'));
             executionTimeChart.setOption({
@@ -482,7 +482,7 @@ const ReportCenter = {
                     }
                 ]
             });
-            
+
             // 监听窗口大小变化，调整图表尺寸
             window.addEventListener('resize', () => {
                 resultDistributionChart.resize();
@@ -490,4 +490,4 @@ const ReportCenter = {
             });
         }
     }
-}; 
+};

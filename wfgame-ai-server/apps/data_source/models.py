@@ -41,7 +41,7 @@ class DataSource(models.Model):
 
 
 class TestData(models.Model):
-    """测试数据"""
+    """数据记录"""
     data_source = models.ForeignKey(DataSource,
                                  verbose_name=_('数据源'),
                                  on_delete=models.CASCADE,
@@ -59,8 +59,8 @@ class TestData(models.Model):
 
     class Meta:
         db_table = 'ai_test_data'
-        verbose_name = _('测试数据')
-        verbose_name_plural = _('测试数据')
+        verbose_name = _('数据记录')
+        verbose_name_plural = _('数据记录')
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['name']),
@@ -73,7 +73,7 @@ class TestData(models.Model):
 class DataUsageLog(models.Model):
     """数据使用日志"""
     test_data = models.ForeignKey(TestData,
-                               verbose_name=_('测试数据'),
+                               verbose_name=_('数据记录'),
                                on_delete=models.CASCADE,
                                related_name='usage_logs')
     script = models.ForeignKey('scripts.Script',

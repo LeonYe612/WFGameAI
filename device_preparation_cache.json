@@ -1,7 +1,7 @@
 {
   "5c41023b": {
     "device_id": "5c41023b",
-    "timestamp": 1749202098.4064224,
+    "timestamp": 1749525551.9346087,
     "preparation_status": "completed",
     "model": "KB2000",
     "android_version": "11",
@@ -40,7 +40,7 @@
   },
   "65WGZT7P9XHEKN7D": {
     "device_id": "65WGZT7P9XHEKN7D",
-    "timestamp": 1749202107.1400394,
+    "timestamp": 1749525561.1793542,
     "preparation_status": "completed",
     "model": "22041216C",
     "android_version": "12",

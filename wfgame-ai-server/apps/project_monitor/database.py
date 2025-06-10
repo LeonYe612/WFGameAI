@@ -2,8 +2,8 @@
 数据库连接和初始化
 """
 import os
-import configparser
 import logging
+import configparser
 from typing import Optional
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
@@ -20,59 +20,33 @@ class DatabaseManager:
     def __init__(self, db_url: Optional[str] = None):
         if db_url is None:
             # 从config.ini读取MySQL配置
-            db_url = self._load_mysql_config()
+            config_path = os.path.join(os.path.dirname(__file__), '../../../config.ini')
+            if os.path.exists(config_path):
+                config = configparser.ConfigParser()
+                config.read(config_path, encoding='utf-8')
+
+                if 'database' in config:
+                    host = config.get('database', 'host', fallback='127.0.0.1')
+                    username = config.get('database', 'username', fallback='root')
+                    password = config.get('database', 'password', fallback='qa123456')
+                    dbname = config.get('database', 'dbname', fallback='gogotest_data')
+                    port = config.get('database', 'port', fallback='3306')
+
+                    db_url = f"mysql+pymysql://{username}:{password}@{host}:{port}/{dbname}?charset=utf8mb4"
+                    logger.info(f"使用MySQL数据库: {host}:{port}/{dbname}")
+                else:
+                    raise ValueError("config.ini中缺少database配置")
+            else:
+                raise FileNotFoundError(f"配置文件未找到: {config_path}")
 
         self.db_url = db_url
         self.engine = create_engine(
             db_url,
             echo=False,  # 设置为True可以看到SQL语句
             pool_pre_ping=True,
-            pool_recycle=3600,
-            pool_size=10,
-            max_overflow=20
+            pool_recycle=3600
         )
         self.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
-
-    def _load_mysql_config(self) -> str:
-        """从config.ini加载MySQL配置"""
-        try:
-            # 查找config.ini文件
-            config_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'config.ini')
-            if not os.path.exists(config_path):
-                logger.warning(f"配置文件不存在: {config_path}, 使用默认SQLite")
-                # 回退到SQLite
-                db_dir = os.path.join(os.path.dirname(__file__), 'data')
-                os.makedirs(db_dir, exist_ok=True)
-                return f"sqlite:///{os.path.join(db_dir, 'project_monitor.db')}"
-
-            config = configparser.ConfigParser()
-            config.read(config_path, encoding='utf-8')
-
-            # 读取MySQL配置
-            if 'mysql' in config:
-                mysql_config = config['mysql']
-                host = mysql_config.get('host', 'localhost')
-                port = mysql_config.get('port', '3306')
-                username = mysql_config.get('username', 'root')
-                password = mysql_config.get('password', '')
-                database = mysql_config.get('database', 'wfgame_ai')
-
-                db_url = f"mysql+pymysql://{username}:{password}@{host}:{port}/{database}?charset=utf8mb4"
-                logger.info(f"使用MySQL数据库: {host}:{port}/{database}")
-                return db_url
-            else:
-                logger.warning("config.ini中未找到mysql配置，使用默认SQLite")
-                # 回退到SQLite
-                db_dir = os.path.join(os.path.dirname(__file__), 'data')
-                os.makedirs(db_dir, exist_ok=True)
-                return f"sqlite:///{os.path.join(db_dir, 'project_monitor.db')}"
-
-        except Exception as e:
-            logger.error(f"加载MySQL配置失败: {e}, 使用默认SQLite")
-            # 回退到SQLite
-            db_dir = os.path.join(os.path.dirname(__file__), 'data')
-            os.makedirs(db_dir, exist_ok=True)
-            return f"sqlite:///{os.path.join(db_dir, 'project_monitor.db')}"
 
     def init_database(self):
         """初始化数据库表"""

@@ -16,19 +16,20 @@ logger = logging.getLogger(__name__)
 class PrioritySystemIntegration:
     """Priority系统集成类"""
 
-    def __init__(self):
-        self.project_name = "Warframe"
+    def __init__(self, project_name: Optional[str] = None):
+        # 不使用硬编码项目名，必须由调用者提供
+        self.project_name = project_name or "未指定项目"
         self.enabled = True
 
     def log_detection_result(
         self,
         button_class: str,
         success: bool,
-        detection_time_ms: int = None,
-        coordinates: tuple = None,
-        scenario: str = None,
-        screenshot_path: str = None,
-        device_id: str = None
+        detection_time_ms: Optional[int] = None,
+        coordinates: Optional[tuple] = None,
+        scenario: Optional[str] = None,
+        screenshot_path: Optional[str] = None,
+        device_id: Optional[str] = None
     ):
         """
         记录AI检测结果

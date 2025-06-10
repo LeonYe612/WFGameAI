@@ -161,14 +161,45 @@ class UIDetector:
 1. **缩进**
    - 使用 4 个空格进行缩进
    - 不使用制表符
+
 2. **行长度**
    - 最大行长度为 120 字符
    - 超长行使用括号换行
+
 3. **空行**
    - 类定义之间空两行
    - 方法定义之间空一行
    - 相关代码块之间空一行
-4. **注释**
+
+4. **def 关键字换行规则（重要）**
+   ```python
+   # ✅ 正确写法 - def前必须有换行
+   return result
+
+   def my_function():
+       pass
+
+   # ❌ 错误写法 - def前没有换行会导致语法错误
+   return result    def my_function():  # 这会导致语法错误
+       pass
+
+   # ✅ 正确写法 - 类方法之间的换行
+   def method_one(self):
+       return "result"
+
+   def method_two(self):  # def前有换行
+       pass
+
+   # ✅ 正确写法 - except/finally后的换行
+   except Exception as e:
+       print(f"错误: {e}")
+
+   def cleanup_function():  # def前有换行
+       pass
+   ```
+   **强制要求**: 任何 `def` 关键字前都必须有换行符，这是Python语法要求，违反会导致语法错误。
+
+5. **注释**
 ```python
 # 单行注释使用 # 加空格
 # 这是一个单行注释

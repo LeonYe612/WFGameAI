@@ -1,28 +1,36 @@
-fix(scripts): 修复debug priority detection问题
+feat(project_monitor): 新增识别统计模块；汇总历史识别记录；改进数据库结构
 
-改进系统工具和基础设施：项目文档, 自动化测试等，增强开发效率和代码质量。
-修复debug priority detection问题, debug detection flow问题问题，...。
+完善数据库结构，确保数据结构合理性；优化代码优化，提升系统响应速度；优化系统配置，提升环境适应性和部署便捷度。
+改进系统工具和基础设施：更新项目设置, 新增主URL配置等，增强开发效率和代码质量。
 
-新增了 13 个文件、修改了 7 个文件。
+新增了 21 个文件、修改了 18 个文件。
 
 主要改动:
 
-243模块:
-  - 新增: 227.md
-scripts模块:
-  - 新增了 5 个文件
-    - 数据处理: 2个
-  - 修改: data.json, replay_script.py, scene2_guide_steps_2025-04-07.json
+241模块:
+  - 新增: 212.md
+project_monitor模块:
+  - 新增了 16 个文件
+    - 模型定义: 1个
+    - API接口: 2个
+    - URL配置: 1个
+    - 迁移文件: 2个
+    - 数据处理: 1个
+    - 其他: 7个
 config模块:
   - 修改: device_preparation_cache.json
 docs模块:
-  - 新增: 210-0606.md
+  - 修改: WFGameAI-Coding-Standards.md
 logs模块:
   - 修改: django.log
 other模块:
   - 修改: commit_message.txt, git_changes.txt
+pages模块:
+  - 新增: project_monitor.html, test_project_monitor.html
+  - 修改了 11 个文件
+python模块:
+  - 新增: run_monitor_server.py
 scripts模块:
-  - 新增了 6 个文件
-    - 模型定义: 1个
-    - URL配置: 2个
-    - 其他: 3个
+  - 新增: setup_project_monitor_data.py
+wfgame_ai_server_main模块:
+  - 修改: settings.py, urls.py

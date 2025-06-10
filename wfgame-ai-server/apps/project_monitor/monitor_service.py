@@ -1,18 +1,19 @@
 """
-项目性能监控服务 - Django版本
+项目性能监控服务
 """
 import os
 import yaml
 import logging
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional, Tuple
-from django.db.models import Avg, Count, Q, F
-from django.utils import timezone
-from .models import ProjectMonitor, ExecutionLog, ClassStatistics
+from sqlalchemy.orm import Session
+from sqlalchemy import func, desc
+from .models import Project, ExecutionLog, ClassStatistics, ClassStatisticsResponse, ProjectDashboard, ProjectInfo
+from .database import get_db
 
 logger = logging.getLogger(__name__)
 
-class MonitorService:
+class ProjectMonitorService:
     """项目监控服务"""
 
     def __init__(self):
@@ -32,6 +33,26 @@ class MonitorService:
         except Exception as e:
             logger.error(f"加载项目配置失败 {yaml_path}: {e}")
             return {}
+
+    def get_projects(self) -> List[Project]:
+        """获取所有项目列表"""
+        try:
+            # 导入数据库管理器
+            from .database import db_manager
+
+            db = db_manager.get_session()
+            try:
+                projects = db.query(Project).order_by(Project.created_at.desc()).all()
+                logger.info(f"获取项目列表成功，共 {len(projects)} 个项目")
+                return projects
+            except Exception as e:
+                logger.error(f"查询项目列表失败: {e}")
+                return []
+            finally:
+                db.close()
+        except Exception as e:
+            logger.error(f"获取项目列表失败: {e}")
+            return []
 
     def create_project(self, db: Session, name: str, yaml_path: str, description: str = None) -> Project:
         """创建新项目"""

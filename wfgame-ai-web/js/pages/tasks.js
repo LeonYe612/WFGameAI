@@ -50,7 +50,7 @@ const TestTasks = {
                                     </div>
                                 </div>
                             </div>
-                
+
                             <div class="table-responsive">
                                 <table class="table table-hover">
                                     <thead>
@@ -89,8 +89,8 @@ const TestTasks = {
                                             </td>
                                             <td>
                                                 <div class="progress" style="height: 8px;">
-                                                    <div class="progress-bar" role="progressbar" 
-                                                         :style="{width: task.progress}" 
+                                                    <div class="progress-bar" role="progressbar"
+                                                         :style="{width: task.progress}"
                                                          :class="getProgressBarClass(task.status)">
                                                     </div>
                                                 </div>
@@ -116,7 +116,7 @@ const TestTasks = {
                                     </tbody>
                                 </table>
                             </div>
-                            
+
                             <div class="pagination-wrapper d-flex justify-content-between align-items-center mt-3">
                                 <div class="page-info">显示 {{ filteredTasks.length }} / {{ tasks.length }} 条任务</div>
                                 <ul class="pagination pagination-sm">
@@ -131,7 +131,7 @@ const TestTasks = {
                     </div>
                 </div>
             </div>
-            
+
             <!-- 任务详情 -->
             <div class="row mb-3" v-if="selectedTask">
                 <div class="col">
@@ -178,13 +178,13 @@ const TestTasks = {
                                 <div class="col-md-6">
                                     <h6>执行进度</h6>
                                     <div class="progress mb-3" style="height: 20px;">
-                                        <div class="progress-bar" role="progressbar" 
-                                             :style="{width: selectedTask.progress}" 
+                                        <div class="progress-bar" role="progressbar"
+                                             :style="{width: selectedTask.progress}"
                                              :class="getProgressBarClass(selectedTask.status)">
                                             {{ selectedTask.progress }}
                                         </div>
                                     </div>
-                                    
+
                                     <h6>执行日志</h6>
                                     <div class="task-log border p-2" style="height: 200px; overflow-y: auto;">
                                         <div v-for="(log, index) in taskLogs" :key="index" class="log-entry">
@@ -194,7 +194,7 @@ const TestTasks = {
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div class="row mt-3">
                                 <div class="col-12">
                                     <h6>步骤执行情况</h6>
@@ -228,7 +228,7 @@ const TestTasks = {
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div class="row mt-3">
                                 <div class="col-12 d-flex justify-content-end">
                                     <button class="btn btn-primary me-2" @click="generateReport">生成报告</button>
@@ -239,7 +239,7 @@ const TestTasks = {
                     </div>
                 </div>
             </div>
-            
+
             <!-- 创建任务模态框 -->
             <div class="modal fade" id="createTaskModal" tabindex="-1" aria-hidden="true">
                 <div class="modal-dialog">
@@ -289,7 +289,7 @@ const TestTasks = {
                     </div>
                 </div>
             </div>
-            
+
             <!-- 批量执行模态框 -->
             <div class="modal fade" id="batchRunModal" tabindex="-1" aria-hidden="true">
                 <div class="modal-dialog modal-lg">
@@ -317,7 +317,7 @@ const TestTasks = {
                                         <div class="form-check" v-for="device in devices" :key="device.id">
                                             <input class="form-check-input" type="checkbox" :id="'device-' + device.id" v-model="device.selected" :disabled="device.status === 'offline'">
                                             <label class="form-check-label" :for="'device-' + device.id">
-                                                {{ device.name }} 
+                                                {{ device.name }}
                                                 <span :class="getDeviceStatusIndicatorClass(device.status)">
                                                     ({{ getDeviceStatusText(device.status) }})
                                                 </span>
@@ -414,21 +414,21 @@ const TestTasks = {
             return this.tasks.filter(task => {
                 // 设备筛选
                 const matchesDevice = this.selectedDevice ? task.device === this.selectedDevice : true;
-                
+
                 // 状态筛选
                 const matchesStatus = this.selectedStatus ? task.status === this.selectedStatus : true;
-                
+
                 // 搜索筛选
-                const matchesSearch = this.searchQuery ? 
-                    task.name.toLowerCase().includes(this.searchQuery.toLowerCase()) || 
-                    task.script.toLowerCase().includes(this.searchQuery.toLowerCase()) : 
+                const matchesSearch = this.searchQuery ?
+                    task.name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+                    task.script.toLowerCase().includes(this.searchQuery.toLowerCase()) :
                     true;
-                
+
                 // 日期筛选
-                const matchesDate = this.dateFilter ? 
-                    task.startTime.includes(this.dateFilter) : 
+                const matchesDate = this.dateFilter ?
+                    task.startTime.includes(this.dateFilter) :
                     true;
-                
+
                 return matchesDevice && matchesStatus && matchesSearch && matchesDate;
             });
         }
@@ -559,7 +559,7 @@ const TestTasks = {
             console.log('创建任务:', this.newTask);
             // 这里实现创建任务的逻辑
             this.createTaskModal.hide();
-            
+
             // 重置表单
             this.newTask = {
                 name: '',
@@ -575,13 +575,13 @@ const TestTasks = {
         startBatchExecution() {
             const selectedScripts = this.scripts.filter(script => script.selected);
             const selectedDevices = this.devices.filter(device => device.selected);
-            
+
             console.log('批量执行:', {
                 scripts: selectedScripts,
                 devices: selectedDevices,
                 settings: this.batchSettings
             });
-            
+
             // 这里实现批量执行的逻辑
             this.batchRunModal.hide();
         },
@@ -590,4 +590,4 @@ const TestTasks = {
             Router.navigate('reports');
         }
     }
-}; 
+};

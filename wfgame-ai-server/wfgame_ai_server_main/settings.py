@@ -42,7 +42,6 @@ INSTALLED_APPS = [
     'apps.tasks',
     'apps.reports',
     'apps.data_source',
-    'apps.project_monitor',  # 新增项目监控应用
 ]
 
 MIDDLEWARE = [
