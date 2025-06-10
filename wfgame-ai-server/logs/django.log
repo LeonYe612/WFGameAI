@@ -5156,3 +5156,11 @@ WARNING 2025-06-10 16:55:05,662 log 134168 55480 Not Found: /.well-known/appspec
 WARNING 2025-06-10 16:55:05,663 basehttp 134168 55480 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 5062
 INFO 2025-06-10 16:55:06,008 basehttp 134168 55480 "POST /api/project-monitor/projects/list/ HTTP/1.1" 200 403
 INFO 2025-06-10 16:55:06,016 basehttp 134168 55480 "POST /api/project-monitor/dashboard/ HTTP/1.1" 200 3856
+INFO 2025-06-10 17:17:32,812 autoreload 99068 108540 Watching for file changes with StatReloader
+INFO 2025-06-10 17:17:39,772 basehttp 99068 15472 "GET /static/pages/project_monitor.html HTTP/1.1" 304 0
+INFO 2025-06-10 17:17:39,783 basehttp 99068 15472 "GET /static/js/cache-buster.js HTTP/1.1" 304 0
+WARNING 2025-06-10 17:17:39,792 log 99068 15472 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-06-10 17:17:39,792 basehttp 99068 15472 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 5062
+INFO 2025-06-10 17:17:40,386 basehttp 99068 15472 "POST /api/project-monitor/projects/list/ HTTP/1.1" 200 33
+INFO 2025-06-10 17:18:09,442 basehttp 99068 92660 "GET /api/docs/ HTTP/1.1" 200 788
+INFO 2025-06-10 17:18:10,562 basehttp 99068 92660 "GET /api/schema/ HTTP/1.1" 200 33668

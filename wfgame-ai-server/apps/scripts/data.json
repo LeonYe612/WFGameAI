@@ -1,5 +1,5 @@
 {
-  "start": 1749544670.1713033,
+  "start": 1749550374.9282875,
   "script": "replay_script",
   "tests": {
     "OnePlus-KB2000": {
@@ -7,7 +7,7 @@
       "test_passed": false
     },
     "HUAWEI-JAD-AL00": {
-      "report_path": null,
+      "report_path": "C:\\Users\\Administrator\\PycharmProjects\\WFGameAI\\wfgame-ai-server\\staticfiles\\reports\\ui_run\\WFGameAI.air\\log\\HUAWEI-JAD-AL00_2025-06-10-18-12-55\\log.html",
       "test_passed": false
     },
     "HUAWEI-NOH-AL10": {
@@ -27,6 +27,6 @@
       "test_passed": false
     }
   },
-  "end": 1749544677.9787855,
-  "duration": 7.8074822425842285
+  "end": 1749550392.5566497,
+  "duration": 17.62836217880249
 }

@@ -301,17 +301,26 @@ def verify_target_disappeared(device, target_class, max_attempts=5, delay=0.5):
 
 # 检查设备状态
 def check_device_status(device, device_name):
+    """
+    检查设备状态，确保设备可用且屏幕处于正确状态
+    注意：移除了自动滑动操作，避免干扰实际脚本执行
+    """
     try:
+        # 基本连接测试
         device.shell("echo test")
-        device.shell("input keyevent 82")
-        time.sleep(1)
-        device.shell("input swipe 500 1000 500 500")
-        time.sleep(1)
+
+        # 检查屏幕状态
         display_state = device.shell("dumpsys power | grep 'mHoldingDisplaySuspendBlocker'")
         if "true" not in display_state.lower():
             print(f"设备 {device_name} 屏幕未打开，尝试唤醒")
-            device.shell("input keyevent 26")
+            device.shell("input keyevent 26")  # 电源键唤醒
             time.sleep(1)
+
+            # 再次检查屏幕状态
+            display_state = device.shell("dumpsys power | grep 'mHoldingDisplaySuspendBlocker'")
+            if "true" not in display_state.lower():
+                print(f"设备 {device_name} 屏幕仍未激活，可能需要手动解锁")
+
         print(f"设备 {device_name} 状态检查完成")
         return True
     except Exception as e:
@@ -617,6 +626,12 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
                 f.write(json.dumps(empty_script_entry, ensure_ascii=False) + "\n")
 
             continue
+
+        # 为每个步骤设置默认的 action 字段（如果缺失）
+        for step in steps:
+            if "action" not in step:
+                step["action"] = "click"  # 设置默认动作为点击
+                print(f"为步骤 {step.get('step', 'unknown')} 设置默认 action: click")
 
         # 检查脚本类型：是否是基于优先级的动态脚本
         is_priority_based = any("Priority" in step for step in steps)
@@ -1495,7 +1510,9 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
                     # 将截图和检测任务放入队列
                     screenshot_queue.put((device_name, total_step_counter, frame, step_class, None))                        # 等待检测结果
                     try:
-                        print(f"[DEBUG] 正在等待AI检测结果: 目标类别={step_class}, 优先级={priority}")
+                        # 为普通脚本模式设置默认优先级
+                        step_priority = step.get("Priority", "N/A")
+                        print(f"[DEBUG] 正在等待AI检测结果: 目标类别={step_class}, 优先级={step_priority}")
                         success, (x, y, detected_class) = click_queue.get(timeout=10)  # 使用设备专用click_queue，超时10秒
                         print(f"[DEBUG] AI检测完成 - success={success}, detected_class='{detected_class}', expected_class='{step_class}', 坐标=({x}, {y})")
 

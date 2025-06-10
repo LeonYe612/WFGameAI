@@ -1,36 +1,53 @@
-feat(project_monitor): 新增识别统计模块；汇总历史识别记录；改进数据库结构
+feat(project_monitor): 新增project_monitor 模块；修复报告生成和回放功能
 
-完善数据库结构，确保数据结构合理性；优化代码优化，提升系统响应速度；优化系统配置，提升环境适应性和部署便捷度。
-改进系统工具和基础设施：更新项目设置, 新增主URL配置等，增强开发效率和代码质量。
+设计project_monitor接口，为前端提供稳定数据接口。
+优化数据模型：数据库结构, project_monitor数据库操作，提高数据完整性和查询效率；优化代码优化，提升系统响应速度。
+优化系统配置，提升环境适应性和部署便捷度；改进系统工具和基础设施：更新项目设置, 更新主URL配置等，增强开发效率和代码质量。
+修复final risk fix validation问题, verify django fix问题问题，增强系统稳定性。
+优化Git仓库结构，解决大文件问题，确保代码顺利推送和共享。
 
-新增了 21 个文件、修改了 18 个文件。
+重要变更：
+* 添加了大文件清理脚本，便于维护Git仓库
+
+新增了 38 个文件、修改了 40 个文件、删除了 2 个文件。
 
 主要改动:
 
-241模块:
-  - 新增: 212.md
+351模块:
+  - 新增: 212.md, 212.md
 project_monitor模块:
-  - 新增了 16 个文件
-    - 模型定义: 1个
-    - API接口: 2个
+  - 新增: django_models.py, setup_project_clean.py, views.py
+  - 修改了 11 个文件
+  - 删除: project_monitor.db, warframe_project.yaml
+scripts模块:
+  - 新增了 11 个文件
     - URL配置: 1个
-    - 迁移文件: 2个
-    - 数据处理: 1个
-    - 其他: 7个
+    - 其他: 8个
+  - 修改: data.json
+数据源模块:
+  - 修改: models.py
 config模块:
   - 修改: device_preparation_cache.json
 docs模块:
   - 修改: WFGameAI-Coding-Standards.md
+frontend模块:
+  - 修改了 7 个文件
+js模块:
+  - 新增: cache-buster.js
 logs模块:
   - 修改: django.log
 other模块:
+  - 新增: run_tests.bat
   - 修改: commit_message.txt, git_changes.txt
 pages模块:
-  - 新增: project_monitor.html, test_project_monitor.html
-  - 修改了 11 个文件
+  - 新增: debug_monitor_data.html
+  - 修改了 13 个文件
 python模块:
-  - 新增: run_monitor_server.py
+  - 新增了 19 个文件
+    - URL配置: 9个
+    - 数据处理: 3个
+    - 其他: 7个
 scripts模块:
-  - 新增: setup_project_monitor_data.py
+  - 修改: setup_project_monitor_data.py
 wfgame_ai_server_main模块:
-  - 修改: settings.py, urls.py
+  - 修改: settings.py
