@@ -40,15 +40,34 @@ class ElementPatterns:
         'class_types': ['android.widget.CheckBox'],
         'content_desc_keywords': ['同意', '协议', '记住'],
         'checkable_priority': True  # 优先识别可勾选的元素
-    }
-
-    # 登录按钮模式
+    }    # 登录按钮模式
     LOGIN_BUTTON_PATTERNS = {
         'text_hints': ['进入游戏', '立即登录', '登录', '登入', 'login', '开始游戏'],
         'resource_id_keywords': ['login', 'submit', 'enter', 'game', 'start'],
         'class_types': ['android.widget.Button', 'android.widget.TextView'],
         'content_desc_keywords': ['登录', '进入', '开始']
     }
+
+    @classmethod
+    def create_custom_pattern(cls, target_selector: Dict[str, Any]) -> Dict[str, Any]:
+        """创建自定义元素匹配模式"""
+        pattern = {}
+
+        # 从target_selector提取匹配条件
+        if 'text_hints' in target_selector:
+            pattern['text_hints'] = target_selector['text_hints']
+        if 'resource_id_keywords' in target_selector:
+            pattern['resource_id_keywords'] = target_selector['resource_id_keywords']
+        if 'class_types' in target_selector:
+            pattern['class_types'] = target_selector['class_types']
+        if 'content_desc_keywords' in target_selector:
+            pattern['content_desc_keywords'] = target_selector['content_desc_keywords']
+        if 'clickable_priority' in target_selector:
+            pattern['clickable_priority'] = target_selector['clickable_priority']
+        if 'checkable_priority' in target_selector:
+            pattern['checkable_priority'] = target_selector['checkable_priority']
+
+        return pattern
 
     # 通用输入框模式
     GENERIC_INPUT_PATTERNS = {
@@ -743,6 +762,174 @@ class EnhancedInputHandler:
         else:
             print(f"❌ 元素点击失败: {output}")
             return False
+
+    def find_custom_target_element(self, elements: List[Dict[str, Any]], target_selector: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """使用自定义选择器查找目标元素"""
+        if not elements or not target_selector:
+            return None
+
+        # 创建自定义匹配模式
+        pattern = ElementPatterns.create_custom_pattern(target_selector)
+        if not pattern:
+            print("❌ 无效的目标选择器")
+            return None
+
+        print(f"🔍 开始查找自定义目标元素，匹配模式: {pattern}")
+
+        candidates = []
+        for element in elements:
+            score = self._calculate_element_score(element, pattern)
+            if score > 0:
+                candidates.append((element, score))
+                print(f"📊 候选元素: text='{element.get('text', '')}', class='{element.get('class', '')}', score={score}")
+
+        if not candidates:
+            print("❌ 未找到匹配的目标元素")
+            return None
+
+        # 按分数排序，返回得分最高的元素
+        candidates.sort(key=lambda x: x[1], reverse=True)
+        best_element = candidates[0][0]
+        best_score = candidates[0][1]
+
+        print(f"✅ 找到最佳目标元素 (分数: {best_score}):")
+        print(f"   - text: '{best_element.get('text', '')}'")
+        print(f"   - class: '{best_element.get('class', '')}'")
+        print(f"   - resource-id: '{best_element.get('resource-id', '')}'")
+        print(f"   - content-desc: '{best_element.get('content-desc', '')}'")
+
+        return best_element
+
+    def click_custom_target(self, target_element: Dict[str, Any]) -> bool:
+        """点击自定义目标元素"""
+        if not target_element:
+            print("❌ 目标元素为空，无法点击")
+            return False
+
+        bounds = target_element.get('bounds', '')
+        if not bounds:
+            print("❌ 目标元素没有bounds信息，无法点击")
+            return False
+
+        coords = self._parse_bounds(bounds)
+        if not coords:
+            print(f"❌ 无法解析目标元素bounds: {bounds}")
+            return False
+
+        center_x, center_y = coords
+        element_text = target_element.get('text', '')
+        element_class = target_element.get('class', '')
+
+        print(f"👆 点击自定义目标元素: '{element_text}' ({element_class}) 在位置 ({center_x}, {center_y})")
+
+        success, output = self._run_adb_command(["shell", "input", "tap", str(center_x), str(center_y)])
+        if success:
+            print("✅ 自定义目标元素点击成功")
+            time.sleep(1.0)  # 等待响应
+            return True
+        else:
+            print(f"❌ 自定义目标元素点击失败: {output}")
+            return False
+
+    def perform_click_target_action(self, target_selector: Dict[str, Any]) -> bool:
+        """执行点击目标动作的完整流程"""
+        try:
+            print(f"🎯 开始执行点击目标动作，选择器: {target_selector}")
+
+            # 获取UI结构
+            xml_content = self.get_ui_hierarchy()
+            if not xml_content:
+                print("❌ 无法获取UI结构")
+                return False
+
+            # 解析UI元素
+            elements = self._parse_ui_xml(xml_content)
+            if not elements:
+                print("❌ 无法解析UI元素")
+                return False
+
+            print(f"📊 解析到 {len(elements)} 个UI元素")
+
+            # 查找目标元素
+            target_element = self.find_custom_target_element(elements, target_selector)
+            if not target_element:
+                print("❌ 未找到目标元素")
+                return False
+
+            # 点击目标元素
+            success = self.click_custom_target(target_element)
+            if success:
+                print("✅ 点击目标动作执行成功")
+                return True
+            else:
+                print("❌ 点击目标动作执行失败")
+                return False
+
+        except Exception as e:
+            print(f"❌ 点击目标动作执行过程中发生错误: {e}")
+            return False
+    def _calculate_element_score(self, element: Dict[str, Any], pattern: Dict[str, Any]) -> float:
+        """计算元素与模式的匹配分数"""
+        score = 0.0
+
+        # 获取元素属性 - 安全地处理可能的布尔值
+        element_text = str(element.get('text', '')).strip().lower()
+        element_resource_id = str(element.get('resource-id', '')).strip().lower()
+        element_class = str(element.get('class', '')).strip()
+        element_content_desc = str(element.get('content-desc', '')).strip().lower()
+
+        # 处理布尔属性
+        clickable_value = element.get('clickable', 'false')
+        element_clickable = str(clickable_value).lower() == 'true' if isinstance(clickable_value, (str, bool)) else False
+
+        checkable_value = element.get('checkable', 'false')
+        element_checkable = str(checkable_value).lower() == 'true' if isinstance(checkable_value, (str, bool)) else False
+
+        # 文本提示匹配 (权重: 40分)
+        if 'text_hints' in pattern:
+            for hint in pattern['text_hints']:
+                hint_lower = hint.lower()
+                if hint_lower in element_text:
+                    if element_text == hint_lower:
+                        score += 40  # 完全匹配
+                    else:
+                        score += 30  # 部分匹配
+                    break
+
+        # 资源ID关键词匹配 (权重: 25分)
+        if 'resource_id_keywords' in pattern:
+            for keyword in pattern['resource_id_keywords']:
+                keyword_lower = keyword.lower()
+                if keyword_lower in element_resource_id:
+                    score += 25
+                    break
+
+        # 类型匹配 (权重: 15分)
+        if 'class_types' in pattern:
+            if element_class in pattern['class_types']:
+                score += 15
+
+        # 内容描述匹配 (权重: 15分)
+        if 'content_desc_keywords' in pattern:
+            for keyword in pattern['content_desc_keywords']:
+                keyword_lower = keyword.lower()
+                if keyword_lower in element_content_desc:
+                    score += 15
+                    break
+
+        # 可点击性加分 (权重: 3分)
+        if 'clickable_priority' in pattern and element_clickable:
+            score += pattern.get('clickable_priority', 3)
+
+        # 可勾选性加分 (权重: 2分)
+        if 'checkable_priority' in pattern and element_checkable:
+            score += pattern.get('checkable_priority', 2)
+
+        # 默认可点击元素小幅加分
+        if element_clickable:
+            score += 1
+
+        return score
 
 
 def test_enhanced_input_handler():

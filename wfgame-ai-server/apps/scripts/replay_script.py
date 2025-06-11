@@ -1553,61 +1553,51 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
 
                         continue
 
-                    elif step_action == "login_button" or (step_action == "click" and step.get("target_selector", {}).get("type") == "login_button"):
-                        # 处理登录按钮点击步骤
+                    elif step_action == "click_target":
+                        # 处理通用目标点击步骤 - 替代原来的login_button和其他点击操作
                         target_selector = step.get("target_selector", {})
 
-                        print(f"执行登录按钮点击操作 - {step_remark}")
+                        print(f"执行点击目标操作 - {step_remark}")
+                        print(f"目标选择器: {target_selector}")
 
                         try:
                             # 初始化增强输入处理器
                             input_handler = EnhancedInputHandler(device.serial)
 
-                            # 获取UI结构
-                            xml_content = input_handler.get_ui_hierarchy()
-                            if xml_content:
-                                elements = input_handler._parse_ui_xml(xml_content)
+                            # 执行点击目标动作
+                            success = input_handler.perform_click_target_action(target_selector)
 
-                                # 查找登录按钮
-                                login_button = input_handler.find_login_button(elements)
-                                if login_button:
-                                    success = input_handler.click_login_button(login_button)
+                            if success:
+                                print(f"✅ 点击目标操作成功")
 
-                                    if success:
-                                        print(f"✅ 登录按钮点击成功")
+                                # 记录点击目标操作日志
+                                timestamp = time.time()
+                                click_entry = {
+                                    "tag": "function",
+                                    "depth": 1,
+                                    "time": timestamp,
+                                    "data": {
+                                        "name": "click_target",
+                                        "call_args": {
+                                            "target_selector": target_selector
+                                        },
+                                        "start_time": timestamp,
+                                        "ret": {"success": True},
+                                        "end_time": timestamp + 1.0,
+                                        "desc": step_remark or "点击目标操作",
+                                        "title": f"#{step_idx+1} {step_remark or '点击目标操作'}"
+                                    }
+                                }
+                                with open(log_txt_path, "a", encoding="utf-8") as f:
+                                    f.write(json.dumps(click_entry, ensure_ascii=False) + "\n")
 
-                                        # 记录登录按钮操作日志
-                                        timestamp = time.time()
-                                        button_entry = {
-                                            "tag": "function",
-                                            "depth": 1,
-                                            "time": timestamp,
-                                            "data": {
-                                                "name": "click_login_button",
-                                                "call_args": {
-                                                    "target_selector": target_selector
-                                                },
-                                                "start_time": timestamp,
-                                                "ret": {"success": True},
-                                                "end_time": timestamp + 1.0,
-                                                "desc": step_remark or "点击登录按钮操作",
-                                                "title": f"#{step_idx+1} {step_remark or '点击登录按钮操作'}"
-                                            }
-                                        }
-                                        with open(log_txt_path, "a", encoding="utf-8") as f:
-                                            f.write(json.dumps(button_entry, ensure_ascii=False) + "\n")
-
-                                        has_executed_steps = True
-                                        step_counter += 1
-                                    else:
-                                        print(f"❌ 错误: 登录按钮点击失败")
-                                else:
-                                    print(f"❌ 错误: 未找到登录按钮元素")
+                                has_executed_steps = True
+                                step_counter += 1
                             else:
-                                print(f"❌ 错误: 无法获取UI结构")
+                                print(f"❌ 错误: 点击目标操作失败")
 
                         except Exception as e:
-                            print(f"❌ 错误: 登录按钮点击过程中发生异常: {e}")
+                            print(f"❌ 错误: 点击目标操作过程中发生异常: {e}")
                             traceback.print_exc()
 
                         continue
@@ -3379,7 +3369,7 @@ if __name__ == "__main__":
                 'report_path': result.get('report_path'),
                 'test_passed': result.get('test_passed', False)
             }
-            print(f"设备 {device_name} 报告生成 {'成功' if result.get('report_path') else '失败'}, 测试 {'通过' if test_passed else '失败'}")
+            print(f"设备 {device_name} 报告生成 {'成功' if result.get('report_path') else '失败'}, 测试 {'通过' if result.get('test_passed', False) else '失败'}")
         else:
             test_results[device_name] = {
                 'report_path': None,

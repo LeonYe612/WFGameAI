@@ -1,10 +1,10 @@
 {
-  "start": 1749622224.9042532,
+  "start": 1749631011.5413914,
   "script": "replay_script",
   "tests": {
     "OnePlus-KB2000": {
-      "report_path": null,
-      "test_passed": false
+      "report_path": "C:\\Users\\Administrator\\PycharmProjects\\WFGameAI\\wfgame-ai-server\\staticfiles\\reports\\ui_run\\WFGameAI.air\\log\\OnePlus-KB2000_2025-06-11-16-36-51\\log.html",
+      "test_passed": true
     },
     "HUAWEI-JAD-AL00": {
       "report_path": "C:\\Users\\Administrator\\PycharmProjects\\WFGameAI\\wfgame-ai-server\\staticfiles\\reports\\ui_run\\WFGameAI.air\\log\\HUAWEI-JAD-AL00_2025-06-10-18-12-55\\log.html",
@@ -31,6 +31,6 @@
       "test_passed": false
     }
   },
-  "end": 1749622241.6215086,
-  "duration": 16.717255353927612
+  "end": 1749631033.9859743,
+  "duration": 22.44458293914795
 }
