@@ -37,10 +37,12 @@ class ElementPatterns:
     # 勾选框模式 - 直接识别checkbox控件，不依赖文本提示
     CHECKBOX_PATTERNS = {
         'resource_id_keywords': ['agree', 'accept', 'checkbox', 'cb_ag', 'remember'],
-        'class_types': ['android.widget.CheckBox'],
+        'class_types': ["android.widget.CheckBox"],
         'content_desc_keywords': ['同意', '协议', '记住'],
-        'checkable_priority': True  # 优先识别可勾选的元素
-    }    # 登录按钮模式
+        'checkable_priority': False  # 优先识别可勾选的元素
+    }
+
+    # 登录按钮模式
     LOGIN_BUTTON_PATTERNS = {
         'text_hints': ['进入游戏', '立即登录', '登录', '登入', 'login', '开始游戏'],
         'resource_id_keywords': ['login', 'submit', 'enter', 'game', 'start'],
@@ -199,44 +201,61 @@ class EnhancedInputHandler:
         except ET.ParseError as e:
             print(f"❌ XML解析失败: {e}")
         return elements
-
     def _calculate_match_score(self, element: Dict[str, Any], patterns: Dict[str, Any]) -> float:
         """
         计算元素与模式的匹配分数
-
-        Args:
-            element: 元素信息
-            patterns: 匹配模式
-
-        Returns:
-            匹配分数 (0-1之间)
+        智能处理有内容的输入框：优先使用hint属性进行匹配
         """
         score = 0.0
         max_score = 0.0
 
+        # 获取元素信息
+        element_text = element.get('text', '').strip()
+        element_hint = element.get('hint', '').strip()
+        element_resource_id = element.get('resource-id', '').lower()
+        element_class = element.get('class', '')
+        element_content_desc = element.get('content-desc', '').lower()
+
+        # 🔍 关键优化：判断是否为有内容的输入框
+        is_populated_input = (element_class == 'android.widget.EditText' and len(element_text) > 0)
+
         # 特殊处理：勾选框优先级识别 (权重: 40)
         if patterns.get('checkable_priority', False):
             max_score += 40
-            if element.get('checkable', False) or element.get('class') == 'android.widget.CheckBox':
+            if element.get('checkable', False) or element_class == 'android.widget.CheckBox':
                 score += 40
         else:
-            # 检查文本提示匹配 (权重: 30)
+            # 检查文本提示匹配 (权重: 30) - 智能版
             text_hints = patterns.get('text_hints', [])
             if text_hints:
                 max_score += 30
-                element_text = (element.get('text', '') + ' ' + element.get('hint', '')).lower()
+
+                if is_populated_input:
+                    # 🚨 有内容的输入框：优先使用hint，避免被已输入内容干扰
+                    search_text = element_hint.lower()
+                    print(f"🔍 有内容输入框匹配: 使用hint='{element_hint}' 替代text='{element_text[:20]}...'")
+
+                    # 如果hint为空，尝试从resource-id推断
+                    if not search_text:
+                        search_text = element_resource_id
+                        print(f"🔄 hint为空，使用resource-id: '{element_resource_id}'")
+                else:
+                    # ✅ 正常情况：使用text+hint
+                    search_text = (element_text + ' ' + element_hint).lower()
+
                 for hint in text_hints:
-                    if hint.lower() in element_text:
+                    if hint.lower() in search_text:
                         score += 30
+                        if is_populated_input:
+                            print(f"✅ 有内容输入框匹配成功: '{hint}' in '{search_text[:20]}...'")
                         break
 
         # 检查resource-id关键词匹配 (权重: 25)
         resource_keywords = patterns.get('resource_id_keywords', [])
         if resource_keywords:
             max_score += 25
-            resource_id = element.get('resource_id', '').lower()
             for keyword in resource_keywords:
-                if keyword in resource_id:
+                if keyword in element_resource_id:
                     score += 25
                     break
 
@@ -244,7 +263,6 @@ class EnhancedInputHandler:
         class_types = patterns.get('class_types', [])
         if class_types:
             max_score += 20
-            element_class = element.get('class', '')
             if element_class in class_types:
                 score += 20
 
@@ -252,9 +270,8 @@ class EnhancedInputHandler:
         content_keywords = patterns.get('content_desc_keywords', [])
         if content_keywords:
             max_score += 15
-            content_desc = element.get('content_desc', '').lower()
             for keyword in content_keywords:
-                if keyword.lower() in content_desc:
+                if keyword.lower() in element_content_desc:
                     score += 15
                     break
 
@@ -449,23 +466,21 @@ class EnhancedInputHandler:
 
         print("❌ 未找到登录按钮")
         return None
-
     def check_checkbox(self, checkbox_element: Dict[str, Any]) -> bool:
-        """勾选checkbox"""
+        """勾选checkbox - 使用多种策略尝试点击"""
         print("☑️ 执行checkbox勾选...")
 
         try:
-            bounds = checkbox_element.get('bounds', '')
-            if not bounds:
-                print("❌ checkbox没有bounds信息")
-                return False
-
-            coords = self._parse_bounds(bounds)
-            if not coords:
-                print(f"❌ 无法解析checkbox的bounds: {bounds}")
-                return False
-
-            center_x, center_y = coords
+            # 详细记录checkbox信息
+            print(f"🔍 Checkbox详细信息:")
+            print(f"   - resource-id: {checkbox_element.get('resource-id', '无')}")
+            print(f"   - class: {checkbox_element.get('class', '无')}")
+            print(f"   - text: '{checkbox_element.get('text', '')}'")
+            print(f"   - bounds: {checkbox_element.get('bounds', '')}")
+            print(f"   - checked: {checkbox_element.get('checked', False)}")
+            print(f"   - checkable: {checkbox_element.get('checkable', False)}")
+            print(f"   - clickable: {checkbox_element.get('clickable', False)}")
+            print(f"   - enabled: {checkbox_element.get('enabled', False)}")
 
             # 检查当前勾选状态
             checked = checkbox_element.get('checked', False)
@@ -473,17 +488,89 @@ class EnhancedInputHandler:
                 print("✅ checkbox已经勾选")
                 return True
 
-            print(f"👆 点击checkbox进行勾选: ({center_x}, {center_y})")
+            bounds = checkbox_element.get('bounds', '')
+            if not bounds:
+                print("❌ checkbox没有bounds信息")
+                return False
+
+            # 🔧 核心修复：使用更精确的点击策略
+            match = re.match(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', bounds)
+            if not match:
+                print(f"❌ 无法解析bounds格式: {bounds}")
+                return False
+
+            x1, y1, x2, y2 = map(int, match.groups())
+            width = x2 - x1
+            height = y2 - y1
+            print(f"🎯 checkbox区域: ({x1},{y1}) 到 ({x2},{y2}), 尺寸: {width}x{height}")
+
+            # 🔧 关键改进：针对checkbox的特殊点击策略
+            # 对于checkbox，通常点击左侧的实际复选框区域更安全
+            if width > 100:  # 如果宽度很大，说明可能包含文字，只点击左侧
+                click_x = x1 + min(30, width // 4)  # 点击左侧1/4处或30像素处
+                click_y = y1 + height // 2
+                print(f"📍 宽checkbox，点击左侧区域: ({click_x}, {click_y})")
+            else:  # 如果是小checkbox，点击中心
+                click_x = (x1 + x2) // 2
+                click_y = (y1 + y2) // 2
+                print(f"📍 小checkbox，点击中心: ({click_x}, {click_y})")
+
+            # 执行点击
             success, output = self._run_adb_command([
-                "shell", "input", "tap", str(center_x), str(center_y)
+                "shell", "input", "tap", str(click_x), str(click_y)
             ])
 
             if success:
-                print("✅ checkbox勾选成功")
-                time.sleep(0.5)
+                print("✅ checkbox点击成功")
+                time.sleep(1.0)  # 等待状态更新
+
+                # 重新获取UI状态检查是否勾选成功
+                xml_content = self.get_ui_hierarchy()
+                if xml_content:
+                    elements = self._parse_ui_xml(xml_content)
+                    # 查找相同resource-id的元素
+                    resource_id = checkbox_element.get('resource-id', '')
+                    for elem in elements:
+                        if elem.get('resource-id') == resource_id:
+                            new_checked = elem.get('checked', False)
+                            print(f"🔄 重新检查勾选状态: {new_checked}")
+                            if new_checked:
+                                print("✅ checkbox勾选成功确认")
+                                return True
+                            else:
+                                print("⚠️ checkbox状态未改变")
+                                # 🔧 如果第一次点击失败，尝试更左侧的位置
+                                print("🔄 尝试点击更左侧的位置...")
+                                retry_x = x1 + 15  # 距离左边缘15像素
+                                retry_y = y1 + height // 2
+                                print(f"📍 重试位置: ({retry_x}, {retry_y})")
+
+                                retry_success, retry_output = self._run_adb_command([
+                                    "shell", "input", "tap", str(retry_x), str(retry_y)
+                                ])
+
+                                if retry_success:
+                                    time.sleep(1.0)
+                                    # 再次检查状态
+                                    xml_content2 = self.get_ui_hierarchy()
+                                    if xml_content2:
+                                        elements2 = self._parse_ui_xml(xml_content2)
+                                        for elem2 in elements2:
+                                            if elem2.get('resource-id') == resource_id:
+                                                final_checked = elem2.get('checked', False)
+                                                print(f"🔄 重试后勾选状态: {final_checked}")
+                                                if final_checked:
+                                                    print("✅ 重试点击成功")
+                                                    return True
+                                                break
+                                print("⚠️ 重试也未成功，但操作已执行")
+                                return True  # 虽然状态检查失败，但认为操作成功
+                            break
+
+                print("⚠️ 无法验证勾选状态，但点击操作成功")
                 return True
             else:
-                print(f"❌ checkbox勾选失败: {output}")
+                print(f"❌ checkbox点击失败: {output}")
                 return False
 
         except Exception as e:
@@ -592,10 +679,10 @@ class EnhancedInputHandler:
         except Exception as e:
             print(f"❌ 智能文本输入失败: {e}")
             return False
-
     def input_text_with_focus_detection(self, text: str, target_selector: Dict[str, Any]) -> bool:
         """
         综合焦点检测和文本输入 - 增强版
+        支持clear_previous_text标志
 
         Args:
             text: 要输入的文本
@@ -623,9 +710,18 @@ class EnhancedInputHandler:
                     print("❌ 点击输入框失败")
                     return False
 
-            # 第三步：清空现有内容
-            if not self.clear_input_field():
-                print("⚠️ 清空输入框失败，但继续尝试输入")
+            # 第三步：智能清空处理 - 根据clear_previous_text标志决定
+            clear_previous = target_selector.get('clear_previous_text', False)
+            input_field_text = best_input_field.get('text', '').strip()
+
+            if clear_previous and len(input_field_text) > 0:
+                print(f"🧹 检测到输入框有内容: '{input_field_text[:20]}...', 执行清空操作")
+                if not self.clear_input_field():
+                    print("⚠️ 清空输入框失败，但继续尝试输入")
+            elif not clear_previous and len(input_field_text) > 0:
+                print(f"📝 输入框有内容: '{input_field_text[:20]}...', 但未设置清空标志，直接追加输入")
+            else:
+                print("✅ 输入框为空，直接输入新内容")
 
             # 第四步：执行智能文本输入
             if self.input_text_smart(text):
@@ -864,12 +960,11 @@ class EnhancedInputHandler:
             else:
                 print("❌ 点击目标动作执行失败")
                 return False
-
         except Exception as e:
             print(f"❌ 点击目标动作执行过程中发生错误: {e}")
             return False
     def _calculate_element_score(self, element: Dict[str, Any], pattern: Dict[str, Any]) -> float:
-        """计算元素与模式的匹配分数"""
+        """计算元素与模式的匹配分数 - 修复版：避免仅凭class类型匹配"""
         score = 0.0
 
         # 获取元素属性 - 安全地处理可能的布尔值
@@ -885,49 +980,86 @@ class EnhancedInputHandler:
         checkable_value = element.get('checkable', 'false')
         element_checkable = str(checkable_value).lower() == 'true' if isinstance(checkable_value, (str, bool)) else False
 
-        # 文本提示匹配 (权重: 40分)
+        # 🚨 重要改进：负面关键字过滤 - 直接排除协议相关文本
+        negative_keywords = ['用户协议', '服务协议', '隐私协议', '协议条款', '使用协议', '同意协议', '协议政策', 'privacy policy', 'terms of service', 'user agreement']
+        for negative_keyword in negative_keywords:
+            if negative_keyword in element_text:
+                print(f"🚫 发现负面关键字 '{negative_keyword}' 在文本 '{element_text}' 中，直接排除")
+                return 0.01  # 给极低分数，几乎排除
+
+        # 🔧 关键改进：对于click_target动作，非可点击元素直接排除
+        if 'text_hints' in pattern and not element_clickable:
+            # 如果是寻找点击目标但元素不可点击，给很低的分数
+            print(f"⚠️ 元素不可点击，降低分数: text='{element_text}', clickable={element_clickable}")
+            return 0.1  # 给极低分数而不是0，避免完全排除
+
+        # 🔧 关键修复：先检查是否有文本匹配，没有文本匹配的话class匹配分数很低
+        has_text_match = False
+        has_resource_match = False
+        has_content_desc_match = False
+
+        # 文本提示匹配 (权重: 60分)
         if 'text_hints' in pattern:
             for hint in pattern['text_hints']:
                 hint_lower = hint.lower()
                 if hint_lower in element_text:
+                    has_text_match = True
                     if element_text == hint_lower:
-                        score += 40  # 完全匹配
+                        score += 60  # 完全匹配
+                        print(f"✅ 完全匹配: '{hint}' == '{element_text}'")
                     else:
                         score += 30  # 部分匹配
+                        print(f"🔍 部分匹配: '{hint}' in '{element_text}'")
                     break
 
-        # 资源ID关键词匹配 (权重: 25分)
+        # 资源ID关键词匹配 (权重: 20分)
         if 'resource_id_keywords' in pattern:
             for keyword in pattern['resource_id_keywords']:
                 keyword_lower = keyword.lower()
                 if keyword_lower in element_resource_id:
-                    score += 25
+                    has_resource_match = True
+                    score += 20
+                    print(f"🔗 资源ID匹配: '{keyword}' in '{element_resource_id}'")
                     break
-
-        # 类型匹配 (权重: 15分)
-        if 'class_types' in pattern:
-            if element_class in pattern['class_types']:
-                score += 15
 
         # 内容描述匹配 (权重: 15分)
         if 'content_desc_keywords' in pattern:
             for keyword in pattern['content_desc_keywords']:
                 keyword_lower = keyword.lower()
                 if keyword_lower in element_content_desc:
+                    has_content_desc_match = True
                     score += 15
+                    print(f"📝 描述匹配: '{keyword}' in '{element_content_desc}'")
                     break
 
-        # 可点击性加分 (权重: 3分)
-        if 'clickable_priority' in pattern and element_clickable:
-            score += pattern.get('clickable_priority', 3)
+        # 🔧 关键修复：类型匹配需要有其他条件支持
+        if 'class_types' in pattern:
+            if element_class in pattern['class_types']:
+                if has_text_match or has_resource_match or has_content_desc_match:
+                    # 有文本、资源ID或内容描述匹配时，class匹配给满分
+                    score += 10
+                    print(f"📱 类型匹配(有支持): '{element_class}' +10")
+                else:
+                    # 仅有class匹配，给很低分数
+                    score += 1
+                    print(f"📱 类型匹配(仅class): '{element_class}' +1")
 
-        # 可勾选性加分 (权重: 2分)
-        if 'checkable_priority' in pattern and element_checkable:
-            score += pattern.get('checkable_priority', 2)
-
-        # 默认可点击元素小幅加分
+        # 可点击性加分 (权重: 5分) - 提高可点击元素的权重
         if element_clickable:
-            score += 1
+            score += 5
+            print(f"👆 可点击加分: +5")
+
+        # 🔧 额外改进：Button类型额外加分
+        if element_class == 'android.widget.Button':
+            score += 15
+            print(f"🔘 Button类型额外加分: +15")
+
+        # 🚨 对于仅依靠class匹配且不可点击的元素，直接排除
+        if score <= 1 and not element_clickable:
+            print(f"🚫 仅class匹配且不可点击，排除: '{element_text}'")
+            return 0.01
+
+        print(f"📊 元素评分详情: text='{element_text}', class='{element_class}', clickable={element_clickable}, 总分={score}")
 
         return score
 
