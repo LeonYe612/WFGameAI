@@ -1,5 +1,5 @@
 {
-  "start": 1749638116.2190957,
+  "start": 1749640486.0419474,
   "script": "replay_script",
   "tests": {
     "OnePlus-KB2000": {
@@ -27,10 +27,10 @@
       "test_passed": false
     },
     "HONOR-RMO-AN00": {
-      "report_path": "c:\\Users\\Administrator\\PycharmProjects\\WFGameAI\\wfgame-ai-server\\staticfiles\\reports\\ui_run\\WFGameAI.air\\log\\HONOR-RMO-AN00_2025-06-11-18-33-54\\log.html",
-      "test_passed": true
+      "report_path": "C:\\Users\\Administrator\\PycharmProjects\\WFGameAI\\wfgame-ai-server\\staticfiles\\reports\\ui_run\\WFGameAI.air\\log\\HONOR-RMO-AN00_2025-06-11-19-14-46\\log.html",
+      "test_passed": false
     }
   },
-  "end": 1749638123.539587,
-  "duration": 7.320491313934326
+  "end": 1749640534.9365604,
+  "duration": 48.89461302757263
 }

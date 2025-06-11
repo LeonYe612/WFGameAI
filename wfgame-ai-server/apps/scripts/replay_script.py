@@ -1235,8 +1235,8 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
                     elif step_action == "wait_if_exists":
                         # 处理条件等待步骤
                         element_class = step_class
-                        polling_interval = step.get("polling_interval", 1000) / 1000.0  # 转换为秒
-                        max_duration = step.get("max_duration", 30)  # 默认30秒超时
+                        polling_interval = step.get("polling_interval", 5000) / 1000.0  # 转换为秒，默认5秒轮询
+                        max_duration = step.get("max_duration", 300)  # 默认300秒超时
                         confidence = step.get("confidence", 0.7)  # 默认置信度
 
                         print(f"\n🚀 [步骤 {step_idx+1}] 开始执行 wait_if_exists 操作")
@@ -1262,11 +1262,15 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
                                 print(f"❌ 警告: 无法获取屏幕截图，跳过条件等待")
                                 wait_result = "screenshot_failed"
                             else:
-                                print(f"✅ 屏幕截图获取成功，尺寸: {screenshot.shape}")
+                                # Convert PIL Image to numpy array to access shape
+                                screenshot_array = np.array(screenshot)
+                                print(f"✅ 屏幕截图获取成功，尺寸: {screenshot_array.shape}")
 
                                 # 使用YOLO模型检测元素（与detect_buttons函数一致）
                                 print(f"🤖 正在使用YOLO模型检测元素 '{element_class}'...")
-                                success, detection_result = detect_buttons(screenshot, target_class=element_class)
+                                # Convert PIL Image to numpy array for OpenCV operations
+                                screenshot_cv = cv2.cvtColor(screenshot_array, cv2.COLOR_RGB2BGR)
+                                success, detection_result = detect_buttons(screenshot_cv, target_class=element_class)
                                 print(f"🔍 检测结果: success={success}, detection_result={detection_result}")
 
                                 if success and detection_result[0] is not None:
@@ -1301,7 +1305,10 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
                                         current_screenshot = device.screenshot()
                                         if current_screenshot is not None:
                                             print(f"🤖 [循环 {loop_count}] 重新检测元素...")
-                                            current_success, current_detection_result = detect_buttons(current_screenshot, target_class=element_class)
+                                            # Convert PIL Image to numpy array for OpenCV operations
+                                            current_screenshot_array = np.array(current_screenshot)
+                                            current_screenshot_cv = cv2.cvtColor(current_screenshot_array, cv2.COLOR_RGB2BGR)
+                                            current_success, current_detection_result = detect_buttons(current_screenshot_cv, target_class=element_class)
                                             print(f"🔍 [循环 {loop_count}] 重新检测结果: success={current_success}, result={current_detection_result}")
 
                                             if not current_success or current_detection_result[0] is None:
