@@ -1,0 +1,15 @@
+{
+  "steps": [
+    {
+      "step": 1,
+      "action": "auto_login",
+      "params": {
+        "username": "${account:username}",
+        "password": "${account:password}"
+      },
+      "confidence": 0.95,
+      "timestamp": "2025-06-11 10:00:00.000000",
+      "remark": "执行完整自动登录流程（包含用户名、密码、协议勾选、登录按钮点击）"
+    }
+  ]
+}

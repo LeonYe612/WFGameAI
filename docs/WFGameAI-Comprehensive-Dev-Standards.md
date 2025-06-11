@@ -58,10 +58,10 @@
 - 禁止任何形式的伪代码
 - 禁止使用绝对路径，公用目录统一使用 `config.ini` 文件进行管理
 
-#### 2.1.7 脚本执行默认值规范
+#### 2.1.7 脚本执行规范
 - 脚本步骤中如果缺少 `action` 字段，系统将自动设置默认值为 `"click"`
 - 这确保了向后兼容性，现有脚本无需修改即可正常运行
-- 支持的action类型：`click`、`swipe`、`wait`、`wait_if_exists`、`app_start`等
+- 支持的action类型：`click`、`swipe`、`wait`、`wait_if_exists`、`app_start`、`input`等
 
 ```json
 {
@@ -73,6 +73,108 @@
   "remark": "启动游戏后先有一个公告弹窗，点击关闭"
 }
 ```
+
+#### 2.1.8 文本输入操作规范
+- 支持 `"action": "input"` 类型用于文本输入操作（用户名、密码等）
+- 使用参数化语法 `${account:username}` 和 `${account:password}` 引用账户信息
+- 系统自动检测输入焦点，优先使用placeholder属性，备选键盘状态检测
+- 账户信息从CSV文件读取，按设备连接顺序分配，独占使用
+
+##### 文本输入示例
+```json
+{
+  "step": 1,
+  "action": "input",
+  "class": "username-field",
+  "text": "${account:username}",
+  "confidence": 0.95,
+  "timestamp": "2025-04-07 18:40:15.123456",
+  "remark": "输入用户名"
+},
+{
+  "step": 2,
+  "action": "input",
+  "class": "password-field",
+  "text": "${account:password}",
+  "confidence": 0.95,
+  "timestamp": "2025-04-07 18:40:18.654321",
+  "remark": "输入密码"
+}
+```
+
+##### 账户管理规范
+- **账户文件格式**: CSV格式，逗号分隔，无标题行
+- **文件位置**: `apps/scripts/accounts.txt`
+- **分配机制**: 按设备连接顺序自动分配，每个设备独占一个账户
+- **参数解析**: 支持 `${account:username}` 和 `${account:password}` 语法
+- **错误处理**: 显示明显错误信息，无重试机制，无加密存储
+
+##### 账户文件示例 (accounts.txt)
+```
+user1,password1
+user2,password2
+user3,password3
+```
+
+##### 焦点检测机制
+1. **首选方式**: 检测UI元素的placeholder属性判断是否为输入字段
+2. **备选方式**: 通过键盘状态检测当前是否有输入焦点
+3. **焦点管理**: 自动点击目标元素获取输入焦点
+4. **输入执行**: 使用adb shell input命令进行文本输入
+
+#### 2.1.9 登录功能完整实现
+
+系统已完整实现登录自动化功能，包含以下核心组件：
+
+##### 2.1.9.1 账号管理系统
+- **文件**: `account_manager.py`
+- **数据源**: `accounts.txt` (CSV格式：用户名,密码)
+- **分配机制**: 按设备连接顺序自动分配，独占使用
+- **释放机制**: 脚本执行完成后自动释放账号
+- **安全**: 密码日志自动隐藏，无加密存储
+
+##### 2.1.9.2 输入处理器
+- **文件**: `input_handler.py`
+- **焦点检测**: 优先使用placeholder属性定位，备选键盘状态检测
+- **文本输入**: 分段输入机制，支持长文本处理
+- **错误处理**: 完善的错误提示和重试机制
+
+##### 2.1.9.3 参数化语法
+- **用户名**: `${account:username}` - 自动替换为分配的用户名
+- **密码**: `${account:password}` - 自动替换为分配的密码，日志中隐藏显示
+- **目标选择器**: `"target_selector": {"placeholder": "提示文本"}` - 通过placeholder定位输入框
+
+##### 2.1.9.4 脚本示例
+```json
+{
+  "steps": [
+    {
+      "action": "input",
+      "text": "${account:username}",
+      "target_selector": {
+        "placeholder": "用户名"
+      },
+      "remark": "输入用户名"
+    },
+    {
+      "action": "input",
+      "text": "${account:password}",
+      "target_selector": {
+        "placeholder": "密码"
+      },
+      "remark": "输入密码"
+    }
+  ]
+}
+```
+
+##### 2.1.9.5 集成状态
+- ✅ replay_script.py 已集成input action处理逻辑
+- ✅ 账号分配和释放机制已实现
+- ✅ 参数替换功能已完成
+- ✅ 焦点检测综合方案已实现
+- ✅ 错误处理和日志隐藏已完成
+- ✅ 所有组件集成测试通过
 
 ### 2.2 API 示例代码
 

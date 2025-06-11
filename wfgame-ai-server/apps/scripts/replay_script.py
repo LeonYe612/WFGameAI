@@ -27,6 +27,9 @@ import re
 import torch
 from datetime import datetime
 import random
+# 导入登录功能相关模块
+from account_manager import get_account_manager
+from enhanced_input_handler import EnhancedInputHandler
 
 # 全局修补shutil.copytree以解决Airtest静态资源复制的FileExistsError问题
 # 这必须在所有其他操作之前进行，确保Airtest使用修补后的函数
@@ -435,6 +438,19 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
     # 打印参数（用于调试）
     print(f"设备: {device_name}, 脚本: {scripts}, 日志目录: {log_dir}")
     print(f"show_screens: {show_screens}, loop_count: {loop_count}")
+
+    # 分配账号给设备（基于连接顺序）
+    try:
+        account_manager = get_account_manager()
+        device_account = account_manager.allocate_account(device.serial)
+
+        if device_account:
+            username, password = device_account
+            print(f"✅ 为设备 {device_name} 分配账号: {username}")
+        else:
+            print(f"⚠️ 设备 {device_name} 账号分配失败，将跳过需要账号参数的输入步骤")
+    except Exception as e:
+        print(f"❌ 账号分配过程中出错: {e}")
 
     # 模拟设备初始化
     print(f"开始回放设备: {device_name}, 脚本: {scripts}")
@@ -1045,10 +1061,12 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
                         print(f"脚本 {script_path} 已达到最大执行时间 {max_duration}秒，停止执行")
                         break
 
-                        step_counter += 1
+                    step_counter += 1
                     total_step_counter += 1
                     step_class = step.get("class", "")
                     step_remark = step.get("remark", "")
+                    # 为普通脚本模式设置priority变量，避免UnboundLocalError
+                    priority = step.get("Priority", "N/A")
 
                     # 获取步骤的action类型，如果没有则默认为"click"
                     step_action = step.get("action", "click")
@@ -1404,6 +1422,262 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
 
                         # 滑动后等待一段时间让UI响应
                         time.sleep(duration / 1000.0 + 0.5)
+                        continue
+
+                    elif step_action == "input":
+                        # 处理文本输入步骤
+                        input_text = step.get("text", "")
+                        target_selector = step.get("target_selector", {})
+
+                        # 参数替换处理：${account:username} 和 ${account:password}
+                        if "${account:username}" in input_text:
+                            if device_account and len(device_account) >= 1:
+                                input_text = input_text.replace("${account:username}", device_account[0])
+                                print(f"✅ 替换用户名参数: {device_account[0]}")
+                            else:
+                                print(f"❌ 错误: 设备 {device_name} 没有分配账号，无法替换用户名参数")
+                                continue
+
+                        if "${account:password}" in input_text:
+                            if device_account and len(device_account) >= 2:
+                                input_text = input_text.replace("${account:password}", device_account[1])
+                                print(f"✅ 替换密码参数: {'*' * len(device_account[1])}")
+                            else:
+                                print(f"❌ 错误: 设备 {device_name} 没有分配账号，无法替换密码参数")
+                                continue
+
+                        print(f"执行文本输入: {input_text if '${account:password}' not in step.get('text', '') else '***隐藏密码***'} - {step_remark}")
+
+                        try:
+                            # 初始化增强输入处理器
+                            input_handler = EnhancedInputHandler(device.serial)
+
+                            # 执行焦点检测和文本输入
+                            success = input_handler.input_text_with_focus_detection(
+                                input_text,
+                                target_selector
+                            )
+
+                            if success:
+                                print(f"✅ 文本输入成功")
+
+                                # 记录输入操作日志
+                                timestamp = time.time()
+                                input_entry = {
+                                    "tag": "function",
+                                    "depth": 1,
+                                    "time": timestamp,
+                                    "data": {
+                                        "name": "input_text",
+                                        "call_args": {
+                                            "text": "***" if "${account:password}" in step.get("text", "") else input_text,
+                                            "target_selector": target_selector
+                                        },
+                                        "start_time": timestamp,
+                                        "ret": {"success": True},
+                                        "end_time": timestamp + 1,
+                                        "desc": step_remark or "文本输入操作",
+                                        "title": f"#{step_idx+1} {step_remark or '文本输入操作'}"
+                                    }
+                                }
+                                with open(log_txt_path, "a", encoding="utf-8") as f:
+                                    f.write(json.dumps(input_entry, ensure_ascii=False) + "\n")
+
+                                has_executed_steps = True
+                                step_counter += 1
+                            else:
+                                print(f"❌ 错误: 文本输入失败 - 无法找到合适的输入焦点")
+
+                        except Exception as e:
+                            print(f"❌ 错误: 文本输入过程中发生异常: {e}")
+                            traceback.print_exc()
+
+                        continue
+
+                    elif step_action == "checkbox":
+                        # 处理checkbox勾选步骤
+                        target_selector = step.get("target_selector", {})
+
+                        print(f"执行checkbox勾选操作 - {step_remark}")
+
+                        try:
+                            # 初始化增强输入处理器
+                            input_handler = EnhancedInputHandler(device.serial)
+
+                            # 获取UI结构
+                            xml_content = input_handler.get_ui_hierarchy()
+                            if xml_content:
+                                elements = input_handler._parse_ui_xml(xml_content)
+
+                                # 查找checkbox
+                                checkbox = input_handler.find_agreement_checkbox(elements)
+                                if checkbox:
+                                    success = input_handler.check_checkbox(checkbox)
+
+                                    if success:
+                                        print(f"✅ checkbox勾选成功")
+
+                                        # 记录checkbox操作日志
+                                        timestamp = time.time()
+                                        checkbox_entry = {
+                                            "tag": "function",
+                                            "depth": 1,
+                                            "time": timestamp,
+                                            "data": {
+                                                "name": "check_checkbox",
+                                                "call_args": {
+                                                    "target_selector": target_selector
+                                                },
+                                                "start_time": timestamp,
+                                                "ret": {"success": True},
+                                                "end_time": timestamp + 0.5,
+                                                "desc": step_remark or "勾选checkbox操作",
+                                                "title": f"#{step_idx+1} {step_remark or '勾选checkbox操作'}"
+                                            }
+                                        }
+                                        with open(log_txt_path, "a", encoding="utf-8") as f:
+                                            f.write(json.dumps(checkbox_entry, ensure_ascii=False) + "\n")
+
+                                        has_executed_steps = True
+                                        step_counter += 1
+                                    else:
+                                        print(f"❌ 错误: checkbox勾选失败")
+                                else:
+                                    print(f"❌ 错误: 未找到checkbox元素")
+                            else:
+                                print(f"❌ 错误: 无法获取UI结构")
+
+                        except Exception as e:
+                            print(f"❌ 错误: checkbox勾选过程中发生异常: {e}")
+                            traceback.print_exc()
+
+                        continue
+
+                    elif step_action == "login_button" or (step_action == "click" and step.get("target_selector", {}).get("type") == "login_button"):
+                        # 处理登录按钮点击步骤
+                        target_selector = step.get("target_selector", {})
+
+                        print(f"执行登录按钮点击操作 - {step_remark}")
+
+                        try:
+                            # 初始化增强输入处理器
+                            input_handler = EnhancedInputHandler(device.serial)
+
+                            # 获取UI结构
+                            xml_content = input_handler.get_ui_hierarchy()
+                            if xml_content:
+                                elements = input_handler._parse_ui_xml(xml_content)
+
+                                # 查找登录按钮
+                                login_button = input_handler.find_login_button(elements)
+                                if login_button:
+                                    success = input_handler.click_login_button(login_button)
+
+                                    if success:
+                                        print(f"✅ 登录按钮点击成功")
+
+                                        # 记录登录按钮操作日志
+                                        timestamp = time.time()
+                                        button_entry = {
+                                            "tag": "function",
+                                            "depth": 1,
+                                            "time": timestamp,
+                                            "data": {
+                                                "name": "click_login_button",
+                                                "call_args": {
+                                                    "target_selector": target_selector
+                                                },
+                                                "start_time": timestamp,
+                                                "ret": {"success": True},
+                                                "end_time": timestamp + 1.0,
+                                                "desc": step_remark or "点击登录按钮操作",
+                                                "title": f"#{step_idx+1} {step_remark or '点击登录按钮操作'}"
+                                            }
+                                        }
+                                        with open(log_txt_path, "a", encoding="utf-8") as f:
+                                            f.write(json.dumps(button_entry, ensure_ascii=False) + "\n")
+
+                                        has_executed_steps = True
+                                        step_counter += 1
+                                    else:
+                                        print(f"❌ 错误: 登录按钮点击失败")
+                                else:
+                                    print(f"❌ 错误: 未找到登录按钮元素")
+                            else:
+                                print(f"❌ 错误: 无法获取UI结构")
+
+                        except Exception as e:
+                            print(f"❌ 错误: 登录按钮点击过程中发生异常: {e}")
+                            traceback.print_exc()
+
+                        continue
+
+                    elif step_action == "auto_login":
+                        # 处理完整自动登录流程
+                        params = step.get("params", {})
+                        username = params.get("username", "")
+                        password = params.get("password", "")
+
+                        # 参数替换处理
+                        if "${account:username}" in username:
+                            if device_account and len(device_account) >= 1:
+                                username = username.replace("${account:username}", device_account[0])
+                                print(f"✅ 替换用户名参数: {device_account[0]}")
+                            else:
+                                print(f"❌ 错误: 设备 {device_name} 没有分配账号，无法替换用户名参数")
+                                continue
+
+                        if "${account:password}" in password:
+                            if device_account and len(device_account) >= 2:
+                                password = password.replace("${account:password}", device_account[1])
+                                print(f"✅ 替换密码参数: {'*' * len(device_account[1])}")
+                            else:
+                                print(f"❌ 错误: 设备 {device_name} 没有分配账号，无法替换密码参数")
+                                continue
+
+                        print(f"执行完整自动登录流程 - {step_remark}")
+
+                        try:
+                            # 初始化增强输入处理器
+                            input_handler = EnhancedInputHandler(device.serial)
+
+                            # 执行完整自动登录
+                            success = input_handler.perform_auto_login(username, password)
+
+                            if success:
+                                print(f"✅ 完整自动登录流程执行成功")
+
+                                # 记录自动登录操作日志
+                                timestamp = time.time()
+                                auto_login_entry = {
+                                    "tag": "function",
+                                    "depth": 1,
+                                    "time": timestamp,
+                                    "data": {
+                                        "name": "perform_auto_login",
+                                        "call_args": {
+                                            "username": username,
+                                            "password": "***隐藏密码***"
+                                        },
+                                        "start_time": timestamp,
+                                        "ret": {"success": True},
+                                        "end_time": timestamp + 3.0,
+                                        "desc": step_remark or "完整自动登录操作",
+                                        "title": f"#{step_idx+1} {step_remark or '完整自动登录操作'}"
+                                    }
+                                }
+                                with open(log_txt_path, "a", encoding="utf-8") as f:
+                                    f.write(json.dumps(auto_login_entry, ensure_ascii=False) + "\n")
+
+                                has_executed_steps = True
+                                step_counter += 1
+                            else:
+                                print(f"❌ 错误: 完整自动登录流程执行失败")
+
+                        except Exception as e:
+                            print(f"❌ 错误: 自动登录过程中发生异常: {e}")
+                            traceback.print_exc()
+
                         continue
 
                     elif step_class == "app_start":
@@ -1837,6 +2111,15 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
             print(f"添加默认操作失败: {e}")
 
     print(f"设备 {device_name} 回放完成，完成总步骤数: {total_step_counter}")
+
+    # 释放分配给该设备的账号
+    try:
+        account_manager = get_account_manager()
+        account_manager.release_account(device.serial)
+        print(f"✅ 设备 {device_name} 账号已释放")
+    except Exception as e:
+        print(f"❌ 账号释放过程中出错: {e}")
+
     stop_event.set()  # 停止检测服务
 
 
@@ -3096,7 +3379,7 @@ if __name__ == "__main__":
                 'report_path': result.get('report_path'),
                 'test_passed': result.get('test_passed', False)
             }
-            print(f"设备 {device_name} 报告生成 {'成功' if result.get('report_path') else '失败'}, 测试 {'通过' if result.get('test_passed') else '失败'}")
+            print(f"设备 {device_name} 报告生成 {'成功' if result.get('report_path') else '失败'}, 测试 {'通过' if test_passed else '失败'}")
         else:
             test_results[device_name] = {
                 'report_path': None,

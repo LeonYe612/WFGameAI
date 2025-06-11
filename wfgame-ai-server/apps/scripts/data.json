@@ -1,5 +1,5 @@
 {
-  "start": 1749550374.9282875,
+  "start": 1749622224.9042532,
   "script": "replay_script",
   "tests": {
     "OnePlus-KB2000": {
@@ -25,8 +25,12 @@
     "vivo-V2244A": {
       "report_path": "C:\\Users\\Administrator\\PycharmProjects\\WFGameAI\\wfgame-ai-server\\staticfiles\\reports\\ui_run\\WFGameAI.air\\log\\vivo-V2244A_2025-06-06-10-08-39\\log.html",
       "test_passed": false
+    },
+    "HONOR-RMO-AN00": {
+      "report_path": "c:\\Users\\Administrator\\PycharmProjects\\WFGameAI\\wfgame-ai-server\\staticfiles\\reports\\ui_run\\WFGameAI.air\\log\\HONOR-RMO-AN00_2025-06-11-14-10-25\\log.html",
+      "test_passed": false
     }
   },
-  "end": 1749550392.5566497,
-  "duration": 17.62836217880249
+  "end": 1749622241.6215086,
+  "duration": 16.717255353927612
 }
