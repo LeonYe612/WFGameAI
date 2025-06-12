@@ -249,7 +249,8 @@ def get_device_name(device):
         return "".join(c for c in device.serial if c.isalnum() or c in ('-', '_'))
 
 
-def start_app_with_permission_handling(device_serial, app_identifier, is_package_name=False, auto_allow_permissions=True):
+def start_app_with_permission_handling(device_serial, app_identifier, is_package_name=False,
+                                      auto_allow_permissions=True, permission_config=None):
     """
     启动应用并自动处理系统权限弹窗
 
@@ -258,6 +259,7 @@ def start_app_with_permission_handling(device_serial, app_identifier, is_package
         app_identifier: 应用标识符（模板名称或包名）
         is_package_name: 是否是包名（True）还是模板名称（False）
         auto_allow_permissions: 是否自动允许权限
+        permission_config: 权限处理配置参数
 
     Returns:
         bool: 启动是否成功
@@ -278,29 +280,76 @@ def start_app_with_permission_handling(device_serial, app_identifier, is_package
 
         print(f"✅ 应用启动成功: {app_identifier}")
 
-        # 2. 处理系统权限弹窗 - 在应用启动后等待2秒再处理权限
-        print(f"🔐 开始处理应用权限弹窗...")
-        time.sleep(2)  # 给应用一些时间显示权限弹窗
-
-        try:
-            # 使用权限管理器处理权限弹窗
-            # 注意：integrate_with_app_launch 需要应用包名，如果没有包名则跳过权限处理
-            if is_package_name or app_identifier.count('.') > 0:  # 简单判断是否是包名格式
-                permission_success = integrate_with_app_launch(
-                    device_serial=device_serial,
-                    app_package=str(app_identifier),
-                    auto_allow_permissions=auto_allow_permissions
-                )
-
-                if permission_success:
-                    print(f"✅ 权限处理完成")
-                else:
-                    print(f"⚠️ 权限处理完成（可能无权限弹窗）")
+        # 2. 获取真实包名用于权限处理
+        real_package_name = None
+        if is_package_name:
+            # 如果直接提供包名，使用它
+            real_package_name = str(app_identifier)
+        else:
+            # 从应用模板中获取包名
+            template_path = os.path.join(os.path.dirname(__file__), "app_templates", f"{app_identifier}.json")
+            if os.path.exists(template_path):
+                try:
+                    with open(template_path, "r", encoding="utf-8") as f:
+                        template_data = json.load(f)
+                        real_package_name = template_data.get("package_name")
+                        if real_package_name:
+                            print(f"📱 从模板获取应用包名: {real_package_name}")
+                        else:
+                            print(f"⚠️ 模板文件中未找到包名: {template_path}")
+                except Exception as e:
+                    print(f"⚠️ 读取应用模板失败: {e}")
             else:
-                print(f"⚠️ 无法确定应用包名，跳过权限处理")
+                print(f"⚠️ 应用模板文件不存在: {template_path}")
 
-        except Exception as e:
-            print(f"⚠️ 权限处理过程中出现异常（继续执行）: {e}")
+        # 3. 处理系统权限弹窗 - 根据配置决定是否处理权限
+        handle_permissions = True  # 默认处理权限
+        is_fresh_install = False   # 默认非首次安装
+        max_wait_time = 10         # 默认最长等待10秒
+        detection_interval = 0.3   # 默认检测间隔0.3秒
+
+        # 如果提供了权限配置，覆盖默认值
+        if permission_config:
+            handle_permissions = permission_config.get("handle", True)
+            first_only_config = permission_config.get("first_only", False)
+            max_wait_time = permission_config.get("wait", 10)
+            auto_allow_permissions = permission_config.get("allow", auto_allow_permissions)
+
+            # 如果设置了仅首次安装处理，需要检查是否为首次安装
+            # 注意：这里我们假设用户通过配置明确指示了是否为首次安装
+            # 在实际应用中，可能需要更复杂的逻辑来判断是否为首次安装
+            if first_only_config:
+                # 简化逻辑：如果配置了first_only=true，我们假设用户知道这是首次安装
+                is_fresh_install = True
+                print(f"🔧 配置为仅首次安装处理权限")
+
+        if handle_permissions:
+            print(f"🔐 开始处理应用权限弹窗 (最长等待{max_wait_time}秒)...")
+            time.sleep(1)  # 减少等待时间，从2秒减为1秒
+
+            try:
+                # 使用权限管理器处理权限弹窗
+                if real_package_name:
+                    print(f"🔐 使用包名处理权限: {real_package_name}")
+                    # 导入增强版权限处理函数
+                    from app_permission_manager import integrate_with_app_launch_enhanced
+
+                    permission_success = integrate_with_app_launch_enhanced(
+                        device_serial=device_serial,
+                        app_package=real_package_name
+                    )
+
+                    if permission_success:
+                        print(f"✅ 权限处理完成")
+                    else:
+                        print(f"⚠️ 权限处理完成（可能无权限弹窗）")
+                else:
+                    print(f"⚠️ 无法获取应用包名，跳过权限处理")
+
+            except Exception as e:
+                print(f"⚠️ 权限处理过程中出现异常（继续执行）: {e}")
+        else:
+            print("⏩ 跳过权限处理（根据配置）")
 
         return True
 
@@ -1080,14 +1129,31 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
 
                     elif step_class == "app_start":
                         # 处理应用启动步骤
-                        app_name = step.get("params", {}).get("app_name", "")
-                        package_name = step.get("params", {}).get("package_name", "")
+                        params = step.get("params", {})
+                        app_name = params.get("app_name", "")
+                        package_name = params.get("package_name", "")
+
+                        # 扁平化权限配置参数
+                        handle_permission = params.get("handle_permission", True)
+                        permission_wait = params.get("permission_wait", 10)
+                        allow_permission = params.get("allow_permission", True)
+                        first_only = params.get("first_only", False)
 
                         if not app_name and not package_name:
                             print(f"错误: app_start 步骤缺少 app_name 或 package_name 参数")
                             continue
 
                         print(f"启动应用 {app_name or package_name}: {step_remark}")
+
+                        # 构建权限配置（转换为内部格式）
+                        permission_config = {
+                            "handle": handle_permission,
+                            "wait": permission_wait,
+                            "allow": allow_permission,
+                            "first_only": first_only
+                        }
+
+                        print(f"🔧 权限配置: handle={handle_permission}, wait={permission_wait}s, allow={allow_permission}, first_only={first_only}")
 
                         # 使用集成权限处理的应用启动函数
                         success = False
@@ -1100,7 +1166,8 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
                                 success = start_app_with_permission_handling(
                                     device.serial,
                                     str(app_identifier),
-                                    is_package_name=is_package_name
+                                    is_package_name=is_package_name,
+                                    permission_config=permission_config
                                 )
                             except Exception as e:
                                 print(f"应用启动失败: {e}")
@@ -1116,7 +1183,13 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
                             "time": timestamp,
                             "data": {
                                 "name": "app_start",
-                                "call_args": {"app_name": app_name or package_name},
+                                "call_args": {
+                                    "app_name": app_name or package_name,
+                                    "handle_permission": handle_permission,
+                                    "permission_wait": permission_wait,
+                                    "allow_permission": allow_permission,
+                                    "first_only": first_only
+                                },
                                 "start_time": timestamp,
                                 "ret": success,
                                 "end_time": timestamp + 0.5
@@ -1124,14 +1197,6 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
                         }
                         with open(log_txt_path, "a", encoding="utf-8") as f:
                             f.write(json.dumps(app_start_entry, ensure_ascii=False) + "\n")
-
-                        # 集成权限管理器，处理权限弹窗
-                        try:
-                            print(f"设备 {device_name} 集成权限管理器，处理权限弹窗...")
-                            integrate_with_app_launch(device, app_name or package_name)
-                            print(f"设备 {device_name} 权限管理器处理完成")
-                        except Exception as e:
-                            print(f"设备 {device_name} 权限管理器处理失败: {e}")
 
                         continue
 
@@ -1660,15 +1725,38 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
 
                     elif step_class == "app_start":
                         # 处理应用启动步骤
-                        app_name = step.get("params", {}).get("app_name", "")
-                        print(f"启动应用: {app_name} - {step_remark}")
+                        params = step.get("params", {})
+                        app_name = params.get("app_name", "")
+                        package_name = params.get("package_name", "")
+
+                        # 扁平化权限配置参数
+                        handle_permission = params.get("handle_permission", True)
+                        permission_wait = params.get("permission_wait", 10)
+                        allow_permission = params.get("allow_permission", True)
+                        first_only = params.get("first_only", False)
+
+                        print(f"启动应用: {app_name or package_name} - {step_remark}")
+
+                        # 构建权限配置（转换为内部格式）
+                        permission_config = {
+                            "handle": handle_permission,
+                            "wait": permission_wait,
+                            "allow": allow_permission,
+                            "first_only": first_only
+                        }
+
+                        print(f"🔧 权限配置: handle={handle_permission}, wait={permission_wait}s, allow={allow_permission}, first_only={first_only}")
 
                         try:
                             # 使用集成权限处理的应用启动函数
+                            app_identifier = app_name or package_name
+                            is_package_name = bool(package_name and not app_name)
+
                             result = start_app_with_permission_handling(
                                 device.serial,
-                                app_name,
-                                is_package_name=False
+                                app_identifier,
+                                is_package_name=is_package_name,
+                                permission_config=permission_config
                             )
                             print(f"应用启动结果: {result}")
 
@@ -1680,7 +1768,13 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
                                 "time": timestamp,
                                 "data": {
                                     "name": "start_app",
-                                    "call_args": {"app_name": app_name},
+                                    "call_args": {
+                                        "app_name": app_identifier,
+                                        "handle_permission": handle_permission,
+                                        "permission_wait": permission_wait,
+                                        "allow_permission": allow_permission,
+                                        "first_only": first_only
+                                    },
                                     "start_time": timestamp,
                                     "ret": result,
                                     "end_time": timestamp + 1

@@ -1,0 +1,23 @@
+{
+    "name": "card2prepare-wetest",
+    "package_name": "com.beeplay.card2prepare",
+    "activity_name": "com.beeplay.card2prepare/com.beeplay.splash.launcher.SplashActivity",
+    "start_commands": [
+        "adb -s {device_serial} shell am force-stop {package_name}",
+        "adb -s {device_serial} shell am start -n {activity_name}",
+        "adb -s {device_serial} shell input keyevent KEYCODE_WAKEUP"
+    ],
+    "stop_commands": [
+        "adb -s {device_serial} shell am force-stop {package_name}"
+    ],
+    "check_commands": [
+        "adb -s {device_serial} shell pidof {package_name}"
+    ],
+    "startup_wait_time": 5,
+    "max_restart_attempts": 3,
+    "health_check_interval": 60,
+    "custom_params": {
+        "game_type": "card",
+        "requires_login": false
+    }
+}

@@ -5247,3 +5247,38 @@ INFO 2025-06-12 10:51:43,065 basehttp 33660 101980 "GET /api/docs/ HTTP/1.1" 200
 INFO 2025-06-12 10:51:43,916 basehttp 33660 101980 "GET /api/schema/ HTTP/1.1" 200 33668
 WARNING 2025-06-12 10:51:43,919 log 33660 86364 Not Found: /favicon.ico
 WARNING 2025-06-12 10:51:43,920 basehttp 33660 86364 "GET /favicon.ico HTTP/1.1" 404 4951
+INFO 2025-06-12 11:08:59,356 basehttp 33660 86820 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-06-12 11:08:59,362 basehttp 33660 86820 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-06-12 11:08:59,787 basehttp 33660 86820 "POST /api/scripts/ HTTP/1.1" 200 2720
+INFO 2025-06-12 11:09:10,695 basehttp 33660 86820 "POST /api/scripts/replay/ HTTP/1.1" 200 568
+INFO 2025-06-12 14:36:19,046 basehttp 33660 121664 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-12 14:36:19,048 basehttp 33660 121664 "GET /static/pages/devices.html HTTP/1.1" 304 0
+INFO 2025-06-12 14:36:19,060 basehttp 33660 121664 "GET /static/js/pages/devices_table_vue.js HTTP/1.1" 304 0
+INFO 2025-06-12 14:36:20,208 basehttp 33660 121664 "POST /api/devices/scan/ HTTP/1.1" 200 564
+INFO 2025-06-12 14:43:48,395 basehttp 33660 82592 "POST /api/devices/scan/ HTTP/1.1" 200 564
+INFO 2025-06-12 14:52:06,311 basehttp 33660 67000 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-06-12 14:52:06,732 basehttp 33660 67000 "POST /api/scripts/ HTTP/1.1" 200 2895
+INFO 2025-06-12 14:57:05,902 basehttp 33660 67000 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-12 14:57:06,680 basehttp 33660 67000 "POST /api/devices/scan/ HTTP/1.1" 200 564
+INFO 2025-06-12 15:05:51,959 basehttp 33660 28896 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-06-12 15:05:52,377 basehttp 33660 28896 "POST /api/scripts/ HTTP/1.1" 200 2895
+INFO 2025-06-12 15:25:03,769 autoreload 7368 115048 Watching for file changes with StatReloader
+INFO 2025-06-12 15:25:07,977 basehttp 7368 112128 "GET / HTTP/1.1" 200 9788
+WARNING 2025-06-12 15:25:08,443 log 7368 112128 Not Found: /favicon.ico
+WARNING 2025-06-12 15:25:08,443 basehttp 7368 112128 "GET /favicon.ico HTTP/1.1" 404 4951
+INFO 2025-06-12 15:25:24,057 basehttp 7368 47600 "GET /api/docs/ HTTP/1.1" 200 788
+INFO 2025-06-12 15:25:24,835 basehttp 7368 47600 "GET /api/schema/ HTTP/1.1" 200 33668
+WARNING 2025-06-12 15:25:24,839 log 7368 101448 Not Found: /favicon.ico
+WARNING 2025-06-12 15:25:24,839 basehttp 7368 101448 "GET /favicon.ico HTTP/1.1" 404 4951
+INFO 2025-06-12 16:13:16,508 basehttp 7368 70204 "GET / HTTP/1.1" 200 9788
+WARNING 2025-06-12 16:13:16,954 log 7368 70204 Not Found: /favicon.ico
+WARNING 2025-06-12 16:13:16,954 basehttp 7368 70204 "GET /favicon.ico HTTP/1.1" 404 4951
+INFO 2025-06-12 16:13:23,269 basehttp 7368 49684 "GET /pages/scripts.html HTTP/1.1" 302 0
+INFO 2025-06-12 16:13:23,270 basehttp 7368 49684 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-06-12 16:13:23,500 basehttp 7368 49684 "POST /api/scripts/ HTTP/1.1" 200 2895
+INFO 2025-06-12 16:24:29,388 autoreload 7368 115048 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-12 16:24:29,918 autoreload 129336 50664 Watching for file changes with StatReloader
+INFO 2025-06-12 16:24:55,900 autoreload 129336 50664 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-12 16:24:56,413 autoreload 88556 60376 Watching for file changes with StatReloader
+INFO 2025-06-12 16:37:44,655 basehttp 88556 83140 "POST /api/scripts/replay/ HTTP/1.1" 200 840
+INFO 2025-06-12 16:39:02,384 basehttp 88556 83140 "POST /api/scripts/replay/ HTTP/1.1" 200 842

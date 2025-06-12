@@ -1,17 +1,17 @@
 {
   "type": "script",
-  "name": "start_app1",
-  "description": "启动卡牌2app - 支持权限配置",
+  "name": "app_start_permission_examples",
+  "description": "应用启动权限配置示例 - 展示扁平化权限处理配置",
   "author": "WFGameAI",
   "date": "2025-06-12",
   "steps": [
     {
       "class": "app_start",
-      "remark": "启动卡牌2app，配置权限处理",
+      "remark": "启动应用并处理权限",
       "params": {
         "app_name": "card2prepare",
         "handle_permission": true,
-        "permission_wait": 10,
+        "permission_wait": 15,
         "allow_permission": true,
         "first_only": true
       }

@@ -44,10 +44,10 @@ class AndroidPermissionPatterns:
     # 权限弹窗按钮文本模式
     PERMISSION_BUTTON_PATTERNS = {
         PermissionAction.ALLOW: [
-            "允许", "Allow", "ALLOW", "同意", "确定", "OK", "接受"
+            "允许", "Allow", "ALLOW", "同意", "确定", "OK", "接受", "agree", "Agree"
         ],
         PermissionAction.DENY: [
-            "拒绝", "Deny", "DENY", "不允许", "取消", "Cancel", "否"
+            "拒绝", "Deny", "DENY", "不允许", "取消", "Cancel", "否", "不同意", "disagree", "Disagree"
         ],
         PermissionAction.DONT_ASK_AGAIN: [
             "不再询问", "Don't ask again", "不再提示", "记住选择"
@@ -55,18 +55,6 @@ class AndroidPermissionPatterns:
         PermissionAction.WHILE_USING_APP: [
             "仅在使用应用时允许", "While using app", "使用时允许"
         ]
-    }
-
-    # 权限类型识别模式
-    PERMISSION_TYPE_PATTERNS = {
-        "camera": ["相机", "摄像头", "Camera", "camera", "拍照", "录像"],
-        "microphone": ["麦克风", "音频", "Microphone", "microphone", "录音", "Audio"],
-        "storage": ["存储", "文件", "Storage", "storage", "访问文件", "读写"],
-        "location": ["位置", "定位", "Location", "location", "GPS", "地理位置"],
-        "notification": ["通知", "Notification", "notification", "推送"],
-        "contacts": ["通讯录", "联系人", "Contacts", "contacts"],
-        "phone": ["电话", "Phone", "phone", "通话状态"],
-        "sms": ["短信", "SMS", "sms", "消息"]
     }
 
     # 系统权限弹窗容器识别模式
@@ -78,13 +66,23 @@ class AndroidPermissionPatterns:
         "android.app.Dialog"
     ]
 
+    # 新增：应用自定义弹窗识别关键词
+    APP_CUSTOM_DIALOG_KEYWORDS = [
+        "个人信息保护指引", "隐私政策", "用户协议", "Privacy Policy",
+        "权限申请", "权限说明", "服务条款", "使用条款",
+        "tvTitle", "tv_ok", "tv_cancel"  # 常见的弹窗控件ID
+    ]
+
 class AppPermissionManager:
     """应用权限管理器 - 专门处理应用启动后的权限弹窗"""
-
-    def __init__(self):
+    def __init__(self, config: Dict[str, Any] = None):
         self.patterns = AndroidPermissionPatterns()
-        self.permission_wait_timeout = 10  # 等待权限弹窗出现的超时时间(秒)
-        self.permission_detection_interval = 0.5  # 权限弹窗检测间隔(秒)
+
+        # 使用合理的默认值，保持代码简洁
+        self.permission_wait_timeout = 30  # 权限等待超时
+        self.permission_detection_interval = 0.8  # 检测间隔
+        self.popup_interval_wait = 2.5  # 弹窗间隔
+        self.no_popup_confirm_count = 3  # 确认次数
 
     def wait_and_handle_permission_popups(self, device_serial: str, app_package: str = None,
                                         auto_allow: bool = True, max_popups: int = 5) -> bool:
@@ -181,19 +179,74 @@ class AppPermissionManager:
             import xml.etree.ElementTree as ET
             root = ET.fromstring(ui_dump)
 
-            # 查找权限弹窗容器
+            # 方法1：查找系统权限弹窗容器
             for element in root.iter():
                 package = element.get('package', '')
 
-                # 检查是否是权限弹窗容器
+                # 检查是否是系统权限弹窗容器
                 if any(container in package for container in self.patterns.PERMISSION_DIALOG_CONTAINERS):
-                    # 进一步分析弹窗内容
-                    return self._analyze_permission_dialog_content(element)
+                    dialog = self._analyze_permission_dialog_content(element)
+                    if dialog:
+                        return dialog
+
+            # 方法2：查找应用自定义权限/隐私弹窗
+            permission_dialog = self._detect_app_custom_permission_dialog(root)
+            if permission_dialog:
+                return permission_dialog
 
             return None
 
         except Exception as e:
             logger.error(f"解析权限弹窗失败: {e}")
+            return None
+
+    def _detect_app_custom_permission_dialog(self, root) -> Optional[PermissionDialog]:
+        """检测应用自定义的权限/隐私弹窗"""
+        try:
+            all_texts = []
+            clickable_elements = []
+
+            # 收集所有文本和可点击元素
+            for element in root.iter():
+                text = element.get('text', '').strip()
+                if text:
+                    all_texts.append(text)
+
+                if element.get('clickable') == 'true' and text:
+                    clickable_elements.append({
+                        'text': text,
+                        'bounds': element.get('bounds', ''),
+                        'resource_id': element.get('resource-id', '')
+                    })
+
+            # 检查是否包含自定义弹窗关键词
+            combined_text = ' '.join(all_texts)
+            has_custom_keywords = any(
+                keyword in combined_text
+                for keyword in self.patterns.APP_CUSTOM_DIALOG_KEYWORDS
+            )
+
+            if has_custom_keywords and clickable_elements:
+                logger.info(f"检测到应用自定义权限/隐私弹窗")
+                logger.info(f"弹窗文本内容: {combined_text[:200]}...")                # 识别弹窗类型
+                permission_type = self._identify_permission_type(all_texts)
+
+                # 识别可用操作
+                available_actions = self._identify_available_actions(clickable_elements)
+
+                if available_actions:
+                    return PermissionDialog(
+                        permission_type=permission_type,
+                        dialog_title="应用自定义权限弹窗",
+                        dialog_message=combined_text[:100] + "...",
+                        available_actions=available_actions,
+                        recommended_action=PermissionAction.ALLOW
+                    )
+
+            return None
+
+        except Exception as e:
+            logger.error(f"检测应用自定义弹窗失败: {e}")
             return None
 
     def _analyze_permission_dialog_content(self, dialog_element) -> Optional[PermissionDialog]:
@@ -217,9 +270,7 @@ class AppPermissionManager:
                     })
 
             # 识别权限类型
-            permission_type = self._identify_permission_type(dialog_texts)
-
-            # 识别可用操作
+            permission_type = self._identify_permission_type(dialog_texts)            # 识别可用操作
             available_actions = self._identify_available_actions(available_buttons)
 
             if permission_type and available_actions:
@@ -237,28 +288,46 @@ class AppPermissionManager:
             logger.error(f"分析权限弹窗内容失败: {e}")
             return None
 
-    def _identify_permission_type(self, texts: List[str]) -> Optional[str]:
-        """根据弹窗文本识别权限类型"""
+    def _identify_permission_type(self, texts: List[str]) -> str:
+        """简化的权限类型识别 - 只返回通用权限类型"""
         combined_text = ' '.join(texts).lower()
 
-        for perm_type, keywords in self.patterns.PERMISSION_TYPE_PATTERNS.items():
-            if any(keyword.lower() in combined_text for keyword in keywords):
-                return perm_type
-
-        return "unknown"
-
+        # 简单判断是否为隐私政策相关弹窗
+        if any(keyword in combined_text for keyword in ["隐私政策", "个人信息保护", "用户协议", "privacy policy", "隐私条款", "服务条款"]):
+            return "privacy_policy"
+        elif any(keyword in combined_text for keyword in ["权限申请", "权限说明", "访问权限", "permission"]):
+            return "app_permission"
+        else:
+            # 对于所有其他类型的权限弹窗，返回通用类型
+            return "permission"
     def _identify_available_actions(self, buttons: List[Dict[str, str]]) -> List[PermissionAction]:
-        """识别权限弹窗中可用的操作按钮"""
+        """识别权限弹窗中可用的操作按钮 - 全匹配版"""
         actions = []
 
-        for button in buttons:
-            button_text = button['text'].lower()
+        logger.info(f"开始识别按钮操作，共有 {len(buttons)} 个按钮")
 
+        for button in buttons:
+            button_text = button['text'].strip()
+            logger.info(f"处理按钮: '{button_text}'")
+
+            matched_action = None
+
+            # 直接进行全匹配，最精确的方式
             for action, patterns in self.patterns.PERMISSION_BUTTON_PATTERNS.items():
-                if any(pattern.lower() in button_text for pattern in patterns):
-                    actions.append(action)
+                for pattern in patterns:
+                    if button_text == pattern:  # 只使用精确匹配
+                        matched_action = action
+                        logger.info(f"按钮 '{button_text}' 精确匹配为 {action.value} 操作")
+                        break
+                if matched_action:
                     break
 
+            if matched_action:
+                actions.append(matched_action)
+            else:
+                logger.warning(f"按钮 '{button_text}' 未找到精确匹配")
+
+        logger.info(f"最终识别结果: {[action.value for action in actions]}")
         return actions
 
     def _handle_permission_dialog(self, device_serial: str, dialog: PermissionDialog,
@@ -282,13 +351,13 @@ class AppPermissionManager:
         except Exception as e:
             logger.error(f"处理权限弹窗失败: {e}")
             return False
-
     def _click_permission_button(self, device_serial: str, action: PermissionAction) -> bool:
         """点击权限弹窗中的指定按钮"""
         try:
             # 重新获取UI层次，查找对应按钮
             ui_dump = self._get_ui_dump(device_serial)
             if not ui_dump:
+                logger.error("无法获取UI dump用于点击操作")
                 return False
 
             import xml.etree.ElementTree as ET
@@ -296,18 +365,26 @@ class AppPermissionManager:
 
             # 查找匹配的按钮
             target_patterns = self.patterns.PERMISSION_BUTTON_PATTERNS.get(action, [])
+            logger.info(f"查找目标操作 {action.value} 的按钮，匹配模式: {target_patterns}")
 
+            found_buttons = []
             for element in root.iter():
                 if element.get('clickable') == 'true':
                     text = element.get('text', '').strip()
-                    if any(pattern.lower() in text.lower() for pattern in target_patterns):
-                        # 找到目标按钮，点击它
-                        bounds = element.get('bounds', '')
-                        if bounds and self._click_bounds(device_serial, bounds):
-                            logger.info(f"成功点击权限按钮: {text}")
-                            return True
+                    if text:
+                        found_buttons.append(text)
+                        # 使用精确匹配而不是包含匹配
+                        if text in target_patterns:
+                            bounds = element.get('bounds', '')
+                            logger.info(f"找到精确匹配的按钮: '{text}', bounds: {bounds}")
+                            if bounds and self._click_bounds(device_serial, bounds):
+                                logger.info(f"成功点击权限按钮: {text}")
+                                return True
+                            else:
+                                logger.error(f"点击按钮失败: {text}")
 
             logger.warning(f"未找到匹配的权限按钮: {action}")
+            logger.info(f"当前界面所有可点击按钮: {found_buttons}")
             return False
 
         except Exception as e:
@@ -362,9 +439,42 @@ def integrate_with_app_launch(device_serial: str, app_package: str, auto_allow_p
         max_popups=5
     )
 
+def integrate_with_app_launch_enhanced(device_serial: str, app_package: str) -> bool:
+    """
+    增强版权限处理集成函数
+
+    Args:
+        device_serial: 设备序列号
+        app_package: 应用包名
+
+    Returns:
+        bool: 权限处理是否成功
+    """
+    logger.info(f"增强版权限处理开始 - 设备: {device_serial}, 应用: {app_package}")
+
+    permission_manager = AppPermissionManager()
+
+    # 处理权限弹窗
+    success = permission_manager.wait_and_handle_permission_popups(
+        device_serial=device_serial,
+        app_package=app_package,
+        auto_allow=True,
+        max_popups=5
+    )
+
+    if success:
+        logger.info("增强版权限处理完成")
+    else:
+        logger.warning("增强版权限处理未完全成功")
+
+    return success
+
 if __name__ == "__main__":
     # 测试使用
     import sys
+
+    # 配置日志级别
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
     if len(sys.argv) < 2:
         print("Usage: python app_permission_manager.py <device_serial> [app_package]")
@@ -373,5 +483,6 @@ if __name__ == "__main__":
     device_serial = sys.argv[1]
     app_package = sys.argv[2] if len(sys.argv) > 2 else None
 
+    print(f"开始权限处理测试 - 设备: {device_serial}, 应用: {app_package}")
     success = integrate_with_app_launch(device_serial, app_package)
     print(f"权限处理结果: {'成功' if success else '失败'}")
