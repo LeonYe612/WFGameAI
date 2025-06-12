@@ -17,6 +17,8 @@ from typing import Dict, List, Optional, Tuple
 from datetime import datetime
 import textwrap
 
+from utils import get_project_root
+
 # 配置日志
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -216,6 +218,9 @@ class EnhancedDevicePreparationManager:
             # 解决锁屏问题
             self._handle_screen_lock(device_id)
 
+            # 解决输入法问题（默认用Yousite输入法）
+            if not self._wake_up_yousite(device_id):
+                return False
             return True
 
         except Exception as e:
@@ -383,6 +388,183 @@ class EnhancedDevicePreparationManager:
             line += "─" * (width-1) + "┼"
         line = line[:-1] + "┤"
         print(line)
+
+    def _get_main_activity(self, device_id, pkg_name):
+        """
+        动态获取应用的主页面 Activity
+        优先检查默认入口 Activity，如果未找到，则返回第一个备选 Activity
+        Returns:
+            str: 主页面 Activity 的完整路径（包名/Activity 名称），如 com.xxx.yyy/.MainActivity
+        """
+        try:
+            # step1. 优先检查默认入口 Activity
+            main_activity_cmd = f"adb -s {device_id} shell dumpsys package {pkg_name} | grep -A 1 'android.intent.action.MAIN'"
+            print(f"🔍 检查默认入口 Activity: {main_activity_cmd}")
+            main_activity_output = subprocess.run(main_activity_cmd, shell=True, capture_output=True, text=True,
+                                                  encoding='utf-8', errors='ignore').stdout
+
+            for line in main_activity_output.splitlines():
+                if pkg_name in line:
+                    parts = line.strip().split()
+                    # 兼容 adb 输出格式
+                    for part in parts:
+                        if "/" in part and pkg_name in part:
+                            print(f"✅ 检测到默认入口 Activity: {part}")
+                            return part
+
+            # step2. 如果未找到默认入口 Activity，获取所有 Activity 信息
+            print("⚠️ 未找到默认入口 Activity，尝试获取所有 Activity 信息...")
+            all_activity_cmd = f"adb -s {device_id} shell dumpsys package {pkg_name} | grep -i activity"
+            output = subprocess.run(all_activity_cmd, shell=True, capture_output=True, text=True, encoding='utf-8',
+                                    errors='ignore').stdout
+
+            activities = []
+            for line in output.splitlines():
+                if pkg_name in line:
+                    parts = line.strip().split()
+                    for part in parts:
+                        if "/" in part and pkg_name in part:
+                            activities.append(part)
+
+            if activities:
+                print(f"⚠️ 未找到默认入口 Activity，使用第一个备选 Activity: {activities[0]}")
+                return activities[0]
+
+            print("❌ 未找到主页面 Activity")
+            return ""
+        except Exception as e:
+            print(f"❌ 获取主页面 Activity 异常: {e}")
+            return ""
+
+    def _ensure_apk_service_ready(self, device_id, apk_local_path, pkg_name,
+                                  service_enable_cmd=None, service_set_cmd=None,
+                                  wakeup_action=None, check_times=10, start_app=True):
+        """
+        通用APK服务自动安装、识别、启用、设置、唤醒工具、启动mainActivity（原始adb命令版）
+            :param device_id: 设备ID
+            :param apk_local_path: 本地 APK 路径（相对项目根路径）
+            :param pkg_name: 包名
+            :param service_enable_cmd: 启用服务的 adb shell 命令
+            :param service_set_cmd: 设置为当前服务的 adb shell 命令
+            :param wakeup_action: 可选，唤醒广播 action 字符串
+            :param check_times: 检查系统识别服务的最大重试次数（默认10次）
+            :param start_app: 是否启动应用默认主页面（默认True）
+            :return: bool 是否确保服务可用
+        PS:
+            service_enable_cmd ｜ service_set_cmd ｜ wakeup_action
+            这些参数一般在输入法、辅助服务等需要被系统识别的服务中使用，普通 apk 不需要配置这些参数
+        """
+        print(f"🔧 开始确保 {pkg_name} 服务可用: 设备 {device_id}")
+
+        try:
+            # 1. 检查APK是否已安装
+            check_pkg_cmd = f"adb -s {device_id} shell pm list packages | grep {pkg_name}"
+            print(f"🔍 检查服务包是否安装: {check_pkg_cmd}")
+            check_result = subprocess.run(check_pkg_cmd, shell=True, capture_output=True, text=True, encoding='utf-8',
+                                          errors='ignore')
+            if check_result.returncode != 0 or pkg_name not in check_result.stdout:
+                print(f"⚠️ 服务包未安装，尝试安装...")
+                apk_path = os.path.join(get_project_root(), apk_local_path)
+                install_cmd = f"adb -s {device_id} install {apk_path}"
+                print(f"📦 安装服务包: {install_cmd}")
+                install_result = subprocess.run(install_cmd, shell=True, capture_output=True, text=True,
+                                                encoding='utf-8', errors='ignore')
+                if install_result.returncode != 0 or "Success" not in install_result.stdout:
+                    print(f"❌ 安装服务包失败，返回结果: {install_result.stdout.strip()}")
+                    return False
+                print("✅ 服务包安装成功")
+                time.sleep(2)
+                # 等待系统识别新服务包
+                for i in range(check_times):
+                    new_check_result = subprocess.run(check_pkg_cmd, shell=True, capture_output=True, text=True,
+                                                      encoding='utf-8', errors='ignore')
+                    if pkg_name in new_check_result.stdout:
+                        print(f"✅ 系统已识别到 {pkg_name} 安装包")
+                        break
+                    print(f"⏳ 等待系统识别安装包...({i + 1}/{check_times})")
+                    time.sleep(1)
+                else:
+                    print(f"❌ 系统未能识别到 {pkg_name} 安装包，请检查安装情况")
+                    return False
+            else:
+                print("✅ 服务包已安装")
+
+            # 2. 启用服务（如有）
+            if service_enable_cmd:
+                enable_cmd = f"adb -s {device_id} shell {service_enable_cmd}"
+                print(f"🔧 启用服务: {enable_cmd}")
+                enable_result = subprocess.run(enable_cmd, shell=True, capture_output=True, text=True, encoding='utf-8',
+                                               errors='ignore')
+                if enable_result.returncode != 0 or (
+                        "enabled" not in enable_result.stdout.lower() or "cannot" in enable_result.stdout.lower()):
+                    print(f"❌ 启用服务失败，返回结果: {enable_result.stdout.strip()}")
+                    return False
+                print("✅ 服务启用成功")
+
+            # 3. 设置为当前服务（如有）
+            if service_set_cmd:
+                set_cmd = f"adb -s {device_id} shell {service_set_cmd}"
+                print(f"🔧 设置为当前服务: {set_cmd}")
+                set_result = subprocess.run(set_cmd, shell=True, capture_output=True, text=True, encoding='utf-8',
+                                            errors='ignore')
+                if set_result.returncode != 0 or (
+                        "selected" not in set_result.stdout.lower() and "enabled" not in set_result.stdout.lower()):
+                    print(f"❌ 设置服务失败，返回结果: {set_result.stdout.strip()}")
+                    return False
+                print("✅ 服务已设置")
+
+            # 4. 可选：执行唤醒操作
+            if wakeup_action:
+                wakeup_cmd = f"adb -s {device_id} shell am broadcast -a {wakeup_action}"
+                print(f"📡 执行唤醒操作: {wakeup_cmd}")
+                wakeup_result = subprocess.run(wakeup_cmd, shell=True, capture_output=True, text=True, encoding='utf-8',
+                                               errors='ignore')
+                if wakeup_result.returncode == 0 and (
+                        "Broadcast completed" in wakeup_result.stdout or "result=0" in wakeup_result.stdout.lower()):
+                    print("✅ 服务唤醒成功")
+                else:
+                    print(f"❌ 服务唤醒失败，返回结果: {wakeup_result.stdout.strip()}")
+                    return False
+
+            # 5. 启动apk（默认启动主页面）
+            if not start_app:
+                print(f"⚠️ 跳过启动应用主页面: {pkg_name} (start_app=False)")
+                return True
+            main_activity_name = self._get_main_activity(device_id, pkg_name)
+            start_cmd = f"adb -s {device_id} shell am start -n {main_activity_name}"
+            print(f"🚀 启动应用: {start_cmd}")
+            start_result = subprocess.run(start_cmd, shell=True, capture_output=True, text=True, encoding='utf-8',
+                                          errors='ignore')
+            if start_result.returncode != 0 or "Error" in start_result.stdout:
+                print(f"❌ 启动应用失败，返回结果: {start_result.stdout.strip()}")
+                return False
+            print("✅ 应用启动成功")
+
+            return True
+
+        except Exception as err:
+            print(f"❌ 确保 {pkg_name} 服务可用时异常: {err}")
+            return False
+
+    def _wake_up_yousite(self, device_id: str) -> bool:
+        """
+        唤醒 yousite 输入法服务，自动完成安装、识别、启用、设置和唤醒。
+        """
+        pkg_name = "com.netease.nie.yosemite"
+        apk_path = "dependencies/apks/Yosemite.apk"
+        service_enable_cmd = "ime enable com.netease.nie.yosemite/.ime.ImeService"
+        service_set_cmd = "ime set com.netease.nie.yosemite/.ime.ImeService"
+        wakeup_action = "com.netease.nie.yosemite.action.WAKEUP"
+        result = self._ensure_apk_service_ready(
+            device_id=device_id,
+            apk_local_path=apk_path,
+            pkg_name=pkg_name,
+            service_enable_cmd=service_enable_cmd,
+            service_set_cmd=service_set_cmd,
+            wakeup_action=wakeup_action,
+            start_app=False
+        )
+        return result
 
     # 保留原有的核心功能方法
     def _ensure_adb_server(self):
