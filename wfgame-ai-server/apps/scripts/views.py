@@ -887,16 +887,10 @@ def replay_script(request):
         # 添加脚本参数
         for config in script_configs:
             script_path = config.get('path')
-            cmd.extend(["--script", script_path])
-
-            # 添加脚本ID和分类信息
+            cmd.extend(["--script", script_path])            # 添加脚本ID和分类信息
             script_id = config.get('script_id')
             if script_id:
                 cmd.extend(["--script-id", str(script_id)])
-
-            category = config.get('category')
-            if category:
-                cmd.extend(["--script-category", category])
 
             # 添加循环次数
             loop_count = config.get('loop_count')

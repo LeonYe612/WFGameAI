@@ -1,0 +1,39 @@
+{
+  "steps": [
+    {
+      "step": 2,
+      "action": "input",
+      "text": "${account:username}",
+      "target_selector": {
+        "placeholder": "请输入手机号",
+        "clear_previous_text": true
+      },
+      "confidence": 0.95,
+      "timestamp": "2025-06-11 10:00:05.000000",
+      "remark": "输入登录用户名"
+    },
+    {
+      "step": 3,
+      "action": "input",
+      "text": "${account:password}",
+      "target_selector": {
+        "placeholder": "请输入密码",
+        "clear_previous_text": true
+      },
+      "confidence": 0.95,
+      "timestamp": "2025-06-11 10:00:10.000000",
+      "remark": "输入登录密码"
+    },
+    {
+      "step": 4,
+      "action": "checkbox",
+      "target_selector": {
+        "class_types": ["android.widget.CheckBox"],
+        "type": "agreement_checkbox"
+      },
+      "confidence": 0.95,
+      "timestamp": "2025-06-11 10:00:15.000000",
+      "remark": "勾选用户协议"
+    }
+  ]
+}

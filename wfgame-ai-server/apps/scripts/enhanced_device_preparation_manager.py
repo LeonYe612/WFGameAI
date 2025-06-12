@@ -115,6 +115,12 @@ class EnhancedDevicePreparationManager:
 
                 if status == "unauthorized":
                     print(f"    📱 设备 {device_id} 需要授权USB调试")
+                    # 尝试自动授权
+                    if self._handle_unauthorized_device(device_id):
+                        print(f"    ✅ 设备 {device_id} 授权成功")
+                        authorized_count += 1
+                    else:
+                        print(f"    ❌ 设备 {device_id} 授权失败")
                 elif status == "offline":
                     print(f"    🔌 设备 {device_id} 连接异常，可能是USB模式问题")
                 elif status == "device":
@@ -495,6 +501,63 @@ class EnhancedDevicePreparationManager:
 
         except Exception as e:
             logger.warning(f"处理设备 {device_id} 锁屏时出错: {e}")
+
+    def _auto_accept_usb_debugging(self, device_id: str) -> bool:
+        """自动接受USB调试授权请求"""
+        try:
+            logger.info(f"尝试自动接受设备 {device_id} 的USB调试授权...")
+
+            # 获取屏幕尺寸
+            result = subprocess.run(f"adb -s {device_id} shell wm size",
+                                  shell=True, capture_output=True, text=True)
+            if "Physical size:" in result.stdout:
+                size_match = re.search(r'(\d+)x(\d+)', result.stdout)
+                if size_match:
+                    width, height = int(size_match.group(1)), int(size_match.group(2))
+
+                    # 点击右下角"允许"按钮的常见位置
+                    allow_x, allow_y = int(width * 0.75), int(height * 0.85)
+                    subprocess.run(f"adb -s {device_id} shell input tap {allow_x} {allow_y}",
+                                 shell=True, check=True)
+
+                    logger.info(f"已自动点击设备 {device_id} 的允许按钮")
+                    return True
+
+        except Exception as e:
+            logger.warning(f"自动接受USB调试失败: {e}")
+
+        return False
+
+    def _handle_unauthorized_device(self, device_id: str) -> bool:
+        """处理未授权的设备"""
+        logger.info(f"处理未授权设备: {device_id}")
+
+        # 方法1: 自动点击允许按钮
+        if self._auto_accept_usb_debugging(device_id):
+            time.sleep(3)  # 等待授权生效
+            # 重新检查设备状态
+            result = subprocess.run("adb devices", shell=True, capture_output=True, text=True)
+            if f"{device_id}\tdevice" in result.stdout:
+                return True
+
+        # 方法2: 提示用户手动授权
+        logger.warning(f"设备 {device_id} 需要手动授权USB调试")
+        print(f"\n⚠️ 请在设备 {device_id} 上手动点击'允许USB调试'")
+        print("💡 建议勾选'始终允许来自这台计算机'")
+        print("⏳ 等待授权完成...")
+
+        # 等待用户授权，最多等待30秒
+        for i in range(30):
+            time.sleep(1)
+            result = subprocess.run("adb devices", shell=True, capture_output=True, text=True)
+            if f"{device_id}\tdevice" in result.stdout:
+                logger.info(f"设备 {device_id} 授权成功")
+                return True
+            if i % 5 == 0:
+                print(f"⏳ 等待中... ({30-i}秒)")
+
+        logger.error(f"设备 {device_id} 授权超时")
+        return False
 
 
 def main():

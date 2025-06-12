@@ -31,6 +31,9 @@ import random
 from account_manager import get_account_manager
 from enhanced_input_handler import EnhancedInputHandler
 
+# 导入权限管理器
+from app_permission_manager import integrate_with_app_launch
+
 # 全局修补shutil.copytree以解决Airtest静态资源复制的FileExistsError问题
 # 这必须在所有其他操作之前进行，确保Airtest使用修补后的函数
 print("🔧 应用全局shutil.copytree修补，防止静态资源复制冲突")
@@ -244,6 +247,66 @@ def get_device_name(device):
         print(f"获取设备 {device.serial} 信息失败: {e}")
         # 返回清理后的序列号作为后备名称
         return "".join(c for c in device.serial if c.isalnum() or c in ('-', '_'))
+
+
+def start_app_with_permission_handling(device_serial, app_identifier, is_package_name=False, auto_allow_permissions=True):
+    """
+    启动应用并自动处理系统权限弹窗
+
+    Args:
+        device_serial: 设备序列号
+        app_identifier: 应用标识符（模板名称或包名）
+        is_package_name: 是否是包名（True）还是模板名称（False）
+        auto_allow_permissions: 是否自动允许权限
+
+    Returns:
+        bool: 启动是否成功
+    """
+    try:
+        print(f"🚀 开始启动应用: {app_identifier}")
+
+        # 1. 启动应用
+        app_lifecycle_manager = AppLifecycleManager()
+        if is_package_name:
+            success = app_lifecycle_manager.force_start_by_package(str(app_identifier), device_serial)
+        else:
+            success = app_lifecycle_manager.start_app(str(app_identifier), device_serial)
+
+        if not success:
+            print(f"❌ 应用启动失败: {app_identifier}")
+            return False
+
+        print(f"✅ 应用启动成功: {app_identifier}")
+
+        # 2. 处理系统权限弹窗 - 在应用启动后等待2秒再处理权限
+        print(f"🔐 开始处理应用权限弹窗...")
+        time.sleep(2)  # 给应用一些时间显示权限弹窗
+
+        try:
+            # 使用权限管理器处理权限弹窗
+            # 注意：integrate_with_app_launch 需要应用包名，如果没有包名则跳过权限处理
+            if is_package_name or app_identifier.count('.') > 0:  # 简单判断是否是包名格式
+                permission_success = integrate_with_app_launch(
+                    device_serial=device_serial,
+                    app_package=str(app_identifier),
+                    auto_allow_permissions=auto_allow_permissions
+                )
+
+                if permission_success:
+                    print(f"✅ 权限处理完成")
+                else:
+                    print(f"⚠️ 权限处理完成（可能无权限弹窗）")
+            else:
+                print(f"⚠️ 无法确定应用包名，跳过权限处理")
+
+        except Exception as e:
+            print(f"⚠️ 权限处理过程中出现异常（继续执行）: {e}")
+
+        return True
+
+    except Exception as e:
+        print(f"❌ 应用启动和权限处理失败: {e}")
+        return False
 
 
 # 检测按钮
@@ -531,90 +594,9 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
         script_loop_count = script_config.get("loop_count", loop_count)  # 优先使用脚本配置中的 loop_count
         max_duration = script_config.get("max_duration", None)  # 获取最大执行时间（如果有）
         script_id = script_config.get("script_id")
-        script_category = script_config.get("category")
 
         print(f"开始执行脚本: {script_path}, 循环次数: {script_loop_count}, 最大执行时间: {max_duration}秒")
-        print(f"脚本ID: {script_id}, 脚本分类: {script_category}")
-
-        # 特殊处理：启动程序和停止程序类别
-        if script_category in ['启动程序', '停止程序']:
-            print(f"检测到应用生命周期管理脚本，分类: {script_category}")
-
-            try:
-                # 从脚本文件中读取应用信息
-                with open(script_path, "r", encoding="utf-8") as f:
-                    json_data = json.load(f)
-                    steps = json_data.get("steps", [])
-
-                # 查找app_start或app_stop步骤中的应用信息
-                app_name = None
-                package_name = None
-
-                for step in steps:
-                    if step.get("class") in ["app_start", "app_stop"]:
-                        params = step.get("params", {})
-                        app_name = params.get("app_name", "")
-                        package_name = params.get("package_name", "")
-                        break
-
-                if not app_name and not package_name:
-                    print(f"警告: {script_category}脚本中未找到应用信息，跳过特殊处理")
-                else:
-                    # 使用AppLifecycleManager执行应用生命周期操作
-                    app_lifecycle_manager = AppLifecycleManager()
-
-                    if script_category == '启动程序':
-                        print(f"执行应用启动: {app_name or package_name}")
-                        app_identifier = app_name or package_name
-                        if app_identifier:
-                            success = app_lifecycle_manager.start_app(str(app_identifier), device.serial)
-                        else:
-                            success = False
-                        operation_name = "start_app"
-
-                    elif script_category == '停止程序':
-                        print(f"执行应用停止: {app_name or package_name}")
-                        if package_name:
-                            success = app_lifecycle_manager.force_stop_by_package(str(package_name), device.serial)
-                        else:
-                            app_identifier = app_name
-                            if app_identifier:
-                                success = app_lifecycle_manager.stop_app(str(app_identifier), device.serial)
-                            else:
-                                success = False
-                        operation_name = "stop_app"
-
-                    print(f"{script_category}操作{'成功' if success else '失败'}")
-
-                    # 记录生命周期管理操作日志
-                    timestamp = time.time()
-                    lifecycle_entry = {
-                        "tag": "function",
-                        "depth": 1,
-                        "time": timestamp,
-                        "data": {
-                            "name": operation_name,
-                            "call_args": {"app_name": app_name or package_name},
-                            "start_time": timestamp,
-                            "ret": success,
-                            "end_time": timestamp + 1,
-                            "category": script_category,
-                            "is_lifecycle_operation": True
-                        }
-                    }
-                    with open(log_txt_path, "a", encoding="utf-8") as f:
-                        f.write(json.dumps(lifecycle_entry, ensure_ascii=False) + "\n")
-
-                    has_executed_steps = True
-                    total_step_counter += 1
-
-                    # 对于生命周期脚本，执行完后直接跳过正常的步骤处理
-                    print(f"{script_category}脚本执行完成，跳过正常步骤处理")
-                    continue
-
-            except Exception as e:
-                print(f"执行{script_category}脚本时出错: {e}")
-                # 出错时继续执行正常的脚本处理流程
+        print(f"脚本ID: {script_id}")
 
         # 从 script_path 读取步骤
         with open(script_path, "r", encoding="utf-8") as f:
@@ -892,11 +874,10 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
                                     with open(log_txt_path, "a", encoding="utf-8") as f:
                                         f.write(json.dumps(fail_assert_entry, ensure_ascii=False) + "\n")
 
-                                    print(f"已记录优先级步骤 {step_num} 失败: {step_remark}")
+                                    print(f"已记录步骤 {step_num} 失败: {step_remark}")
 
                         except queue.Empty:
-                            print(f"检测 {step_class} 超时，尝试下一个优先级步骤")
-
+                            print(f"检测 {step_class} 超时，跳过此步骤")
                             # 检查JSON步骤是否包含step字段，如果有则记录失败信息
                             if "step" in step:
                                 step_num = step.get("step", step_idx+1)
@@ -914,16 +895,16 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
                                     "rect": []  # 空区域
                                 }
 
-                                # 记录exists超时失败
+                                # 记录超时失败日志 - 使用exists和assert_exists组合
                                 timeout_entry = {
                                     "tag": "function",
                                     "depth": 1,
                                     "time": timestamp + 0.001,
                                     "data": {
-                                        "name": "exists",
+                                        "name": "exists",  # 改为exists函数
                                         "call_args": {"v": step_class},
                                         "start_time": timestamp + 0.0005,
-                                        "ret": None,
+                                        "ret": None,  # 设为None或False表示不存在
                                         "end_time": timestamp + 0.001,
                                         "screen": screen_object
                                     }
@@ -932,17 +913,14 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
                                 with open(log_txt_path, "a", encoding="utf-8") as f:
                                     f.write(json.dumps(timeout_entry, ensure_ascii=False) + "\n")
 
-                                # 为断言步骤生成自定义显示文本
-                                timeout_title = f"步骤{step_num}超时: {step_remark}"
-
-                                # 记录assert_exists超时失败 - 确保包含screen字段
+                                # 添加一个明确的失败日志条目
                                 timeout_assert_entry = {
                                     "tag": "function",
                                     "depth": 1,
                                     "time": timestamp + 0.002,
                                     "data": {
-                                        "name": "assert_exists",
-                                        "call_args": {"v": step_class, "msg": timeout_title},
+                                        "name": "assert_exists",  # 使用assert_exists
+                                        "call_args": {"v": step_class, "msg": f"步骤{step_num}: {step_remark}"},
                                         "start_time": timestamp + 0.0015,
                                         "ret": {
                                             "result": False,
@@ -955,7 +933,7 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
                                         "screen": screen_object,  # 使用相同的screen对象
                                         # 添加自定义字段
                                         "custom_display_text": step_remark,
-                                        "custom_step_title": f"#{step_num} 断言超时: {step_remark}",
+                                        "custom_step_title": f"#{step_num} 断言: {step_remark}",
                                         "is_custom_assertion": True,
                                         "step_number": step_num
                                     }
@@ -964,7 +942,7 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
                                 with open(log_txt_path, "a", encoding="utf-8") as f:
                                     f.write(json.dumps(timeout_assert_entry, ensure_ascii=False) + "\n")
 
-                                print(f"已记录优先级步骤 {step_num} 超时失败: {step_remark}")
+                                print(f"已记录步骤 {step_num} 超时失败: {step_remark}")
 
                     # 如果所有目标都未匹配，但有unknown备选步骤，则执行unknown步骤
                     if not matched_any_target and unknown_fallback_step is not None:
@@ -1111,30 +1089,21 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
 
                         print(f"启动应用 {app_name or package_name}: {step_remark}")
 
-                        # 使用 AppLifecycleManager 启动应用
-                        app_lifecycle_manager = AppLifecycleManager()
+                        # 使用集成权限处理的应用启动函数
                         success = False
+                        app_identifier = app_name or package_name
 
-                        if app_name:
+                        if app_identifier:
                             try:
-                                success = app_lifecycle_manager.start_app(str(app_name), device.serial)
-                            except Exception as e:
-                                print(f"使用模板启动失败: {e}")
-                                success = False
-                        elif package_name:
-                            # 如果提供了包名但没有模板，尝试直接启动
-                            print(f"直接启动包名: {package_name}")
-                            try:
-                                import subprocess
-                                result = subprocess.run(
-                                    f"adb -s {device.serial} shell am start -n {package_name}/.MainActivity".split(),
-                                    capture_output=True,
-                                    text=True,
-                                    timeout=30
+                                # 判断是否是包名
+                                is_package_name = bool(package_name and not app_name)
+                                success = start_app_with_permission_handling(
+                                    device.serial,
+                                    str(app_identifier),
+                                    is_package_name=is_package_name
                                 )
-                                success = result.returncode == 0
                             except Exception as e:
-                                print(f"直接启动失败: {e}")
+                                print(f"应用启动失败: {e}")
                                 success = False
 
                         print(f"应用启动{'成功' if success else '失败'}")
@@ -1155,6 +1124,15 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
                         }
                         with open(log_txt_path, "a", encoding="utf-8") as f:
                             f.write(json.dumps(app_start_entry, ensure_ascii=False) + "\n")
+
+                        # 集成权限管理器，处理权限弹窗
+                        try:
+                            print(f"设备 {device_name} 集成权限管理器，处理权限弹窗...")
+                            integrate_with_app_launch(device, app_name or package_name)
+                            print(f"设备 {device_name} 权限管理器处理完成")
+                        except Exception as e:
+                            print(f"设备 {device_name} 权限管理器处理失败: {e}")
+
                         continue
 
                     elif step_class == "app_stop":
@@ -1417,10 +1395,13 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
                                     "end_pos": [int(end_x), int(end_y)]
                                 },
                                 "end_time": timestamp + (duration / 1000.0),
+                                    "start_pos": [int(start_x), int(start_y)],
+                                    "end_pos": [int(end_x), int(end_y)]
+                                },
+                                "end_time": timestamp + (duration / 1000.0),
                                 "desc": step_remark or "滑动操作",
                                 "title": f"#{step_idx+1} {step_remark or '滑动操作'}"
                             }
-                        }
                         with open(log_txt_path, "a", encoding="utf-8") as f:
                             f.write(json.dumps(swipe_entry, ensure_ascii=False) + "\n")
 
@@ -1683,8 +1664,12 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
                         print(f"启动应用: {app_name} - {step_remark}")
 
                         try:
-                            app_manager = AppLifecycleManager()
-                            result = app_manager.start_app(app_name, device.serial)
+                            # 使用集成权限处理的应用启动函数
+                            result = start_app_with_permission_handling(
+                                device.serial,
+                                app_name,
+                                is_package_name=False
+                            )
                             print(f"应用启动结果: {result}")
 
                             # 记录应用启动日志
@@ -1932,74 +1917,75 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
                                     f.write(json.dumps(fail_assert_entry, ensure_ascii=False) + "\n")
 
                                 print(f"已记录步骤 {step_num} 失败: {step_remark}")
+
                     except queue.Empty:
-                        print(f"检测 {step_class} 超时，跳过此步骤")
+                            print(f"检测 {step_class} 超时，跳过此步骤")
 
-                        # 检查JSON步骤是否包含step字段，如果有则记录失败信息
-                        if "step" in step:
-                            step_num = step.get("step", step_idx+1)
-                            step_remark = step.get("remark", "")
+                            # 检查JSON步骤是否包含step字段，如果有则记录失败信息
+                            if "step" in step:
+                                step_num = step.get("step", step_idx+1)
+                                step_remark = step.get("remark", "")
 
-                            # 创建screen对象，确保超时情况也有截图
-                            screen_object = {
-                                "src": screenshot_filename,
-                                "_filepath": screenshot_filename,
-                                "thumbnail": thumbnail_filename,
-                                "resolution": resolution,
-                                "pos": [],  # 空位置表示没找到目标
-                                "vector": [],
-                                "confidence": 0,  # 置信度为0
-                                "rect": []  # 空区域
-                            }
-
-                            # 记录超时失败日志 - 使用exists和assert_exists组合
-                            timeout_entry = {
-                                "tag": "function",
-                                "depth": 1,
-                                "time": timestamp + 0.001,
-                                "data": {
-                                    "name": "exists",  # 改为exists函数
-                                    "call_args": {"v": step_class},
-                                    "start_time": timestamp + 0.0005,
-                                    "ret": None,  # 设为None或False表示不存在
-                                    "end_time": timestamp + 0.001,
-                                    "screen": screen_object
+                                # 创建screen对象，确保超时情况也有截图
+                                screen_object = {
+                                    "src": screenshot_filename,
+                                    "_filepath": screenshot_filename,
+                                    "thumbnail": thumbnail_filename,
+                                    "resolution": resolution,
+                                    "pos": [],  # 空位置表示没找到目标
+                                    "vector": [],
+                                    "confidence": 0,  # 置信度为0
+                                    "rect": []  # 空区域
                                 }
-                            }
 
-                            with open(log_txt_path, "a", encoding="utf-8") as f:
-                                f.write(json.dumps(timeout_entry, ensure_ascii=False) + "\n")
-
-                            # 添加一个明确的失败日志条目
-                            timeout_assert_entry = {
-                                "tag": "function",
-                                "depth": 1,
-                                "time": timestamp + 0.002,
-                                "data": {
-                                    "name": "assert_exists",  # 使用assert_exists
-                                    "call_args": {"v": step_class, "msg": f"步骤{step_num}: {step_remark}"},
-                                    "start_time": timestamp + 0.0015,
-                                    "ret": {
-                                        "result": False,
-                                        "expected": "True",
-                                        "actual": "False",
-                                        "reason": f"检测超时: {step_class}"
-                                    },
-                                    "traceback": f"步骤{step_num}失败: 检测超时 {step_class}\n{step_remark}",
-                                    "end_time": timestamp + 0.002,
-                                    "screen": screen_object,  # 使用相同的screen对象
-                                    # 添加自定义字段
-                                    "custom_display_text": step_remark,
-                                    "custom_step_title": f"#{step_num} 断言: {step_remark}",
-                                    "is_custom_assertion": True,
-                                    "step_number": step_num
+                                # 记录超时失败日志 - 使用exists和assert_exists组合
+                                timeout_entry = {
+                                    "tag": "function",
+                                    "depth": 1,
+                                    "time": timestamp + 0.001,
+                                    "data": {
+                                        "name": "exists",  # 改为exists函数
+                                        "call_args": {"v": step_class},
+                                        "start_time": timestamp + 0.0005,
+                                        "ret": None,  # 设为None或False表示不存在
+                                        "end_time": timestamp + 0.001,
+                                        "screen": screen_object
+                                    }
                                 }
-                            }
 
-                            with open(log_txt_path, "a", encoding="utf-8") as f:
-                                f.write(json.dumps(timeout_assert_entry, ensure_ascii=False) + "\n")
+                                with open(log_txt_path, "a", encoding="utf-8") as f:
+                                    f.write(json.dumps(timeout_entry, ensure_ascii=False) + "\n")
 
-                            print(f"已记录步骤 {step_num} 超时失败: {step_remark}")
+                                # 添加一个明确的失败日志条目
+                                timeout_assert_entry = {
+                                    "tag": "function",
+                                    "depth": 1,
+                                    "time": timestamp + 0.002,
+                                    "data": {
+                                        "name": "assert_exists",  # 使用assert_exists
+                                        "call_args": {"v": step_class, "msg": f"步骤{step_num}: {step_remark}"},
+                                        "start_time": timestamp + 0.0015,
+                                        "ret": {
+                                            "result": False,
+                                            "expected": "True",
+                                            "actual": "False",
+                                            "reason": f"检测超时: {step_class}"
+                                        },
+                                        "traceback": f"步骤{step_num}失败: 检测超时 {step_class}\n{step_remark}",
+                                        "end_time": timestamp + 0.002,
+                                        "screen": screen_object,  # 使用相同的screen对象
+                                        # 添加自定义字段
+                                        "custom_display_text": step_remark,
+                                        "custom_step_title": f"#{step_num} 断言: {step_remark}",
+                                        "is_custom_assertion": True,
+                                        "step_number": step_num
+                                    }
+                                }
+
+                                with open(log_txt_path, "a", encoding="utf-8") as f:
+                                    f.write(json.dumps(timeout_assert_entry, ensure_ascii=False) + "\n")
+
+                                print(f"已记录步骤 {step_num} 超时失败: {step_remark}")
 
                     # 等待一段时间，让UI响应
                     time.sleep(0.5)
@@ -2469,34 +2455,7 @@ def run_one_report(log_dir, report_dir, script_path=None):
 
             # 如果所有资源复制方法都失败，尝试从其他报告复制
             if not resource_copied:
-                print("尝试从其他报告复制静态资源...")
-                # 试图从其他报告中复制
-                dirs = os.listdir(os.path.dirname(report_dir))
-                for d in dirs:
-                    other_static = os.path.join(os.path.dirname(report_dir), d, "static")
-                    if os.path.exists(other_static) and d != os.path.basename(report_dir):
-                        try:
-                            # 使用递归复制目录树
-                            for root, _, files in os.walk(other_static):
-                                # 计算相对路径
-                                rel_path = os.path.relpath(root, other_static)
-                                # 创建目标目录
-                                target_dir = os.path.join(static_dir, rel_path)
-                                os.makedirs(target_dir, exist_ok=True)
-                                # 复制文件
-                                for file in files:
-                                    src_file = os.path.join(root, file)
-                                    dst_file = os.path.join(target_dir, file)
-                                    shutil.copy2(src_file, dst_file)
-
-                            resource_copied = True
-                            print(f"从其他报告复制静态资源: {other_static} -> {static_dir}")
-                            break
-                        except Exception as e:
-                            print(f"复制静态资源时出现错误: {e}")
-
-                if not resource_copied:
-                    print("❌ 无法找到任何静态资源，但会继续尝试生成报告")
+                print("❌ 无法找到静态资源，报告可能无法正确显示")
 
         # 复制模板文件
         print(f"复制模板文件: {template_path} -> {report_dir}")
@@ -2968,13 +2927,18 @@ def parse_script_args():
     # 将简单的脚本列表转换为详细格式以保持兼容性
     if args.scripts:
         scripts_detailed = []
-        for script_path in args.scripts:
+        for script_info in args.scripts:
+            # 如果script_info是字符串，转换为字典格式
+            if isinstance(script_info, str):
+                script_path = script_info
+            else:
+                script_path = script_info.get('path', script_info)
+
             scripts_detailed.append({
                 'path': script_path,
                 'loop_count': args.loop_count,
                 'max_duration': args.max_duration,
-                'script_id': None,
-                'category': None
+                'script_id': None
             })
         args.scripts = scripts_detailed
 
@@ -3092,6 +3056,7 @@ def execute_device_replay_parallel(devices, scripts_to_run, screenshot_queue, ac
 
             except Exception as e:
                 print(f"设备 {device_name} 回放执行失败: {e}")
+                import traceback
                 traceback.print_exc()
                 return device_name, {'success': False, 'error': str(e)}
 
@@ -3155,6 +3120,7 @@ def execute_device_replay_parallel(devices, scripts_to_run, screenshot_queue, ac
 
     print(f"所有设备处理完成。成功：{sum(1 for r in device_results.values() if r.get('success'))}/{len(device_results)}")
     return device_results, device_reports
+
 
 
 if __name__ == "__main__":
@@ -3274,8 +3240,7 @@ if __name__ == "__main__":
                 "path": normalized_path,
                 "loop_count": script_info['loop_count'],
                 "max_duration": script_info['max_duration'],
-                "script_id": script_info.get('script_id'),
-                "category": script_info.get('category')
+                "script_id": None
             })
 
         print(f"将运行 {len(scripts_to_run)} 个脚本（顺序执行）")
