@@ -34,10 +34,14 @@ except ImportError:
 class UIStructureDetector:
     """UI结构检测器"""
 
-    def __init__(self, device_id: str = None):
+    def __init__(self, device_id: str = None, save_files: bool = False):
         self.device_id = device_id
         self.output_dir = "ui_structure_analysis"
-        self.ensure_output_dir()
+        self.save_files = save_files  # 新增参数：是否保存文件
+
+        # 只在需要保存文件时创建输出目录
+        if self.save_files:
+            self.ensure_output_dir()
 
     def ensure_output_dir(self):
         """确保输出目录存在"""
@@ -85,19 +89,33 @@ class UIStructureDetector:
                 print(f"❌ UI dump失败: {result.stderr}")
                 return None
 
-            # 将XML文件拉取到本地
-            local_xml_path = os.path.join(self.output_dir, f"ui_hierarchy_{device_id}_{int(time.time())}.xml")
-            pull_cmd = f"adb -s {device_id} pull {xml_path} {local_xml_path}"
-            pull_result = subprocess.run(pull_cmd, shell=True, capture_output=True, text=True)
+            # 只在需要保存文件时才拉取并保存XML
+            if self.save_files:
+                # 将XML文件拉取到本地
+                local_xml_path = os.path.join(self.output_dir, f"ui_hierarchy_{device_id}_{int(time.time())}.xml")
+                pull_cmd = f"adb -s {device_id} pull {xml_path} {local_xml_path}"
+                pull_result = subprocess.run(pull_cmd, shell=True, capture_output=True, text=True)
 
-            if pull_result.returncode != 0:
-                print(f"❌ 拉取XML文件失败: {pull_result.stderr}")
-                return None
+                if pull_result.returncode != 0:
+                    print(f"❌ 拉取XML文件失败: {pull_result.stderr}")
+                    local_xml_path = None
+                else:
+                    print(f"✅ UI层次结构已保存到: {local_xml_path}")
+            else:
+                # 将XML文件拉取到临时目录，仅用于分析，不长期保存
+                local_xml_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), f"temp_ui_{int(time.time())}.xml")
+                pull_cmd = f"adb -s {device_id} pull {xml_path} {local_xml_path}"
+                pull_result = subprocess.run(pull_cmd, shell=True, capture_output=True, text=True)
+
+                if pull_result.returncode != 0:
+                    print(f"❌ 拉取XML文件失败: {pull_result.stderr}")
+                    local_xml_path = None
+                else:
+                    print(f"✅ UI层次结构已分析 (未保存)")
 
             # 清理设备上的临时文件
             subprocess.run(f"adb -s {device_id} shell rm {xml_path}", shell=True, check=False)
 
-            print(f"✅ UI层次结构已保存到: {local_xml_path}")
             return local_xml_path
 
         except Exception as e:
@@ -250,7 +268,6 @@ class UIStructureDetector:
         try:
             timestamp = int(time.time())
             remote_path = f"/sdcard/screenshot_{timestamp}.png"
-            local_path = os.path.join(self.output_dir, f"screenshot_{device_id}_{timestamp}.png")
 
             # 在设备上截图
             screencap_cmd = f"adb -s {device_id} shell screencap -p {remote_path}"
@@ -260,18 +277,26 @@ class UIStructureDetector:
                 print(f"❌ 截图失败: {result.stderr}")
                 return None
 
-            # 拉取截图到本地
-            pull_cmd = f"adb -s {device_id} pull {remote_path} {local_path}"
-            pull_result = subprocess.run(pull_cmd, shell=True, capture_output=True, text=True)
+            # 只在需要保存文件时才执行保存操作
+            if self.save_files:
+                local_path = os.path.join(self.output_dir, f"screenshot_{device_id}_{timestamp}.png")
 
-            if pull_result.returncode != 0:
-                print(f"❌ 拉取截图失败: {pull_result.stderr}")
-                return None
+                # 拉取截图到本地
+                pull_cmd = f"adb -s {device_id} pull {remote_path} {local_path}"
+                pull_result = subprocess.run(pull_cmd, shell=True, capture_output=True, text=True)
+
+                if pull_result.returncode != 0:
+                    print(f"❌ 拉取截图失败: {pull_result.stderr}")
+                    local_path = None
+                else:
+                    print(f"✅ 截图已保存到: {local_path}")
+            else:
+                local_path = None
+                print(f"✅ 截图已捕获 (未保存)")
 
             # 清理设备上的临时文件
             subprocess.run(f"adb -s {device_id} shell rm {remote_path}", shell=True, check=False)
 
-            print(f"✅ 截图已保存到: {local_path}")
             return local_path
 
         except Exception as e:
@@ -306,6 +331,13 @@ class UIStructureDetector:
         if xml_path:
             analysis_result["xml_path"] = xml_path
             analysis_result["ui_structure"] = self.parse_ui_hierarchy(xml_path)
+
+            # 如果不保存文件但使用了临时XML文件，分析后删除
+            if not self.save_files and os.path.exists(xml_path) and "temp_ui_" in xml_path:
+                try:
+                    os.remove(xml_path)
+                except Exception:
+                    pass
 
         # 4. 生成分析摘要
         self._generate_summary(analysis_result)
@@ -355,13 +387,6 @@ class UIStructureDetector:
         print(f"   输入元素: {summary.get('input_elements', 0)}")
         print(f"   唯一类名数: {summary.get('unique_classes', 0)}")
 
-        # 打印生成的文件
-        print(f"\n📁 生成的文件:")
-        if result.get("screenshot_path"):
-            print(f"   截图文件: {result['screenshot_path']}")
-        if result.get("xml_path"):
-            print(f"   XML文件: {result['xml_path']}")
-
         # 打印重要元素列表（前10个）
         ui_structure = result.get("ui_structure", {})
         elements = ui_structure.get("elements", [])
@@ -385,6 +410,10 @@ class UIStructureDetector:
 
     def save_analysis_to_json(self, result: Dict[str, Any]):
         """保存分析结果到JSON文件"""
+        if not self.save_files:
+            print("💾 分析完成 (结果未保存)")
+            return
+
         device_id = result.get("device_id", "unknown")
         timestamp = int(time.time())
         json_path = os.path.join(self.output_dir, f"ui_analysis_{device_id}_{timestamp}.json")
@@ -440,23 +469,26 @@ class UIStructureDetector:
                 print(f"❌ 分析设备 {device_id} 时出错: {e}")
 
         print(f"\n✅ UI结构检测完成！")
-        print(f"所有输出文件保存在: {os.path.abspath(self.output_dir)}")
+        if self.save_files:
+            print(f"所有输出文件保存在: {os.path.abspath(self.output_dir)}")
 
 def main():
     """主函数"""
     parser = argparse.ArgumentParser(description="UI结构检测器 - 检测连接设备的UI结构")
     parser.add_argument("--device", "-d", type=str, help="指定要分析的设备ID（如不指定则分析所有连接的设备）")
     parser.add_argument("--output", "-o", type=str, help="指定输出目录（默认: ui_structure_analysis）")
+    parser.add_argument("--save", "-s", action="store_true", help="保存分析结果文件（默认不保存）")
 
     args = parser.parse_args()
 
     # 创建检测器实例
-    detector = UIStructureDetector()
+    detector = UIStructureDetector(save_files=args.save)
 
     # 设置输出目录
     if args.output:
         detector.output_dir = args.output
-        detector.ensure_output_dir()
+        if detector.save_files:
+            detector.ensure_output_dir()
 
     # 运行分析
     detector.run_analysis(args.device)

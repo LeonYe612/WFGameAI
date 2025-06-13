@@ -44,10 +44,10 @@ class AndroidPermissionPatterns:
     # 权限弹窗按钮文本模式
     PERMISSION_BUTTON_PATTERNS = {
         PermissionAction.ALLOW: [
-            "允许", "Allow", "ALLOW", "同意", "确定", "OK", "接受", "agree", "Agree"
+            "允许", "Allow", "ALLOW", "始终允许", "同意", "确定", "OK", "接受", "agree", "Agree"
         ],
         PermissionAction.DENY: [
-            "拒绝", "Deny", "DENY", "不允许", "取消", "Cancel", "否", "不同意", "disagree", "Disagree"
+            "拒绝", "Deny", "DENY", "不允许", "禁止", "取消", "Cancel", "否", "不同意", "disagree", "Disagree"
         ],
         PermissionAction.DONT_ASK_AGAIN: [
             "不再询问", "Don't ask again", "不再提示", "记住选择"
