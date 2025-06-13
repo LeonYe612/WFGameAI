@@ -1,6 +1,6 @@
 {
   "type": "script",
-  "name": "app_start_permission_examples",
+  "name": "app_start_permission",
   "description": "应用启动权限配置示例 - 展示扁平化权限处理配置",
   "author": "WFGameAI",
   "date": "2025-06-12",

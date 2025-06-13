@@ -5,6 +5,8 @@ ui_structure_analysis/
 wfgame-ai-server/apps/scripts/
 *.log
 test_*.py
+debug*.py
+verity*.py
 *.txt
 # 大文件需要 Git LFS 跟踪或忽略
 *.pt

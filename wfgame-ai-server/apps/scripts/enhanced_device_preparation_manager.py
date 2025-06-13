@@ -12,11 +12,15 @@ import json
 import subprocess
 import re
 import logging
+import argparse
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from datetime import datetime
 import textwrap
 
+# Add project root to path to import utils
+import sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 from utils import get_project_root
 
 # 配置日志
@@ -43,12 +47,58 @@ class DeviceTestResult:
 class EnhancedDevicePreparationManager:
     """增强版设备预处理管理器"""
 
-    def __init__(self, config_path: str = None):
+    def __init__(self, config_path: str = None, save_logs: bool = False):
         self.config_path = config_path or "config.ini"
         self.adb_keys_path = Path.home() / ".android"
         self.device_info_cache = {}
         self.wireless_connections = {}
         self.test_results: List[DeviceTestResult] = []
+        self.save_logs = save_logs  # 新增参数：是否保存日志
+
+    def _execute_adb_command_with_filter(self, device_id: str, base_cmd: str, filter_text: str, case_sensitive: bool = True) -> str:
+        """
+        执行ADB命令并在Python中进行文本过滤，解决跨平台grep/findstr兼容性问题
+
+        Args:
+            device_id: 设备ID
+            base_cmd: 基础ADB shell命令（不包含管道和过滤）
+            filter_text: 要过滤的文本
+            case_sensitive: 是否区分大小写
+
+        Returns:
+            str: 过滤后的输出内容
+        """
+        try:
+            # 执行基础命令
+            full_cmd = f"adb -s {device_id} shell {base_cmd}"
+            result = subprocess.run(
+                full_cmd,
+                shell=True,
+                capture_output=True,
+                text=True,
+                encoding='utf-8',
+                errors='ignore'
+            )
+
+            if result.returncode != 0:
+                return ""
+
+            # 在Python中进行文本过滤
+            output_lines = result.stdout.splitlines()
+            filtered_lines = []
+
+            search_text = filter_text if case_sensitive else filter_text.lower()
+
+            for line in output_lines:
+                check_line = line if case_sensitive else line.lower()
+                if search_text in check_line:
+                    filtered_lines.append(line)
+
+            return '\n'.join(filtered_lines)
+
+        except Exception as e:
+            logger.error(f"执行ADB命令过滤失败: {e}")
+            return ""
 
     def run_comprehensive_check(self) -> bool:
         """运行综合设备检查和预处理"""
@@ -258,24 +308,17 @@ class EnhancedDevicePreparationManager:
                 shell=True, capture_output=True, text=True, encoding='utf-8', errors='ignore'
             )
             if tcp_result.returncode == 0:
-                result.tcp_port = tcp_result.stdout.strip() or "未设置"
-
-            # 获取WiFi状态和IP
-            wifi_result = subprocess.run(
-                f"adb -s {device_id} shell ip route | grep wlan",
-                shell=True, capture_output=True, text=True, encoding='utf-8', errors='ignore'
-            )
-            if wifi_result.returncode == 0 and wifi_result.stdout.strip():
+                result.tcp_port = tcp_result.stdout.strip() or "未设置"            # 获取WiFi状态和IP
+            # 使用跨平台兼容的方法检查WiFi连接状态
+            wifi_output = self._execute_adb_command_with_filter(device_id, "ip route", "wlan")
+            if wifi_output.strip():
                 result.wifi_status = "已连接"
 
-                # 获取IP地址
-                ip_result = subprocess.run(
-                    f"adb -s {device_id} shell ip addr show wlan0 | grep 'inet '",
-                    shell=True, capture_output=True, text=True, encoding='utf-8', errors='ignore'
-                )
-                if ip_result.returncode == 0:
+                # 获取IP地址 - 使用跨平台兼容的方法
+                ip_output = self._execute_adb_command_with_filter(device_id, "ip addr show wlan0", "inet ")
+                if ip_output.strip():
                     import re
-                    ip_match = re.search(r'inet\s+(\d+\.\d+\.\d+\.\d+)', ip_result.stdout)
+                    ip_match = re.search(r'inet\s+(\d+\.\d+\.\d+\.\d+)', ip_output)
                     if ip_match:
                         result.ip_address = ip_match.group(1)
             else:
@@ -362,7 +405,6 @@ class EnhancedDevicePreparationManager:
         successful_devices = len([r for r in self.test_results if r.overall_status == "成功"])
         authorized_devices = len([r for r in self.test_results if r.rsa_configured])
         wifi_devices = len([r for r in self.test_results if r.wifi_status == "已连接"])
-
         print(f"\n📈 统计汇总:")
         print(f"  总设备数: {total_devices}")
         print(f"  成功设备: {successful_devices} ({successful_devices/total_devices*100:.1f}%)")
@@ -374,6 +416,111 @@ class EnhancedDevicePreparationManager:
             print("💡 现在可以运行 WFGameAI 进行自动化测试了。")
         else:
             print(f"\n⚠️ {total_devices - successful_devices} 个设备存在问题，请检查设备设置。")
+
+        # 保存报告文件（如果启用了保存选项）
+        if self.save_logs:
+            self._save_report_to_file()
+        else:
+            print("\n💾 报告分析完成 (结果未保存)")
+
+    def _save_report_to_file(self):
+        """保存测试报告到文件"""
+        try:
+            # 创建报告目录
+            report_dir = "device_reports"
+            if not os.path.exists(report_dir):
+                os.makedirs(report_dir)
+
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            report_file = os.path.join(report_dir, f"device_test_report_{timestamp}.txt")
+
+            # 构建报告内容
+            report_lines = []
+            report_lines.append("=" * 120)
+            report_lines.append("📊 设备测试结果汇总报告")
+            report_lines.append("=" * 120)
+            report_lines.append(f"报告生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+            report_lines.append("")
+
+            if not self.test_results:
+                report_lines.append("⚠️ 没有测试结果数据")
+            else:
+                # 添加表格数据
+                headers = [
+                    "设备ID", "型号", "Android版本", "连接状态", "授权状态",
+                    "WiFi状态", "IP地址", "Shell命令", "文件访问", "输入事件", "截图功能", "总体状态"
+                ]
+
+                # 构建表格
+                col_widths = [12, 15, 10, 8, 8, 8, 15, 8, 8, 8, 8, 8]
+
+                # 表格头
+                header_line = "│"
+                for i, (header, width) in enumerate(zip(headers, col_widths)):
+                    header_line += f" {header:^{width-2}} │"
+                report_lines.append(header_line)
+
+                # 分隔线
+                separator_line = "├"
+                for width in col_widths:
+                    separator_line += "─" * (width-1) + "┼"
+                separator_line = separator_line[:-1] + "┤"
+                report_lines.append(separator_line)
+
+                # 数据行
+                for result in self.test_results:
+                    row_data = [
+                        result.device_id[:10] + "..." if len(result.device_id) > 10 else result.device_id,
+                        result.model[:13] + "..." if len(result.model) > 13 else result.model,
+                        result.android_version,
+                        "✅ 正常" if ":" in result.device_id else "🔌 USB",
+                        "✅ 是" if result.rsa_configured else "❌ 否",
+                        "📶 是" if result.wifi_status == "已连接" else "❌ 否",
+                        result.ip_address[:13] + "..." if len(result.ip_address) > 13 else result.ip_address,
+                        result.basic_commands.get("基本shell命令", "❌")[:6],
+                        result.basic_commands.get("文件系统访问", "❌")[:6],
+                        result.basic_commands.get("输入事件（电源键）", "❌")[:6],
+                        result.basic_commands.get("屏幕截图功能", "❌")[:6],
+                        "✅ 通过" if result.overall_status == "成功" else "❌ 失败"
+                    ]
+
+                    row_line = "│"
+                    for item, width in zip(row_data, col_widths):
+                        content = str(item)[:width-1]
+                        row_line += f" {content:<{width-2}} │"
+                    report_lines.append(row_line)
+
+                report_lines.append(separator_line)
+
+                # 统计信息
+                total_devices = len(self.test_results)
+                successful_devices = len([r for r in self.test_results if r.overall_status == "成功"])
+                authorized_devices = len([r for r in self.test_results if r.rsa_configured])
+                wifi_devices = len([r for r in self.test_results if r.wifi_status == "已连接"])
+
+                report_lines.append("")
+                report_lines.append("📈 统计汇总:")
+                report_lines.append(f"  总设备数: {total_devices}")
+                report_lines.append(f"  成功设备: {successful_devices} ({successful_devices/total_devices*100:.1f}%)")
+                report_lines.append(f"  已授权设备: {authorized_devices} ({authorized_devices/total_devices*100:.1f}%)")
+                report_lines.append(f"  WiFi连接设备: {wifi_devices} ({wifi_devices/total_devices*100:.1f}%)")
+
+                if successful_devices == total_devices:
+                    report_lines.append("")
+                    report_lines.append("🎉 所有设备检查通过！设备已准备就绪。")
+                    report_lines.append("💡 现在可以运行 WFGameAI 进行自动化测试了。")
+                else:
+                    report_lines.append("")
+                    report_lines.append(f"⚠️ {total_devices - successful_devices} 个设备存在问题，请检查设备设置。")
+
+            # 写入文件
+            with open(report_file, 'w', encoding='utf-8') as f:
+                f.write('\n'.join(report_lines))
+
+            print(f"\n💾 测试报告已保存到: {os.path.abspath(report_file)}")
+
+        except Exception as e:
+            print(f"\n❌ 保存报告文件失败: {e}")
 
     def _print_table_row(self, data: List[str], widths: List[int], is_header: bool = False):
         """打印表格行"""
@@ -403,38 +550,48 @@ class EnhancedDevicePreparationManager:
             str: 主页面 Activity 的完整路径（包名/Activity 名称），如 com.xxx.yyy/.MainActivity
         """
         try:
-            # step1. 优先检查默认入口 Activity
-            main_activity_cmd = f"adb -s {device_id} shell dumpsys package {pkg_name} | grep -A 1 'android.intent.action.MAIN'"
-            print(f"🔍 检查默认入口 Activity: {main_activity_cmd}")
-            main_activity_output = subprocess.run(main_activity_cmd, shell=True, capture_output=True, text=True,
-                                                  encoding='utf-8', errors='ignore').stdout
+            # step1. 优先检查默认入口 Activity - 使用跨平台兼容的方法
+            print(f"🔍 检查默认入口 Activity for {pkg_name}")
 
-            for line in main_activity_output.splitlines():
-                if pkg_name in line:
-                    parts = line.strip().split()
-                    # 兼容 adb 输出格式
-                    for part in parts:
-                        if "/" in part and pkg_name in part:
-                            print(f"✅ 检测到默认入口 Activity: {part}")
-                            return part
+            # 获取包信息并在Python中过滤
+            dumpsys_cmd = f"dumpsys package {pkg_name}"
+            dumpsys_result = subprocess.run(
+                f"adb -s {device_id} shell {dumpsys_cmd}",
+                shell=True, capture_output=True, text=True,
+                encoding='utf-8', errors='ignore'
+            )
+
+            if dumpsys_result.returncode == 0:
+                lines = dumpsys_result.stdout.splitlines()
+                # 查找包含 android.intent.action.MAIN 的行及其后续行
+                for i, line in enumerate(lines):
+                    if "android.intent.action.MAIN" in line:
+                        # 检查当前行和后续几行
+                        for j in range(i, min(i + 3, len(lines))):
+                            check_line = lines[j]
+                            if pkg_name in check_line:
+                                parts = check_line.strip().split()
+                                for part in parts:
+                                    if "/" in part and pkg_name in part:
+                                        print(f"✅ 检测到默认入口 Activity: {part}")
+                                        return part
 
             # step2. 如果未找到默认入口 Activity，获取所有 Activity 信息
             print("⚠️ 未找到默认入口 Activity，尝试获取所有 Activity 信息...")
-            all_activity_cmd = f"adb -s {device_id} shell dumpsys package {pkg_name} | grep -i activity"
-            output = subprocess.run(all_activity_cmd, shell=True, capture_output=True, text=True, encoding='utf-8',
-                                    errors='ignore').stdout
 
-            activities = []
-            for line in output.splitlines():
-                if pkg_name in line:
-                    parts = line.strip().split()
-                    for part in parts:
-                        if "/" in part and pkg_name in part:
-                            activities.append(part)
+            # 在已获取的dumpsys输出中查找activity信息
+            if dumpsys_result.returncode == 0:
+                activities = []
+                for line in dumpsys_result.stdout.splitlines():
+                    if "activity" in line.lower() and pkg_name in line:
+                        parts = line.strip().split()
+                        for part in parts:
+                            if "/" in part and pkg_name in part:
+                                activities.append(part)
 
-            if activities:
-                print(f"⚠️ 未找到默认入口 Activity，使用第一个备选 Activity: {activities[0]}")
-                return activities[0]
+                if activities:
+                    print(f"⚠️ 未找到默认入口 Activity，使用第一个备选 Activity: {activities[0]}")
+                    return activities[0]
 
             print("❌ 未找到主页面 Activity")
             return ""
@@ -463,14 +620,17 @@ class EnhancedDevicePreparationManager:
         print(f"🔧 开始确保 {pkg_name} 服务可用: 设备 {device_id}")
 
         try:
-            # 1. 检查APK是否已安装
-            check_pkg_cmd = f"adb -s {device_id} shell pm list packages | grep {pkg_name}"
-            print(f"🔍 检查服务包是否安装: {check_pkg_cmd}")
-            check_result = subprocess.run(check_pkg_cmd, shell=True, capture_output=True, text=True, encoding='utf-8',
-                                          errors='ignore')
-            if check_result.returncode != 0 or pkg_name not in check_result.stdout:
+            # 1. 检查APK是否已安装 - 使用跨平台兼容的方法
+            print(f"🔍 检查服务包是否安装: {pkg_name}")
+            pkg_list_output = self._execute_adb_command_with_filter(device_id, "pm list packages", pkg_name)
+            if not pkg_list_output.strip():
                 print(f"⚠️ 服务包未安装，尝试安装...")
-                apk_path = os.path.join(get_project_root(), apk_local_path)
+                # 修复get_project_root()返回None的问题
+                project_root = get_project_root()
+                if project_root is None:
+                    print("❌ 无法获取项目根路径")
+                    return False
+                apk_path = os.path.join(project_root, apk_local_path)
                 install_cmd = f"adb -s {device_id} install {apk_path}"
                 print(f"📦 安装服务包: {install_cmd}")
                 install_result = subprocess.run(install_cmd, shell=True, capture_output=True, text=True,
@@ -482,9 +642,8 @@ class EnhancedDevicePreparationManager:
                 time.sleep(2)
                 # 等待系统识别新服务包
                 for i in range(check_times):
-                    new_check_result = subprocess.run(check_pkg_cmd, shell=True, capture_output=True, text=True,
-                                                      encoding='utf-8', errors='ignore')
-                    if pkg_name in new_check_result.stdout:
+                    new_pkg_output = self._execute_adb_command_with_filter(device_id, "pm list packages", pkg_name)
+                    if new_pkg_output.strip():
                         print(f"✅ 系统已识别到 {pkg_name} 安装包")
                         break
                     print(f"⏳ 等待系统识别安装包...({i + 1}/{check_times})")
@@ -612,21 +771,17 @@ class EnhancedDevicePreparationManager:
         except Exception as e:
             logger.error(f"检查设备 {device_id} 授权状态失败: {e}")
             return False
-
     def _setup_wireless_connection(self, device_id: str) -> bool:
         """设置无线连接"""
         try:
-            # 获取设备IP
-            ip_result = subprocess.run(
-                f"adb -s {device_id} shell ip addr show wlan0 | grep 'inet '",
-                shell=True, capture_output=True, text=True, encoding='utf-8', errors='ignore'
-            )
+            # 获取设备IP - 使用跨平台兼容的方法
+            ip_output = self._execute_adb_command_with_filter(device_id, "ip addr show wlan0", "inet ")
 
-            if ip_result.returncode != 0:
+            if not ip_output.strip():
                 return False
 
             import re
-            ip_match = re.search(r'inet\s+(\d+\.\d+\.\d+\.\d+)', ip_result.stdout)
+            ip_match = re.search(r'inet\s+(\d+\.\d+\.\d+\.\d+)', ip_output)
             if not ip_match:
                 return False
 
@@ -749,10 +904,11 @@ def main():
     parser = argparse.ArgumentParser(description='WFGameAI 设备预处理管理器 - 增强版')
     parser.add_argument('--config', type=str, help='配置文件路径')
     parser.add_argument('--report', action='store_true', help='只生成设备报告')
+    parser.add_argument('--save', '-s', action='store_true', help='保存日志和报告文件（默认不保存）')
 
     args = parser.parse_args()
 
-    manager = EnhancedDevicePreparationManager(args.config)
+    manager = EnhancedDevicePreparationManager(args.config, save_logs=args.save)
 
     if args.report:
         # 只运行检查和报告

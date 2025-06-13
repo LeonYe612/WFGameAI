@@ -2,6 +2,16 @@
   "steps": [
     {
       "step": 1,
+      "action": "wait_if_exists",
+      "class": "system-newResources",
+      "polling_interval": 5000,
+      "max_duration": 300,
+      "confidence": 0.7135645747184753,
+      "timestamp": "2025-04-07 18:40:19.816964",
+      "remark": "判断启动APP后是否出现“热更资源”图标，如果存在则需要等待新资源加载完成"
+    },
+    {
+      "step": 1,
       "action": "click_target",
       "target_selector": {
         "text_hints": ["其他登录方式", "其他方式", "切换登录", "账号登录"],

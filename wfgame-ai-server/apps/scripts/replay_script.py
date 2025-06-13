@@ -34,6 +34,9 @@ from enhanced_input_handler import EnhancedInputHandler
 # 导入权限管理器
 from app_permission_manager import integrate_with_app_launch
 
+# 导入设备预处理管理器
+from enhanced_device_preparation_manager import EnhancedDevicePreparationManager
+
 # 全局修补shutil.copytree以解决Airtest静态资源复制的FileExistsError问题
 # 这必须在所有其他操作之前进行，确保Airtest使用修补后的函数
 print("🔧 应用全局shutil.copytree修补，防止静态资源复制冲突")
@@ -1127,6 +1130,86 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
                             f.write(json.dumps(delay_entry, ensure_ascii=False) + "\n")
                         continue
 
+                    elif step_class == "device_preparation":
+                        # 处理设备预处理步骤
+                        params = step.get("params", {})
+
+                        # 获取预处理配置参数
+                        check_usb = params.get("check_usb", True)
+                        setup_wireless = params.get("setup_wireless", True)
+                        configure_permissions = params.get("configure_permissions", True)
+                        handle_screen_lock = params.get("handle_screen_lock", True)
+                        setup_input_method = params.get("setup_input_method", True)
+                        save_logs = params.get("save_logs", False)
+
+                        print(f"🔧 开始设备预处理: {step_remark}")
+                        print(f"配置参数: USB检查={check_usb}, 无线连接={setup_wireless}, 权限配置={configure_permissions}")
+                        print(f"           屏幕解锁={handle_screen_lock}, 输入法设置={setup_input_method}, 保存日志={save_logs}")
+
+                        try:
+                            # 创建设备预处理管理器实例
+                            device_manager = EnhancedDevicePreparationManager(save_logs=save_logs)
+
+                            # 执行预处理步骤
+                            success = True
+
+                            if check_usb:
+                                print("🔍 执行USB连接检查...")
+                                if not device_manager._check_usb_connections():
+                                    print("❌ USB连接检查失败")
+                                    success = False
+
+                            if success and setup_wireless:
+                                print("📶 配置无线连接...")
+                                if not device_manager._setup_wireless_connection(device.serial):
+                                    print("⚠️ 无线连接配置失败，但继续执行")
+
+                            if success and configure_permissions:
+                                print("🔒 配置设备权限...")
+                                device_manager._fix_device_permissions(device.serial)
+
+                            if success and handle_screen_lock:
+                                print("🔓 处理屏幕锁定...")
+                                device_manager._handle_screen_lock(device.serial)
+
+                            if success and setup_input_method:
+                                print("⌨️ 设置输入法...")
+                                if not device_manager._wake_up_yousite(device.serial):
+                                    print("⚠️ 输入法设置失败，但继续执行")
+
+                            print(f"✅ 设备预处理完成，结果: {'成功' if success else '失败'}")
+
+                        except Exception as e:
+                            print(f"❌ 设备预处理过程中出现错误: {e}")
+                            success = False
+
+                        # 记录设备预处理日志
+                        timestamp = time.time()
+                        device_prep_entry = {
+                            "tag": "function",
+                            "depth": 1,
+                            "time": timestamp,
+                            "data": {
+                                "name": "device_preparation",
+                                "call_args": {
+                                    "device_serial": device.serial,
+                                    "check_usb": check_usb,
+                                    "setup_wireless": setup_wireless,
+                                    "configure_permissions": configure_permissions,
+                                    "handle_screen_lock": handle_screen_lock,
+                                    "setup_input_method": setup_input_method,
+                                    "save_logs": save_logs
+                                },
+                                "start_time": timestamp,
+                                "ret": success,
+                                "end_time": timestamp + 1.0
+                            }
+                        }
+                        with open(log_txt_path, "a", encoding="utf-8") as f:
+                            f.write(json.dumps(device_prep_entry, ensure_ascii=False) + "\n")
+
+                        continue
+
                     elif step_class == "app_start":
                         # 处理应用启动步骤
                         params = step.get("params", {})
@@ -1278,9 +1361,9 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
                     elif step_action == "wait_if_exists":
                         # 处理条件等待步骤
                         element_class = step_class
-                        polling_interval = step.get("polling_interval", 5000) / 1000.0  # 转换为秒，默认5秒轮询
-                        max_duration = step.get("max_duration", 300)  # 默认300秒超时
-                        confidence = step.get("confidence", 0.7)  # 默认置信度
+                        polling_interval = step.get("polling_interval") / 1000.0  # 转换为秒，默认5秒轮询
+                        max_duration = step.get("max_duration")  # 默认300秒超时
+                        confidence = step.get("confidence")  # 默认置信度
 
                         print(f"\n🚀 [步骤 {step_idx+1}] 开始执行 wait_if_exists 操作")
                         print(f"📋 元素类型: '{element_class}'")
