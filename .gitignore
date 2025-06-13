@@ -1,6 +1,8 @@
 datasets/My First Project*
 external/
 train_results/
+ui_structure_analysis/
+wfgame-ai-server/apps/scripts/
 *.log
 test_*.py
 *.txt

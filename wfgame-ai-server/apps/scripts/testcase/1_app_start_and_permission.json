@@ -9,7 +9,7 @@
       "class": "app_start",
       "remark": "启动应用并处理权限",
       "params": {
-        "app_name": "card2prepare",
+        "app_name": "card2prepare-wetest",
         "handle_permission": true,
         "permission_wait": 15,
         "allow_permission": true,

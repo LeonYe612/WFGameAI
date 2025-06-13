@@ -1,15 +1,6 @@
 {
   "steps": [
     {
-      "step": 1,
-      "class": "system-newResources",
-      "action": "wait_if_exists",
-      "duration": 5000,
-      "confidence": 0.7135645747184753,
-      "timestamp": "2025-04-07 18:40:19.816964",
-      "remark": "判断启动APP后是否出现“热更资源”图标，如果存在则需要等待新资源加载完成"
-    },
-    {
       "step": 2,
       "class": "operation-close",
       "action": "click",
@@ -32,14 +23,6 @@
       "confidence": 0.9918168187141418,
       "timestamp": "2025-04-07 18:40:26.911667",
       "remark": "关闭清理缓存弹窗"
-    },
-    {
-      "step": 5,
-      "class": "operation-enter",
-      "action": "click",
-      "confidence": 0.9918168187141418,
-      "timestamp": "2025-04-07 18:40:26.911667",
-      "remark": "点击登录游戏按钮"
     }
   ]
 }
