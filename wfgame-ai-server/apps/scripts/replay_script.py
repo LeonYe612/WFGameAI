@@ -5,6 +5,7 @@
 """
 
 from airtest.core.api import set_logdir
+from airtest.report.report import simple_report
 import cv2
 import numpy as np
 import json
@@ -544,7 +545,32 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
         }
     }
     with open(log_txt_path, "a", encoding="utf-8") as f:
-        f.write(json.dumps(end_entry, ensure_ascii=False) + "\n")
+        f.write(json.dumps(end_entry, ensure_ascii=False) + "\n")    # 生成 Airtest HTML 报告
+    try:
+        print_realtime(f"📝 生成设备 {device_name} 的 Airtest HTML 报告...")
+
+        # 先生成script.py文件
+        script_path = generate_script_py(log_dir, scripts)
+        if not script_path:
+            script_path = os.path.join(log_dir, "script.py")  # 使用默认路径作为备选
+
+        html_output = os.path.join(log_dir, "log.html")
+
+        # 先复制静态资源
+        print_realtime(f"📦 准备生成HTML报告，先确保静态资源就绪...")
+        flatten_airtest_static_files(log_dir)
+
+        # 调用 Airtest 的 simple_report 生成 HTML 报告
+        simple_report(
+            filepath=script_path,  # 脚本文件路径
+            logpath=log_dir,       # 日志目录路径
+            output=html_output     # 输出HTML文件路径
+        )
+        print_realtime(f"✅ 设备 {device_name} Airtest HTML 报告生成成功: {html_output}")
+
+    except Exception as e:
+        print_realtime(f"⚠️ 设备 {device_name} Airtest HTML 报告生成失败: {e}")
+        # 不影响主流程，继续执行
 
     # 释放账号
     if device_account:
@@ -560,6 +586,76 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
 
     return has_any_execution
 
+
+def flatten_airtest_static_files(report_dir):
+    """
+    Flattens the Airtest static files (CSS, JS, images, fonts) from their
+    default 'static/subdir' structure to the root of the report_dir.
+    This is useful if the HTML template expects assets to be in the same
+    directory as the HTML file.
+    """
+    print_realtime(f"🔧 正在处理静态文件: {report_dir}")
+    static_subdirs = ["css", "js", "image", "fonts"]
+    static_dir_path = os.path.join(report_dir, "static")
+
+    # 如果static目录不存在，尝试从Airtest默认位置复制
+    if not os.path.exists(static_dir_path):
+        try:
+            # 获取Airtest安装目录中的静态资源
+            import airtest
+            airtest_dir = os.path.dirname(airtest.__file__)
+            airtest_static = os.path.join(airtest_dir, "report", "static")
+
+            if os.path.exists(airtest_static):
+                print_realtime(f"📦 从Airtest复制静态资源: {airtest_static} -> {static_dir_path}")
+                shutil.copytree(airtest_static, static_dir_path, dirs_exist_ok=True)
+            else:
+                print_realtime(f"⚠️ 未找到Airtest静态资源: {airtest_static}")
+                return
+        except Exception as e:
+            print_realtime(f"❌ 复制Airtest静态资源失败: {e}")
+            return
+
+    if not os.path.isdir(static_dir_path):
+        print_realtime(f"❌ 错误: {static_dir_path} 不是目录")
+        return
+
+    print_realtime(f"📂 处理静态资源目录: {static_dir_path}")
+    for subdir_name in static_subdirs:
+        source_subdir = os.path.join(static_dir_path, subdir_name)
+        if os.path.exists(source_subdir) and os.path.isdir(source_subdir):
+            print_realtime(f"  处理子目录: {subdir_name}")
+
+            # 首先确保目标目录存在
+            os.makedirs(os.path.join(report_dir, subdir_name), exist_ok=True)
+
+            for item_name in os.listdir(source_subdir):
+                source_item_path = os.path.join(source_subdir, item_name)
+                # 将文件复制到对应的子目录而不是根目录
+                destination_item_path = os.path.join(report_dir, subdir_name, item_name)
+
+                if os.path.isfile(source_item_path):
+                    try:
+                        # 使用copy2而不是move，保留原始文件
+                        shutil.copy2(source_item_path, destination_item_path)
+                        print_realtime(f"    ✅ 复制: {os.path.basename(source_item_path)}")
+                    except Exception as e:
+                        print_realtime(f"    ❌ 复制失败 {os.path.basename(source_item_path)}: {e}")
+                elif os.path.isdir(source_item_path):
+                    try:
+                        # 对于目录，使用copytree
+                        shutil.copytree(source_item_path, destination_item_path, dirs_exist_ok=True)
+                        print_realtime(f"    ✅ 复制目录: {os.path.basename(source_item_path)}")
+                    except Exception as e:
+                        print_realtime(f"    ❌ 复制目录失败 {os.path.basename(source_item_path)}: {e}")
+
+    # 保留原始static目录，因为可能还需要用于其他用途
+    print_realtime(f"✅ 静态资源处理完成: {report_dir}")
+
+# Ensure this function is defined before it's called in run_one_report and run_summary.
+# If it's already defined, this will update it.
+# ... existing code ...
+# Calls to flatten_airtest_static_files in run_one_report and run_summary remain the same.
 
 def detection_service(screenshot_queue, click_queue, stop_event):
     """简化的检测服务"""
@@ -584,6 +680,95 @@ def detection_service(screenshot_queue, click_queue, stop_event):
             continue
         except Exception as e:
             print_realtime(f"❌ 检测服务错误: {e}")
+
+
+def generate_script_py(log_dir, scripts):
+    """
+    为Airtest HTML报告生成script.py文件
+    参数:
+        log_dir: 日志目录路径
+        scripts: 执行的脚本列表，每个脚本是一个包含path、loop_count等字段的字典
+    """
+    try:
+        script_path = os.path.join(log_dir, "script.py")
+        script_content = []
+
+        # 添加文件头部信息
+        script_content.append(f"# filepath: {script_path}")
+        script_content.append("# 用户指定执行的脚本文件")
+        script_content.append(f"# 生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        script_content.append("\n")
+
+        # 添加脚本信息
+        for i, script_config in enumerate(scripts, 1):
+            script_file_path = script_config["path"]
+            script_content.append(f"# ============ 脚本 {i}: {os.path.basename(script_file_path)} ============")
+            script_content.append(f"# 此脚本文件是用户明确指定执行的，路径: {script_file_path}")
+            script_content.append("")
+
+            # 读取并添加脚本内容
+            try:
+                with open(script_file_path, "r", encoding="utf-8") as f:
+                    script_json = json.load(f)
+                    script_content.append(json.dumps(script_json, indent=2, ensure_ascii=False))
+                    script_content.append("")
+            except Exception as e:
+                script_content.append(f"# 无法读取脚本内容: {e}")
+                script_content.append("")
+
+        # 写入文件
+        with open(script_path, "w", encoding="utf-8") as f:
+            f.write("\n".join(script_content))
+
+        print_realtime(f"✅ 成功生成script.py文件: {script_path}")
+        return script_path
+    except Exception as e:
+        print_realtime(f"❌ 生成script.py文件失败: {e}")
+        return None
+
+
+def generate_summary_script_py(device_reports_dir, scripts):
+    """
+    为汇总报告生成script.py文件
+    参数:
+        device_reports_dir: 设备报告目录路径
+        scripts: 执行的脚本列表
+    """
+    try:
+        script_path = os.path.join(SUMMARY_REPORTS_DIR, "script.py")
+        script_content = []
+
+        # 添加文件头部信息
+        script_content.append(f"# filepath: {script_path}")
+        script_content.append("# WFGameAI汇总测试报告")
+        script_content.append(f"# 生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        script_content.append("\n")
+
+        # 添加执行的脚本概述
+        script_content.append("# ============ 执行脚本概述 ============")
+        for i, script_config in enumerate(scripts, 1):
+            script_file_path = script_config["path"]
+            script_content.append(f"# {i}. {os.path.basename(script_file_path)}")
+            script_content.append(f"#    路径: {script_file_path}")
+            script_content.append(f"#    循环次数: {script_config.get('loop_count', 1)}")
+            if script_config.get('max_duration'):
+                script_content.append(f"#    最大执行时间: {script_config['max_duration']}秒")
+            script_content.append("")
+
+        # 添加设备报告目录信息
+        script_content.append("# ============ 设备报告目录 ============")
+        script_content.append(f"# {device_reports_dir}")
+        script_content.append("")
+
+        # 写入文件
+        with open(script_path, "w", encoding="utf-8") as f:
+            f.write("\n".join(script_content))
+
+        print_realtime(f"✅ 成功生成汇总报告script.py文件: {script_path}")
+        return script_path
+    except Exception as e:
+        print_realtime(f"❌ 生成汇总报告script.py文件失败: {e}")
+        return None
 
 
 def clear_log_dir():
@@ -665,6 +850,9 @@ def main():
 
         print_realtime(f"📱 找到 {len(devices)} 个设备")
 
+        # 收集实际处理的设备名称列表，用于生成报告
+        processed_device_names = []
+
         # 为每个设备创建日志目录和执行回放
         for device in devices:
             device_name = get_device_name(device)
@@ -676,6 +864,10 @@ def main():
             if not check_device_status(device, device_name):
                 print_realtime(f"❌ 设备 {device_name} 状态检查失败，跳过")
                 continue
+
+            # 记录成功处理的设备名称（提取基础名称，不包含时间戳）
+            base_device_name = device_name.split('_')[0] if '_' in device_name else device_name
+            processed_device_names.append(base_device_name)
 
             # 创建必要的队列和事件
             screenshot_queue = queue.Queue()
@@ -701,8 +893,8 @@ def main():
                     click_queue=click_queue,
                     stop_event=stop_event,
                     device_name=device_name,
-                    log_dir=log_dir,
-                    show_screens=show_screens,                    loop_count=1  # 这个参数在脚本级别配置中已被覆盖
+                    log_dir=log_dir,                    show_screens=show_screens,
+                    loop_count=1  # 这个参数在脚本级别配置中已被覆盖
                 )
 
                 if has_execution:
@@ -713,9 +905,65 @@ def main():
             except Exception as e:
                 print_realtime(f"❌ 设备 {device_name} 回放失败: {e}")
                 traceback.print_exc()
-
             finally:
                 stop_event.set()
+
+        # 所有设备处理完成后，生成汇总报告
+        print_realtime("🔄 脚本执行完成，开始生成汇总报告...")
+        try:
+            # 给Airtest日志一点时间完成写入
+            time.sleep(2)
+
+            # 导入并调用报告生成函数
+            import sys
+            # 获取正确的项目根目录路径
+            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            sys.path.insert(0, base_dir)
+
+            from generate_summary_from_logs import generate_summary_report
+
+            # 传递当前执行的设备名列表给报告生成函数
+            if processed_device_names:
+                print_realtime(f"📝 生成报告，指定设备列表: {processed_device_names}")
+                report_path = generate_summary_report(device_names=processed_device_names)
+            else:
+                print_realtime("📝 生成报告，使用时间窗口检测")
+                report_path = generate_summary_report(device_names=None)
+
+            if report_path:
+                print_realtime(f"✅ 汇总报告生成成功: {report_path}")
+            else:
+                print_realtime("⚠️ 汇总报告生成失败")
+
+        except ImportError as e:
+            print_realtime(f"❌ 无法导入报告生成模块: {e}")
+        except Exception as e:
+            print_realtime(f"❌ 报告生成异常: {e}")
+        # 生成Airtest HTML报告
+        try:
+            # 确保汇总报告目录存在
+            os.makedirs(SUMMARY_REPORTS_DIR, exist_ok=True)
+
+            # 生成汇总报告的script.py文件
+            summary_script_path = generate_summary_script_py(DEVICE_REPORTS_DIR, scripts)
+            if not summary_script_path:
+                summary_script_path = os.path.join(SUMMARY_REPORTS_DIR, "script.py")  # 使用默认路径作为备选
+
+            # 生成汇总HTML报告
+            report_path = os.path.join(SUMMARY_REPORTS_DIR, "airtest_summary_report.html")
+            # 对于汇总报告，设置logpath为True让Airtest自动查找日志
+            simple_report(
+                filepath=summary_script_path,  # 使用生成的汇总script.py
+                logpath=True,                 # 自动查找日志
+                output=report_path            # 输出HTML报告路径
+            )
+            print_realtime(f"✅ Airtest HTML汇总报告生成成功: {report_path}")
+
+            # 扁平化静态文件
+            flatten_airtest_static_files(SUMMARY_REPORTS_DIR)
+
+        except Exception as e:
+            print_realtime(f"❌ Airtest HTML汇总报告生成失败: {e}")
 
     except Exception as e:
         print_realtime(f"❌ 设备处理失败: {e}")

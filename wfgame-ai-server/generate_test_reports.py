@@ -83,12 +83,11 @@ def generate_test_device_report():
     </body>
     </html>
     """
-
     html_file = os.path.join(device_report_dir, "log.html")
     with open(html_file, "w", encoding="utf-8") as f:
         f.write(html_content)
 
-    print(f"✓ 设备报告已生成: {device_report_dir}")
+    print(f"[OK] 设备报告已生成: {device_report_dir}")
     print(f"  - 报告HTML: {html_file}")
     print(f"  - 日志文件: {log_file}")
     print(f"  - 截图数量: 3")
@@ -209,14 +208,12 @@ def generate_test_summary_report(device_reports=None):
     report_file = f"summary_report_{timestamp}.html"
     report_path = os.path.join(summary_reports_dir, report_file)
     with open(report_path, "w", encoding="utf-8") as f:
-        f.write(html_content)
-
-    # 创建latest_report.html
+        f.write(html_content)    # 创建latest_report.html
     latest_report_path = os.path.join(summary_reports_dir, "latest_report.html")
     shutil.copy(report_path, latest_report_path)
 
-    print(f"✓ 汇总报告已生成: {report_path}")
-    print(f"✓ 最新报告链接已更新: {latest_report_path}")
+    print(f"[OK] 汇总报告已生成: {report_path}")
+    print(f"[OK] 最新报告链接已更新: {latest_report_path}")
 
     return report_path
 
@@ -228,12 +225,10 @@ if __name__ == "__main__":
     device_reports = []
     for i in range(3):  # 生成3个设备报告
         device_report = generate_test_device_report()
-        device_reports.append(device_report)
-
-    # 生成汇总报告
+        device_reports.append(device_report)    # 生成汇总报告
     summary_report = generate_test_summary_report(device_reports)
 
     print("\n=== 测试报告生成完成 ===")
-    print(f"✓ 生成了 {len(device_reports)} 个设备报告")
-    print(f"✓ 生成了汇总报告: {os.path.basename(summary_report)}")
+    print(f"[OK] 生成了 {len(device_reports)} 个设备报告")
+    print(f"[OK] 生成了汇总报告: {os.path.basename(summary_report)}")
     print("\n你可以通过Web服务访问这些报告来验证统一目录结构是否工作正常。")

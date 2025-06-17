@@ -922,6 +922,60 @@ def replay_script(request):
                     log_func(line.strip())
             stream.close()
 
+        # 创建进程监控和报告生成线程
+        def monitor_process_and_generate_report(proc, pid):
+            """监控进程完成并生成报告"""
+            try:
+                # 等待进程完成
+                proc.wait()
+                logger.info(f"[PID:{pid}] 脚本执行完成，开始生成报告...")
+
+                # 给Airtest日志一点时间完成写入
+                import time
+                time.sleep(2)                # 调用报告生成脚本
+                try:
+                    import sys
+                    # 正确添加报告生成模块的路径
+                    report_module_dir = os.path.dirname(os.path.dirname(SCRIPTS_DIR))
+                    if report_module_dir not in sys.path:                    sys.path.insert(0, report_module_dir)
+
+                    from generate_summary_from_logs import generate_summary_report
+
+                    # 尝试获取当前执行的设备名列表
+                    # 注意：这里我们无法直接知道replay_script使用了哪些设备
+                    # 所以我们使用None，让generate_summary_report使用时间窗口方法
+                    report_path = generate_summary_report(device_names=None)
+                    if report_path:
+                        logger.info(f"[PID:{pid}] 报告生成成功: {report_path}")
+                    else:
+                        logger.warning(f"[PID:{pid}] 报告生成失败")
+
+                except ImportError as e:
+                    logger.error(f"[PID:{pid}] 无法导入报告生成模块: {e}")
+                    # 备选方案：直接调用Python脚本
+                    try:
+                        python_exec = get_persistent_python_path()
+                        generate_script_path = os.path.join(os.path.dirname(os.path.dirname(SCRIPTS_DIR)), "generate_summary_from_logs.py")
+                        if os.path.exists(generate_script_path):
+                            result = subprocess.run([python_exec, generate_script_path],
+                                                  capture_output=True, text=True, encoding='utf-8', errors='replace')
+                            if result.returncode == 0:
+                                logger.info(f"[PID:{pid}] 通过子进程成功生成报告")
+                            else:
+                                logger.error(f"[PID:{pid}] 子进程生成报告失败: {result.stderr}")
+                    except Exception as subprocess_e:
+                        logger.error(f"[PID:{pid}] 子进程调用报告生成失败: {subprocess_e}")
+
+                except Exception as e:
+                    logger.error(f"[PID:{pid}] 报告生成异常: {e}")
+
+            except Exception as e:
+                logger.error(f"[PID:{pid}] 进程监控异常: {e}")
+            finally:
+                # 清理进程记录
+                CHILD_PROCESSES.pop(pid, None)
+                logger.info(f"[PID:{pid}] 进程已完成并清理")
+
         # 启动输出读取线程
         stdout_thread = threading.Thread(target=read_output, args=(process.stdout, logger.info))
         stderr_thread = threading.Thread(target=read_output, args=(process.stderr, logger.error))
@@ -929,6 +983,11 @@ def replay_script(request):
         stderr_thread.daemon = True
         stdout_thread.start()
         stderr_thread.start()
+
+        # 启动进程监控线程
+        monitor_thread = threading.Thread(target=monitor_process_and_generate_report, args=(process, process.pid))
+        monitor_thread.daemon = True
+        monitor_thread.start()
 
         # 等待进程完成，设置超时避免无限等待
         try:
