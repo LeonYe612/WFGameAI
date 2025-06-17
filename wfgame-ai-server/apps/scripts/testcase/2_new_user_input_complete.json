@@ -1,6 +1,14 @@
 {
   "steps": [
     {
+      "step": 0.5,
+      "class": "delay",
+      "params": {
+        "seconds": 5
+      },
+      "remark": "等待应用启动后界面稳定，避免热更新导致的黑屏影响检测"
+    },
+    {
       "step": 1,
       "action": "wait_if_exists",
       "class": "system-newResources",
@@ -11,13 +19,28 @@
       "remark": "判断启动APP后是否出现“热更资源”图标，如果存在则需要等待新资源加载完成"
     },
     {
-      "step": 1,
+      "step": 2,
       "action": "click_target",
       "target_selector": {
         "text_hints": ["其他登录方式", "其他方式", "切换登录", "账号登录"],
-        "resource_id_keywords": ["other_login", "switch_login", "login_method", "more_login", "password_login"],
-        "class_types": ["android.widget.TextView", "android.widget.Button", "android.view.View"],
-        "content_desc_keywords": ["其他登录方式", "登录方式", "切换登录", "更多选项"],
+        "resource_id_keywords": [
+          "other_login",
+          "switch_login",
+          "login_method",
+          "more_login",
+          "password_login"
+        ],
+        "class_types": [
+          "android.widget.TextView",
+          "android.widget.Button",
+          "android.view.View"
+        ],
+        "content_desc_keywords": [
+          "其他登录方式",
+          "登录方式",
+          "切换登录",
+          "更多选项"
+        ],
         "skip_if_not_found": true
       },
       "confidence": 0.9,

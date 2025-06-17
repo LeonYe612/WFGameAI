@@ -15,7 +15,7 @@ import xml.etree.ElementTree as ET
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 import argparse
-
+os.environ['PYTHONIOENCODING'] = 'utf-8'
 try:
     from adbutils import adb
     ADB_UTILS_AVAILABLE = True
@@ -34,20 +34,53 @@ except ImportError:
 class UIStructureDetector:
     """UI结构检测器"""
 
-    def __init__(self, device_id: str = None, save_files: bool = False):
+    def __init__(self, device_id: Optional[str] = None, save_files: bool = False):
         self.device_id = device_id
         self.output_dir = "ui_structure_analysis"
         self.save_files = save_files  # 新增参数：是否保存文件
 
-        # 只在需要保存文件时创建输出目录
-        if self.save_files:
-            self.ensure_output_dir()
+        # 确保输出目录存在（总是创建，因为日志文件需要保存）
+        self.ensure_output_dir()
+
+        # 创建日志文件，解决终端中文显示问题
+        import datetime
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.log_file_path = os.path.join(self.output_dir, f"ui_detector_log_{timestamp}.txt")
+        self.log_file = open(self.log_file_path, "w", encoding="utf-8")
+
+        # 记录开始信息
+        self.log("🚀 UI结构检测器启动")
+        self.log(f"📝 详细日志文件: {self.log_file_path}")
+
+    def log(self, message: str, show_in_terminal: bool = True):
+        """统一的日志输出方法
+
+        Args:
+            message: 要输出的消息
+            show_in_terminal: 是否在终端显示，默认True
+        """
+        # 总是写入日志文件
+        self.log_file.write(message + "\n")
+        self.log_file.flush()
+
+        # 根据参数决定是否在终端显示
+        if show_in_terminal:
+            print(message)
+
+    def close_log(self):
+        """关闭日志文件"""
+        if hasattr(self, 'log_file') and self.log_file:
+            self.log_file.close()
+
+    def __del__(self):
+        """析构函数，确保日志文件被关闭"""
+        self.close_log()
 
     def ensure_output_dir(self):
         """确保输出目录存在"""
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
-            print(f"📁 创建输出目录: {self.output_dir}")
+            self.log(f"📁 创建输出目录: {self.output_dir}")
 
     def get_connected_devices(self) -> List[str]:
         """获取所有连接的设备"""
@@ -69,13 +102,13 @@ class UIStructureDetector:
                         if len(parts) >= 2 and parts[1].strip() == 'device':
                             devices.append(parts[0].strip())
         except Exception as e:
-            print(f"❌ 获取设备列表失败: {e}")
+            self.log(f"❌ 获取设备列表失败: {e}")
 
         return devices
 
     def dump_ui_hierarchy(self, device_id: str) -> Optional[str]:
         """获取UI层次结构XML"""
-        print(f"🔍 正在获取设备 {device_id} 的UI层次结构...")
+        self.log(f"🔍 正在获取设备 {device_id} 的UI层次结构...")
 
         try:
             # 使用uiautomator dump命令获取UI结构
@@ -86,7 +119,7 @@ class UIStructureDetector:
             result = subprocess.run(dump_cmd, shell=True, capture_output=True, text=True)
 
             if result.returncode != 0:
-                print(f"❌ UI dump失败: {result.stderr}")
+                self.log(f"❌ UI dump失败: {result.stderr}")
                 return None
 
             # 只在需要保存文件时才拉取并保存XML
@@ -97,10 +130,10 @@ class UIStructureDetector:
                 pull_result = subprocess.run(pull_cmd, shell=True, capture_output=True, text=True)
 
                 if pull_result.returncode != 0:
-                    print(f"❌ 拉取XML文件失败: {pull_result.stderr}")
+                    self.log(f"❌ 拉取XML文件失败: {pull_result.stderr}")
                     local_xml_path = None
                 else:
-                    print(f"✅ UI层次结构已保存到: {local_xml_path}")
+                    self.log(f"✅ UI层次结构已保存到: {local_xml_path}")
             else:
                 # 将XML文件拉取到临时目录，仅用于分析，不长期保存
                 local_xml_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), f"temp_ui_{int(time.time())}.xml")
@@ -108,10 +141,10 @@ class UIStructureDetector:
                 pull_result = subprocess.run(pull_cmd, shell=True, capture_output=True, text=True)
 
                 if pull_result.returncode != 0:
-                    print(f"❌ 拉取XML文件失败: {pull_result.stderr}")
+                    self.log(f"❌ 拉取XML文件失败: {pull_result.stderr}")
                     local_xml_path = None
                 else:
-                    print(f"✅ UI层次结构已分析 (未保存)")
+                    self.log(f"✅ UI层次结构已分析 (未保存)")
 
             # 清理设备上的临时文件
             subprocess.run(f"adb -s {device_id} shell rm {xml_path}", shell=True, check=False)
@@ -119,12 +152,12 @@ class UIStructureDetector:
             return local_xml_path
 
         except Exception as e:
-            print(f"❌ 获取UI层次结构失败: {e}")
+            self.log(f"❌ 获取UI层次结构失败: {e}")
             return None
 
     def parse_ui_hierarchy(self, xml_path: str) -> Dict[str, Any]:
         """解析UI层次结构XML"""
-        print(f"📊 正在解析UI层次结构...")
+        self.log(f"📊 正在解析UI层次结构...")
 
         try:
             tree = ET.parse(xml_path)
@@ -148,7 +181,7 @@ class UIStructureDetector:
             return ui_structure
 
         except Exception as e:
-            print(f"❌ 解析UI层次结构失败: {e}")
+            self.log(f"❌ 解析UI层次结构失败: {e}")
             return {}
 
     def _parse_node(self, node: ET.Element, level: int = 0) -> Dict[str, Any]:
@@ -208,10 +241,9 @@ class UIStructureDetector:
         # 递归处理子节点
         for child in node:
             self._count_nodes(child, stats)
-
     def get_screen_info(self, device_id: str) -> Dict[str, Any]:
         """获取屏幕基本信息"""
-        print(f"📱 正在获取设备 {device_id} 的屏幕信息...")
+        self.log(f"📱 正在获取设备 {device_id} 的屏幕信息...")
 
         screen_info = {
             "device_id": device_id,
@@ -257,13 +289,13 @@ class UIStructureDetector:
                 screen_info["android_version"] = version_result.stdout.strip()
 
         except Exception as e:
-            print(f"⚠️ 获取屏幕信息时出现错误: {e}")
+            self.log(f"⚠️ 获取屏幕信息时出现错误: {e}")
 
         return screen_info
 
     def take_screenshot(self, device_id: str) -> Optional[str]:
         """截取屏幕截图"""
-        print(f"📸 正在截取设备 {device_id} 的屏幕截图...")
+        self.log(f"📸 正在截取设备 {device_id} 的屏幕截图...")
 
         try:
             timestamp = int(time.time())
@@ -274,7 +306,7 @@ class UIStructureDetector:
             result = subprocess.run(screencap_cmd, shell=True, capture_output=True, text=True)
 
             if result.returncode != 0:
-                print(f"❌ 截图失败: {result.stderr}")
+                self.log(f"❌ 截图失败: {result.stderr}")
                 return None
 
             # 只在需要保存文件时才执行保存操作
@@ -286,13 +318,13 @@ class UIStructureDetector:
                 pull_result = subprocess.run(pull_cmd, shell=True, capture_output=True, text=True)
 
                 if pull_result.returncode != 0:
-                    print(f"❌ 拉取截图失败: {pull_result.stderr}")
+                    self.log(f"❌ 拉取截图失败: {pull_result.stderr}")
                     local_path = None
                 else:
-                    print(f"✅ 截图已保存到: {local_path}")
+                    self.log(f"✅ 截图已保存到: {local_path}")
             else:
                 local_path = None
-                print(f"✅ 截图已捕获 (未保存)")
+                self.log(f"✅ 截图已捕获 (未保存)")
 
             # 清理设备上的临时文件
             subprocess.run(f"adb -s {device_id} shell rm {remote_path}", shell=True, check=False)
@@ -300,7 +332,7 @@ class UIStructureDetector:
             return local_path
 
         except Exception as e:
-            print(f"❌ 截图失败: {e}")
+            self.log(f"❌ 截图失败: {e}")
             return None
 
     def analyze_device_ui(self, device_id: str) -> Dict[str, Any]:
@@ -425,7 +457,7 @@ class UIStructureDetector:
         except Exception as e:
             print(f"❌ 保存JSON文件失败: {e}")
 
-    def run_analysis(self, target_device: str = None):
+    def run_analysis(self, target_device: Optional[str] = None):
         """运行UI结构分析"""
         print("🚀 启动UI结构检测器")
         print("=" * 60)

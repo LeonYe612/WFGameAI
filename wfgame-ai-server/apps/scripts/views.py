@@ -872,11 +872,10 @@ def replay_script(request):
         logger.info(f"使用Python环境: {python_exec}")
 
         # 获取replay_script.py的绝对路径
-        replay_script_path = find_script_path("replay_script.py")
-
-        # 组装命令
+        replay_script_path = find_script_path("replay_script.py")        # 组装命令
         cmd = [
             python_exec,
+            "-u",  # 强制 Python 使用无缓冲输出，确保实时日志显示
             replay_script_path
         ]
 
@@ -903,9 +902,7 @@ def replay_script(request):
                 cmd.extend(["--max-duration", str(max_duration)])
 
         # 日志输出
-        logger.info(f"执行回放命令: {' '.join(cmd)}")
-
-        # 启动回放进程
+        logger.info(f"执行回放命令: {' '.join(cmd)}")        # 启动回放进程
         process = subprocess.Popen(
             cmd,
             stdout=subprocess.PIPE,
@@ -913,7 +910,8 @@ def replay_script(request):
             cwd=SCRIPTS_DIR,  # 使用配置中的项目根目录
             text=True,
             encoding='utf-8',
-            errors='replace'
+            errors='replace',
+            bufsize=1  # 行缓冲，提高实时性
         )
 
         # 存储进程对象，以便后续管理
@@ -1085,18 +1083,23 @@ def debug_script(request):
         # And the second argument (script) is found relative to project_root if not absolute
         if args:
             # Check if the first arg is a python script or 'python' keyword
-            if args[0].lower() == 'python' or args[0].endswith('.py'):
-                # 获取Python解释器路径
+            if args[0].lower() == 'python' or args[0].endswith('.py'):                # 获取Python解释器路径
                 python_executable = python_exec.replace('\\', '\\\\')  # 确保反斜杠被正确处理
                 logger.info(f"Using Python executable: {python_executable}")
 
                 if args[0].lower() == 'python': # e.g., "python record_script.py ..."
                     script_name_arg_index = 1
                     args[0] = python_executable # Replace 'python' with full path
+                    # 插入 -u 参数以强制无缓冲输出，确保实时日志显示
+                    args.insert(1, "-u")
+                    script_name_arg_index = 2  # 脚本索引现在是2
                 else: # e.g., "record_script.py ..." or "path/to/script.py ..."
                     script_name_arg_index = 0
                     # Prepend python_exec if script.py is the first argument
                     args.insert(0, python_executable)
+                    # 插入 -u 参数以强制无缓冲输出，确保实时日志显示
+                    args.insert(1, "-u")
+                    script_name_arg_index = 2  # 脚本索引现在是2
 
                 # Ensure the script path itself is correct
                 if len(args) > script_name_arg_index:
@@ -1115,9 +1118,7 @@ def debug_script(request):
                 if not os.path.isabs(args[0]) and not shutil.which(args[0]):
                     logger.warning(f"Command '{args[0]}' is not absolute and not found in PATH. Execution may fail.")
 
-        logger.info(f"Executing command with args: {args}, cwd: {SCRIPTS_DIR}")
-
-        # 在执行前记录构建的命令路径
+        logger.info(f"Executing command with args: {args}, cwd: {SCRIPTS_DIR}")        # 在执行前记录构建的命令路径
         if len(args) >= 2:
             # 检查args[1]是否是一个Python脚本
             if args[1].endswith('.py'):
@@ -1136,7 +1137,8 @@ def debug_script(request):
             shell=False, # Important: shell=False when args is a list
             text=True, # Use text=True for universal_newlines=True behavior
             encoding='utf-8', errors='replace', # Be explicit about encoding
-            cwd=SCRIPTS_DIR  # 使用配置中的项目根目录
+            cwd=SCRIPTS_DIR,  # 使用配置中的项目根目录
+            bufsize=1  # 行缓冲，提高实时性
         )
 
         process_id = str(process.pid)

@@ -1,12 +1,13 @@
-# 设备预处理集成到JSON脚本控制的使用说明
+# 设备预处理集成到 JSON 脚本控制的使用说明
 
 ## 概述
 
-设备预处理功能已成功集成到JSON脚本控制系统中。现在可以通过在脚本的`steps`中添加`"class": "device_preparation"`步骤来控制设备预处理的运行时机。
+设备预处理功能已成功集成到 JSON 脚本控制系统中。现在可以通过在脚本的`steps`中添加`"class": "device_preparation"`步骤来控制设备预处理的运行时机。
 
-## JSON脚本格式
+## JSON 脚本格式
 
 ### 基本格式
+
 ```json
 {
   "description": "设备预处理示例脚本",
@@ -33,18 +34,19 @@
 
 ### 参数说明
 
-| 参数名 | 类型 | 默认值 | 说明 |
-|-------|------|-------|------|
-| `check_usb` | boolean | true | 是否检查USB连接状态 |
-| `setup_wireless` | boolean | true | 是否配置无线连接 |
-| `configure_permissions` | boolean | true | 是否配置设备权限 |
-| `handle_screen_lock` | boolean | true | 是否处理屏幕锁定 |
-| `setup_input_method` | boolean | true | 是否设置输入法 |
-| `save_logs` | boolean | false | 是否保存预处理日志 |
+| 参数名                  | 类型    | 默认值 | 说明                  |
+| ----------------------- | ------- | ------ | --------------------- |
+| `check_usb`             | boolean | true   | 是否检查 USB 连接状态 |
+| `setup_wireless`        | boolean | true   | 是否配置无线连接      |
+| `configure_permissions` | boolean | true   | 是否配置设备权限      |
+| `handle_screen_lock`    | boolean | true   | 是否处理屏幕锁定      |
+| `setup_input_method`    | boolean | true   | 是否设置输入法        |
+| `save_logs`             | boolean | false  | 是否保存预处理日志    |
 
 ## 使用场景
 
 ### 1. 脚本开始前的设备预处理
+
 ```json
 {
   "steps": [
@@ -72,6 +74,7 @@
 ```
 
 ### 2. 特定操作前的设备准备
+
 ```json
 {
   "steps": [
@@ -99,6 +102,7 @@
 ```
 
 ### 3. 最小化设备预处理
+
 ```json
 {
   "steps": [
@@ -137,7 +141,7 @@
 ## 错误处理
 
 - 如果某个预处理步骤失败，系统会记录错误但继续执行其他步骤
-- USB连接检查失败会停止后续预处理步骤
+- USB 连接检查失败会停止后续预处理步骤
 - 其他步骤失败只会显示警告，不会中断脚本执行
 
 ## 注意事项

@@ -51,13 +51,13 @@ class AppTemplate:
     name: str
     package_name: str
     activity_name: Optional[str] = None
-    start_commands: List[str] = None
-    stop_commands: List[str] = None
-    check_commands: List[str] = None
+    start_commands: Optional[List[str]] = None
+    stop_commands: Optional[List[str]] = None
+    check_commands: Optional[List[str]] = None
     startup_wait_time: int = 5
     max_restart_attempts: int = 3
     health_check_interval: int = 30
-    custom_params: Dict[str, Any] = None
+    custom_params: Optional[Dict[str, Any]] = None
 
     def __post_init__(self):
         if self.start_commands is None:
@@ -73,7 +73,7 @@ class AppTemplate:
 class AppLifecycleManager:
     """应用生命周期管理器"""
 
-    def __init__(self, config_path: str = None):
+    def __init__(self, config_path: Optional[str] = None):
         """
         初始化应用生命周期管理器
 
@@ -91,11 +91,9 @@ class AppLifecycleManager:
 
         # 监控线程
         self.monitoring_thread = None
-        self.monitoring_active = False
-
-        # 初始化组件
+        self.monitoring_active = False        # 初始化组件
         self._init_directories()
-        self._load_app_templates()
+        # 不再从文件加载模板，所有信息都在脚本中提供
 
         logger.info("应用生命周期管理器初始化完成")
 
@@ -123,20 +121,8 @@ class AppLifecycleManager:
         logger.info(f"日志目录: {self.logs_dir}")
 
     def _load_app_templates(self):
-        """加载应用模板配置"""
-        template_files = list(self.templates_dir.glob("*.json"))
-
-        for template_file in template_files:
-            try:
-                with open(template_file, 'r', encoding='utf-8') as f:
-                    template_data = json.load(f)
-
-                template = AppTemplate(**template_data)
-                self.app_templates[template.name] = template
-                logger.info(f"加载应用模板: {template.name}")
-
-            except Exception as e:
-                logger.error(f"加载模板文件 {template_file} 失败: {e}")
+        """加载应用模板配置 - 已废弃，所有信息现在都在脚本中提供"""
+        logger.info("跳过模板文件加载，使用脚本中提供的信息")
 
     def create_app_template(self, template_data: Dict[str, Any]) -> bool:
         """
@@ -154,14 +140,11 @@ class AppLifecycleManager:
             # 保存到文件
             template_file = self.templates_dir / f"{template.name}.json"
             with open(template_file, 'w', encoding='utf-8') as f:
-                json.dump(asdict(template), f, indent=4, ensure_ascii=False)
-
-            # 添加到内存
+                json.dump(asdict(template), f, indent=4, ensure_ascii=False)            # 添加到内存
             self.app_templates[template.name] = template
 
             logger.info(f"创建应用模板成功: {template.name}")
             return True
-
         except Exception as e:
             logger.error(f"创建应用模板失败: {e}")
             return False
@@ -171,8 +154,19 @@ class AppLifecycleManager:
         return self.app_templates.copy()
 
     def get_app_template(self, template_name: str) -> Optional[AppTemplate]:
-        """获取指定的应用模板"""
-        return self.app_templates.get(template_name)
+        """获取指定的应用模板 - 已废弃，不再使用模板文件"""
+        logger.warning("get_app_template() 已废弃，不再使用模板文件")
+        return None
+
+    def find_template_by_app_name(self, app_name: str) -> Optional[AppTemplate]:
+        """通过app_name参数查找模板 - 已废弃，不再使用模板文件"""
+        logger.warning("find_template_by_app_name() 已废弃，不再使用模板文件")
+        return None
+
+    def get_template_by_app_name(self, app_name: str) -> Optional[AppTemplate]:
+        """通过app_name查找模板的公共接口 - 已废弃，不再使用模板文件"""
+        logger.warning("get_template_by_app_name() 已废弃，不再使用模板文件")
+        return None
 
     def start_app(self, template_name: str, device_serial: str, **kwargs) -> bool:
         """
@@ -320,7 +314,7 @@ class AppLifecycleManager:
         # 再启动
         return self.start_app(template_name, device_serial, **kwargs)
 
-    def get_app_status(self, template_name: str = None, device_serial: str = None) -> Dict[str, Any]:
+    def get_app_status(self, template_name: Optional[str] = None, device_serial: Optional[str] = None) -> Dict[str, Any]:
         """
         获取应用状态
 
@@ -415,7 +409,7 @@ class AppLifecycleManager:
                     f"adb -s {device_serial} shell pidof {template.package_name}".split(),
                     capture_output=True, text=True, timeout=10
                 )
-                return result.returncode == 0 and result.stdout.strip()
+                return result.returncode == 0 and bool(result.stdout.strip())
             except Exception as e:
                 logger.error(f"检查应用运行状态失败: {e}")
                 return False
@@ -466,7 +460,7 @@ class AppLifecycleManager:
                                 template = t
                                 break
 
-                        if template and current_time - instance.last_check_time >= template.health_check_interval:
+                        if template and instance.last_check_time and current_time - instance.last_check_time >= template.health_check_interval:
                             # 执行健康检查
                             if self._check_app_running(template, instance.device_serial):
                                 instance.last_check_time = current_time

@@ -1,15 +1,29 @@
 {
   "type": "script",
   "name": "app_start_permission",
-  "description": "应用启动权限配置示例 - 展示扁平化权限处理配置",
+  "description": "应用启动权限、设备预处理示例、输入法检查",
   "author": "WFGameAI",
   "date": "2025-06-12",
   "steps": [
     {
+      "class": "device_preparation",
+      "remark": "执行设备预处理：设备预处理示例、输入法检查，确保设备状态正常",
+      "params": {
+        "check_usb": true,
+        "setup_wireless": false,
+        "configure_permissions": true,
+        "handle_screen_lock": true,
+        "setup_input_method": true,
+        "save_logs": false
+      }
+    },
+    {
       "class": "app_start",
       "remark": "启动应用并处理权限",
       "params": {
-        "app_name": "card2prepare-wetest",
+        "app_name": "card2prepare",
+        "package_name": "com.qyfhl.qxzf",
+        "activity_name": "com.qyfhl.qxzf/com.beeplay.splash.ui.engine.EngineActivity",
         "handle_permission": true,
         "permission_wait": 15,
         "allow_permission": true,
