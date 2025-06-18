@@ -1,0 +1,32 @@
+{
+  "type": "script",
+  "name": "device_preparation_example",
+  "description": "设备预处理集成示例 - 展示如何在脚本执行前进行设备预处理",
+  "author": "WFGameAI",
+  "date": "2025-06-13",
+  "steps": [
+    {
+      "class": "device_preparation",
+      "remark": "执行设备预处理，确保设备状态正常",
+      "params": {
+        "check_usb": true,
+        "setup_wireless": true,
+        "configure_permissions": true,
+        "handle_screen_lock": true,
+        "setup_input_method": true,
+        "save_logs": false
+      }
+    },
+    {
+      "class": "app_start",
+      "remark": "启动应用并处理权限",
+      "params": {
+        "app_name": "card2prepare-wetest",
+        "handle_permission": true,
+        "permission_wait": 15,
+        "allow_permission": true,
+        "first_only": true
+      }
+    }
+  ]
+}

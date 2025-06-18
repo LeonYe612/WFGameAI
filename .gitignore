@@ -2,11 +2,10 @@ datasets/My First Project*
 external/
 train_results/
 ui_structure_analysis/
-wfgame-ai-server/apps/scripts/
 *.log
-test_*.py
-debug*.py
-verity*.py
+*test*.py
+*debug*.py
+*verify*.py
 *.txt
 # 大文件需要 Git LFS 跟踪或忽略
 *.pt
@@ -20,9 +19,9 @@ verity*.py
 *.svg
 
 # 静态文件和报告
-wfgame-ai-server/logs/*.log
-wfgame-ai-server/staticfiles/reports/*
-
+wfgame-ai-server/logs/
+wfgame-ai-server/staticfiles/reports/summary_reports/
+wfgame-ai-server/staticfiles/reports/ui_run/
 # Python 缓存文件
 __pycache__/
 *.py[cod]

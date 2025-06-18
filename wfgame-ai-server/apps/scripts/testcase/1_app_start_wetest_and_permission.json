@@ -1,0 +1,34 @@
+{
+  "type": "script",
+  "name": "app_start_permission",
+  "description": "应用启动权限、设备预处理示例、输入法检查",
+  "author": "WFGameAI",
+  "date": "2025-06-12",
+  "steps": [
+    {
+      "class": "device_preparation",
+      "remark": "执行设备预处理：设备预处理示例、输入法检查，确保设备状态正常",
+      "params": {
+        "check_usb": true,
+        "setup_wireless": false,
+        "configure_permissions": true,
+        "handle_screen_lock": false,
+        "setup_input_method": true,
+        "save_logs": false
+      }
+    },
+    {
+      "class": "app_start",
+      "remark": "启动应用并处理权限",
+      "params": {
+        "app_name": "card2prepare-wetest",
+        "package_name": "com.beeplay.card2prepare",
+        "activity_name": "com.beeplay.card2prepare/com.beeplay.splash.launcher.SplashActivity",
+        "handle_permission": true,
+        "permission_wait": 15,
+        "allow_permission": true,
+        "first_only": true
+      }
+    }
+  ]
+}

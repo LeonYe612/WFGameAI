@@ -647,9 +647,7 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
 
     except Exception as e:
         print_realtime(f"❌ 设备 {device_name} HTML 报告生成失败: {e}")
-        raise e
-
-    # 释放账号
+        raise e    # 释放账号
     if device_account:
         try:
             account_manager = get_account_manager()
@@ -661,7 +659,7 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
     print_realtime(f"🎉 设备 {device_name} 回放完成，总执行脚本数: {total_executed}")
     stop_event.set()
 
-    return has_any_execution
+    return has_any_execution, device_report_dir
 
 
 def detection_service(screenshot_queue, click_queue, stop_event):
@@ -768,12 +766,12 @@ def main():
         devices = adb.device_list()
         if not devices:
             print_realtime("❌ 未找到连接的设备")
-            return
-
-        print_realtime(f"📱 找到 {len(devices)} 个设备")
+            return        print_realtime(f"📱 找到 {len(devices)} 个设备")
 
         # 收集实际处理的设备名称列表，用于生成报告
-        processed_device_names = []        # 为每个设备执行回放
+        processed_device_names = []
+        # 收集本次执行创建的设备报告目录路径
+        current_execution_device_dirs = []# 为每个设备执行回放
         for device in devices:
             device_name = get_device_name(device)
 
@@ -802,7 +800,7 @@ def main():
             detection_thread.daemon = True
             detection_thread.start()            # 执行设备回放
             try:
-                has_execution = replay_device(
+                has_execution, device_report_dir = replay_device(
                     device=device,
                     scripts=scripts,
                     screenshot_queue=screenshot_queue,
@@ -817,6 +815,9 @@ def main():
 
                 if has_execution:
                     print_realtime(f"✅ 设备 {device_name} 回放成功完成")
+                    # 记录本次执行创建的设备报告目录
+                    if device_report_dir:
+                        current_execution_device_dirs.append(device_report_dir)
                 else:
                     print_realtime(f"⚠️ 设备 {device_name} 未执行任何操作")
 
@@ -841,14 +842,14 @@ def main():
             if not REPORT_MANAGER:
                 error_msg = f"❌ 报告管理器未初始化，无法生成汇总报告"
                 print_realtime(error_msg)
-                raise RuntimeError(error_msg)
+                raise RuntimeError(error_msg)            # 使用本次执行创建的设备报告目录，而不是所有历史目录
+            device_report_dirs = current_execution_device_dirs
 
-            # 收集所有设备报告目录
-            device_report_dirs = []
-            if REPORT_MANAGER.device_reports_dir.exists():
-                for device_dir in REPORT_MANAGER.device_reports_dir.iterdir():
-                    if device_dir.is_dir():
-                        device_report_dirs.append(device_dir)
+            if not device_report_dirs:
+                print_realtime("⚠️ 没有找到本次执行创建的设备报告目录，跳过汇总报告生成")
+                return
+
+            print_realtime(f"📊 将为 {len(device_report_dirs)} 个设备生成汇总报告")
 
             # 生成汇总报告
             summary_report_path = REPORT_GENERATOR.generate_summary_report(device_report_dirs, scripts)
