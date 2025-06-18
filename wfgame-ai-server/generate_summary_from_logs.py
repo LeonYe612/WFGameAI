@@ -21,6 +21,10 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DEVICE_REPORTS_DIR = os.path.join(BASE_DIR, 'staticfiles', 'reports', 'ui_run', 'WFGameAI.air', 'log')
 SUMMARY_REPORTS_DIR = os.path.join(BASE_DIR, 'staticfiles', 'reports', 'summary_reports')
 
+# 确保目录存在
+os.makedirs(DEVICE_REPORTS_DIR, exist_ok=True)
+os.makedirs(SUMMARY_REPORTS_DIR, exist_ok=True)
+
 def parse_device_log(device_dir):
     """解析设备日志文件"""
     log_file = os.path.join(device_dir, 'log.txt')

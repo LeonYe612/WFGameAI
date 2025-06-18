@@ -160,7 +160,7 @@ def main():
             success, error = create_table_safe(table_name, tables_ddl[table_name])
 
             if success:
-                print(f"  ✓ 表结构创建成功: {table_name}")
+                print(f"  [OK] 表结构创建成功: {table_name}")
                 success_tables.append(table_name)
 
                 # 尝试插入数据
@@ -172,7 +172,7 @@ def main():
                         print(f"  ⚠ 数据插入失败: {table_name} - {data_error}")
                         data_failed_tables.append(table_name)
                     else:
-                        print(f"  ✓ 数据插入成功: {table_name}")
+                        print(f"  [OK] 数据插入成功: {table_name}")
                 else:
                     print(f"  ℹ 无数据需要插入: {table_name}")
             else:

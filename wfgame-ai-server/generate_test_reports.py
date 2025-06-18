@@ -23,7 +23,7 @@ def generate_test_device_report():
     # 项目根目录
     base_dir = os.path.dirname(os.path.abspath(__file__))
 
-    # 统一报告目录
+    # 统一报告目录 - 使用Django的static目录结构
     staticfiles_reports_dir = os.path.join(base_dir, "staticfiles", "reports")
     device_reports_dir = os.path.join(staticfiles_reports_dir, "ui_run", "WFGameAI.air", "log")
 
@@ -35,9 +35,14 @@ def generate_test_device_report():
     device_report_dir = os.path.join(device_reports_dir, device_name)
     os.makedirs(device_report_dir, exist_ok=True)
 
-    # 创建log子目录
-    log_dir = os.path.join(device_report_dir, "log")
-    os.makedirs(log_dir, exist_ok=True)
+    # 创建必要的子目录
+    subdirs = ["log", "script.log", "static"]
+    for subdir in subdirs:
+        dir_path = os.path.join(device_report_dir, subdir)
+        os.makedirs(dir_path, exist_ok=True)
+        # 创建一个空的 .gitkeep 文件来保持目录
+        with open(os.path.join(dir_path, '.gitkeep'), 'w') as f:
+            pass
 
     # 创建示例截图
     for i in range(3):

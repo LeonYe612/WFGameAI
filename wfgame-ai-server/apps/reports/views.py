@@ -26,46 +26,53 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework import permissions
 
+# Import the unified report management system
+from .report_manager import ReportManager
+
 logger = logging.getLogger(__name__)
 
-# 获取项目根目录
+# Initialize the unified report manager
+report_manager = ReportManager()
+
+# Get project root directory
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# 加载项目根目录下的config.ini
+# Load config.ini from project root
 CONFIG_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../config.ini'))
 config = configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation())
 
-# 确保config.ini文件存在
+# Ensure config.ini exists
 if not os.path.exists(CONFIG_PATH):
     raise FileNotFoundError(f'配置文件未找到: {CONFIG_PATH}')
 
-# 读取配置文件
+# Read configuration file
 if not config.read(CONFIG_PATH, encoding='utf-8'):
     raise IOError(f'无法读取配置文件: {CONFIG_PATH}')
 
-# 确保paths部分存在
+# Ensure [paths] section exists
 if 'paths' not in config:
     raise KeyError(f'配置文件中缺少[paths]部分: {CONFIG_PATH}')
 
 paths = config['paths']
 
-# 记录加载的关键路径
+# Log loaded key paths
 logger.info(f'已加载配置文件: {CONFIG_PATH}')
 logger.info(f'REPORTS_DIR将被设置为: {paths["reports_dir"]}')
 logger.info(f'UI_REPORTS_DIR将被设置为: {paths["ui_reports_dir"]}')
 
-# 从config.ini获取报告路径
+# Get report paths from config.ini
 REPORTS_DIR = os.path.abspath(paths['reports_dir'])
 
-# 使用新的统一报告目录结构
-STATICFILES_REPORTS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "staticfiles", "reports")
-DEVICE_REPORTS_DIR = os.path.join(STATICFILES_REPORTS_DIR, "ui_run", "WFGameAI.air", "log")
-SUMMARY_REPORTS_DIR = os.path.join(STATICFILES_REPORTS_DIR, "summary_reports")
-# 为兼容性保留UI_REPORTS_DIR变量，但指向新的设备报告目录
+# Use the new unified report directory structure from ReportManager
+STATICFILES_REPORTS_DIR = str(report_manager.reports_root)
+DEVICE_REPORTS_DIR = str(report_manager.device_reports_dir)
+SUMMARY_REPORTS_DIR = str(report_manager.summary_reports_dir)
+# Keep UI_REPORTS_DIR for compatibility, but point to new device reports directory
 UI_REPORTS_DIR = DEVICE_REPORTS_DIR
 
 logger.info(f'统一报告目录: DEVICE_REPORTS_DIR={DEVICE_REPORTS_DIR}')
 logger.info(f'汇总报告目录: SUMMARY_REPORTS_DIR={SUMMARY_REPORTS_DIR}')
+logger.info(f'报告管理器已初始化，根目录: {report_manager.reports_root}')
 
 @api_view(['POST'])
 @csrf_exempt
@@ -377,28 +384,18 @@ def summary_list(request):
                                         else:
                                             status = '失败'
 
-                                        # 提取详细报告链接
+                                        # Extract detail report link
                                         detail_link = ''
                                         if link_cell:
-                                            # Ensure link_cell is a Tag, is an 'a' tag, and has an 'href' attribute
-                                            detail_link = ''
-                                            if link_cell and hasattr(link_cell, 'name') and link_cell.name == 'a' and isinstance(link_cell.attrs, dict) and 'href' in link_cell.attrs:
-                                                href_val = link_cell.attrs['href']
-                                                if isinstance(href_val, str):
-                                                    detail_link = href_val
-                                                elif isinstance(href_val, list): # Handle case where href might be a list (though unusual for href)
-                                                    if href_val:
-                                                        detail_link = str(href_val[0])
-                                                        if len(href_val) > 1:
-                                                            logger.warning(f"link_cell in {filename} had multiple href values: {href_val}. Using the first one.")
-                                                    else:
-                                                        detail_link = ''
-                                                elif href_val is not None:
-                                                    detail_link = str(href_val) # Fallback for other types
-                                                else:
-                                                    detail_link = '' # href attribute exists but is None
-                                            elif link_cell:
-                                                logger.warning(f"link_cell in {filename} was found but was not a valid 'a' tag with an 'href' attribute. Tag: {str(link_cell)[:100]}")
+                                            try:
+                                                # Use string representation and regex to extract href
+                                                link_str = str(link_cell)
+                                                href_match = re.search(r'href=["\'](.*?)["\']', link_str)
+                                                if href_match:
+                                                    detail_link = href_match.group(1).strip()
+                                            except Exception as e:
+                                                logger.warning(f"Error extracting href from link_cell in {filename}: {e}")
+                                                detail_link = ''
 
                                         # Correct relative detail_link to be an absolute URL
                                         if detail_link: # Proceed only if detail_link is not empty
@@ -550,3 +547,466 @@ def summary_list(request):
     except Exception as e:
         logger.error(f"获取报告元数据失败: {e}")
         return JsonResponse({'detail': f'服务异常: {str(e)}'}, status=500)
+
+@api_view(['POST'])
+@csrf_exempt
+@permission_classes([permissions.AllowAny])
+def get_unified_report_list(request):
+    """获取使用统一报告管理系统的报告列表"""
+    try:
+        # Use the ReportManager to get report statistics
+        report_stats = report_manager.get_report_statistics()
+
+        reports = []
+        report_id = 1
+
+        # Get summary reports
+        summary_reports = report_manager.list_summary_reports()
+        for report_file in summary_reports:
+            filename = os.path.basename(report_file)
+            created_time = datetime.fromtimestamp(os.path.getctime(report_file))
+            created_str = created_time.strftime('%Y-%m-%d %H:%M:%S')
+
+            # Extract information from HTML content
+            success_rate = 0
+            device_count = 0
+
+            try:
+                with open(report_file, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                    soup = BeautifulSoup(content, 'html.parser')
+
+                    # Extract device information from table
+                    devices = []
+                    table_rows = soup.select('tbody tr')
+                    if table_rows:
+                        for row in table_rows:
+                            device_name_cell = row.find('td', class_='device-name')
+                            status_cell = row.select_one('td .status')
+
+                            if device_name_cell:
+                                name = device_name_cell.get_text(strip=True)
+                                status = 'pass' if status_cell and '通过' in status_cell.get_text() else 'fail'
+                                devices.append({'name': name, 'status': status})
+
+                    device_count = len(devices)
+                    success_count = sum(1 for dev in devices if dev['status'] == 'pass')
+                    success_rate = int(success_count * 100 / device_count) if device_count > 0 else 0
+
+            except Exception as e:
+                logger.error(f"读取报告内容失败: {e}")
+
+            # Generate report URL using ReportManager
+            report_url = report_manager.get_summary_report_url(filename)
+
+            reports.append({
+                'id': str(report_id),
+                'title': f"测试报告 {created_str}",
+                'date': created_str,
+                'success_rate': success_rate,
+                'device_count': device_count,
+                'success_count': success_count,
+                'creator': 'System',
+                'url': report_url,
+                'filename': filename
+            })
+            report_id += 1
+
+        # Sort by creation time, newest first
+        reports.sort(key=lambda x: x['date'], reverse=True)
+
+        return JsonResponse({
+            'reports': reports,
+            'statistics': report_stats
+        })
+
+    except Exception as e:
+        logger.error(f"获取统一报告列表失败: {e}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@api_view(['POST'])
+@csrf_exempt
+@permission_classes([permissions.AllowAny])
+def unified_summary_list(request):
+    """使用统一报告管理系统获取汇总报告列表"""
+    try:
+        reports = []
+
+        # Get summary reports using ReportManager
+        summary_reports = report_manager.list_summary_reports()
+
+        for report_file in summary_reports:
+            filename = os.path.basename(report_file)
+
+            # Extract report ID from filename
+            report_id = filename.replace('summary_report_', '').replace('.html', '')
+
+            # Extract date from filename
+            date_match = re.search(r'summary_report_(\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2})\.html', filename)
+            created_at = "未知"
+
+            if date_match:
+                date_str = date_match.group(1)
+                try:
+                    dt = datetime.strptime(date_str, '%Y-%m-%d-%H-%M-%S')
+                    created_at = dt.strftime('%Y-%m-%d %H:%M:%S')
+                except ValueError:
+                    pass
+
+            try:
+                with open(report_file, 'r', encoding='utf-8') as f:
+                    html = f.read()
+                soup = BeautifulSoup(html, 'html.parser')
+
+                # If time couldn't be extracted from filename, try HTML
+                if created_at == "未知":
+                    time_tag = soup.find('p', string=re.compile('生成时间'))
+                    if time_tag:
+                        time_text = time_tag.text.split(':', 1)[-1].strip()
+                        created_at = time_text
+
+                # Extract device details from table structure
+                devices = []
+                table_rows = soup.select('tbody tr')
+
+                if table_rows:
+                    for row in table_rows:
+                        device_name_cell = row.find('td', class_='device-name')
+                        status_cell = row.select_one('td .status')
+                        link_cell = row.find('a', class_='report-link')
+
+                        if device_name_cell:
+                            name = device_name_cell.get_text(strip=True)
+
+                            # Extract status
+                            if status_cell:
+                                status_text = status_cell.get_text(strip=True)
+                                status = '通过' if status_text == '通过' else '失败'
+                            else:
+                                status = '失败'
+
+                            # Extract detail link safely
+                            detail_link = ''
+                            if link_cell:
+                                try:
+                                    # Use string representation and regex to extract href
+                                    link_str = str(link_cell)
+                                    href_match = re.search(r'href=["\'](.*?)["\']', link_str)
+                                    if href_match:
+                                        detail_link = href_match.group(1).strip()
+                                        # Convert relative links to absolute URLs
+                                        detail_link = report_manager.normalize_device_report_url(detail_link)
+                                except Exception as e:
+                                    logger.warning(f"Error extracting href: {e}")
+                                    detail_link = ''
+
+                            devices.append({
+                                'name': name,
+                                'status': status,
+                                'detail_url': detail_link
+                            })
+                else:
+                    # Fallback to old .device class structure
+                    for dev in soup.select('.device'):
+                        h2 = dev.find('h2')
+                        name = h2.text.replace('设备: ', '').strip() if h2 else ''
+                        status = '通过' if '通过' in dev.text else '失败'
+
+                        # Extract link safely
+                        detail_link = ''
+                        a_tag = dev.find('a')
+                        if a_tag:
+                            try:
+                                # Use string representation and regex to extract href
+                                link_str = str(a_tag)
+                                href_match = re.search(r'href=["\'](.*?)["\']', link_str)
+                                if href_match:
+                                    href = href_match.group(1)
+                                    detail_link = report_manager.normalize_device_report_url(str(href))
+                            except Exception as e:
+                                logger.warning(f"Error extracting href from a_tag: {e}")
+                                detail_link = ''
+
+                        devices.append({
+                            'name': name,
+                            'status': status,
+                            'detail_url': detail_link
+                        })
+
+                # Calculate statistics
+                device_count = len(devices)
+                success_count = sum(1 for dev in devices if dev['status'] == '通过')
+
+                # Extract title
+                title = soup.find('h1')
+                title_text = title.text.strip() if title else 'WFGameAI 自动化测试报告'
+
+                # Generate URL using ReportManager
+                url = report_manager.get_summary_report_url(filename)
+
+                reports.append({
+                    'report_id': report_id,
+                    'title': title_text,
+                    'created_at': created_at,
+                    'device_count': device_count,
+                    'success_count': success_count,
+                    'devices': devices,
+                    'url': url,
+                    'filename': filename
+                })
+
+            except Exception as e:
+                logger.error(f"解析报告内容失败: {e}")
+                # Add basic info if parsing fails
+                url = report_manager.get_summary_report_url(filename)
+                reports.append({
+                    'report_id': report_id,
+                    'title': 'WFGameAI 自动化测试报告',
+                    'created_at': created_at,
+                    'device_count': 0,
+                    'success_count': 0,
+                    'devices': [],
+                    'url': url,
+                    'filename': filename,
+                    'error': str(e)
+                })
+
+        if not reports:
+            logger.warning("未找到报告文件")
+            return JsonResponse({'reports': []}, status=200)
+
+        return JsonResponse({'reports': reports}, status=200)
+
+    except Exception as e:
+        logger.error(f"获取统一汇总报告列表失败: {e}")
+        return JsonResponse({'detail': f'服务异常: {str(e)}'}, status=500)
+
+
+@api_view(['GET'])
+@csrf_exempt
+@permission_classes([permissions.AllowAny])
+def unified_report_detail(request, report_id):
+    """使用统一报告管理系统获取报告详情"""
+    try:
+        # Get summary reports using ReportManager
+        summary_reports = report_manager.list_summary_reports()
+
+        if not summary_reports:
+            logger.error("未找到任何报告文件")
+            return JsonResponse({'error': '未找到报告'}, status=404)
+
+        # Sort by creation time, newest first
+        summary_reports.sort(key=lambda x: os.path.getctime(x), reverse=True)
+
+        # Find report by ID
+        report_file = None
+        try:
+            report_idx = int(report_id) - 1
+            if 0 <= report_idx < len(summary_reports):
+                report_file = summary_reports[report_idx]
+        except ValueError:
+            # Try to match by filename
+            for file in summary_reports:
+                if report_id in os.path.basename(file):
+                    report_file = file
+                    break
+
+        if not report_file:
+            return JsonResponse({'error': '报告不存在'}, status=404)
+
+        # Return report content
+        with open(report_file, 'r', encoding='utf-8') as f:
+            content = f.read()
+
+        return HttpResponse(content, content_type='text/html')
+
+    except Exception as e:
+        logger.error(f"获取统一报告详情失败: {e}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@api_view(['POST'])
+@csrf_exempt
+@permission_classes([permissions.AllowAny])
+def unified_report_delete(request, report_id):
+    """使用统一报告管理系统删除报告"""
+    try:
+        # Get summary reports using ReportManager
+        summary_reports = report_manager.list_summary_reports()
+
+        if not summary_reports:
+            return JsonResponse({'success': False, 'error': '未找到报告'}, status=404)
+
+        # Sort by creation time, newest first
+        summary_reports.sort(key=lambda x: os.path.getctime(x), reverse=True)
+
+        # Find report by ID
+        report_file = None
+        try:
+            report_idx = int(report_id) - 1
+            if 0 <= report_idx < len(summary_reports):
+                report_file = summary_reports[report_idx]
+        except ValueError:
+            # Try to match by filename
+            for file in summary_reports:
+                if report_id in os.path.basename(file):
+                    report_file = file
+                    break
+
+        if not report_file:
+            return JsonResponse({'success': False, 'error': '报告不存在'}, status=404)
+
+        # Delete the report file
+        if os.path.exists(report_file):
+            os.remove(report_file)
+            logger.info(f"已删除报告文件: {report_file}")
+            return JsonResponse({'success': True, 'message': '报告已删除'})
+        else:
+            return JsonResponse({'success': False, 'error': '报告文件不存在'}, status=404)
+
+    except Exception as e:
+        logger.error(f"删除统一报告失败: {e}")
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@api_view(['POST'])
+@csrf_exempt
+@permission_classes([permissions.AllowAny])
+def get_unified_device_performance(request, device_id=None):
+    """使用统一报告管理系统获取设备性能数据"""
+    try:
+        # Get device_id from request body
+        data = json.loads(request.body)
+        device_id = data.get('device_id', device_id)
+
+        if not device_id:
+            return JsonResponse({'error': '未提供设备ID'}, status=400)
+
+        # Use ReportManager to get device report directory
+        device_reports = report_manager.list_device_reports(device_id)
+
+        if not device_reports:
+            return JsonResponse({'error': f'未找到设备{device_id}的报告'}, status=404)
+
+        # Look for performance data in device reports
+        performance_data = {}
+        for report_dir in device_reports:
+            performance_files = glob.glob(os.path.join(report_dir, "performance_*.json"))
+            if performance_files:
+                # Get the latest performance file
+                latest_perf_file = max(performance_files, key=os.path.getmtime)
+                try:
+                    with open(latest_perf_file, 'r', encoding='utf-8') as f:
+                        performance_data = json.load(f)
+                    break
+                except Exception as e:
+                    logger.error(f"读取性能文件失败: {e}")
+                    continue
+
+        if not performance_data:
+            return JsonResponse({'error': f'未找到设备{device_id}的性能数据'}, status=404)
+
+        return JsonResponse({
+            'device_id': device_id,
+            'performance': performance_data
+        })
+
+    except Exception as e:
+        logger.error(f"获取统一设备性能数据失败: {e}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+# ============ 统一报告管理系统API ============
+
+@api_view(['GET'])
+@csrf_exempt
+@permission_classes([permissions.AllowAny])
+def device_reports_view(request):
+    """获取设备报告列表"""
+    try:
+        reports = report_manager.get_device_reports()
+        return JsonResponse({
+            'success': True,
+            'count': len(reports),
+            'reports': reports
+        })
+    except Exception as e:
+        logger.error(f"获取设备报告列表失败: {e}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+@api_view(['GET'])
+@csrf_exempt
+@permission_classes([permissions.AllowAny])
+def summary_reports_view(request):
+    """获取汇总报告列表"""
+    try:
+        reports = report_manager.get_summary_reports()
+        return JsonResponse({
+            'success': True,
+            'count': len(reports),
+            'reports': reports
+        })
+    except Exception as e:
+        logger.error(f"获取汇总报告列表失败: {e}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+@api_view(['GET'])
+@csrf_exempt
+@permission_classes([permissions.AllowAny])
+def report_stats_view(request):
+    """获取报告统计信息"""
+    try:
+        stats = report_manager.get_report_stats()
+        return JsonResponse({
+            'success': True,
+            'stats': stats
+        })
+    except Exception as e:
+        logger.error(f"获取报告统计信息失败: {e}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+@api_view(['POST'])
+@csrf_exempt
+@permission_classes([permissions.AllowAny])
+def cleanup_reports_view(request):
+    """清理旧报告"""
+    try:
+        days = request.POST.get('days')
+        max_count = request.POST.get('max_count')
+
+        cleanup_stats = report_manager.cleanup_old_reports(
+            days=int(days) if days else None,
+            max_count=int(max_count) if max_count else None
+        )
+
+        return JsonResponse({
+            'success': True,
+            'cleanup_stats': cleanup_stats
+        })
+    except Exception as e:
+        logger.error(f"清理报告失败: {e}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+@api_view(['POST'])
+@csrf_exempt
+@permission_classes([permissions.AllowAny])
+def create_device_report_view(request):
+    """创建设备报告目录"""
+    try:
+        device_name = request.POST.get('device_name')
+        timestamp = request.POST.get('timestamp')
+
+        if not device_name:
+            return JsonResponse({'error': '设备名称不能为空'}, status=400)
+
+        device_dir = report_manager.create_device_report_dir(device_name, timestamp)
+        urls = report_manager.generate_report_urls(device_dir)
+
+        return JsonResponse({
+            'success': True,
+            'device_dir': str(device_dir),
+            'urls': urls
+        })
+    except Exception as e:
+        logger.error(f"创建设备报告目录失败: {e}")
+        return JsonResponse({'error': str(e)}, status=500)

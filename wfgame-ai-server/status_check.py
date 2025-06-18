@@ -15,14 +15,14 @@ def check_django_setup():
 
     try:
         import django
-        print(f"✓ Django已安装，版本: {django.VERSION}")
+        print(f"[OK] Django已安装，版本: {django.VERSION}")
 
         # 检查Django设置
         os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'wfgame_ai_server_main.settings')
         django.setup()
 
         from django.conf import settings
-        print(f"✓ Django设置已加载")
+        print(f"[OK] Django设置已加载")
         print(f"  DEBUG: {settings.DEBUG}")
         print(f"  数据库: {settings.DATABASES['default']['ENGINE']}")
 
@@ -44,21 +44,21 @@ def check_non_django_mode():
 
         # 测试非Django导入
         from apps.project_monitor.database import db_manager
-        print("✓ 数据库管理器导入成功")
+        print("[OK] 数据库管理器导入成功")
 
         from apps.project_monitor.monitor_service import monitor_service
-        print("✓ 监控服务导入成功")
+        print("[OK] 监控服务导入成功")
 
         from apps.project_monitor.django_api import log_ai_execution_sync
-        print("✓ Django API导入成功")
+        print("[OK] Django API导入成功")
 
         # 初始化数据库
         db_manager.init_database()
-        print("✓ 数据库初始化成功")
+        print("[OK] 数据库初始化成功")
 
         # 测试获取项目列表
         projects = monitor_service.get_projects()
-        print(f"✓ 获取项目列表成功，共 {len(projects)} 个项目")
+        print(f"[OK] 获取项目列表成功，共 {len(projects)} 个项目")
 
         return True
     except Exception as e:
@@ -73,7 +73,7 @@ def check_detection_manager():
 
     try:
         from apps.scripts.detection_manager import PROJECT_MONITOR_ENABLED, log_ai_execution
-        print(f"✓ detection_manager导入成功")
+        print(f"[OK] detection_manager导入成功")
         print(f"  PROJECT_MONITOR_ENABLED: {PROJECT_MONITOR_ENABLED}")
         print(f"  log_ai_execution可调用: {callable(log_ai_execution)}")        # 测试记录功能 - 使用不存在的项目测试错误处理
         result = log_ai_execution(
@@ -82,7 +82,7 @@ def check_detection_manager():
             success=True,
             scenario="状态检查无数据测试"
         )
-        print(f"✓ 无数据测试: {result}")
+        print(f"[OK] 无数据测试: {result}")
 
         return True
     except Exception as e:
@@ -113,7 +113,7 @@ def main():
     passed_tests = sum(results.values())
 
     for test_name, result in results.items():
-        status = "✓ 通过" if result else "✗ 失败"
+        status = "[OK] 通过" if result else "[X] 失败"
         print(f"{test_name}: {status}")
 
     print(f"\n通过测试: {passed_tests}/{total_tests}")
