@@ -139,6 +139,213 @@ except ImportError as e:
     print_realtime(f"配置导入失败: {e}")
     config_manager = None
 
+# 全局YOLO模型变量
+model = None
+
+# 导入YOLO和模型加载功能
+try:
+    from ultralytics import YOLO
+    print_realtime("✅ 成功导入ultralytics YOLO")
+except ImportError as e:
+    print_realtime(f"⚠️ 导入ultralytics失败: {e}")
+    YOLO = None
+
+# 导入load_yolo_model函数
+try:
+    from utils import load_yolo_model
+    print_realtime("✅ 成功导入load_yolo_model函数")
+except ImportError:
+    try:
+        # 尝试从项目根目录导入
+        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
+        if project_root not in sys.path:
+            sys.path.insert(0, project_root)
+        from utils import load_yolo_model
+        print_realtime("✅ 从项目根目录成功导入load_yolo_model函数")
+    except ImportError:
+        print_realtime("⚠️ 无法导入load_yolo_model函数")
+        load_yolo_model = None
+
+def load_yolo_model_for_detection(model_path=None):
+    """加载YOLO模型用于AI检测"""
+    global model
+
+    if YOLO is None:
+        print_realtime("❌ 无法加载YOLO模型：ultralytics未正确导入")
+        return False
+
+    try:
+        if model_path and os.path.exists(model_path):
+            print_realtime(f"🔄 加载指定模型: {model_path}")
+            model = YOLO(model_path)
+        elif load_yolo_model is not None:
+            # 使用项目的load_yolo_model函数
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            try:
+                model = load_yolo_model(
+                    base_dir=base_dir,
+                    model_class=YOLO,
+                    specific_model=None,
+                    exit_on_failure=False
+                )
+                if model is not None:
+                    print_realtime("✅ 成功使用load_yolo_model加载模型")
+                else:
+                    print_realtime("⚠️ load_yolo_model返回None")
+                    return False
+            except Exception as e:
+                print_realtime(f"⚠️ load_yolo_model加载失败: {e}")
+                return False
+        else:
+            # 尝试查找默认模型路径
+            possible_paths = [
+                os.path.join(os.path.dirname(__file__), "datasets", "train", "weights", "best.pt"),
+                os.path.join(os.path.dirname(__file__), "best.pt"),
+                os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "models", "best.pt")
+            ]
+
+            model_found = False
+            for path in possible_paths:
+                if os.path.exists(path):
+                    print_realtime(f"🔄 找到并加载模型: {path}")
+                    model = YOLO(path)
+                    model_found = True
+                    break
+
+            if not model_found:
+                print_realtime("⚠️ 未找到可用的YOLO模型文件")
+                return False
+
+        print_realtime(f"✅ YOLO模型加载成功: {type(model)}")
+        if model is not None and hasattr(model, 'names'):
+            print_realtime(f"📋 模型类别: {model.names}")
+        return True
+
+    except Exception as e:
+        print_realtime(f"❌ YOLO模型加载失败: {e}")
+        model = None
+        return False
+
+def detect_buttons(frame, target_class=None):
+    """检测按钮，与legacy版本保持一致"""
+    global model
+
+    if model is None:
+        print_realtime("❌ 错误：YOLO模型未加载，无法进行检测")
+        return False, (None, None, None)
+
+    try:
+        frame_for_detection = cv2.resize(frame, (640, 640))
+        print_realtime(f"🔍 开始检测目标类别: {target_class}")
+
+        # 使用当前设备进行预测
+        results = model.predict(source=frame_for_detection, imgsz=640, conf=0.6, verbose=False)
+
+        # 检查预测结果是否有效
+        if results is None or len(results) == 0:
+            print_realtime("⚠️ 警告：模型预测结果为空")
+            return False, (None, None, None)
+
+        # 检查结果中是否有boxes
+        if not hasattr(results[0], 'boxes') or results[0].boxes is None:
+            print_realtime("⚠️ 警告：预测结果中没有检测框")
+            return False, (None, None, None)
+
+        orig_h, orig_w = frame.shape[:2]
+        scale_x, scale_y = orig_w / 640, orig_h / 640
+
+        for box in results[0].boxes:
+            cls_id = int(box.cls.item())
+            # 检查模型是否有names属性
+            if hasattr(model, 'names') and model.names is not None:
+                detected_class = model.names[cls_id]
+            else:
+                detected_class = f"class_{cls_id}"
+
+            if detected_class == target_class:
+                box_x, box_y = box.xywh[0][:2].tolist()
+                x, y = box_x * scale_x, box_y * scale_y
+                return True, (x, y, detected_class)
+
+    except Exception as e:
+        print_realtime(f"按钮检测失败: {e}")
+
+    return False, (None, None, None)
+
+# 全局修补shutil.copytree以解决Airtest静态资源复制问题
+print_realtime("🔧 应用全局shutil.copytree修补，防止静态资源复制冲突")
+_original_copytree = shutil.copytree
+
+def _patched_copytree(src, dst, symlinks=False, ignore=None, copy_function=shutil.copy2,
+                     ignore_dangling_symlinks=False, dirs_exist_ok=True):
+    """全局修补的copytree函数，自动处理目录已存在的情况"""
+    try:
+        return _original_copytree(src, dst, symlinks=symlinks, ignore=ignore,
+                                 copy_function=copy_function,
+                                 ignore_dangling_symlinks=ignore_dangling_symlinks,
+                                 dirs_exist_ok=True)
+    except TypeError:
+        try:
+            if os.path.exists(dst):
+                shutil.rmtree(dst)
+            return _original_copytree(src, dst, symlinks=symlinks, ignore=ignore,
+                                     copy_function=copy_function,
+                                     ignore_dangling_symlinks=ignore_dangling_symlinks)
+        except Exception as e:
+            print_realtime(f"🔧 全局copytree修补失败，忽略错误继续执行: {src} -> {dst}, 错误: {e}")
+            if os.path.exists(dst):
+                return dst
+            raise e
+    except Exception as e:
+        print_realtime(f"🔧 全局copytree处理异常: {src} -> {dst}, 错误: {e}")
+        if os.path.exists(dst):
+            return dst
+        raise e
+
+# 应用全局修补
+shutil.copytree = _patched_copytree
+print_realtime("✅ 全局shutil.copytree修补已应用")
+
+# 初始化统一报告管理系统
+REPORT_MANAGER = None
+REPORT_GENERATOR = None
+
+if ReportManager and ReportGenerator:
+    try:
+        # 获取项目根目录
+        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        REPORT_MANAGER = ReportManager(base_dir)
+        REPORT_GENERATOR = ReportGenerator(REPORT_MANAGER)
+        print_realtime("✅ 统一报告管理系统初始化成功")
+    except Exception as e:
+        print_realtime(f"⚠️ 统一报告管理系统初始化失败: {e}")
+
+# 统一报告目录配置（向后兼容）
+if REPORT_MANAGER:
+    STATICFILES_REPORTS_DIR = str(REPORT_MANAGER.reports_root)
+    DEVICE_REPORTS_DIR = str(REPORT_MANAGER.device_reports_dir)
+    SUMMARY_REPORTS_DIR = str(REPORT_MANAGER.summary_reports_dir)
+else:
+    # 回退到旧的配置
+    STATICFILES_REPORTS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "staticfiles", "reports")
+    DEVICE_REPORTS_DIR = os.path.join(STATICFILES_REPORTS_DIR, "ui_run", "WFGameAI.air", "log")
+    SUMMARY_REPORTS_DIR = os.path.join(STATICFILES_REPORTS_DIR, "summary_reports")
+
+# 默认路径
+DEFAULT_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DEFAULT_TESTCASE_DIR = os.path.join(DEFAULT_BASE_DIR, "testcase")
+
+# 全局锁
+REPORT_GENERATION_LOCK = Lock()
+
+# 导入配置管理
+try:
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from config_import import config_manager, ConfigManager
+except ImportError as e:
+    print_realtime(f"配置导入失败: {e}")
+    config_manager = None
+
 
 def normalize_script_path(path_input):
     """规范化脚本路径，支持相对路径和绝对路径"""
@@ -515,10 +722,20 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
         else:
             print_realtime(f"⚠️ 设备 {device_name} 账号分配失败")
     except Exception as e:
-        print_realtime(f"❌ 账号分配过程中出错: {e}")
+        print_realtime(f"❌ 账号分配过程中出错: {e}")    # 确保模型已加载，如果没有则尝试加载
+    global model
+    if model is None:
+        print_realtime("⚠️ 检测到模型未加载，尝试重新加载...")
+        load_yolo_model_for_detection()
 
-    # 初始化ActionProcessor
-    action_processor = ActionProcessor(device, device_name, log_txt_path, lambda: None)    # 设置设备账号
+    # 检查检测函数是否可用
+    if model is not None:
+        print_realtime("✅ YOLO模型可用，AI检测功能启用")
+        detect_func = detect_buttons
+    else:
+        print_realtime("❌ YOLO模型不可用，AI检测功能禁用")
+        detect_func = lambda frame, target_class=None: (False, (None, None, None))    # 初始化ActionProcessor
+    action_processor = ActionProcessor(device, device_name=device_name, log_txt_path=log_txt_path, detect_buttons_func=detect_func)# 设置设备账号
     if device_account:
         action_processor.set_device_account(device_account)
 
@@ -537,9 +754,7 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
         }
     }
     with open(log_txt_path, "a", encoding="utf-8") as f:
-        f.write(json.dumps(start_entry, ensure_ascii=False) + "\n")
-
-    # 获取初始截图
+        f.write(json.dumps(start_entry, ensure_ascii=False) + "\n")    # 获取初始截图
     try:
         screenshot = get_device_screenshot(device)
         if screenshot:
@@ -549,7 +764,15 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
             screenshot_filename = f"{screenshot_timestamp}.jpg"
             screenshot_path = os.path.join(log_dir, screenshot_filename)
             cv2.imwrite(screenshot_path, frame)
+
+            # 创建缩略图
+            thumbnail_filename = f"{screenshot_timestamp}_small.jpg"
+            thumbnail_path = os.path.join(log_dir, thumbnail_filename)
+            small_frame = cv2.resize(frame, (0, 0), fx=0.3, fy=0.3)
+            cv2.imwrite(thumbnail_path, small_frame, [cv2.IMWRITE_JPEG_QUALITY, 60])
+
             print_realtime(f"保存初始截图: {screenshot_path}")
+            print_realtime(f"保存初始缩略图: {thumbnail_path}")
     except Exception as e:
         print_realtime(f"获取初始截图失败: {e}")
 
@@ -724,11 +947,80 @@ def load_json_data(run_all):
         }
 
 
+def try_log_screen(device, log_dir, quality=60, max_size=None):
+    """
+    截取屏幕截图并创建缩略图，用于日志记录
+
+    Args:
+        device: 设备对象
+        log_dir: 日志目录
+        quality: JPEG质量 (1-100)
+        max_size: 最大尺寸限制 (width, height)
+
+    Returns:
+        dict: 包含screenshot文件名和分辨率信息
+    """
+    try:
+        # 获取设备截图
+        screenshot = get_device_screenshot(device)
+        if not screenshot:
+            return None
+
+        # 转换为OpenCV格式
+        frame = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
+
+        # 应用最大尺寸限制
+        if max_size:
+            height, width = frame.shape[:2]
+            max_width, max_height = max_size
+            if width > max_width or height > max_height:
+                scale = min(max_width / width, max_height / height)
+                new_width = int(width * scale)
+                new_height = int(height * scale)
+                frame = cv2.resize(frame, (new_width, new_height))
+
+        # 生成时间戳文件名
+        timestamp = time.time()
+        screenshot_timestamp = int(timestamp * 1000)
+        screenshot_filename = f"{screenshot_timestamp}.jpg"
+        screenshot_path = os.path.join(log_dir, screenshot_filename)
+
+        # 保存主截图
+        cv2.imwrite(screenshot_path, frame, [cv2.IMWRITE_JPEG_QUALITY, quality])
+
+        # 创建缩略图
+        thumbnail_filename = f"{screenshot_timestamp}_small.jpg"
+        thumbnail_path = os.path.join(log_dir, thumbnail_filename)
+        small_frame = cv2.resize(frame, (0, 0), fx=0.3, fy=0.3)
+        cv2.imwrite(thumbnail_path, small_frame, [cv2.IMWRITE_JPEG_QUALITY, 60])
+
+        # 获取分辨率
+        height, width = frame.shape[:2]
+        resolution = [width, height]
+
+        return {
+            "screen": screenshot_filename,
+            "resolution": resolution
+        }
+
+    except Exception as e:
+        print_realtime(f"try_log_screen失败: {e}")
+        return None
+
+
 # 主要函数和命令行参数处理保持不变...
 def main():
     """主函数 - 支持README中的完整命令格式"""
+    # 加载YOLO模型用于AI检测
+    print_realtime("🔄 正在加载YOLO模型...")
+    model_loaded = load_yolo_model_for_detection()
+    if model_loaded:
+        print_realtime("✅ YOLO模型加载成功，AI检测功能可用")
+    else:
+        print_realtime("⚠️ YOLO模型加载失败，AI检测功能不可用")
+
     # 使用自定义参数解析以支持复杂的脚本参数格式
-    import sys    # 检查是否有--script参数
+    import sys# 检查是否有--script参数
     if '--script' not in sys.argv:
         print_realtime("❌ 错误: 必须指定 --script 参数")
         print_realtime("用法示例:")
@@ -761,17 +1053,30 @@ def main():
         print_realtime("❌ 以下脚本文件不存在:")
         for path in missing_scripts:
             print_realtime(f"  - {path}")
-        return    # 获取连接的设备
+        return
+
+    # 获取连接的设备
     try:
         devices = adb.device_list()
         if not devices:
             print_realtime("❌ 未找到连接的设备")
-            return        print_realtime(f"📱 找到 {len(devices)} 个设备")
+            return
+
+        print_realtime(f"📱 找到 {len(devices)} 个设备")
+
+        # 最终检查模型状态
+        global model
+        if model is not None:
+            print_realtime("✅ 模型状态检查通过，AI检测功能可用")
+        else:
+            print_realtime("⚠️ 模型状态检查失败，将使用备用检测模式")
 
         # 收集实际处理的设备名称列表，用于生成报告
         processed_device_names = []
         # 收集本次执行创建的设备报告目录路径
-        current_execution_device_dirs = []# 为每个设备执行回放
+        current_execution_device_dirs = []
+
+        # 为每个设备执行回放
         for device in devices:
             device_name = get_device_name(device)
 

@@ -16,6 +16,12 @@ from app_lifecycle_manager import AppLifecycleManager
 from app_permission_manager import integrate_with_app_launch
 from enhanced_device_preparation_manager import EnhancedDevicePreparationManager
 
+# Import try_log_screen function for thumbnail generation
+try:
+    from replay_script import try_log_screen
+except ImportError:
+    try_log_screen = None
+
 # Import the screenshot helper function
 def get_device_screenshot(device):
     """
@@ -1115,6 +1121,52 @@ class ActionProcessor:
                     context.device.shell(f"input tap {int(x)} {int(y)}")
                     print(f"✅ AI检测点击成功: {detected_class}，位置: ({int(x)}, {int(y)})")
 
+                    # 生成带缩略图的截图日志
+                    screen_data = None
+                    if try_log_screen and hasattr(context, 'screenshot_dir') and context.screenshot_dir:
+                        screen_result = try_log_screen(context.device, context.screenshot_dir)
+                        if screen_result:
+                            height, width = frame.shape[:2]
+                            screen_data = {
+                                "src": screen_result["screen"],
+                                "_filepath": screen_result["screen"],
+                                "thumbnail": screen_result["screen"].replace(".jpg", "_small.jpg"),
+                                "resolution": screen_result["resolution"],
+                                "pos": [[int(x), int(y)]],
+                                "vector": [],
+                                "confidence": 0.85,
+                                "rect": [{
+                                    "left": max(0, int(x) - 50),
+                                    "top": max(0, int(y) - 50),
+                                    "width": 100,
+                                    "height": 100
+                                }]
+                            }
+
+                    # 记录触摸操作日志
+                    timestamp = time.time()
+                    touch_entry = {
+                        "tag": "function",
+                        "depth": 1,
+                        "time": timestamp,
+                        "data": {
+                            "name": "touch",
+                            "call_args": {"v": [int(x), int(y)]},
+                            "start_time": timestamp,
+                            "ret": [int(x), int(y)],
+                            "end_time": timestamp + 0.1,
+                            "desc": step_remark or f"点击{detected_class}",
+                            "title": f"#{step_remark or f'点击{detected_class}'}"
+                        }
+                    }
+
+                    # 添加screenshot数据到entry中
+                    if screen_data:
+                        touch_entry["data"]["screen"] = screen_data
+
+                    # 写入日志
+                    self._write_log_entry(touch_entry)
+
                     return ActionResult(
                         success=True,
                         message="AI detection click completed",
@@ -1161,18 +1213,70 @@ class ActionProcessor:
             rel_y = float(step["relative_y"])
             abs_x = int(width * rel_x)
             abs_y = int(height * rel_y)
-
             print(f"执行备选点击: 相对位置 ({rel_x}, {rel_y}) -> 绝对位置 ({abs_x}, {abs_y})")
 
             # 执行点击操作
             context.device.shell(f"input tap {abs_x} {abs_y}")
+
+            # 生成带缩略图的截图日志
+            screen_data = None
+            if try_log_screen and hasattr(context, 'screenshot_dir') and context.screenshot_dir:
+                screen_result = try_log_screen(context.device, context.screenshot_dir)
+                if screen_result:
+                    screen_data = {
+                        "src": screen_result["screen"],
+                        "_filepath": screen_result["screen"],
+                        "thumbnail": screen_result["screen"].replace(".jpg", "_small.jpg"),
+                        "resolution": screen_result["resolution"],
+                        "pos": [[abs_x, abs_y]],
+                        "vector": [],
+                        "confidence": 1.0,
+                        "rect": [{
+                            "left": max(0, abs_x - 50),
+                            "top": max(0, abs_y - 50),
+                            "width": 100,
+                            "height": 100
+                        }]
+                    }
+
+            # 记录触摸操作日志
+            if hasattr(context, 'log_txt_path'):
+                import time
+                timestamp = time.time()
+                touch_entry = {
+                    "tag": "function",
+                    "depth": 1,
+                    "time": timestamp,
+                    "data": {
+                        "name": "touch",
+                        "call_args": {"v": [abs_x, abs_y]},
+                        "start_time": timestamp,
+                        "ret": [abs_x, abs_y],
+                        "end_time": timestamp + 0.1,
+                        "desc": step_remark or f"备选点击({rel_x:.3f}, {rel_y:.3f})",
+                        "title": f"#{step_remark or f'备选点击({rel_x:.3f}, {rel_y:.3f})'}"
+                    }
+                }
+
+                # 添加screenshot数据到entry中
+                if screen_data:
+                    touch_entry["data"]["screen"] = screen_data
+
+                # 写入日志
+                try:
+                    log_entry_str = json.dumps(touch_entry, ensure_ascii=False, separators=(',', ':'))
+                    with open(context.log_txt_path, "a", encoding="utf-8") as f:
+                        f.write(log_entry_str + "\n")
+                except Exception as log_e:
+                    print(f"⚠️ 警告: 写入日志失败: {log_e}")
 
             return ActionResult(
                 success=True,
                 message="Fallback click completed",
                 details={
                     "relative_coordinates": (rel_x, rel_y),
-                    "absolute_coordinates": (abs_x, abs_y)
+                    "absolute_coordinates": (abs_x, abs_y),
+                    "has_screenshot": screen_data is not None
                 }
             )
 
