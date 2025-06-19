@@ -5899,3 +5899,15 @@ INFO 2025-06-19 13:46:08,078 basehttp 74764 119284 "POST /api/reports/summary_li
 INFO 2025-06-19 13:46:08,623 basehttp 74764 119284 "POST /api/reports/summary_list/ HTTP/1.1" 200 4821
 INFO 2025-06-19 14:23:35,533 basehttp 74764 87264 "POST /api/scripts/replay/ HTTP/1.1" 200 873
 INFO 2025-06-19 14:36:17,461 basehttp 74764 39564 "POST /api/scripts/replay/ HTTP/1.1" 200 860
+INFO 2025-06-19 14:39:40,818 basehttp 74764 39564 "POST /api/reports/summary_list/ HTTP/1.1" 200 6264
+INFO 2025-06-19 14:39:52,203 basehttp 74764 39564 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-14-36-21/log.html HTTP/1.1" 200 15085
+INFO 2025-06-19 14:39:52,561 basehttp 74764 39564 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-14-36-21/1750315008750_small.jpg HTTP/1.1" 200 23419
+INFO 2025-06-19 14:39:52,565 basehttp 74764 64492 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-14-36-21/1750315118152_small.jpg HTTP/1.1" 200 43200
+INFO 2025-06-19 14:39:52,565 basehttp 74764 85676 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-14-36-21/1750315124370_small.jpg HTTP/1.1" 200 43678
+INFO 2025-06-19 14:39:52,565 basehttp 74764 116708 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-14-36-21/1750315108326_small.jpg HTTP/1.1" 200 60109
+INFO 2025-06-19 14:39:52,566 basehttp 74764 96172 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-14-36-21/1750315131014_small.jpg HTTP/1.1" 200 43908
+INFO 2025-06-19 14:39:54,311 basehttp 74764 96172 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-14-36-21/1750315108326.jpg HTTP/1.1" 200 538955
+INFO 2025-06-19 14:39:55,094 basehttp 74764 96172 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-14-36-21/1750315118152.jpg HTTP/1.1" 200 389118
+INFO 2025-06-19 14:39:58,426 basehttp 74764 96172 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-14-36-21/1750315124370.jpg HTTP/1.1" 200 391945
+INFO 2025-06-19 14:39:59,013 basehttp 74764 96172 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-14-36-21/1750315131014.jpg HTTP/1.1" 200 390802
+INFO 2025-06-19 14:42:51,252 basehttp 74764 96172 "POST /api/reports/summary_list/ HTTP/1.1" 200 4809
