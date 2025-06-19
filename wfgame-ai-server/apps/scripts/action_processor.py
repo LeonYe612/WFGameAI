@@ -11,10 +11,43 @@ import numpy as np
 import traceback
 import queue
 import os
-from enhanced_input_handler import EnhancedInputHandler
-from app_lifecycle_manager import AppLifecycleManager
-from app_permission_manager import integrate_with_app_launch
-from enhanced_device_preparation_manager import EnhancedDevicePreparationManager
+
+# 尝试导入相关模块，如果失败则使用占位符
+try:
+    from .enhanced_input_handler import EnhancedInputHandler
+except ImportError:
+    try:
+        from enhanced_input_handler import EnhancedInputHandler
+    except ImportError:
+        print("⚠️ 警告: 无法导入enhanced_input_handler，部分功能可能不可用")
+        EnhancedInputHandler = None
+
+try:
+    from .app_lifecycle_manager import AppLifecycleManager
+except ImportError:
+    try:
+        from app_lifecycle_manager import AppLifecycleManager
+    except ImportError:
+        print("⚠️ 警告: 无法导入app_lifecycle_manager，部分功能可能不可用")
+        AppLifecycleManager = None
+
+try:
+    from .app_permission_manager import integrate_with_app_launch
+except ImportError:
+    try:
+        from app_permission_manager import integrate_with_app_launch
+    except ImportError:
+        print("⚠️ 警告: 无法导入app_permission_manager，部分功能可能不可用")
+        integrate_with_app_launch = None
+
+try:
+    from .enhanced_device_preparation_manager import EnhancedDevicePreparationManager
+except ImportError:
+    try:
+        from enhanced_device_preparation_manager import EnhancedDevicePreparationManager
+    except ImportError:
+        print("⚠️ 警告: 无法导入enhanced_device_preparation_manager，部分功能可能不可用")
+        EnhancedDevicePreparationManager = None
 
 # Import try_log_screen function for thumbnail generation
 try:
@@ -134,8 +167,7 @@ class ActionResult:
 class ActionProcessor:
     """Action处理器类 - 支持新旧接口"""
 
-    def __init__(self, device, input_handler=None, ai_service=None, config=None,
-                 device_name=None, log_txt_path=None, detect_buttons_func=None):
+    def __init__(self, device, device_name=None, log_txt_path=None, detect_buttons_func=None, context=None):
         """
         初始化Action处理器 - 支持多种初始化方式
 
@@ -151,9 +183,9 @@ class ActionProcessor:
             detect_buttons_func: AI检测按钮的函数
         """
         self.device = device
-        self.input_handler = input_handler
-        self.ai_service = ai_service
-        self.config = config or {}
+        self.input_handler = None
+        self.ai_service = None
+        self.config = {}
 
         # 兼容旧接口
         self.device_name = device_name
@@ -249,11 +281,9 @@ class ActionProcessor:
     def _process_action_old(self, step, step_idx, log_dir):
         """使用旧接口处理action（兼容性）"""
         step_action = step.get("action", "click")
-        step_class = step.get("class", "")
-
-        # 处理特殊步骤类型
+        step_class = step.get("class", "")        # 处理特殊步骤类型
         if step_class == "delay":
-            return self._handle_delay(step, step_idx)
+            return self._handle_delay(step, step_idx, log_dir)
         elif step_class == "device_preparation":
             return self._handle_device_preparation(step, step_idx)
         elif step_class == "app_start":
@@ -285,13 +315,21 @@ class ActionProcessor:
             else:
                 return False, False, False
 
-    def _handle_delay(self, step, step_idx):
+    def _handle_delay(self, step, step_idx, log_dir=None):
         """处理延时步骤"""
         delay_seconds = step.get("params", {}).get("seconds", 1)
         step_remark = step.get("remark", "")
 
         print(f"延时 {delay_seconds} 秒: {step_remark}")
         time.sleep(delay_seconds)
+
+        # 创建screen对象以支持报告截图显示
+        screen_data = self._create_unified_screen_object(
+            log_dir,
+            pos_list=[],
+            confidence=1.0,
+            rect_info=[]
+        )
 
         # 记录延时日志
         timestamp = time.time()
@@ -304,9 +342,16 @@ class ActionProcessor:
                 "call_args": {"seconds": delay_seconds},
                 "start_time": timestamp - delay_seconds,
                 "ret": None,
-                "end_time": timestamp
+                "end_time": timestamp,
+                "desc": step_remark or f"延时 {delay_seconds} 秒",
+                "title": f"#{step_idx+1} {step_remark or f'延时 {delay_seconds} 秒'}"
             }
         }
+
+        # 添加screen对象到日志条目（如果可用）
+        if screen_data:
+            delay_entry["data"]["screen"] = screen_data
+
         self._write_log_entry(delay_entry)
 
         return True, True, True
@@ -326,34 +371,34 @@ class ActionProcessor:
 
         print(f"🔧 开始设备预处理: {step_remark}")
         print(f"📋 预处理参数: USB检查={check_usb}, 无线设置={setup_wireless}, 权限配置={configure_permissions}")
-        print(f"               屏幕锁定={handle_screen_lock}, 输入法设置={setup_input_method}, 保存日志={save_logs}")
+        print(f"屏幕锁定={handle_screen_lock}, 输入法设置={setup_input_method}, 保存日志={save_logs}")
 
         success = True
 
         try:
-            device_manager = EnhancedDevicePreparationManager(save_logs=save_logs)
+            device_manager = EnhancedDevicePreparationManager(save_logs=save_logs) if EnhancedDevicePreparationManager else None
 
             # 执行预处理步骤
-            if check_usb:
+            if check_usb and device_manager:
                 print("🔍 执行USB连接检查...")
                 if not device_manager._check_usb_connections():
                     print("❌ USB连接检查失败")
                     success = False
 
-            if success and setup_wireless:
+            if success and setup_wireless and device_manager:
                 print("📶 配置无线连接...")
                 if not device_manager._setup_wireless_connection(self.device.serial):
                     print("⚠️ 无线连接配置失败，但继续执行")
 
-            if success and configure_permissions:
+            if success and configure_permissions and device_manager:
                 print("🔒 配置设备权限...")
                 device_manager._fix_device_permissions(self.device.serial)
 
-            if success and handle_screen_lock:
+            if success and handle_screen_lock and device_manager:
                 print("🔓 处理屏幕锁定...")
                 device_manager._handle_screen_lock(self.device.serial)
 
-            if success and setup_input_method:
+            if success and setup_input_method and device_manager:
                 print("⌨️ 设置输入法...")
                 if not device_manager._wake_up_yousite(self.device.serial):
                     print("⚠️ 输入法设置失败，但继续执行")
@@ -422,29 +467,32 @@ class ActionProcessor:
             app_identifier = app_name or package_name
 
             print(f"🚀 正在启动应用: {app_identifier}")            # 使用AppLifecycleManager来实际启动应用
-            app_manager = AppLifecycleManager()
+            app_manager = AppLifecycleManager() if AppLifecycleManager else None
 
             # 现在所有信息都在脚本中提供，直接使用package_name启动
-            if package_name:
+            if package_name and app_manager:
                 print(f"🔍 使用脚本中提供的包名直接启动: {package_name}")
                 startup_success = app_manager.force_start_by_package(package_name, self.device.serial)
             else:
-                print(f"❌ 缺少package_name参数，无法启动应用")
+                print(f"❌ 缺少package_name参数或AppLifecycleManager不可用，无法启动应用")
                 startup_success = False
             print(f"应用启动命令执行: {'成功' if startup_success else '失败'}")            # 步骤2: 如果应用启动成功，等待一下然后处理权限
             if startup_success:
                 print("⏱️ 等待应用完全启动...")
                 time.sleep(5)  # 增加等待时间到5秒，给应用更多时间加载权限弹窗
 
-                print("🔍 开始权限弹窗检测和处理...")
-                # 处理权限弹窗
+                print("🔍 开始权限弹窗检测和处理...")                # 处理权限弹窗
                 try:
-                    result = integrate_with_app_launch(
-                        self.device.serial,
-                        app_identifier,
-                        auto_allow_permissions=True
-                    )
-                    print(f"权限处理结果: {result}")
+                    if integrate_with_app_launch:
+                        result = integrate_with_app_launch(
+                            self.device.serial,
+                            app_identifier,
+                            auto_allow_permissions=True
+                        )
+                        print(f"权限处理结果: {result}")
+                    else:
+                        print("⚠️ integrate_with_app_launch不可用，跳过权限处理")
+                        result = True
                 except Exception as e:
                     print(f"权限处理发生异常: {e}")
                     print("假设无权限弹窗，继续执行")
@@ -502,20 +550,20 @@ class ActionProcessor:
         print(f"停止应用 - {step_remark}")
 
         try:
-            app_manager = AppLifecycleManager()
+            app_manager = AppLifecycleManager() if AppLifecycleManager else None
 
-            if package_name:
+            if package_name and app_manager:
                 # 直接使用包名停止应用
                 print(f"使用包名停止应用: {package_name}")
                 result = app_manager.force_stop_by_package(package_name, self.device.serial)
                 call_args = {"package_name": package_name}
-            elif app_name:
+            elif app_name and app_manager:
                 # 使用模板名停止应用
                 print(f"使用模板名停止应用: {app_name}")
                 result = app_manager.stop_app(app_name, self.device.serial)
                 call_args = {"app_name": app_name}
             else:
-                print("错误: 未提供app_name或package_name参数")
+                print("错误: 未提供app_name或package_name参数，或AppLifecycleManager不可用")
                 return True, False, True
 
             print(f"应用停止结果: {result}")
@@ -669,7 +717,13 @@ class ActionProcessor:
         print(f"   - 等待结果: {wait_result}")
         print(f"   - 总等待时间: {total_wait_time:.1f}秒")
         print(f"⏱️ 步骤结束时间: {time.strftime('%H:%M:%S', time.localtime())}")
-        print(f"{'='*60}")
+        print(f"{'='*60}")        # 创建screen对象以支持报告截图显示
+        screen_data = self._create_unified_screen_object(
+            log_dir,
+            pos_list=[],
+            confidence=confidence,
+            rect_info=[]
+        )
 
         # 记录条件等待日志
         wait_entry = {
@@ -695,6 +749,11 @@ class ActionProcessor:
                 "title": f"#{step_idx+1} {step_remark or '条件等待操作'}"
             }
         }
+
+        # 添加screen对象到日志条目（如果可用）
+        if screen_data:
+            wait_entry["data"]["screen"] = screen_data
+
         self._write_log_entry(wait_entry)
 
         return True, True, True
@@ -770,7 +829,13 @@ class ActionProcessor:
         print(f"   - 元素已消失: {element_disappeared}")
         print(f"   - 等待结果: {wait_result}")
         print(f"   - 总等待时间: {total_wait_time:.1f}秒")
-        print(f"{'='*60}")
+        print(f"{'='*60}")        # 创建screen对象以支持报告截图显示
+        screen_data = self._create_unified_screen_object(
+            log_dir,
+            pos_list=[],
+            confidence=confidence,
+            rect_info=[]
+        )
 
         # 记录条件等待日志
         wait_entry = {
@@ -796,6 +861,11 @@ class ActionProcessor:
                 "title": f"#{step_idx+1} {step_remark or '等待消失操作'}"
             }
         }
+
+        # 添加screen对象到日志条目（如果可用）
+        if screen_data:
+            wait_entry["data"]["screen"] = screen_data
+
         self._write_log_entry(wait_entry)
 
         return True, True, True
@@ -812,11 +882,28 @@ class ActionProcessor:
         if start_x is None or start_y is None or end_x is None or end_y is None:
             print(f"错误: swipe 步骤缺少必要的坐标参数")
             return True, False, True
-
         print(f"执行滑动操作: ({start_x}, {start_y}) -> ({end_x}, {end_y}), 持续{duration}ms: {step_remark}")
+
+        # 获取截图目录
+        log_dir = None
+        if self.log_txt_path:
+            log_dir = os.path.dirname(self.log_txt_path)
 
         # 执行ADB滑动命令
         self.device.shell(f"input swipe {int(start_x)} {int(start_y)} {int(end_x)} {int(end_y)} {int(duration)}")
+
+        # 创建screen对象以支持报告截图显示
+        screen_data = self._create_unified_screen_object(
+            log_dir,
+            pos_list=[[int(start_x), int(start_y)], [int(end_x), int(end_y)]],
+            confidence=1.0,
+            rect_info=[{
+                "left": min(int(start_x), int(end_x)) - 20,
+                "top": min(int(start_y), int(end_y)) - 20,
+                "width": abs(int(end_x) - int(start_x)) + 40,
+                "height": abs(int(end_y) - int(start_y)) + 40
+            }]
+        )
 
         # 记录滑动日志
         timestamp = time.time()
@@ -841,6 +928,11 @@ class ActionProcessor:
                 "title": f"#{step_idx+1} {step_remark or '滑动操作'}"
             }
         }
+
+        # 添加screen对象到日志条目（如果可用）
+        if screen_data:
+            swipe_entry["data"]["screen"] = screen_data
+
         self._write_log_entry(swipe_entry)
 
         # 滑动后等待一段时间让UI响应
@@ -873,14 +965,29 @@ class ActionProcessor:
 
         print(f"执行文本输入 - {step_remark}")
         try:
-            # 初始化增强输入处理器
-            input_handler = EnhancedInputHandler(self.device.serial)
+            # 获取截图目录
+            log_dir = None
+            if self.log_txt_path:
+                log_dir = os.path.dirname(self.log_txt_path)            # 初始化增强输入处理器
+            if EnhancedInputHandler:
+                input_handler = EnhancedInputHandler(self.device.serial)
 
-            # 执行输入动作
-            success = input_handler.input_text_with_focus_detection(input_text, target_selector)
+                # 执行输入动作
+                success = input_handler.input_text_with_focus_detection(input_text, target_selector)
+            else:
+                print("⚠️ EnhancedInputHandler不可用，无法执行文本输入")
+                return True, False, True
 
             if success:
                 print(f"✅ 文本输入成功")
+
+                # 创建screen对象以支持报告截图显示
+                screen_data = self._create_unified_screen_object(
+                    log_dir,
+                    pos_list=[],
+                    confidence=1.0,
+                    rect_info=[]
+                )
 
                 # 记录输入操作日志
                 timestamp = time.time()
@@ -901,6 +1008,11 @@ class ActionProcessor:
                         "title": f"#{step_idx+1} {step_remark or '文本输入操作'}"
                     }
                 }
+
+                # 添加screen对象到日志条目（如果可用）
+                if screen_data:
+                    input_entry["data"]["screen"] = screen_data
+
                 self._write_log_entry(input_entry)
 
                 return True, True, True
@@ -912,7 +1024,6 @@ class ActionProcessor:
             print(f"❌ 错误: 文本输入过程中发生异常: {e}")
             traceback.print_exc()
             return True, False, True
-
     def _handle_checkbox(self, step, step_idx):
         """处理checkbox勾选步骤"""
         target_selector = step.get("target_selector", {})
@@ -921,11 +1032,18 @@ class ActionProcessor:
         print(f"执行checkbox勾选操作 - {step_remark}")
 
         try:
-            # 初始化增强输入处理器
-            input_handler = EnhancedInputHandler(self.device.serial)
+            # 获取截图目录
+            log_dir = None
+            if self.log_txt_path:
+                log_dir = os.path.dirname(self.log_txt_path)            # 初始化增强输入处理器
+            if EnhancedInputHandler:
+                input_handler = EnhancedInputHandler(self.device.serial)
 
-            # 获取UI结构
-            xml_content = input_handler.get_ui_hierarchy()
+                # 获取UI结构
+                xml_content = input_handler.get_ui_hierarchy()
+            else:
+                print("⚠️ EnhancedInputHandler不可用，无法执行checkbox操作")
+                return True, False, True
             if xml_content:
                 elements = input_handler._parse_ui_xml(xml_content)
 
@@ -936,6 +1054,14 @@ class ActionProcessor:
 
                     if success:
                         print(f"✅ checkbox勾选成功")
+
+                        # 创建screen对象以支持报告截图显示
+                        screen_data = self._create_unified_screen_object(
+                            log_dir,
+                            pos_list=[],
+                            confidence=1.0,
+                            rect_info=[]
+                        )
 
                         # 记录checkbox操作日志
                         timestamp = time.time()
@@ -954,7 +1080,10 @@ class ActionProcessor:
                                 "desc": step_remark or "勾选checkbox操作",
                                 "title": f"#{step_idx+1} {step_remark or '勾选checkbox操作'}"
                             }
-                        }
+                        }                        # 添加screen对象到日志条目（如果可用）
+                        if screen_data:
+                            checkbox_entry["data"]["screen"] = screen_data
+
                         self._write_log_entry(checkbox_entry)
 
                         return True, True, True
@@ -972,7 +1101,6 @@ class ActionProcessor:
             print(f"❌ 错误: checkbox勾选过程中发生异常: {e}")
             traceback.print_exc()
             return True, False, True
-
     def _handle_click_target(self, step, step_idx):
         """处理通用目标点击步骤"""
         target_selector = step.get("target_selector", {})
@@ -982,14 +1110,29 @@ class ActionProcessor:
         print(f"目标选择器: {target_selector}")
 
         try:
-            # 初始化增强输入处理器
-            input_handler = EnhancedInputHandler(self.device.serial)
+            # 获取截图目录
+            log_dir = None
+            if self.log_txt_path:
+                log_dir = os.path.dirname(self.log_txt_path)            # 初始化增强输入处理器
+            if EnhancedInputHandler:
+                input_handler = EnhancedInputHandler(self.device.serial)
 
-            # 执行点击目标动作
-            success = input_handler.perform_click_target_action(target_selector)
+                # 执行点击目标动作
+                success = input_handler.perform_click_target_action(target_selector)
+            else:
+                print("⚠️ EnhancedInputHandler不可用，无法执行点击目标操作")
+                return True, False, True
 
             if success:
                 print(f"✅ 点击目标操作成功")
+
+                # 创建screen对象以支持报告截图显示
+                screen_data = self._create_unified_screen_object(
+                    log_dir,
+                    pos_list=[],
+                    confidence=1.0,
+                    rect_info=[]
+                )
 
                 # 记录点击目标操作日志
                 timestamp = time.time()
@@ -1009,6 +1152,11 @@ class ActionProcessor:
                         "title": f"#{step_idx+1} {step_remark or '点击目标操作'}"
                     }
                 }
+
+                # 添加screen对象到日志条目（如果可用）
+                if screen_data:
+                    click_entry["data"]["screen"] = screen_data
+
                 self._write_log_entry(click_entry)
 
                 return True, True, True
@@ -1044,19 +1192,34 @@ class ActionProcessor:
             else:
                 print(f"❌ 错误: 设备 {self.device_name} 没有分配账号，无法替换密码参数")
                 return True, False, True
-
-        print(f"执行完整自动登录流程 - {step_remark}")
+            print(f"执行完整自动登录流程 - {step_remark}")
         print(f"用户名: {username}")
         print(f"密码: {'*' * len(password)}")
 
-        try:            # 初始化增强输入处理器
-            input_handler = EnhancedInputHandler(self.device.serial)
+        try:
+            # 获取截图目录
+            log_dir = None
+            if self.log_txt_path:
+                log_dir = os.path.dirname(self.log_txt_path)            # 初始化增强输入处理器
+            if EnhancedInputHandler:
+                input_handler = EnhancedInputHandler(self.device.serial)
 
-            # 执行完整的自动登录流程
-            success = input_handler.perform_auto_login(username, password)
+                # 执行完整的自动登录流程
+                success = input_handler.perform_auto_login(username, password)
+            else:
+                print("⚠️ EnhancedInputHandler不可用，无法执行自动登录")
+                return True, False, True
 
             if success:
                 print(f"✅ 完整自动登录流程执行成功")
+
+                # 创建screen对象以支持报告截图显示
+                screen_data = self._create_unified_screen_object(
+                    log_dir,
+                    pos_list=[],
+                    confidence=1.0,
+                    rect_info=[]
+                )
 
                 # 记录自动登录操作日志
                 timestamp = time.time()
@@ -1077,6 +1240,11 @@ class ActionProcessor:
                         "title": f"#{step_idx+1} {step_remark or '完整自动登录操作'}"
                     }
                 }
+
+                # 添加screen对象到日志条目（如果可用）
+                if screen_data:
+                    auto_login_entry["data"]["screen"] = screen_data
+
                 self._write_log_entry(auto_login_entry)
 
                 return True, True, True
@@ -1088,6 +1256,83 @@ class ActionProcessor:
             print(f"❌ 错误: 自动登录过程中发生异常: {e}")
             traceback.print_exc()
             return True, False, True
+
+    def _create_unified_screen_object(self, log_dir, pos_list=None, confidence=0.85, rect_info=None):
+        """
+        创建统一的screen对象，确保与Airtest报告格式兼容
+
+        Args:
+            log_dir: 日志目录
+            pos_list: 位置列表，格式为 [[x, y], ...]
+            confidence: 置信度
+            rect_info: 矩形信息，格式为 [{"left": x, "top": y, "width": w, "height": h}, ...]
+
+        Returns:
+            dict: screen对象或None
+        """
+        try:
+            if not log_dir:
+                return None
+
+            # 使用try_log_screen函数生成截图和缩略图
+            if try_log_screen and hasattr(self, 'device'):
+                screen_result = try_log_screen(self.device, log_dir)
+                if screen_result:
+                    # 构建完整的screen对象
+                    screen_object = {
+                        "src": screen_result["screen"],
+                        "_filepath": screen_result["screen"],
+                        "thumbnail": screen_result["screen"].replace(".jpg", "_small.jpg"),
+                        "resolution": screen_result["resolution"],
+                        "pos": pos_list or [],
+                        "vector": [],
+                        "confidence": confidence,
+                        "rect": rect_info or []
+                    }
+                    return screen_object
+
+            # 备用方案：直接使用get_device_screenshot
+            screenshot = get_device_screenshot(self.device)
+            if screenshot:
+                # 转换为OpenCV格式
+                frame = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
+
+                # 生成时间戳文件名
+                timestamp = time.time()
+                screenshot_timestamp = int(timestamp * 1000)
+                screenshot_filename = f"{screenshot_timestamp}.jpg"
+                screenshot_path = os.path.join(log_dir, screenshot_filename)
+
+                # 保存主截图
+                cv2.imwrite(screenshot_path, frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
+
+                # 创建缩略图
+                thumbnail_filename = f"{screenshot_timestamp}_small.jpg"
+                thumbnail_path = os.path.join(log_dir, thumbnail_filename)
+                small_frame = cv2.resize(frame, (0, 0), fx=0.3, fy=0.3)
+                cv2.imwrite(thumbnail_path, small_frame, [cv2.IMWRITE_JPEG_QUALITY, 60])
+
+                # 获取分辨率
+                height, width = frame.shape[:2]
+                resolution = [width, height]
+
+                # 构建screen对象
+                screen_object = {
+                    "src": screenshot_filename,
+                    "_filepath": screenshot_filename,
+                    "thumbnail": thumbnail_filename,
+                    "resolution": resolution,
+                    "pos": pos_list or [],
+                    "vector": [],
+                    "confidence": confidence,
+                    "rect": rect_info or []
+                }
+                return screen_object
+
+        except Exception as e:
+            print(f"❌ 创建screen对象失败: {e}")
+
+        return None
 
     # 新接口核心方法实现
     def _handle_ai_detection_click_new(self, step, context):

@@ -28,11 +28,45 @@ import random
 from pathlib import Path
 
 # 导入必要的模块
-from account_manager import get_account_manager
-from enhanced_input_handler import EnhancedInputHandler
-from app_permission_manager import integrate_with_app_launch
-from enhanced_device_preparation_manager import EnhancedDevicePreparationManager
-from action_processor import ActionProcessor, ActionContext, ActionResult
+try:
+    from account_manager import get_account_manager
+except ImportError:
+    try:
+        from .account_manager import get_account_manager
+    except ImportError:
+        from apps.scripts.account_manager import get_account_manager
+
+try:
+    from enhanced_input_handler import EnhancedInputHandler
+except ImportError:
+    try:
+        from .enhanced_input_handler import EnhancedInputHandler
+    except ImportError:
+        EnhancedInputHandler = None
+
+try:
+    from app_permission_manager import integrate_with_app_launch
+except ImportError:
+    try:
+        from .app_permission_manager import integrate_with_app_launch
+    except ImportError:
+        integrate_with_app_launch = None
+
+try:
+    from enhanced_device_preparation_manager import EnhancedDevicePreparationManager
+except ImportError:
+    try:
+        from .enhanced_device_preparation_manager import EnhancedDevicePreparationManager
+    except ImportError:
+        EnhancedDevicePreparationManager = None
+
+try:
+    from action_processor import ActionProcessor, ActionContext, ActionResult
+except ImportError:
+    try:
+        from .action_processor import ActionProcessor, ActionContext, ActionResult
+    except ImportError:
+        from apps.scripts.action_processor import ActionProcessor, ActionContext, ActionResult
 
 # 定义实时输出函数，确保日志立即显示
 def print_realtime(message):
