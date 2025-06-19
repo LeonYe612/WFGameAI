@@ -1101,23 +1101,36 @@ class ActionProcessor:
             print(f"❌ 错误: checkbox勾选过程中发生异常: {e}")
             traceback.print_exc()
             return True, False, True
-    def _handle_click_target(self, step, step_idx):
+    def _handle_click_target(self, step, step_idx=None):
         """处理通用目标点击步骤"""
+        if step_idx is None:
+            step_idx = 0
+        step_idx = int(step_idx)
         target_selector = step.get("target_selector", {})
         step_remark = step.get("remark", "")
 
         print(f"执行点击目标操作 - {step_remark}")
         print(f"目标选择器: {target_selector}")
 
+        # 获取截图目录
+        log_dir = None
+        if self.log_txt_path:
+            log_dir = os.path.dirname(self.log_txt_path)
+        input_handler = None
+        click_pos = []
         try:
-            # 获取截图目录
-            log_dir = None
-            if self.log_txt_path:
-                log_dir = os.path.dirname(self.log_txt_path)            # 初始化增强输入处理器
             if EnhancedInputHandler:
                 input_handler = EnhancedInputHandler(self.device.serial)
-
-                # 执行点击目标动作
+                # 获取UI结构和目标元素中心点
+                xml_content = input_handler.get_ui_hierarchy()
+                elements = input_handler._parse_ui_xml(xml_content) if xml_content else []
+                target_element = input_handler.find_custom_target_element(elements, target_selector) if elements else None
+                if target_element:
+                    bounds = target_element.get('bounds', '')
+                    coords = input_handler._parse_bounds(bounds) if bounds else None
+                    if coords:
+                        click_pos = [int(coords[0]), int(coords[1])]
+                # 执行点击
                 success = input_handler.perform_click_target_action(target_selector)
             else:
                 print("⚠️ EnhancedInputHandler不可用，无法执行点击目标操作")
@@ -1126,16 +1139,17 @@ class ActionProcessor:
             if success:
                 print(f"✅ 点击目标操作成功")
 
-                # 创建screen对象以支持报告截图显示
+                # 创建screen对象以支持报告截图显示，写入点击点
                 screen_data = self._create_unified_screen_object(
                     log_dir,
-                    pos_list=[],
+                    pos_list=[click_pos] if click_pos else [],
                     confidence=1.0,
                     rect_info=[]
                 )
 
                 # 记录点击目标操作日志
                 timestamp = time.time()
+                title_str = f"#1 {step_remark or '点击目标操作'}"
                 click_entry = {
                     "tag": "function",
                     "depth": 1,
@@ -1149,7 +1163,7 @@ class ActionProcessor:
                         "ret": {"success": True},
                         "end_time": timestamp + 1.0,
                         "desc": step_remark or "点击目标操作",
-                        "title": f"#{step_idx+1} {step_remark or '点击目标操作'}"
+                        "title": title_str
                     }
                 }
 
@@ -1623,37 +1637,76 @@ class ActionProcessor:
         print(f"执行点击目标操作 - {step_remark}")
         print(f"目标选择器: {target_selector}")
 
+        # 获取截图目录
+        log_dir = None
+        if self.log_txt_path:
+            log_dir = os.path.dirname(self.log_txt_path)
+        input_handler = None
+        click_pos = []
         try:
-            # 懒加载输入处理器
-            if not self.input_handler:
-                from enhanced_input_handler import EnhancedInputHandler
-                self.input_handler = EnhancedInputHandler(context.device.serial)
-
-            # 执行点击目标动作
-            success = self.input_handler.perform_click_target_action(target_selector)
+            if EnhancedInputHandler:
+                input_handler = EnhancedInputHandler(self.device.serial)
+                # 获取UI结构和目标元素中心点
+                xml_content = input_handler.get_ui_hierarchy()
+                elements = input_handler._parse_ui_xml(xml_content) if xml_content else []
+                target_element = input_handler.find_custom_target_element(elements, target_selector) if elements else None
+                if target_element:
+                    bounds = target_element.get('bounds', '')
+                    coords = input_handler._parse_bounds(bounds) if bounds else None
+                    if coords:
+                        click_pos = [int(coords[0]), int(coords[1])]
+                # 执行点击
+                success = input_handler.perform_click_target_action(target_selector)
+            else:
+                print("⚠️ EnhancedInputHandler不可用，无法执行点击目标操作")
+                return True, False, True
 
             if success:
                 print(f"✅ 点击目标操作成功")
-                return ActionResult(
-                    success=True,
-                    message=f"点击目标操作成功: {step_remark}",
-                    details={"target_selector": target_selector}
+
+                # 创建screen对象以支持报告截图显示，写入点击点
+                screen_data = self._create_unified_screen_object(
+                    log_dir,
+                    pos_list=[click_pos] if click_pos else [],
+                    confidence=1.0,
+                    rect_info=[]
                 )
+
+                # 记录点击目标操作日志
+                timestamp = time.time()
+                title_str = f"#1 {step_remark or '点击目标操作'}"
+                click_entry = {
+                    "tag": "function",
+                    "depth": 1,
+                    "time": timestamp,
+                    "data": {
+                        "name": "click_target",
+                        "call_args": {
+                            "target_selector": target_selector
+                        },
+                        "start_time": timestamp,
+                        "ret": {"success": True},
+                        "end_time": timestamp + 1.0,
+                        "desc": step_remark or "点击目标操作",
+                        "title": title_str
+                    }
+                }
+
+                # 添加screen对象到日志条目（如果可用）
+                if screen_data:
+                    click_entry["data"]["screen"] = screen_data
+
+                self._write_log_entry(click_entry)
+
+                return True, True, True
             else:
                 print(f"❌ 错误: 点击目标操作失败")
-                return ActionResult(
-                    success=False,
-                    message=f"点击目标操作失败: {step_remark}",
-                    details={"target_selector": target_selector}
-                )
+                return True, False, True
 
         except Exception as e:
             print(f"❌ 错误: 点击目标操作过程中发生异常: {e}")
-            return ActionResult(
-                success=False,
-                message=f"点击目标操作异常: {e}",
-                details={"exception": str(e), "target_selector": target_selector}
-            )
+            traceback.print_exc()
+            return True, False, True
 
     def _handle_auto_login_new(self, step, context):
         """自动登录 - 新接口"""
