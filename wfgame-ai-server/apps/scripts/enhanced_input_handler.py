@@ -44,14 +44,14 @@ class ElementPatterns:
         'class_types': ['android.widget.EditText'],
         'content_desc_keywords': ['密码', 'password'],
         'password_field': True
-    }
-
-    # 勾选框模式 - 直接识别checkbox控件，不依赖文本提示
+    }    # 勾选框模式 - 扩展匹配模式以提高识别率
     CHECKBOX_PATTERNS = {
-        'resource_id_keywords': ['agree', 'accept', 'checkbox', 'cb_ag', 'remember'],
-        'class_types': ["android.widget.CheckBox"],
-        'content_desc_keywords': ['同意', '协议', '记住'],
-        'checkable_priority': True  # 优先识别可勾选的元素
+        'text_hints': ['同意', '我已阅读', '已阅读', '接受', '确认', '勾选', '选择', 'agree', 'accept', 'check'],
+        'resource_id_keywords': ['agree', 'accept', 'checkbox', 'cb_ag', 'remember', 'check', 'protocol', 'agreement', 'terms', 'privacy', 'policy'],
+        'class_types': ["android.widget.CheckBox", "android.widget.ImageView", "android.view.View", "android.widget.TextView"],
+        'content_desc_keywords': ['同意', '协议', '记住', '勾选', '选择', '确认', '接受', 'checkbox', 'agree', 'accept'],
+        'checkable_priority': True,  # 优先识别可勾选的元素
+        'clickable_priority': True   # 优先识别可点击的元素
     }
 
     # 登录按钮模式
@@ -77,6 +77,12 @@ class ElementPatterns:
         'class_types': ['android.widget.TextView', 'android.widget.Button', 'android.view.View'],
         'content_desc_keywords': ['其他登录方式', '登录方式', '切换登录', '更多选项']
     }
+
+    # 系统弹窗统一处理
+    SYSTEM_DIALOG_PATTERNS = {
+        'text_hints': ['全部允许', '存储', '继续安装']
+    }
+
 
     @classmethod
     def create_custom_pattern(cls, target_selector: Dict[str, Any]) -> Dict[str, Any]:
@@ -870,29 +876,75 @@ class DeviceScriptReplayer:
             height = y2 - y1
             print(f"🎯 checkbox区域: ({x1},{y1}) 到 ({x2},{y2}), 尺寸: {width}x{height}")
 
-            # 关键改进：针对checkbox的特殊点击策略
-            # 对于checkbox，通常点击左侧的实际复选框区域更安全
-            if width > 100:  # 如果宽度很大，说明可能包含文字，只点击左侧
-                click_x = x1 + min(30, width // 4)  # 点击左侧1/4处或30像素处
-                click_y = y1 + height // 2
-                print(f"📍 宽checkbox，点击左侧区域: ({click_x}, {click_y})")
-            else:  # 如果是小checkbox，点击中心
-                click_x = (x1 + x2) // 2
-                click_y = (y1 + y2) // 2
-                print(f"📍 小checkbox，点击中心: ({click_x}, {click_y})")
+            # 新增：针对clickable=False的特殊处理
+            clickable = checkbox_element.get('clickable', False)
+            if not clickable:
+                print("⚠️ checkbox标记为不可点击，尝试替代策略...")
 
-            # 执行点击
-            success, output = self._run_adb_command([
-                "shell", "input", "tap", str(click_x), str(click_y)
-            ])
+                # 策略1：尝试点击checkbox区域的多个位置
+                click_positions = []
 
-            if success:
-                print("✅ checkbox点击成功")
-                time.sleep(1.0)  # 等待状态更新
-                return True
-            else:
-                print(f"❌ checkbox点击失败: {output}")
+                # 添加左侧复选框区域
+                click_positions.append((x1 + 20, y1 + height // 2))
+                # 添加中心位置
+                click_positions.append((x1 + width // 2, y1 + height // 2))
+                # 添加右侧位置（如果有文字）
+                if width > 100:
+                    click_positions.append((x1 + width - 50, y1 + height // 2))
+
+                print(f"🎯 尝试多个点击位置: {click_positions}")
+
+                for i, (click_x, click_y) in enumerate(click_positions):
+                    print(f"📍 尝试位置 {i+1}: ({click_x}, {click_y})")
+                    success, output = self._run_adb_command([
+                        "shell", "input", "tap", str(click_x), str(click_y)
+                    ])
+
+                    if success:
+                        print(f"✅ 位置 {i+1} 点击成功")
+                        time.sleep(1.0)  # 等待状态更新
+
+                        # 重新检查状态
+                        xml_content = self.get_ui_hierarchy()
+                        if xml_content:
+                            elements = self._parse_ui_xml(xml_content)
+                            target_selector = {"type": "agreement_checkbox"}
+                            updated_checkbox = self.find_agreement_checkbox(elements, target_selector)
+                            if updated_checkbox and updated_checkbox.get('checked', False):
+                                print("✅ checkbox勾选状态已更新")
+                                return True
+
+                        # 如果没有状态更新，继续尝试下一个位置
+                        print("⚠️ 状态未更新，继续尝试其他位置...")
+                    else:
+                        print(f"❌ 位置 {i+1} 点击失败: {output}")
+
+                print("❌ 所有位置都尝试失败")
                 return False
+
+            else:
+                # 原有的点击策略（针对clickable=True的情况）
+                if width > 100:  # 如果宽度很大，说明可能包含文字，只点击左侧
+                    click_x = x1 + min(30, width // 4)  # 点击左侧1/4处或30像素处
+                    click_y = y1 + height // 2
+                    print(f"📍 宽checkbox，点击左侧区域: ({click_x}, {click_y})")
+                else:  # 如果是小checkbox，点击中心
+                    click_x = (x1 + x2) // 2
+                    click_y = (y1 + y2) // 2
+                    print(f"📍 小checkbox，点击中心: ({click_x}, {click_y})")
+
+                # 执行点击
+                success, output = self._run_adb_command([
+                    "shell", "input", "tap", str(click_x), str(click_y)
+                ])
+
+                if success:
+                    print("✅ checkbox点击成功")
+                    time.sleep(1.0)  # 等待状态更新
+                    return True
+                else:
+                    print(f"❌ checkbox点击失败: {output}")
+                    return False
 
         except Exception as e:
             print(f"❌ checkbox勾选过程中发生错误: {e}")
@@ -1200,7 +1252,6 @@ class DeviceScriptReplayer:
                         if not success:
                             print(f"❌ 自动登录操作失败")
                             continue
-
                     elif action in ['click', 'tap']:
                         # 传统点击操作
                         print(f"👆 执行传统点击操作")
@@ -1219,6 +1270,29 @@ class DeviceScriptReplayer:
 
                         if not success:
                             print(f"❌ 点击操作失败")
+                            continue
+                    elif action == 'wait_for_appearance':
+                        # 等待元素出现操作 - 路由到ActionProcessor
+                        print(f"👁️ 执行等待元素出现操作")
+                        success = self._route_to_action_processor(step, step_idx, 'wait_for_appearance')
+                        if not success:
+                            print(f"❌ wait_for_appearance 操作失败")
+                            continue
+
+                    elif action == 'wait_for_stable':
+                        # 等待界面稳定操作 - 路由到ActionProcessor
+                        print(f"⏳ 执行等待界面稳定操作")
+                        success = self._route_to_action_processor(step, step_idx, 'wait_for_stable')
+                        if not success:
+                            print(f"❌ wait_for_stable 操作失败")
+                            continue
+
+                    elif action == 'retry_until_success':
+                        # 重试直到成功操作 - 路由到ActionProcessor
+                        print(f"🔄 执行重试直到成功操作")
+                        success = self._route_to_action_processor(step, step_idx, 'retry_until_success')
+                        if not success:
+                            print(f"❌ retry_until_success 操作失败")
                             continue
 
                     else:
@@ -1347,3 +1421,128 @@ class DeviceScriptReplayer:
                 print(f"❌ 错误: 设备 {self.device_serial} 没有分配账号，无法替换密码参数")
 
         return result_text
+
+    def _route_to_action_processor(self, step, step_idx, action_name):
+        """
+        路由复杂操作到ActionProcessor进行处理
+
+        Args:
+            step: 步骤配置
+            step_idx: 步骤索引
+            action_name: 动作名称
+
+        Returns:
+            操作是否成功
+        """
+        try:
+            # 导入ActionProcessor
+            try:
+                from action_processor import ActionProcessor
+            except ImportError:
+                from .action_processor import ActionProcessor            # 在路由前处理参数替换
+            step_copy = step.copy()
+
+            # 对于retry_until_success中的input操作，需要特殊处理参数替换
+            if action_name == "retry_until_success" and step_copy.get("retry_action") == "input":
+                if "text" in step_copy:
+                    step_copy["text"] = self._replace_account_parameters(step_copy["text"])
+                    print(f"🔧 retry_until_success参数替换完成: {step_copy['text']}")
+
+            # 创建临时日志目录（如果需要）
+            import tempfile
+            import os
+            temp_log_dir = tempfile.mkdtemp(prefix=f'enhanced_handler_{action_name}_')
+            log_txt_path = os.path.join(temp_log_dir, "log.txt")            # 创建一个简单的设备代理对象
+
+            class DeviceProxy:
+                def __init__(self, device_serial):
+                    self.serial = device_serial
+
+                def screenshot(self):
+                    # 通过adb获取截图，避免UTF-8编码错误
+                    try:
+                        import subprocess
+                        # 使用exec-out获取原始字节数据，避免文本编码问题
+                        result = subprocess.run(
+                            f"adb -s {self.serial} exec-out screencap -p",
+                            shell=True,
+                            capture_output=True,
+                            timeout=10
+                        )
+                        if result.returncode == 0 and result.stdout:
+                            import cv2
+                            import numpy as np
+                            # 直接从字节数据解码PNG
+                            nparr = np.frombuffer(result.stdout, np.uint8)
+                            img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                            if img is not None:
+                                # 转换为PIL Image格式
+                                from PIL import Image
+                                img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                                return Image.fromarray(img_rgb)
+                            else:
+                                print("⚠️ 警告：无法解码截图数据")
+                        else:
+                            print("⚠️ 警告：screencap命令返回空数据")
+                    except subprocess.TimeoutExpired:
+                        print("❌ 截图超时")
+                    except Exception as e:
+                        print(f"获取截图失败: {e}")
+                    return None
+
+                def shell(self, cmd, encoding='utf-8', timeout=None):
+                    # 执行shell命令，兼容encoding参数
+                    try:
+                        import subprocess
+
+                        # 如果encoding为None，使用字节模式
+                        if encoding is None:
+                            result = subprocess.run(
+                                f"adb -s {self.serial} shell {cmd}",
+                                shell=True, capture_output=True, timeout=timeout
+                            )
+                            return result.stdout  # 返回字节数据
+                        else:
+                            result = subprocess.run(
+                                f"adb -s {self.serial} shell {cmd}",
+                                shell=True, capture_output=True, text=True, timeout=timeout
+                            )
+                            return result.stdout  # 返回文本数据
+                    except subprocess.TimeoutExpired:
+                        print(f"❌ Shell命令超时: {cmd}")
+                        return "" if encoding else b""
+                    except Exception as e:
+                        print(f"执行shell命令失败: {e}")
+                        return "" if encoding else b""# 创建设备代理
+            device_proxy = DeviceProxy(self.device_serial)
+            # 创建ActionProcessor实例（注意：构造函数不接受device_account参数）
+            action_processor = ActionProcessor(
+                device=device_proxy,
+                device_name=self.device_serial,
+                log_txt_path=log_txt_path
+            )
+
+            # 设置设备账号信息
+            if self.device_account:
+                action_processor.set_device_account(self.device_account)
+                print(f"✅ 已为ActionProcessor设置设备账号: {self.device_account[0] if self.device_account else '无'}")
+
+            # 执行操作（使用经过参数替换的step_copy）
+            success, has_executed, should_continue = action_processor.process_action(
+                step_copy, step_idx, temp_log_dir
+            )
+
+            # 清理临时目录
+            try:
+                import shutil
+                shutil.rmtree(temp_log_dir, ignore_errors=True)
+            except:
+                pass
+
+            return success and has_executed
+
+        except Exception as e:
+            print(f"❌ 路由到ActionProcessor失败: {e}")
+            import traceback
+            traceback.print_exc()
+            return False

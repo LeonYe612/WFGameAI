@@ -11,6 +11,7 @@ import numpy as np
 import traceback
 import queue
 import os
+from collections import namedtuple
 
 # 尝试导入相关模块，如果失败则使用占位符
 try:
@@ -66,16 +67,28 @@ def get_device_screenshot(device):
     Returns:
         PIL.Image 对象或 None
     """
+
     try:
-        # 使用ADB shell命令截图
-        screenshot_data = device.shell("screencap -p", encoding=None)
-        if screenshot_data:
+        # 使用subprocess直接获取字节数据，避免字符编码问题
+        import subprocess
+        result = subprocess.run(
+            f"adb -s {device.serial} exec-out screencap -p",
+            shell=True,
+            capture_output=True,
+            timeout=10
+        )
+
+        if result.returncode == 0 and result.stdout:
             from PIL import Image
             import io
-            return Image.open(io.BytesIO(screenshot_data))
+            # result.stdout 已经是字节数据，直接使用
+            return Image.open(io.BytesIO(result.stdout))
         else:
-            print("⚠️ 警告：screencap命令返回空数据")
+            print("⚠️ 警告：screencap命令返回空数据或失败")
             return None
+    except subprocess.TimeoutExpired:
+        print("❌ 截图超时")
+        return None
     except Exception as e:
         print(f"❌ ADB截图失败: {e}")
 
@@ -160,6 +173,7 @@ class ActionResult:
         # 兼容旧接口
         self.executed = executed if executed is not None else success
         self.should_continue = should_continue if should_continue is not None else (not should_stop)
+
     def to_tuple(self):
         """转换为元组格式，兼容现有代码"""
         return (self.success, self.executed, self.should_continue)
@@ -329,12 +343,33 @@ class ActionProcessor:
                 return self._handle_input_new(step, context)
             elif step_action == "checkbox":
                 return self._handle_checkbox_new(step, context)
-            elif step_action == "click_target":
-                return self._handle_click_target_new(step, context)
             elif step_action == "auto_login":
                 return self._handle_auto_login_new(step, context)
             elif step_action == "wait_for_disappearance":
                 return self._handle_wait_for_disappearance_new(step, context)
+
+            # 新的3个关键功能
+            elif step_action == "wait_for_appearance":
+                return self._handle_wait_for_appearance_new(step, context)
+            elif step_action == "wait_for_stable":
+                return self._handle_wait_for_stable_new(step, context)
+            elif step_action == "retry_until_success":
+                return self._handle_retry_until_success_new(step, context)
+
+            # 废弃click_target，替换为click
+            elif step_action == "click_target":
+                print("⚠️ 警告: click_target已废弃，请使用click替代")
+                # 将click_target转换为标准click处理
+                converted_step = step.copy()
+                converted_step["action"] = "click"
+                if "target_selector" in converted_step:
+                    target_selector = converted_step["target_selector"]
+                    # 尝试从target_selector提取参数
+                    if target_selector.get("type"):
+                        converted_step["ui_type"] = target_selector["type"]
+                        converted_step["detection_method"] = "ui"
+                    del converted_step["target_selector"]
+                return self._process_action_new(converted_step, context)
             else:
                 # 默认处理：AI检测点击或备选点击
                 if step_class == "unknown" and "relative_x" in step and "relative_y" in step:
@@ -351,10 +386,13 @@ class ActionProcessor:
                 details={"exception": str(e), "step": step}
             )
 
+
     def _process_action_old(self, step, step_idx, log_dir):
         """使用旧接口处理action（兼容性）"""
         step_action = step.get("action", "click")
-        step_class = step.get("class", "")        # 处理特殊步骤类型
+        step_class = step.get("class", "")
+
+        # 处理特殊步骤类型
         if step_class == "delay":
             return self._handle_delay(step, step_idx, log_dir)
         elif step_class == "device_preparation":
@@ -365,6 +403,16 @@ class ActionProcessor:
             return self._handle_app_stop(step, step_idx)
         elif step_class == "log":
             return self._handle_log(step, step_idx)
+
+        # 处理新的3个关键功能
+        elif step_action == "wait_for_appearance":
+            return self._handle_wait_for_appearance(step, step_idx, log_dir)
+        elif step_action == "wait_for_stable":
+            return self._handle_wait_for_stable(step, step_idx, log_dir)
+        elif step_action == "retry_until_success":
+            return self._handle_retry_until_success(step, step_idx, log_dir)
+
+        # 处理现有功能
         elif step_action == "wait_if_exists":
             return self._handle_wait_if_exists(step, step_idx, log_dir)
         elif step_action == "swipe":
@@ -373,12 +421,25 @@ class ActionProcessor:
             return self._handle_input(step, step_idx)
         elif step_action == "checkbox":
             return self._handle_checkbox(step, step_idx)
-        elif step_action == "click_target":
-            return self._handle_click_target(step, step_idx)
         elif step_action == "auto_login":
             return self._handle_auto_login(step, step_idx)
         elif step_action == "wait_for_disappearance":
             return self._handle_wait_for_disappearance(step, step_idx, log_dir)
+
+        # 废弃click_target，替换为click
+        elif step_action == "click_target":
+            print("⚠️ 警告: click_target已废弃，请使用click替代")
+            # 将click_target转换为标准click处理
+            converted_step = step.copy()
+            converted_step["action"] = "click"
+            if "target_selector" in converted_step:
+                target_selector = converted_step["target_selector"]
+                # 尝试从target_selector提取参数
+                if target_selector.get("type"):
+                    converted_step["ui_type"] = target_selector["type"]
+                    converted_step["detection_method"] = "ui"
+                del converted_step["target_selector"]
+            return self._process_action_old(converted_step, step_idx, log_dir)
         else:
             # 默认处理：尝试AI检测点击
             if step_class == "unknown" and "relative_x" in step and "relative_y" in step:
@@ -1230,103 +1291,31 @@ class ActionProcessor:
             print(f"❌ 错误: checkbox勾选过程中发生异常: {e}")
             traceback.print_exc()
             return True, False, True
+
+
     def _handle_click_target(self, step, step_idx=None):
-        """处理通用目标点击步骤"""
-        if step_idx is None:
-            step_idx = 0
-        step_idx = int(step_idx)
-        target_selector = step.get("target_selector", {})
-        step_remark = step.get("remark", "")
+        """处理通用目标点击步骤 - 已废弃，请使用click替代"""
+        print("⚠️ 警告: _handle_click_target已废弃，请使用标准click操作替代")
+        print("💡 建议: 将target_selector转换为detection_method + ui_type参数")
 
-        print(f"执行点击目标操作 - {step_remark}")
-        print(f"目标选择器: {target_selector}")
+        # 转换为标准点击操作
+        converted_step = step.copy()
+        converted_step["action"] = "click"
 
-        # 获取截图目录
+        if "target_selector" in converted_step:
+            target_selector = converted_step["target_selector"]
+            # 尝试从target_selector提取参数
+            if target_selector.get("type"):
+                converted_step["ui_type"] = target_selector["type"]
+                converted_step["detection_method"] = "ui"
+            del converted_step["target_selector"]
+
+        # 使用旧接口处理转换后的步骤
         log_dir = None
         if self.log_txt_path:
             log_dir = os.path.dirname(self.log_txt_path)
-        input_handler = None
-        click_pos = []
-        try:
-            if DeviceScriptReplayer:
-                input_handler = DeviceScriptReplayer(self.device.serial)
 
-                # 检查是否使用智能参数化选择器
-                if target_selector.get('type'):
-                    print(f"🤖 使用智能参数化点击: type={target_selector.get('type')}")
-                    # 使用智能元素查找
-                    target_element = input_handler.find_element_smart(target_selector)
-                    if target_element:
-                        bounds = target_element.get('bounds', '')
-                        coords = input_handler._parse_bounds(bounds) if bounds else None
-                        if coords:
-                            click_pos = [int(coords[0]), int(coords[1])]
-                        success = input_handler.tap_element(target_element)
-                    else:
-                        print("❌ 未找到匹配的目标元素")
-                        success = False
-                else:
-                    # 传统方式：使用自定义目标元素查找
-                    xml_content = input_handler.get_ui_hierarchy()
-                    elements = input_handler._parse_ui_xml(xml_content) if xml_content else []
-                    target_element = input_handler.find_custom_target_element(elements, target_selector) if elements else None
-                    if target_element:
-                        bounds = target_element.get('bounds', '')
-                        coords = input_handler._parse_bounds(bounds) if bounds else None
-                        if coords:
-                            click_pos = [int(coords[0]), int(coords[1])]
-                    # 执行点击
-                    success = input_handler.perform_click_target_action(target_selector)
-            else:
-                print("⚠️ DeviceScriptReplayer不可用，无法执行点击目标操作")
-                return True, False, True
-
-            if success:
-                print(f"✅ 点击目标操作成功")
-
-                # 创建screen对象以支持报告截图显示，写入点击点
-                screen_data = self._create_unified_screen_object(
-                    log_dir,
-                    pos_list=[click_pos] if click_pos else [],
-                    confidence=1.0,
-                    rect_info=[]
-                )
-
-                # 记录点击目标操作日志
-                timestamp = time.time()
-                title_str = f"#1 {step_remark or '点击目标操作'}"
-                click_entry = {
-                    "tag": "function",
-                    "depth": 1,
-                    "time": timestamp,
-                    "data": {
-                        "name": "click_target",
-                        "call_args": {
-                            "target_selector": target_selector
-                        },
-                        "start_time": timestamp,
-                        "ret": {"success": True},
-                        "end_time": timestamp + 1.0,
-                        "desc": step_remark or "点击目标操作",
-                        "title": title_str
-                    }
-                }
-
-                # 添加screen对象到日志条目（如果可用）
-                if screen_data:
-                    click_entry["data"]["screen"] = screen_data
-
-                self._write_log_entry(click_entry)
-
-                return True, True, True
-            else:
-                print(f"❌ 错误: 点击目标操作失败")
-                return True, False, True
-
-        except Exception as e:
-            print(f"❌ 错误: 点击目标操作过程中发生异常: {e}")
-            traceback.print_exc()
-            return True, False, True
+        return self._process_action_old(converted_step, step_idx or 0, log_dir)
 
     def _handle_auto_login(self, step, step_idx):
         """处理完整自动登录流程"""
@@ -1848,6 +1837,7 @@ class ActionProcessor:
                 else:
                     print("⚠️ 设备预处理管理器不可用")
                     results["input_method"] = False
+
             except Exception as e:
                 print(f"❌ 输入法设置异常: {e}")
                 results["input_method"] = False
@@ -1984,43 +1974,541 @@ class ActionProcessor:
         result = self._handle_wait_for_disappearance(step, step_idx, log_dir)
         return ActionResult.from_tuple(result)
 
-    # 旧接口兼容方法
-    def _handle_fallback_click(self, step, step_idx, log_dir):
-        """处理备选点击操作（使用相对坐标） - 旧接口兼容"""
-        # 创建临时context
-        context = ActionContext(
-            device=self.device,
-            screenshot_dir=log_dir,
-            script_name="legacy"
-        )
-        result = self._handle_fallback_click_new(step, context)
-        return result.to_tuple()
+    # ===== 3个关键功能的新接口方法 =====
 
-    def _handle_ai_detection_click(self, step, step_idx, log_dir):
-        """处理基于AI检测的点击操作 - 旧接口兼容"""
-        # 创建临时context
-        context = ActionContext(
-            device=self.device,
-            screenshot_dir=log_dir,
-            script_name="legacy"
-        )
-        result = self._handle_ai_detection_click_new(step, context)
-        return result.to_tuple()
+    def _handle_wait_for_appearance_new(self, step, context):
+        """等待元素出现 - 新接口"""
+        # 使用旧接口的完整实现来确保真实操作
+        # 将ActionContext转换为step_idx和log_dir参数
+        step_idx = getattr(context, 'step_idx', 0)
+        log_dir = getattr(context, 'screenshot_dir', None)
+        result = self._handle_wait_for_appearance(step, step_idx, log_dir)
+        return ActionResult.from_tuple(result)
 
-    def _record_assert_failure(self, step, step_idx, log_dir, reason):
-        """记录断言失败 - 旧接口兼容"""
-        # 创建临时context
-        context = ActionContext(
-            device=self.device,
-            screenshot_dir=log_dir,
-            script_name="legacy"
-        )
-        result = self._record_assert_failure_new(step, context, reason)
-        return result.to_tuple()
+    def _handle_wait_for_stable_new(self, step, context):
+        """等待界面稳定 - 新接口"""
+        # 使用旧接口的完整实现来确保真实操作
+        # 将ActionContext转换为step_idx和log_dir参数
+        step_idx = getattr(context, 'step_idx', 0)
+        log_dir = getattr(context, 'screenshot_dir', None)
+        result = self._handle_wait_for_stable(step, step_idx, log_dir)
+        return ActionResult.from_tuple(result)
 
-    # 添加缺失的基础方法
-    def _write_log_entry(self, entry):
-        """写入日志条目"""
-        if self.log_txt_path:
-            with open(self.log_txt_path, "a", encoding="utf-8") as f:
-                f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    def _handle_retry_until_success_new(self, step, context):
+        """重试直到成功 - 新接口"""
+        # 使用旧接口的完整实现来确保真实操作
+        # 将ActionContext转换为step_idx和log_dir参数
+        step_idx = getattr(context, 'step_idx', 0)
+        log_dir = getattr(context, 'screenshot_dir', None)
+        result = self._handle_retry_until_success(step, step_idx, log_dir)
+        return ActionResult.from_tuple(result)
+
+    def _handle_wait_for_appearance(self, step, step_idx, log_dir):
+        """处理等待元素出现步骤 - 等待指定元素从无到有的出现过程"""
+        # 解析参数，支持新的参数名称
+        yolo_class = step.get("yolo_class", step.get("class", ""))  # 向后兼容
+        ui_type = step.get("ui_type", step.get("type", ""))  # 向后兼容
+        detection_method = step.get("detection_method", "yolo" if yolo_class else "ui")
+
+        step_remark = step.get("remark", "")
+        timeout = step.get("timeout", 10)
+        polling_interval = step.get("polling_interval", 1)
+        confidence = step.get("confidence", 0.8)
+        fail_on_timeout = step.get("fail_on_timeout", True)
+        screenshot_on_timeout = step.get("screenshot_on_timeout", True)
+        fallback_yolo_class = step.get("fallback_yolo_class", "")
+
+        print(f"\n🚀 [步骤 {step_idx+1}] 开始执行 wait_for_appearance 操作")
+        print(f"📋 检测方式: {detection_method}")
+        if detection_method == "yolo" and yolo_class:
+            print(f"🎯 AI类别: '{yolo_class}'")
+        elif detection_method == "ui" and ui_type:
+            print(f"🎯 UI类型: '{ui_type}'")
+        print(f"⏰ 超时时间: {timeout}秒")
+        print(f"🔄 轮询间隔: {polling_interval}秒")
+        print(f"🎯 置信度: {confidence}")
+        print(f"📝 备注: {step_remark}")
+
+        wait_start_time = time.time()
+        element_appeared = False
+        wait_result = "not_appeared"
+        detected_class = ""
+        detection_result = None
+
+        try:
+            loop_count = 0
+            while time.time() - wait_start_time < timeout:
+                loop_count += 1
+                print(f"\n🔍 [循环 {loop_count}] 检查元素是否出现...")
+
+                # 根据detection_method选择检测方式
+                if detection_method == "yolo" and yolo_class:
+                    # AI检测方式
+                    if self.detect_buttons:
+                        success, detection_result = self.detect_buttons(yolo_class, confidence=confidence)
+                        print(f"🔍 AI检测结果: success={success}, detection_result={detection_result}")
+
+                        if success and detection_result[0] is not None:
+                            element_appeared = True
+                            x, y, detected_class = detection_result
+                            wait_result = "appeared"
+                            print(f"✅ [AI检测成功] 元素 '{yolo_class}' 已出现!")
+                            print(f"📍 位置: ({x:.1f}, {y:.1f})")
+                            print(f"🏷️ 检测类别: {detected_class}")
+                            break
+                    else:
+                        print("⚠️ AI检测功能不可用")
+
+                elif detection_method == "ui" and ui_type:
+                    # UI检测方式
+                    if DeviceScriptReplayer:
+                        input_handler = DeviceScriptReplayer(self.device.serial)
+                        target_selector = {"type": ui_type}
+                        target_element = input_handler.find_element_smart(target_selector)
+
+                        if target_element:
+                            element_appeared = True
+                            wait_result = "appeared"
+                            bounds = target_element.get('bounds', '')
+                            coords = input_handler._parse_bounds(bounds) if bounds else None
+                            if coords:
+                                x, y = coords
+                                detection_result = (x, y, ui_type)
+                            print(f"✅ [UI检测成功] 元素 '{ui_type}' 已出现!")
+                            break
+                    else:
+                        print("⚠️ UI检测功能不可用")
+
+                if element_appeared:
+                    break
+
+                print(f"⏳ [循环 {loop_count}] 元素尚未出现，等待 {polling_interval}秒后重试...")
+                time.sleep(polling_interval)
+
+            # 检查是否使用备选方案
+            if not element_appeared and fallback_yolo_class and detection_method == "ui":
+                print(f"\n🔄 UI检测失败，尝试备选AI检测: {fallback_yolo_class}")
+                if self.detect_buttons:
+                    success, detection_result = self.detect_buttons(fallback_yolo_class, confidence=confidence)
+                    if success and detection_result[0] is not None:
+                        element_appeared = True
+                        x, y, detected_class = detection_result
+                        wait_result = "appeared_fallback"
+                        print(f"✅ [备选AI检测成功] 元素已出现!")
+
+            total_wait_time = time.time() - wait_start_time
+
+            if element_appeared:
+                print(f"🎉 元素出现检测成功! 总等待时间: {total_wait_time:.1f}秒")
+            else:
+                wait_result = "timeout"
+                print(f"⏰ 等待超时! 总等待时间: {total_wait_time:.1f}秒")
+
+        except Exception as e:
+            print(f"❌ 等待过程中发生异常: {e}")
+            wait_result = "error"
+            total_wait_time = time.time() - wait_start_time
+
+        # 创建screen对象以支持报告截图显示
+        pos_list = []
+        if detection_result and len(detection_result) >= 2:
+            pos_list = [[int(detection_result[0]), int(detection_result[1])]]
+
+        screen_data = self._create_unified_screen_object(
+            log_dir,
+            pos_list=pos_list,
+            confidence=confidence,
+            rect_info=[]
+        )
+
+        # 记录等待结果日志
+        timestamp = time.time()
+        wait_entry = {
+            "tag": "function",
+            "depth": 1,
+            "time": timestamp,
+            "data": {
+                "name": "wait_for_appearance",
+                "call_args": {
+                    "detection_method": detection_method,
+                    "yolo_class": yolo_class,
+                    "ui_type": ui_type,
+                    "timeout": timeout,
+                    "polling_interval": polling_interval,
+                    "confidence": confidence
+                },
+                "start_time": wait_start_time,
+                "ret": {
+                    "element_appeared": element_appeared,
+                    "wait_result": wait_result,
+                    "total_wait_time": total_wait_time,
+                    "detected_class": detected_class
+                },
+                "end_time": timestamp,
+                "desc": step_remark or "等待元素出现操作",
+                "title": f"#{step_idx+1} {step_remark or '等待元素出现操作'}"
+            }
+        }
+
+        # 添加screen对象到日志条目
+        if screen_data:
+            wait_entry["data"]["screen"] = screen_data
+
+        self._write_log_entry(wait_entry)
+
+        # 根据配置决定返回结果
+        if not element_appeared and fail_on_timeout:
+            return True, False, True  # 执行了但失败
+        else:
+            return True, True, True   # 成功或忽略失败
+
+    def _handle_wait_for_stable(self, step, step_idx, log_dir):
+        """处理等待界面稳定步骤 - 等待界面连续N秒无变化，确保操作时机"""
+        detection_method = step.get("detection_method", "yolo")
+        step_remark = step.get("remark", "")
+        duration = step.get("duration", 2)
+        max_wait = step.get("max_wait", 10)
+        check_structure = step.get("check_structure", True)
+        check_positions = step.get("check_positions", True)
+        tolerance = step.get("tolerance", 0.05)
+        ignore_animations = step.get("ignore_animations", True)
+
+        print(f"\n🚀 [步骤 {step_idx+1}] 开始执行 wait_for_stable 操作")
+        print(f"📋 检测方式: {detection_method}")
+        print(f"🎯 稳定持续时间: {duration}秒")
+        print(f"⏰ 最大等待时间: {max_wait}秒")
+        print(f"🔍 检查结构稳定: {check_structure}")
+        print(f"📍 检查位置稳定: {check_positions}")
+        print(f"📊 变化容忍度: {tolerance}")
+        print(f"📝 备注: {step_remark}")
+
+        wait_start_time = time.time()
+        stable_start_time = None
+        last_screenshot = None
+        last_ui_structure = None
+        is_stable = False
+        stability_result = "not_stable"
+
+        try:
+            while time.time() - wait_start_time < max_wait:
+                current_time = time.time()
+
+                # 获取当前状态
+                current_screenshot = None
+                current_ui_structure = None
+
+                if detection_method == "yolo":
+                    # 使用截图比较检测稳定性
+                    try:
+                        import subprocess
+                        screenshot_result = subprocess.run(
+                            f"adb -s {self.device.serial} exec-out screencap -p",
+                            shell=True, capture_output=True
+                        )
+                        if screenshot_result.returncode == 0:
+                            import cv2
+                            import numpy as np
+                            # 将字节数据转换为图像
+                            nparr = np.frombuffer(screenshot_result.stdout, np.uint8)
+                            current_screenshot = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                    except Exception as e:
+                        print(f"⚠️ 截图获取失败: {e}")
+
+                elif detection_method == "ui":
+                    # 使用UI结构比较检测稳定性
+                    if DeviceScriptReplayer:
+                        input_handler = DeviceScriptReplayer(self.device.serial)
+                        current_ui_structure = input_handler.get_ui_hierarchy()
+
+                # 检查是否与上次状态相同
+                is_same = False
+
+                if detection_method == "yolo" and current_screenshot is not None:
+                    if last_screenshot is not None:
+                        # 计算图像差异
+                        diff = cv2.absdiff(current_screenshot, last_screenshot)
+                        diff_ratio = np.sum(diff) / (diff.shape[0] * diff.shape[1] * diff.shape[2] * 255)
+                        is_same = diff_ratio < tolerance
+                        print(f"🖼️ 截图差异比例: {diff_ratio:.4f} (阈值: {tolerance})")
+                    else:
+                        print("📸 获取第一张参考截图")
+                    last_screenshot = current_screenshot.copy() if current_screenshot is not None else None
+
+                elif detection_method == "ui" and current_ui_structure:
+                    if last_ui_structure:
+                        # 简单的字符串比较（可以优化为结构化比较）
+                        is_same = current_ui_structure == last_ui_structure
+                        print(f"🏗️ UI结构相同: {is_same}")
+                    else:
+                        print("🏗️ 获取第一个参考UI结构")
+                    last_ui_structure = current_ui_structure
+
+                # 更新稳定状态
+                if is_same:
+                    if stable_start_time is None:
+                        stable_start_time = current_time
+                        print(f"🟢 界面开始稳定...")
+
+                    stable_duration = current_time - stable_start_time
+                    print(f"⏱️ 已稳定 {stable_duration:.1f}/{duration}秒")
+
+                    if stable_duration >= duration:
+                        is_stable = True
+                        stability_result = "stable"
+                        print(f"✅ 界面已稳定 {duration}秒!")
+                        break
+                else:
+                    if stable_start_time is not None:
+                        print(f"🔄 界面发生变化，重新开始计时")
+                    stable_start_time = None
+
+                time.sleep(0.5)  # 检查间隔
+
+            total_wait_time = time.time() - wait_start_time
+
+            if not is_stable:
+                stability_result = "timeout"
+                print(f"⏰ 等待稳定超时! 总等待时间: {total_wait_time:.1f}秒")
+            else:
+                print(f"🎉 界面稳定检测成功! 总等待时间: {total_wait_time:.1f}秒")
+
+        except Exception as e:
+            print(f"❌ 稳定检测过程中发生异常: {e}")
+            stability_result = "error"
+            total_wait_time = time.time() - wait_start_time
+
+        # 创建screen对象
+        screen_data = self._create_unified_screen_object(
+            log_dir,
+            pos_list=[],
+            confidence=1.0,
+            rect_info=[]
+        )
+
+        # 记录稳定检测结果日志
+        timestamp = time.time()
+        stable_entry = {
+            "tag": "function",
+            "depth": 1,
+            "time": timestamp,
+            "data": {
+                "name": "wait_for_stable",
+                "call_args": {
+                    "detection_method": detection_method,
+                    "duration": duration,
+                    "max_wait": max_wait,
+                    "tolerance": tolerance
+                },
+                "start_time": wait_start_time,
+                "ret": {
+                    "is_stable": is_stable,
+                    "stability_result": stability_result,
+                    "total_wait_time": total_wait_time
+                },
+                "end_time": timestamp,
+                "desc": step_remark or "等待界面稳定操作",
+                "title": f"#{step_idx+1} {step_remark or '等待界面稳定操作'}"
+            }
+        }
+
+        # 添加screen对象到日志条目
+        if screen_data:
+            stable_entry["data"]["screen"] = screen_data
+
+        self._write_log_entry(stable_entry)
+
+        return True, True, True
+
+    def _handle_retry_until_success(self, step, step_idx, log_dir):
+        """处理重试直到成功步骤 - 对任意操作进行重试，直到成功或达到最大次数"""
+        # 解析参数
+        detection_method = step.get("detection_method", "yolo")
+        retry_action = step.get("retry_action", "click")
+        yolo_class = step.get("yolo_class", step.get("class", ""))  # 向后兼容
+        ui_type = step.get("ui_type", step.get("type", ""))  # 向后兼容
+        text = step.get("text", "")
+        step_remark = step.get("remark", "")
+
+        max_retries = step.get("max_retries", 5)
+        retry_strategy = step.get("retry_strategy", "fixed")
+        retry_interval = step.get("retry_interval", 1)
+        initial_delay = step.get("initial_delay", 1)
+        max_delay = step.get("max_delay", 10)
+        backoff_multiplier = step.get("backoff_multiplier", 2)
+        verify_success = step.get("verify_success", False)
+        stop_on_success = step.get("stop_on_success", True)
+
+        print(f"\n🚀 [步骤 {step_idx+1}] 开始执行 retry_until_success 操作")
+        print(f"📋 检测方式: {detection_method}")
+        print(f"🎯 重试操作: {retry_action}")
+        if detection_method == "yolo" and yolo_class:
+            print(f"🎯 AI类别: '{yolo_class}'")
+        elif detection_method == "ui" and ui_type:
+            print(f"🎯 UI类型: '{ui_type}'")
+        print(f"🔄 最大重试次数: {max_retries}")
+        print(f"⏰ 重试策略: {retry_strategy}")
+        print(f"📝 备注: {step_remark}")
+
+        retry_start_time = time.time()
+        success = False
+        last_error = None
+        retry_count = 0
+        current_delay = initial_delay
+
+        for attempt in range(max_retries + 1):  # +1 为第一次尝试
+            retry_count = attempt
+            print(f"\n🔄 [尝试 {attempt + 1}/{max_retries + 1}] 执行 {retry_action} 操作...")
+
+            try:
+                # 构造重试操作的step
+                retry_step = {
+                    "action": retry_action,
+                    "detection_method": detection_method,
+                    "yolo_class": yolo_class,
+                    "ui_type": ui_type,
+                    "text": text,
+                    "remark": f"重试操作 {attempt + 1}: {step_remark}"
+                }
+
+                # 根据retry_action执行对应操作
+                operation_success = False
+
+                if retry_action == "click":
+                    if detection_method == "yolo" and yolo_class:
+                        # AI检测点击
+                        if self.detect_buttons:
+                            ai_success, detection_result = self.detect_buttons(yolo_class, confidence=0.8)
+                            if ai_success and detection_result[0] is not None:
+                                x, y, detected_class = detection_result
+                                self.device.shell(f"input tap {int(x)} {int(y)}")
+                                operation_success = True
+                                print(f"✅ AI点击成功: ({x:.1f}, {y:.1f})")
+                    elif detection_method == "ui" and ui_type:
+                        # UI检测点击
+                        if DeviceScriptReplayer:
+                            input_handler = DeviceScriptReplayer(self.device.serial)
+                            target_selector = {"type": ui_type}
+                            operation_success = input_handler.perform_click_target_action(target_selector)
+                            if operation_success:
+                                print(f"✅ UI点击成功")
+
+                elif retry_action == "input" and text:
+                    # 文本输入操作
+                    if detection_method == "ui" and ui_type:
+                        if DeviceScriptReplayer:
+                            input_handler = DeviceScriptReplayer(self.device.serial)
+                            target_selector = {"type": ui_type}
+
+                            # 先找到输入框
+                            target_element = input_handler.find_element_smart(target_selector)
+                            if target_element:
+                                # 点击获取焦点
+                                if input_handler.tap_element(target_element):
+                                    time.sleep(0.5)
+                                    # 输入文本
+                                    escaped_text = text.replace(' ', '%s').replace("'", "\\'")
+                                    self.device.shell(f"input text '{escaped_text}'")
+                                    operation_success = True
+                                    print(f"✅ 文本输入成功")
+
+                # 验证操作成功（如果启用）
+                if operation_success and verify_success:
+                    print("🔍 验证操作结果...")
+                    time.sleep(1)  # 等待UI响应
+                    # 可以在这里添加更复杂的验证逻辑
+                    # 目前简单假设操作成功
+
+                if operation_success:
+                    success = True
+                    print(f"🎉 [尝试 {attempt + 1}] 操作成功!")
+                    if stop_on_success:
+                        break
+                else:
+                    print(f"❌ [尝试 {attempt + 1}] 操作失败")
+
+            except Exception as e:
+                print(f"❌ [尝试 {attempt + 1}] 操作异常: {e}")
+                last_error = str(e)
+
+            # 如果还有重试机会，计算延迟时间
+            if attempt < max_retries and not (success and stop_on_success):
+                if retry_strategy == "exponential":
+                    delay = min(current_delay, max_delay)
+                    current_delay *= backoff_multiplier
+                elif retry_strategy == "adaptive":
+                    # 自适应策略：前几次快速重试，后面延长间隔
+                    if attempt < 2:
+                        delay = 1
+                    elif attempt < 4:
+                        delay = 3
+                    else:
+                        delay = 5
+                else:  # fixed
+                    delay = retry_interval
+
+                print(f"⏳ 等待 {delay}秒后重试...")
+                time.sleep(delay)
+
+        total_retry_time = time.time() - retry_start_time
+
+        if success:
+            print(f"🎉 重试操作最终成功! 尝试次数: {retry_count + 1}, 总时间: {total_retry_time:.1f}秒")
+        else:
+            print(f"❌ 重试操作最终失败! 尝试次数: {retry_count + 1}, 总时间: {total_retry_time:.1f}秒")
+
+        # 创建screen对象
+        screen_data = self._create_unified_screen_object(
+            log_dir,
+            pos_list=[],
+            confidence=1.0,
+            rect_info=[]
+        )
+
+        # 记录重试结果日志
+        timestamp = time.time()
+        retry_entry = {
+            "tag": "function",
+            "depth": 1,
+            "time": timestamp,
+            "data": {
+                "name": "retry_until_success",
+                "call_args": {
+                    "detection_method": detection_method,
+                    "retry_action": retry_action,
+                    "yolo_class": yolo_class,
+                    "ui_type": ui_type,
+                    "max_retries": max_retries,
+                    "retry_strategy": retry_strategy
+                },
+                "start_time": retry_start_time,
+                "ret": {
+                    "success": success,
+                    "retry_count": retry_count + 1,
+                    "total_retry_time": total_retry_time,
+                    "last_error": last_error
+                },
+                "end_time": timestamp,
+                "desc": step_remark or "重试直到成功操作",
+                "title": f"#{step_idx+1} {step_remark or '重试直到成功操作'}"
+            }
+        }
+
+        # 添加screen对象到日志条目
+        if screen_data:
+            retry_entry["data"]["screen"] = screen_data
+
+        self._write_log_entry(retry_entry)
+
+        return True, success, True
+
+    def _write_log_entry(self, log_entry):
+        """Write log entry to log file"""
+        try:
+            if self.log_txt_path and os.path.exists(os.path.dirname(self.log_txt_path)):
+                with open(self.log_txt_path, "a", encoding="utf-8") as f:
+                    log_entry_str = json.dumps(log_entry, ensure_ascii=False, separators=(',', ':'))
+                    f.write(log_entry_str + "\n")
+            else:
+                print(f"⚠️ 警告: 无法写入日志文件 {self.log_txt_path}")
+        except Exception as e:
+            print(f"⚠️ 警告: 写入日志失败: {e}")

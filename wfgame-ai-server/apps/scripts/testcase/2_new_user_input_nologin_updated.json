@@ -1,0 +1,102 @@
+{
+  "meta": {
+    "name": "新用户注册登录完整流程 - 无登录版 - 更新版",
+    "description": "使用新的3个关键功能和标准化参数的脚本，不包含实际登录操作",
+    "version": "3.0",
+    "updated_date": "2025-01-10",
+    "author": "WFGameAI开发团队",
+    "tags": ["登录", "新用户", "3个关键功能", "标准化", "无登录"]
+  },
+  "steps": [
+    {
+      "step": 0.5,
+      "detection_method": "ai",
+      "action": "wait_for_stable",
+      "duration": 5,
+      "max_wait": 10,
+      "remark": "等待应用启动后界面稳定，避免热更新导致的黑屏影响检测"
+    },
+    {
+      "step": 1,
+      "action": "wait_if_exists",
+      "yolo_class": "system-newResources",
+      "polling_interval": 5000,
+      "max_duration": 300,
+      "confidence": 0.7135645747184753,
+      "remark": "判断启动APP后是否出现热更资源图标，如果存在则需要等待新资源加载完成"
+    },
+    {
+      "step": 1.5,
+      "detection_method": "ui",
+      "action": "wait_for_appearance",
+      "ui_type": "login_switch_button",
+      "timeout": 10,
+      "remark": "通过等待登录切换按钮出现，来判断已成功完成“热更”进入“加载界面”"
+    },
+    {
+      "step": 2,
+      "detection_method": "ui",
+      "action": "retry_until_success",
+      "retry_action": "click",
+      "ui_type": "login_switch_button",
+      "max_retries": 3,
+      "retry_interval": 1,
+      "remark": "重试点击切换到账号密码登录模式"
+    },
+    {
+      "step": 2.5,
+      "detection_method": "ai",
+      "action": "wait_for_stable",
+      "duration": 2,
+      "max_wait": 5,
+      "remark": "等待登录方式切换完成，界面稳定后再进行下一步操作"
+    },
+    {
+      "step": 3,
+      "detection_method": "ui",
+      "action": "wait_for_appearance",
+      "ui_type": "username_field",
+      "timeout": 8,
+      "remark": "等待用户名输入框出现"
+    },    {
+      "step": 4,
+      "detection_method": "ui",
+      "action": "retry_until_success",
+      "retry_action": "input",
+      "text": "${account:username}",
+      "ui_type": "username_field",
+      "max_retries": 3,
+      "retry_interval": 1,
+      "remark": "重试输入登录用户名（使用USERNAME_PATTERNS自动识别）"
+    },
+    {
+      "step": 4.5,
+      "detection_method": "ui",
+      "action": "wait_for_appearance",
+      "ui_type": "password_field",
+      "timeout": 8,
+      "remark": "等待密码输入框出现"
+    },
+    {
+      "step": 5,
+      "detection_method": "ui",
+      "action": "retry_until_success",
+      "retry_action": "input",
+      "text": "${account:password}",
+      "ui_type": "password_field",
+      "max_retries": 3,
+      "retry_interval": 1,
+      "remark": "重试输入登录密码（使用PASSWORD_PATTERNS自动识别）"
+    },
+    {
+      "step": 6,
+      "detection_method": "ui",
+      "action": "retry_until_success",
+      "retry_action": "checkbox",
+      "ui_type": "agreement_checkbox",
+      "max_retries": 3,
+      "retry_interval": 1,
+      "remark": "重试勾选用户协议（使用CHECKBOX_PATTERNS自动识别）"
+    }
+  ]
+}

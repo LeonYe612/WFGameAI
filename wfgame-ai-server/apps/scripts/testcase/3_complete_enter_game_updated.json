@@ -1,0 +1,91 @@
+{
+  "meta": {
+    "name": "完整进入游戏流程 - 更新版",
+    "description": "使用新的3个关键功能和标准化参数的游戏进入脚本",
+    "version": "3.0",
+    "updated_date": "2025-01-10",
+    "author": "WFGameAI开发团队",
+    "tags": ["游戏进入", "3个关键功能", "标准化"]
+  },
+  "steps": [
+    {
+      "step": 1,
+      "detection_method": "ai",
+      "action": "wait_for_appearance",
+      "yolo_class": "operation-close",
+      "timeout": 15,
+      "confidence": 0.9356675744056702,
+      "remark": "等待启动游戏后的公告弹窗出现"
+    },
+    {
+      "step": 2,
+      "detection_method": "ai",
+      "action": "retry_until_success",
+      "retry_action": "click",
+      "yolo_class": "operation-close",
+      "max_retries": 3,
+      "retry_interval": 1,
+      "confidence": 0.9356675744056702,
+      "remark": "重试点击关闭公告弹窗"
+    },
+    {
+      "step": 3,
+      "detection_method": "ai",
+      "action": "wait_for_appearance",
+      "yolo_class": "system-cleanUpCache",
+      "timeout": 10,
+      "confidence": 0.7135645747184753,
+      "remark": "等待清理缓存弹窗出现"
+    },
+    {
+      "step": 4,
+      "detection_method": "ai",
+      "action": "retry_until_success",
+      "retry_action": "click",
+      "yolo_class": "system-cleanUpCache",
+      "max_retries": 3,
+      "retry_interval": 1,
+      "confidence": 0.7135645747184753,
+      "remark": "重试打开清理缓存弹窗"
+    },
+    {
+      "step": 5,
+      "detection_method": "ai",
+      "action": "wait_for_stable",
+      "duration": 1,
+      "max_wait": 3,
+      "remark": "等待缓存清理界面稳定"
+    },
+    {
+      "step": 6,
+      "detection_method": "ai",
+      "action": "retry_until_success",
+      "retry_action": "click",
+      "yolo_class": "operation-close",
+      "max_retries": 3,
+      "retry_interval": 1,
+      "confidence": 0.9918168187141418,
+      "remark": "重试关闭清理缓存弹窗"
+    },
+    {
+      "step": 7,
+      "detection_method": "ai",
+      "action": "wait_for_appearance",
+      "yolo_class": "operation-confirm",
+      "timeout": 8,
+      "confidence": 0.9918168187141418,
+      "remark": "等待确认按钮出现"
+    },
+    {
+      "step": 8,
+      "detection_method": "ai",
+      "action": "retry_until_success",
+      "retry_action": "click",
+      "yolo_class": "operation-confirm",
+      "max_retries": 3,
+      "retry_interval": 1,
+      "confidence": 0.9918168187141418,
+      "remark": "重试点击确认按钮"
+    }
+  ]
+}
