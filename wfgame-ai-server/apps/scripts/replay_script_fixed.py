@@ -74,7 +74,6 @@ def print_realtime(message):
     print(message)
     sys.stdout.flush()
 
-
 # 导入新的统一报告管理系统
 try:
     # 方法1: 尝试使用Django应用导入
@@ -253,8 +252,7 @@ def load_yolo_model_for_detection(model_path=None):
 
         print_realtime(f"✅ YOLO模型加载成功: {type(model)}")
         if model is not None and hasattr(model, 'names'):
-            # print_realtime(f"📋 模型类别: {model.names}")
-            print_realtime(f"📋 模型类别(过长，未打印)...")
+            print_realtime(f"📋 模型类别: {model.names}")
         return True
 
     except Exception as e:
@@ -319,7 +317,8 @@ def normalize_script_path(path_input):
         # 如果是绝对路径，直接返回
         if os.path.isabs(path_input):
             return path_input
-          # 获取testcase目录
+
+        # 获取testcase目录
         if config_manager:
             try:
                 # 假设config_manager有get_testcase_dir或类似方法
@@ -467,7 +466,9 @@ def setup_log_directory(device_name):
     log_file = os.path.join(log_dir, "log.txt")
     if not os.path.exists(log_file):
         with open(log_file, 'w', encoding='utf-8') as f:
-            pass    # 设置Airtest日志目录
+            pass
+
+    # 设置Airtest日志目录
     try:
         set_logdir(log_dir)
     except Exception as e:
@@ -480,7 +481,9 @@ def check_device_status(device, device_name):
     """检查设备状态，确保设备可用且屏幕处于正确状态"""
     try:
         # 基本连接测试
-        device.shell("echo test")        # 检查屏幕状态
+        device.shell("echo test")
+
+        # 检查屏幕状态
         display_state = device.shell("dumpsys power | grep 'mHoldingDisplaySuspendBlocker'")
         if "true" not in display_state.lower():
             print_realtime(f"设备 {device_name} 屏幕未打开，尝试唤醒")
@@ -492,359 +495,6 @@ def check_device_status(device, device_name):
     except Exception as e:
         print_realtime(f"设备 {device_name} 状态检查失败: {e}")
         return False
-
-
-def process_priority_based_script(device, steps, log_dir, action_processor, screenshot_queue, click_queue, max_duration=None):
-    """处理基于优先级的动态脚本"""
-    print_realtime("🎯 开始执行优先级模式脚本")
-
-    # 按优先级排序
-    steps.sort(key=lambda s: s.get("Priority", 999))
-
-    priority_start_time = time.time()
-    priority_step_counter = 0
-    detection_count = 0
-
-    # 持续检测直到超出最大时间
-    while max_duration is None or (time.time() - priority_start_time) <= max_duration:
-        cycle_count = detection_count // len(steps) + 1
-        print_realtime(f"第 {cycle_count} 轮尝试检测，已检测 {detection_count} 次")
-
-        matched_any_target = False
-        unknown_fallback_step = None
-
-        for step_idx, step in enumerate(steps):
-            # 检查是否达到最大时间
-            if max_duration is not None and (time.time() - priority_start_time) > max_duration:
-                print_realtime(f"优先级模式已达到最大执行时间 {max_duration}秒，停止执行")
-                break
-
-            step_class = step.get("class", "")
-            step_remark = step.get("remark", "")
-            priority = step.get("Priority", 999)
-
-            # 记录unknown步骤作为备选
-            if step_class == "unknown":
-                unknown_fallback_step = step
-                continue
-
-            print_realtime(f"尝试优先级步骤 P{priority}: {step_class}, 备注: {step_remark}")
-
-            # 使用统一的ActionProcessor接口处理步骤
-            try:
-                # 为优先级模式设置特殊的action类型
-                priority_step = dict(step)  # 复制步骤
-                priority_step['action'] = 'ai_detection_click'
-
-                success, has_executed, should_continue = action_processor.process_action(
-                    priority_step, step_idx, log_dir
-                )
-
-                if success and has_executed:
-                    matched_any_target = True
-                    priority_step_counter += 1
-                    detection_count += 1
-                    print_realtime(f"✅ 成功执行优先级步骤: {step_remark}")
-                    time.sleep(1.0)  # 让UI响应
-                    break
-                else:
-                    print_realtime(f"❌ 优先级步骤未匹配: {step_class}")
-                    detection_count += 1
-
-            except Exception as e:
-                print_realtime(f"❌ 优先级步骤执行异常: {e}")
-                detection_count += 1
-
-        # 如果所有目标都未匹配，执行备选步骤
-        if not matched_any_target and unknown_fallback_step is not None:
-            print_realtime("🔄 执行备选步骤")
-
-            try:
-                # 为备选步骤设置特殊的action类型
-                fallback_step = dict(unknown_fallback_step)  # 复制步骤
-                fallback_step['action'] = 'fallback_click'
-
-                success, has_executed, should_continue = action_processor.process_action(
-                    fallback_step, -1, log_dir
-                )
-
-                if success and has_executed:
-                    priority_step_counter += 1
-                    print_realtime(f"✅ 成功执行备选步骤")
-                    time.sleep(1.0)
-
-            except Exception as e:
-                print_realtime(f"❌ 备选步骤执行异常: {e}")
-
-        # 超时检查
-        if time.time() - priority_start_time > 30 and priority_step_counter == 0:
-            print_realtime("连续30秒未检测到任何优先级步骤，停止检测")
-            break
-
-        time.sleep(0.5)  # 短暂暂停
-
-    print_realtime(f"优先级模式执行完成，成功执行步骤: {priority_step_counter}")
-    return priority_step_counter > 0
-
-
-def process_sequential_script(device, steps, log_dir, action_processor, max_duration=None):
-    """处理顺序执行脚本"""
-    print_realtime("📝 开始按顺序执行脚本")
-
-    script_start_time = time.time()
-    has_executed_steps = False
-
-    for step_idx, step in enumerate(steps):        # 检查是否超过最大执行时间
-        if max_duration is not None and (time.time() - script_start_time) > max_duration:
-            print_realtime(f"脚本已达到最大执行时间 {max_duration}秒，停止执行")
-            break
-
-        step_class = step.get("class", "")
-        step_action = step.get("action", "click")
-        step_remark = step.get("remark", "")
-
-        display_name = step_class if step_class else step_action
-        print_realtime(f"执行步骤 {step_idx+1}/{len(steps)}: {display_name}, 备注: {step_remark}")
-        # 使用ActionProcessor处理步骤
-        try:
-            success, has_executed, should_continue = action_processor.process_action(
-                step, step_idx, log_dir
-            )
-
-            if success and has_executed:
-                has_executed_steps = True
-                print_realtime(f"✅ 步骤 {step_idx+1} 执行成功")
-            else:
-                print_realtime(f"❌ 步骤 {step_idx+1} 执行失败")
-
-            # 检查是否需要停止
-            if not should_continue:
-                print_realtime(f"步骤 {step_idx+1} 要求停止执行")
-                break
-
-        except Exception as e:
-            print_realtime(f"❌ 步骤 {step_idx+1} 执行异常: {e}")
-            traceback.print_exc()        # 短暂暂停让UI响应
-        time.sleep(0.5)
-
-    print_realtime(f"顺序执行完成，共处理 {len(steps)} 个步骤")
-    return has_executed_steps
-
-
-def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, stop_event,
-                 device_name, log_dir, show_screens=False, loop_count=1):
-    """
-    重构后的设备回放函数 - 精简版本
-    主要负责流程控制，具体的action处理委托给ActionProcessor
-    """
-    print_realtime(f"🚀 开始回放设备: {device_name}, 脚本数量: {len(scripts)}")
-
-    # 检查脚本列表
-    if not scripts:
-        raise ValueError("脚本列表为空，无法回放")    # 使用新的报告管理器创建设备报告目录
-    device_report_dir = None
-    log_dir = None
-    if REPORT_MANAGER:
-        try:
-            device_report_dir = REPORT_MANAGER.create_device_report_dir(device_name)
-            log_dir = str(device_report_dir)
-            print_realtime(f"✅ 使用统一报告管理器创建目录: {log_dir}")
-        except Exception as e:
-            print_realtime(f"⚠️ 统一报告管理器创建目录失败: {e}")
-            device_report_dir = None
-            log_dir = None
-
-    # 如果统一报告系统失败，使用旧的目录结构
-    if not log_dir:
-        timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-        log_dir = os.path.join(DEVICE_REPORTS_DIR, f"{device_name}_{timestamp}")
-        os.makedirs(log_dir, exist_ok=True)
-        print_realtime(f"⚠️ 回退到旧目录结构: {log_dir}")
-
-    # 设置日志目录
-    try:
-        set_logdir(log_dir)
-    except Exception as e:
-        print_realtime(f"设置日志目录失败: {e}")
-
-    # 创建log.txt文件
-    log_txt_path = os.path.join(log_dir, "log.txt")
-    with open(log_txt_path, "w", encoding="utf-8") as f:
-        f.write("")
-
-    # 分配账号给设备
-    device_account = None
-    try:
-        account_manager = get_account_manager()
-        device_account = account_manager.allocate_account(device.serial)
-
-        if device_account:
-            username, password = device_account
-            print_realtime(f"✅ 为设备 {device_name} 分配账号: {username}")
-        else:
-            print_realtime(f"⚠️ 设备 {device_name} 账号分配失败")
-    except Exception as e:
-        print_realtime(f"❌ 账号分配过程中出错: {e}")    # 确保模型已加载，如果没有则尝试加载
-    global model
-    if model is None:
-        print_realtime("⚠️ 检测到模型未加载，尝试重新加载...")
-        load_yolo_model_for_detection()
-
-    # 检查检测函数是否可用
-    if model is not None:
-        print_realtime("✅ YOLO模型可用，AI检测功能启用")
-        detect_func = detect_buttons
-    else:
-        print_realtime("❌ YOLO模型不可用，AI检测功能禁用")
-        detect_func = lambda frame, target_class=None: (False, (None, None, None))    # 初始化ActionProcessor
-    action_processor = ActionProcessor(device, device_name=device_name, log_txt_path=log_txt_path, detect_buttons_func=detect_func)# 设置设备账号
-    if device_account:
-        action_processor.set_device_account(device_account)
-
-    # 记录测试开始
-    start_time = time.time()
-    start_entry = {
-        "tag": "function",
-        "depth": 1,
-        "time": start_time,
-        "data": {
-            "name": "开始测试",
-            "call_args": {"device": device_name, "scripts": [s['path'] for s in scripts]},
-            "start_time": start_time - 0.001,
-            "ret": True,
-            "end_time": start_time
-        }
-    }
-    with open(log_txt_path, "a", encoding="utf-8") as f:
-        f.write(json.dumps(start_entry, ensure_ascii=False) + "\n")    # 获取初始截图
-    try:
-        screenshot = get_device_screenshot(device)
-        if screenshot:
-            frame = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
-            timestamp = time.time()
-            screenshot_timestamp = int(timestamp * 1000)
-            screenshot_filename = f"{screenshot_timestamp}.jpg"
-            screenshot_path = os.path.join(log_dir, screenshot_filename)
-            cv2.imwrite(screenshot_path, frame)
-
-            # 创建缩略图
-            thumbnail_filename = f"{screenshot_timestamp}_small.jpg"
-            thumbnail_path = os.path.join(log_dir, thumbnail_filename)
-            small_frame = cv2.resize(frame, (0, 0), fx=0.3, fy=0.3)
-            cv2.imwrite(thumbnail_path, small_frame, [cv2.IMWRITE_JPEG_QUALITY, 60])
-
-            print_realtime(f"保存初始截图: {screenshot_path}")
-            print_realtime(f"保存初始缩略图: {thumbnail_path}")
-    except Exception as e:
-        print_realtime(f"获取初始截图失败: {e}")
-
-    # 执行所有脚本
-    total_executed = 0
-    has_any_execution = False
-
-    for script_config in scripts:
-        script_path = script_config["path"]
-        script_loop_count = script_config.get("loop_count", loop_count)
-        max_duration = script_config.get("max_duration", None)
-
-        print_realtime(f"📄 处理脚本: {script_path}, 循环: {script_loop_count}, 最大时长: {max_duration}")
-
-        # 读取脚本步骤
-        try:
-            with open(script_path, "r", encoding="utf-8") as f:
-                json_data = json.load(f)
-                steps = json_data.get("steps", [])
-        except Exception as e:
-            print_realtime(f"❌ 读取脚本失败: {e}")
-            continue
-
-        if not steps:
-            print_realtime(f"⚠️ 脚本 {script_path} 中未找到有效步骤，跳过")
-            continue
-
-        # 为步骤设置默认action
-        for step in steps:
-            if "action" not in step:
-                step["action"] = "click"
-
-        # 检查脚本类型
-        is_priority_based = any("Priority" in step for step in steps)        # 循环执行脚本
-        for loop in range(script_loop_count):
-            print_realtime(f"🔄 第 {loop + 1}/{script_loop_count} 次循环")
-
-            if is_priority_based:
-                executed = process_priority_based_script(
-                    device, steps, log_dir, action_processor,
-                    screenshot_queue, click_queue, max_duration
-                )
-            else:
-                executed = process_sequential_script(
-                    device, steps, log_dir, action_processor, max_duration
-                )
-
-            if executed:
-                has_any_execution = True
-                total_executed += 1    # 记录测试结束
-    end_time = time.time()
-    end_entry = {
-        "tag": "function",
-        "depth": 1,
-        "time": end_time,
-        "data": {
-            "name": "结束测试",
-            "call_args": {"device": device_name, "executed_scripts": total_executed},
-            "start_time": end_time - 0.001,
-            "ret": True,
-            "end_time": end_time
-        }
-    }
-    with open(log_txt_path, "a", encoding="utf-8") as f:
-        f.write(json.dumps(end_entry, ensure_ascii=False) + "\n")    # 生成HTML报告 - 强制使用新的统一报告生成器
-    try:
-        print_realtime(f"📝 生成设备 {device_name} 的 HTML 报告...")
-
-        if not REPORT_GENERATOR:
-            error_msg = f"❌ 统一报告生成器未初始化，无法生成报告"
-            print_realtime(error_msg)
-            raise RuntimeError(error_msg)
-
-        if not device_report_dir:
-            error_msg = f"❌ 设备报告目录未创建，无法生成报告"
-            print_realtime(error_msg)
-            raise RuntimeError(error_msg)
-
-        if not REPORT_MANAGER:
-            error_msg = f"❌ 报告管理器未初始化，无法生成报告"
-            print_realtime(error_msg)
-            raise RuntimeError(error_msg)
-
-        # 使用新的统一报告生成器
-        print_realtime(f"📝 使用统一报告生成器生成设备报告")
-        success = REPORT_GENERATOR.generate_device_report(device_report_dir, scripts)
-        if success:
-            # 获取报告URL
-            report_urls = REPORT_MANAGER.generate_report_urls(device_report_dir)
-            print_realtime(f"✅ 设备 {device_name} 报告生成成功: {report_urls['html_report']}")
-        else:
-            error_msg = f"❌ 设备 {device_name} 统一报告生成失败"
-            print_realtime(error_msg)
-            raise RuntimeError(error_msg)
-
-    except Exception as e:
-        print_realtime(f"❌ 设备 {device_name} HTML 报告生成失败: {e}")
-        raise e    # 释放账号
-    if device_account:
-        try:
-            account_manager = get_account_manager()
-            account_manager.release_account(device.serial)
-            print_realtime(f"✅ 设备 {device_name} 账号已释放")
-        except Exception as e:
-            print_realtime(f"❌ 账号释放失败: {e}")
-
-    print_realtime(f"🎉 设备 {device_name} 回放完成，总执行脚本数: {total_executed}")
-    stop_event.set()
-
-    return has_any_execution, device_report_dir
 
 
 def detection_service(screenshot_queue, click_queue, stop_event):
@@ -870,10 +520,6 @@ def detection_service(screenshot_queue, click_queue, stop_event):
             continue
         except Exception as e:
             print_realtime(f"❌ 检测服务错误: {e}")
-
-
-# 注意：原来的generate_script_py和generate_summary_script_py函数已被删除
-# 因为它们不再被使用，新的统一报告生成器有自己的实现
 
 
 def clear_log_dir():
@@ -970,8 +616,6 @@ def try_log_screen(device, log_dir, quality=60, max_size=None):
         return None
 
 
-# 只保留流程调度、日志、报告、设备管理、模型加载等工具方法
-# 所有action处理都通过ActionProcessor实现
 def main():
     """主函数 - 支持README中的完整命令格式"""
     # 加载YOLO模型用于AI检测
@@ -983,7 +627,9 @@ def main():
         print_realtime("⚠️ YOLO模型加载失败，AI检测功能不可用")
 
     # 使用自定义参数解析以支持复杂的脚本参数格式
-    import sys# 检查是否有--script参数
+    import sys
+
+    # 检查是否有--script参数
     if '--script' not in sys.argv:
         print_realtime("❌ 错误: 必须指定 --script 参数")
         print_realtime("用法示例:")
@@ -997,7 +643,9 @@ def main():
 
     if not scripts:
         print_realtime("❌ 未找到有效的脚本参数")
-        return    # 解析其他参数
+        return
+
+    # 解析其他参数
     show_screens = '--show-screens' in sys.argv
 
     print_realtime("🎬 启动精简版回放脚本")
@@ -1032,7 +680,9 @@ def main():
         if model is not None:
             print_realtime("✅ 模型状态检查通过，AI检测功能可用")
         else:
-            print_realtime("⚠️ 模型状态检查失败，将使用备用检测模式")        # 收集实际处理的设备名称列表，用于生成报告
+            print_realtime("⚠️ 模型状态检查失败，将使用备用检测模式")
+
+        # 收集实际处理的设备名称列表，用于生成报告
         processed_device_names = []
         # 收集本次执行创建的设备报告目录路径
         current_execution_device_dirs = []
@@ -1059,10 +709,13 @@ def main():
                         # 注意：简化版本不生成报告目录
 
                 print_realtime(f"✅ 多设备并发回放完成，成功处理 {len([r for r in results.values() if r.get('success')])} 台设备")
+
             except ImportError as e:
                 print_realtime(f"❌ 无法导入多设备回放器: {e}")
                 print_realtime("⚠️ 回退到单设备模式")
-                multi_device_mode = False        # 如果多设备模式被禁用，回退到单设备模式
+                multi_device_mode = False
+
+        # 如果多设备模式被禁用，回退到单设备模式
         if not multi_device_mode:
             # 单设备模式，保持原有逻辑
             print_realtime("📱 单设备模式，顺序执行")
@@ -1096,26 +749,38 @@ def main():
                 detection_thread.daemon = True
                 detection_thread.start()
 
-                # 执行设备回放
+                # 使用 DeviceScriptReplayer 执行脚本回放（单设备模式的简化版本）
                 try:
-                    has_execution, device_report_dir = replay_device(
-                        device=device,
-                        scripts=scripts,
-                        screenshot_queue=screenshot_queue,
-                        action_queue=action_queue,
-                        click_queue=click_queue,
-                        stop_event=stop_event,
-                        device_name=device_name,
-                        log_dir=None,  # 让replay_device函数内部的统一报告管理器来创建目录
-                        show_screens=show_screens,
-                        loop_count=1  # 这个参数在脚本级别配置中已被覆盖
-                    )
+                    if DeviceScriptReplayer is None:
+                        print_realtime(f"❌ 设备 {device_name} DeviceScriptReplayer 不可用")
+                        continue
+
+                    replayer = DeviceScriptReplayer(device.serial)
+
+                    # 执行每个脚本
+                    has_execution = False
+                    for script_config in scripts:
+                        script_path = script_config["path"]
+                        script_loop_count = script_config.get("loop_count", 1)
+
+                        print_realtime(f"📄 设备 {device_name} 开始执行脚本: {os.path.basename(script_path)}")
+
+                        # 循环执行脚本
+                        for loop in range(script_loop_count):
+                            if script_loop_count > 1:
+                                print_realtime(f"🔄 设备 {device_name} 第 {loop+1}/{script_loop_count} 次循环")
+
+                            result = replayer.replay_single_script(script_path)
+                            if result:
+                                has_execution = True
+                                print_realtime(f"✅ 设备 {device_name} 脚本执行成功")
+                            else:
+                                print_realtime(f"❌ 设备 {device_name} 脚本执行失败")
+
+                            time.sleep(1.0)  # 循环间短暂等待
 
                     if has_execution:
                         print_realtime(f"✅ 设备 {device_name} 回放成功完成")
-                        # 记录本次执行创建的设备报告目录
-                        if device_report_dir:
-                            current_execution_device_dirs.append(device_report_dir)
                     else:
                         print_realtime(f"⚠️ 设备 {device_name} 未执行任何操作")
 
@@ -1125,43 +790,7 @@ def main():
                 finally:
                     stop_event.set()
 
-        # 所有设备处理完成后，生成汇总报告
-        print_realtime("🔄 脚本执行完成，开始生成汇总报告...")
-        try:
-            # 给Airtest日志一点时间完成写入
-            time.sleep(2)
-
-            # 使用新的统一报告生成器生成汇总报告
-            if not REPORT_GENERATOR:
-                error_msg = f"❌ 统一报告生成器未初始化，无法生成汇总报告"
-                print_realtime(error_msg)
-                raise RuntimeError(error_msg)
-
-            if not REPORT_MANAGER:
-                error_msg = f"❌ 报告管理器未初始化，无法生成汇总报告"
-                print_realtime(error_msg)
-                raise RuntimeError(error_msg)            # 使用本次执行创建的设备报告目录，而不是所有历史目录
-            device_report_dirs = current_execution_device_dirs
-
-            if not device_report_dirs:
-                print_realtime("⚠️ 没有找到本次执行创建的设备报告目录，跳过汇总报告生成")
-                return
-
-            print_realtime(f"📊 将为 {len(device_report_dirs)} 个设备生成汇总报告")
-
-            # 生成汇总报告
-            summary_report_path = REPORT_GENERATOR.generate_summary_report(device_report_dirs, scripts)
-            if summary_report_path:
-                print_realtime(f"✅ 汇总报告生成成功: {summary_report_path}")
-            else:
-                error_msg = f"❌ 汇总报告生成失败"
-                print_realtime(error_msg)
-                raise RuntimeError(error_msg)
-
-        except ImportError as e:
-            print_realtime(f"❌ 无法导入报告生成模块: {e}")
-        except Exception as e:
-            print_realtime(f"❌ 报告生成异常: {e}")
+        print_realtime(f"🎉 所有设备处理完成，成功处理 {len(processed_device_names)} 台设备")
 
     except Exception as e:
         print_realtime(f"❌ 设备处理失败: {e}")

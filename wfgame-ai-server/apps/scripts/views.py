@@ -13,7 +13,8 @@ Version: 1.0
 import logging
 from datetime import datetime
 import traceback
-
+import atexit
+import shlex
 import json
 import uuid
 import os
@@ -26,6 +27,31 @@ import platform
 import signal
 import shutil
 import configparser # 新增：用于读取配置文件
+
+# =====================
+# 强制设置UTF-8编码环境
+# =====================
+# 设置环境变量确保所有子进程使用UTF-8
+os.environ['PYTHONIOENCODING'] = 'utf-8'
+os.environ['PYTHONUTF8'] = '1'
+
+# 在Windows系统上设置控制台代码页为UTF-8
+if platform.system() == "Windows":
+    try:
+        # 尝试设置控制台为UTF-8编码
+        import subprocess
+        subprocess.run(['chcp', '65001'], shell=True, capture_output=True, check=False)
+        os.environ['PYTHONLEGACYWINDOWSSTDIO'] = '0'
+    except Exception:
+        pass  # 如果设置失败，继续执行
+
+# 确保标准流使用UTF-8编码
+if hasattr(sys.stdout, 'reconfigure'):
+    try:
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+        sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+    except Exception:
+        pass
 
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse, JsonResponse
@@ -56,6 +82,145 @@ from .serializers import (
 )
 
 logger = logging.getLogger(__name__)
+
+# 配置logger以正确处理中文编码
+class UTF8StreamHandler(logging.StreamHandler):
+    """强化的UTF-8流处理器，确保所有中文和emoji字符正确显示"""
+
+    def __init__(self, stream=None):
+        super().__init__(stream)
+        self.stream = stream or sys.stdout
+
+    def emit(self, record):
+        try:
+            msg = self.format(record)
+
+            # 确保消息是Unicode字符串
+            if isinstance(msg, bytes):
+                msg = msg.decode('utf-8', errors='replace')
+
+            # 强制使用UTF-8编码输出
+            if hasattr(self.stream, 'buffer'):
+                # 直接写入底层buffer，绕过可能的编码问题
+                self.stream.buffer.write(msg.encode('utf-8') + b'\n')
+                self.stream.buffer.flush()
+            else:
+                # 如果没有buffer属性，直接写入流
+                try:
+                    self.stream.write(msg + '\n')
+                    self.stream.flush()
+                except UnicodeEncodeError:
+                    # 如果编码失败，强制替换不可编码的字符
+                    safe_msg = msg.encode('utf-8', errors='replace').decode('utf-8')
+                    self.stream.write(safe_msg + '\n')
+                    self.stream.flush()
+        except Exception as e:
+            # 如果所有方法都失败，使用最基本的错误处理
+            try:
+                fallback_msg = f"[编码错误] {repr(record.getMessage())}"
+                if hasattr(self.stream, 'buffer'):
+                    self.stream.buffer.write(fallback_msg.encode('utf-8') + b'\n')
+                    self.stream.buffer.flush()
+                else:
+                    self.stream.write(fallback_msg + '\n')
+                    self.stream.flush()
+            except:
+                self.handleError(record)
+
+# 清理并重新配置所有日志处理器
+def setup_utf8_logging():
+    """设置UTF-8日志系统"""
+
+    # 获取根日志器
+    root_logger = logging.getLogger()
+
+    # 移除所有现有处理器
+    for handler in root_logger.handlers[:]:
+        root_logger.removeHandler(handler)
+
+    # 获取当前模块的日志器
+    current_logger = logging.getLogger(__name__)
+
+    # 移除当前模块日志器的所有处理器
+    for handler in current_logger.handlers[:]:
+        current_logger.removeHandler(handler)
+
+    # 创建新的UTF-8处理器
+    handler = UTF8StreamHandler(sys.stdout)
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+    handler.setFormatter(formatter)
+    handler.setLevel(logging.INFO)
+
+    # 添加到当前模块日志器
+    current_logger.addHandler(handler)
+    current_logger.setLevel(logging.INFO)
+    current_logger.propagate = False  # 防止重复输出
+
+    # 同时为根日志器添加处理器，处理其他模块的日志
+    root_handler = UTF8StreamHandler(sys.stdout)
+    root_handler.setFormatter(formatter)
+    root_handler.setLevel(logging.INFO)
+    root_logger.addHandler(root_handler)
+    root_logger.setLevel(logging.INFO)
+
+    return current_logger
+
+# 立即设置UTF-8日志系统
+logger = setup_utf8_logging()
+
+# 测试日志输出
+logger.info("✅ UTF-8日志系统初始化完成")
+logger.info("🔧 中文和emoji字符应该能正常显示")
+
+# =====================
+# UTF-8 subprocess 封装函数
+# =====================
+def run_subprocess_utf8(cmd, **kwargs):
+    """
+    统一的UTF-8 subprocess封装函数
+    确保所有子进程调用都使用正确的UTF-8编码
+    """
+    # 强制设置UTF-8相关参数
+    utf8_kwargs = {
+        'encoding': 'utf-8',
+        'errors': 'replace',
+        'text': True,
+        'env': dict(os.environ, PYTHONIOENCODING='utf-8', PYTHONUTF8='1')
+    }
+
+    # 合并用户提供的参数，但UTF-8设置优先
+    final_kwargs = {**kwargs, **utf8_kwargs}
+
+    try:
+        return subprocess.run(cmd, **final_kwargs)
+    except Exception as e:
+        logger.error(f"subprocess执行失败: {cmd}, 错误: {e}")
+        raise
+
+def create_subprocess_utf8(cmd, **kwargs):
+    """
+    统一的UTF-8 subprocess.Popen封装函数
+    确保所有子进程创建都使用正确的UTF-8编码
+    """
+    # 强制设置UTF-8相关参数
+    utf8_kwargs = {
+        'encoding': 'utf-8',
+        'errors': 'replace',
+        'text': True,
+        'env': dict(os.environ, PYTHONIOENCODING='utf-8', PYTHONUTF8='1')
+    }
+
+    # 合并用户提供的参数，但UTF-8设置优先
+    final_kwargs = {**kwargs, **utf8_kwargs}
+
+    try:
+        return subprocess.Popen(cmd, **final_kwargs)
+    except Exception as e:
+        logger.error(f"subprocess.Popen创建失败: {cmd}, 错误: {e}")
+        raise
 
 # =====================
 # 路径变量统一修正（强制依赖config.ini）
@@ -184,10 +349,8 @@ def get_devices(request):
     """
     try:
         # 记录请求开始
-        logger.info("开始获取设备列表...")
-
-        # 使用adb命令扫描设备
-        result = subprocess.run(['adb', 'devices'], capture_output=True, text=True, check=True)
+        logger.info("开始获取设备列表...")        # 使用adb命令扫描设备
+        result = run_subprocess_utf8(['adb', 'devices'], capture_output=True, check=True)
 
         # 分析输出
         lines = result.stdout.strip().split('\n')[1:]  # 跳过"List of devices attached"标题行
@@ -217,18 +380,17 @@ def get_devices(request):
 
                     # 如果设备已连接授权，获取更多设备信息
                     if status == 'device':
-                        try:
-                            # 获取设备品牌
-                            brand_cmd = subprocess.run(
+                        try:                            # 获取设备品牌
+                            brand_cmd = run_subprocess_utf8(
                                 ['adb', '-s', serial, 'shell', 'getprop', 'ro.product.brand'],
-                                capture_output=True, text=True, timeout=5
+                                capture_output=True, timeout=5
                             )
                             device_info['brand'] = brand_cmd.stdout.strip()
 
                             # 获取设备型号
-                            model_cmd = subprocess.run(
+                            model_cmd = run_subprocess_utf8(
                                 ['adb', '-s', serial, 'shell', 'getprop', 'ro.product.model'],
-                                capture_output=True, text=True, timeout=5
+                                capture_output=True, timeout=5
                             )
                             device_info['model'] = model_cmd.stdout.strip()
 
@@ -403,16 +565,14 @@ def get_python_envs(request):
             "version": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
             "active": True,
             "packages": []
-        }
-
-        # 获取当前环境已安装的包
+        }        # 获取当前环境已安装的包
         try:
-            pip_freeze = subprocess.run([sys.executable, "-m", "pip", "freeze"],
-                                      capture_output=True, text=True, check=True)
+            pip_freeze = run_subprocess_utf8([sys.executable, "-m", "pip", "freeze"],
+                                      capture_output=True, check=True)
             packages = pip_freeze.stdout.strip().split('\n')
             current_env["packages"] = packages
         except Exception as e:
-            print(f"获取当前环境包列表失败: {e}")
+            logger.warning(f"获取当前环境包列表失败: {e}")
 
         envs.append(current_env)
 
@@ -436,17 +596,16 @@ def get_python_envs(request):
                     python_exe = os.path.join(path, "python.exe")
                     if os.path.exists(python_exe) and python_exe != sys.executable:
                         found_paths.append(python_exe)
-        else:
-            # Mac/Linux下查找全局Python路径
+        else:            # Mac/Linux下查找全局Python路径
             try:
-                which_python3 = subprocess.run(["which", "python3"],
-                                             capture_output=True, text=True, check=True)
+                which_python3 = run_subprocess_utf8(["which", "python3"],
+                                             capture_output=True, check=True)
                 python3_path = which_python3.stdout.strip()
 
                 if python3_path and python3_path != sys.executable:
                     found_paths.append(python3_path)
             except Exception as e:
-                print(f"查找全局Python路径失败: {e}")
+                logger.warning(f"查找全局Python路径失败: {e}")
 
         # 2. 查找Anaconda/Miniconda环境 - 增强对Conda环境的检测
         conda_env_paths = []
@@ -455,29 +614,27 @@ def get_python_envs(request):
         try:
             # 查找可能的conda可执行文件
             conda_executables = ['conda', 'conda.exe']
-            conda_path = None
-
-            # 尝试在PATH中找到conda
+            conda_path = None            # 尝试在PATH中找到conda
             for conda_exe in conda_executables:
                 try:
                     if is_windows:
-                        conda_proc = subprocess.run(['where', conda_exe],
-                                                   capture_output=True, text=True, check=True)
+                        conda_proc = run_subprocess_utf8(['where', conda_exe],
+                                                   capture_output=True, check=True)
                     else:
-                        conda_proc = subprocess.run(['which', conda_exe],
-                                                   capture_output=True, text=True, check=True)
+                        conda_proc = run_subprocess_utf8(['which', conda_exe],
+                                                   capture_output=True, check=True)
 
                     conda_paths = conda_proc.stdout.strip().split('\n')
                     if conda_paths and conda_paths[0]:
                         conda_path = conda_paths[0]
                         break
-                except subprocess.CalledProcessError:
+                except Exception:
                     continue
 
             if conda_path:
                 # 使用conda env list获取所有环境
-                conda_env_proc = subprocess.run([conda_path, 'env', 'list', '--json'],
-                                              capture_output=True, text=True, timeout=5)
+                conda_env_proc = run_subprocess_utf8([conda_path, 'env', 'list', '--json'],
+                                              capture_output=True, timeout=5)
 
                 if conda_env_proc.returncode == 0:
                     try:
@@ -491,9 +648,9 @@ def get_python_envs(request):
                             if os.path.exists(python_exe) and python_exe != sys.executable:
                                 conda_env_paths.append(python_exe)
                     except json.JSONDecodeError:
-                        print("无法解析conda env list输出")
+                        logger.warning("无法解析conda env list输出")
         except Exception as e:
-            print(f"使用conda命令获取环境列表失败: {e}")
+            logger.warning(f"使用conda命令获取环境列表失败: {e}")
 
         # 如果conda命令失败，回退到原来的目录查找方法
         if not conda_env_paths:
@@ -550,24 +707,20 @@ def get_python_envs(request):
         found_paths.extend(conda_env_paths)
 
         # 取消重复路径
-        found_paths = list(set(found_paths))
-
-        # 获取每个Python环境的版本信息
+        found_paths = list(set(found_paths))        # 获取每个Python环境的版本信息
         for python_path in found_paths:
             try:
                 # 获取版本信息
                 version_cmd = [python_path, "-c", "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}')"]
-                version_proc = subprocess.run(version_cmd, capture_output=True, text=True, timeout=3)
+                version_proc = run_subprocess_utf8(version_cmd, capture_output=True, timeout=3)
                 version = version_proc.stdout.strip() if version_proc.returncode == 0 else "未知"
 
                 # 尝试获取环境名称
-                name = "Python环境"
-
-                # 检查是否为conda环境
+                name = "Python环境"                # 检查是否为conda环境
                 try:
                     conda_info_cmd = [python_path, "-c",
                                      "import os, sys; print(os.environ.get('CONDA_DEFAULT_ENV') or os.path.basename(os.path.dirname(os.path.dirname(sys.executable)))) if 'conda' in sys.version or 'Continuum' in sys.version else print('non-conda')"]
-                    conda_info_proc = subprocess.run(conda_info_cmd, capture_output=True, text=True, timeout=3)
+                    conda_info_proc = run_subprocess_utf8(conda_info_cmd, capture_output=True, timeout=3)
 
                     env_name = conda_info_proc.stdout.strip()
                     if env_name and env_name != 'non-conda':
@@ -588,17 +741,15 @@ def get_python_envs(request):
                             elif "miniconda" in python_path.lower():
                                 name = "Conda: Miniconda Base"
                             else:
-                                name = "Conda: Base"
-
-                # 获取已安装的包
+                                name = "Conda: Base"                # 获取已安装的包
                 packages = []
                 try:
                     pip_cmd = [python_path, "-m", "pip", "freeze"]
-                    pip_proc = subprocess.run(pip_cmd, capture_output=True, text=True, timeout=5)
+                    pip_proc = run_subprocess_utf8(pip_cmd, capture_output=True, timeout=5)
                     if pip_proc.returncode == 0:
                         packages = pip_proc.stdout.strip().split('\n')
                 except Exception as e:
-                    print(f"获取环境 {python_path} 的包列表失败: {e}")
+                    logger.warning(f"获取环境 {python_path} 的包列表失败: {e}")
 
                 # 检查是否有常用包
                 has_pytorch = any('torch==' in pkg for pkg in packages)
@@ -624,7 +775,7 @@ def get_python_envs(request):
                     "features": features
                 })
             except Exception as e:
-                print(f"获取环境 {python_path} 信息失败: {e}")
+                logger.warning(f"获取环境 {python_path} 信息失败: {e}")
 
         return JsonResponse({
             'success': True,
@@ -632,7 +783,7 @@ def get_python_envs(request):
         })
     except Exception as e:
         error_msg = str(e)
-        print(f"检测Python环境失败: {error_msg}")
+        logger.error(f"检测Python环境失败: {error_msg}")
 
         return JsonResponse({
             'success': False,
@@ -659,12 +810,10 @@ def switch_python_env(request):
             return JsonResponse({
                 'success': False,
                 'message': f'Python环境路径不存在: {new_env_path}'
-            }, status=400)
-
-        # 验证是否为有效的Python解释器
+            }, status=400)        # 验证是否为有效的Python解释器
         try:
-            check_proc = subprocess.run([new_env_path, "--version"],
-                                      capture_output=True, text=True, timeout=3)
+            check_proc = run_subprocess_utf8([new_env_path, "--version"],
+                                      capture_output=True, timeout=3)
             if check_proc.returncode != 0:
                 return JsonResponse({
                     'success': False,
@@ -687,14 +836,12 @@ def switch_python_env(request):
             value=new_env_path,
             user=user,
             description=f'Python解释器路径设置于 {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}'
-        )
-
-        # 获取环境名称
+        )        # 获取环境名称
         env_name = "未知环境"
         try:
             conda_info_cmd = [new_env_path, "-c",
                              "import os, sys; print(os.environ.get('CONDA_DEFAULT_ENV') or os.path.basename(os.path.dirname(os.path.dirname(sys.executable)))) if 'conda' in sys.version or 'Continuum' in sys.version else print(sys.executable)"]
-            conda_info_proc = subprocess.run(conda_info_cmd, capture_output=True, text=True, timeout=3)
+            conda_info_proc = run_subprocess_utf8(conda_info_cmd, capture_output=True, timeout=3)
 
             env_name = conda_info_proc.stdout.strip()
         except Exception:
@@ -752,14 +899,15 @@ def record_script(request):
         if device_serial:
             cmd.extend(['--main-device', device_serial])
 
-        logger.info(f"启动录制命令: {' '.join(cmd)}")
-
-        # 使用subprocess启动录制进程
+        logger.info(f"启动录制命令: {' '.join(cmd)}")        # 使用subprocess启动录制进程
         process = subprocess.Popen(cmd,
                                   stdout=subprocess.PIPE,
                                   stderr=subprocess.PIPE,
                                   cwd=SCRIPTS_DIR,  # 使用配置中的项目根目录
-                                  text=True)
+                                  text=True,
+                                  encoding='utf-8',
+                                  errors='replace',
+                                  env=dict(os.environ, PYTHONIOENCODING='utf-8'))  # 确保Python进程使用UTF-8编码
 
         # 这里不等待进程完成，立即返回
         return Response({
@@ -842,28 +990,64 @@ def replay_script(request):
                 }, status=404)
 
             # 更新配置中的路径
-            config['path'] = path_input
-
-            # 查找脚本文件的数据库记录以获取分类信息
+            config['path'] = path_input            # 查找脚本文件的数据库记录以获取分类信息
             try:
                 from .models import ScriptFile
-                # 尝试通过文件路径查找脚本记录
+                script_file = None
+
+                # 1. 首先尝试通过完整路径查找
                 script_file = ScriptFile.objects.filter(file_path=path_input).first()
+
+                # 2. 如果找不到，尝试通过文件名查找
                 if not script_file:
-                    # 如果通过完整路径找不到，尝试通过文件名查找
                     filename = os.path.basename(path_input)
                     script_file = ScriptFile.objects.filter(filename=filename).first()
+
+                # 3. 如果还是找不到，尝试通过相对路径查找
+                if not script_file:
+                    relative_path = os.path.relpath(path_input, TESTCASE_DIR)
+                    script_file = ScriptFile.objects.filter(file_path__endswith=relative_path).first()
+
+                # 4. 最后尝试模糊匹配文件名（不包含扩展名）
+                if not script_file:
+                    base_filename = os.path.splitext(filename)[0]
+                    script_file = ScriptFile.objects.filter(filename__startswith=base_filename).first()
 
                 if script_file:
                     config['script_id'] = script_file.pk
                     config['category'] = script_file.category.name if script_file.category else None
-                    logger.info(f"找到脚本记录: ID={script_file.pk}, 分类={config['category']}")
+                    logger.info(f"✅ 找到脚本记录: ID={script_file.pk}, 分类={config['category']}, 文件={script_file.filename}")
                 else:
                     config['script_id'] = None
                     config['category'] = None
-                    logger.warning(f"未找到脚本文件的数据库记录: {path_input}")
+                    # 尝试自动创建脚本记录
+                    try:
+                        # 读取脚本内容获取步骤数
+                        step_count = 0
+                        try:
+                            with open(path_input, 'r', encoding='utf-8') as f:
+                                script_content = json.load(f)
+                                step_count = len(script_content.get('steps', []))
+                        except:
+                            step_count = 0
+
+                        # 创建新的脚本记录
+                        script_file = ScriptFile.objects.create(
+                            filename=os.path.basename(path_input),
+                            file_path=path_input,
+                            file_size=os.path.getsize(path_input) if os.path.exists(path_input) else 0,
+                            step_count=step_count,
+                            type='manual',
+                            description=f'自动创建于脚本回放: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}'
+                        )
+                        config['script_id'] = script_file.pk
+                        config['category'] = None
+                        logger.info(f"✅ 自动创建脚本记录: ID={script_file.pk}, 文件={script_file.filename}")
+                    except Exception as create_error:
+                        logger.warning(f"⚠️ 未找到脚本文件的数据库记录，且自动创建失败: {path_input}, 错误: {create_error}")
+
             except Exception as e:
-                logger.error(f"查询脚本分类时出错: {e}")
+                logger.error(f"❌ 查询脚本分类时出错: {e}")
                 config['script_id'] = None
                 config['category'] = None
 
@@ -886,7 +1070,8 @@ def replay_script(request):
         # 添加脚本参数
         for config in script_configs:
             script_path = config.get('path')
-            cmd.extend(["--script", script_path])            # 添加脚本ID和分类信息
+            cmd.extend(["--script", script_path])
+            # 添加脚本ID和分类信息
             script_id = config.get('script_id')
             if script_id:
                 cmd.extend(["--script-id", str(script_id)])
@@ -911,16 +1096,33 @@ def replay_script(request):
             text=True,
             encoding='utf-8',
             errors='replace',
-            bufsize=1  # 行缓冲，提高实时性
+            bufsize=1,  # 行缓冲，提高实时性
+            env=dict(os.environ, PYTHONIOENCODING='utf-8')  # 确保Python进程使用UTF-8编码
         )
 
         # 存储进程对象，以便后续管理
-        CHILD_PROCESSES[process.pid] = process        # 创建线程读取输出，避免缓冲区满
+        CHILD_PROCESSES[process.pid] = process
+
+        # 创建线程读取输出，避免缓冲区满
         def read_output(stream, log_func):
-            for line in iter(stream.readline, ''):
-                if line:
-                    log_func(line.strip())
-            stream.close()        # 创建进程监控线程（不再生成重复报告）
+            try:
+                for line in iter(stream.readline, ''):
+                    if line:
+                        # 确保正确处理中文字符
+                        line_str = line.strip()
+                        # 尝试处理可能的编码问题
+                        try:
+                            # 如果是字节类型，解码为字符串
+                            if isinstance(line_str, bytes):
+                                line_str = line_str.decode('utf-8', errors='replace')
+                            log_func(line_str)
+                        except UnicodeDecodeError:
+                            # 如果解码失败，使用替换错误处理
+                            log_func(repr(line_str))
+            except Exception as e:
+                logger.error(f"读取输出流时出错: {e}")
+            finally:
+                stream.close()# 创建进程监控线程（不再生成重复报告）
         def monitor_process_and_generate_report(proc, pid):
             """监控进程完成 - 报告生成已由replay_script.py统一处理"""
             try:
@@ -1151,8 +1353,7 @@ def debug_script(request):
                     new_script_path = find_script_path(script_basename)
                     args[1] = new_script_path
                     logger.info(f"脚本路径已更新为: {new_script_path}")
-
-        process = subprocess.Popen(
+                    process = subprocess.Popen(
             args,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -1160,7 +1361,8 @@ def debug_script(request):
             text=True, # Use text=True for universal_newlines=True behavior
             encoding='utf-8', errors='replace', # Be explicit about encoding
             cwd=SCRIPTS_DIR,  # 使用配置中的项目根目录
-            bufsize=1  # 行缓冲，提高实时性
+            bufsize=1,  # 行缓冲，提高实时性
+            env=dict(os.environ, PYTHONIOENCODING='utf-8')  # 确保Python进程使用UTF-8编码
         )
 
         process_id = str(process.pid)
@@ -1214,9 +1416,7 @@ def start_record(request):
             "--record"
         ]
 
-        logger.info(f"启动录制命令: {' '.join(cmd)}")
-
-        # 启动录制进程
+        logger.info(f"启动录制命令: {' '.join(cmd)}")        # 启动录制进程
         process = subprocess.Popen(
             cmd,
             stdout=subprocess.PIPE,
@@ -1224,19 +1424,30 @@ def start_record(request):
             cwd=SCRIPTS_DIR,  # 使用配置中的项目根目录
             text=True,
             encoding='utf-8',
-            errors='replace'
+            errors='replace',
+            env=dict(os.environ, PYTHONIOENCODING='utf-8')  # 确保Python进程使用UTF-8编码
         )
 
         # 存储进程对象，以便后续管理
         process_id = str(process.pid)
-        CHILD_PROCESSES[process_id] = process
-
-        # 创建线程读取输出，避免缓冲区满
+        CHILD_PROCESSES[process_id] = process        # 创建线程读取输出，避免缓冲区满
         def read_output(stream, log_func):
-            for line in iter(stream.readline, ''):
-                if line:
-                    log_func(f"录制输出: {line.strip()}")
-            stream.close()
+            try:
+                for line in iter(stream.readline, ''):
+                    if line:
+                        # 确保正确处理中文字符
+                        line_str = line.strip()
+                        try:
+                            # 如果是字节类型，解码为字符串
+                            if isinstance(line_str, bytes):
+                                line_str = line_str.decode('utf-8', errors='replace')
+                            log_func(f"录制输出: {line_str}")
+                        except UnicodeDecodeError:
+                            log_func(f"录制输出: {repr(line_str)}")
+            except Exception as e:
+                logger.error(f"读取录制输出流时出错: {e}")
+            finally:
+                stream.close()
 
         # 启动输出读取线程
         stdout_thread = threading.Thread(target=read_output, args=(process.stdout, logger.info))

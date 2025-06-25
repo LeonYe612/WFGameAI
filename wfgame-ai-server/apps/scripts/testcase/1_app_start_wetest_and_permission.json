@@ -12,7 +12,7 @@
         "check_usb": true,
         "setup_wireless": false,
         "configure_permissions": true,
-        "handle_screen_lock": false,
+        "handle_screen_lock": true,
         "setup_input_method": true,
         "save_logs": false
       }

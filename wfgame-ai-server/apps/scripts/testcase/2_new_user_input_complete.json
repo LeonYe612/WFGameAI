@@ -17,84 +17,62 @@
       "confidence": 0.7135645747184753,
       "timestamp": "2025-04-07 18:40:19.816964",
       "remark": "判断启动APP后是否出现“热更资源”图标，如果存在则需要等待新资源加载完成"
-    },
-    {
+    },      {
       "step": 2,
       "action": "click_target",
       "target_selector": {
-        "text_hints": ["其他登录方式", "其他方式", "切换登录", "账号登录"],
-        "resource_id_keywords": [
-          "other_login",
-          "switch_login",
-          "login_method",
-          "more_login",
-          "password_login"
-        ],
-        "class_types": [
-          "android.widget.TextView",
-          "android.widget.Button",
-          "android.view.View"
-        ],
-        "content_desc_keywords": [
-          "其他登录方式",
-          "登录方式",
-          "切换登录",
-          "更多选项"
-        ],
+        "type": "login_switch_button",
         "skip_if_not_found": true
       },
       "confidence": 0.9,
       "timestamp": "2025-06-11 10:00:00.000000",
-      "remark": "切换到账号密码登录模式"
+      "remark": "切换到账号密码登录模式（使用LOGIN_SWITCH_BUTTON_PATTERNS自动识别）"
     },
     {
-      "step": 2,
+      "step": 2.5,
+      "action": "delay",
+      "params": {
+        "seconds": 2
+      },
+      "remark": "等待登录方式切换完成，界面稳定后再进行下一步操作"
+    },    {
+      "step": 3,
       "action": "input",
       "text": "${account:username}",
       "target_selector": {
-        "placeholder": "请输入手机号",
-        "clear_previous_text": true
+        "type": "username_field"
       },
       "confidence": 0.95,
       "timestamp": "2025-06-11 10:00:05.000000",
-      "remark": "输入登录用户名"
-    },
-    {
-      "step": 3,
+      "remark": "输入登录用户名（使用USERNAME_PATTERNS自动识别）"
+    },    {
+      "step": 4,
       "action": "input",
       "text": "${account:password}",
       "target_selector": {
-        "placeholder": "请输入密码",
-        "clear_previous_text": true
+        "type": "password_field"
       },
       "confidence": 0.95,
       "timestamp": "2025-06-11 10:00:10.000000",
-      "remark": "输入登录密码"
-    },
-    {
-      "step": 4,
+      "remark": "输入登录密码（使用PASSWORD_PATTERNS自动识别）"
+    },    {
+      "step": 5,
       "action": "checkbox",
       "target_selector": {
-        "class_types": ["android.widget.CheckBox"],
         "type": "agreement_checkbox"
       },
       "confidence": 0.95,
       "timestamp": "2025-06-11 10:00:15.000000",
-      "remark": "勾选用户协议"
-    },
-    {
-      "step": 5,
+      "remark": "勾选用户协议（使用CHECKBOX_PATTERNS自动识别）"
+    },    {
+      "step": 6,
       "action": "click_target",
       "target_selector": {
-        "text_hints": ["登录", "进入游戏", "立即登录"],
-        "resource_id_keywords": ["login", "enter", "submit"],
-        "class_types": ["android.widget.Button", "android.widget.TextView"],
-        "content_desc_keywords": ["登录", "进入"],
-        "skip_if_not_found": false
+        "type": "login_button"
       },
       "confidence": 0.92,
       "timestamp": "2025-06-11 10:00:20.000000",
-      "remark": "点击登录按钮"
+      "remark": "点击登录按钮（使用LOGIN_BUTTON_PATTERNS自动识别）"
     }
   ]
 }

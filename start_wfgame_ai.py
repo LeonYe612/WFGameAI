@@ -143,9 +143,7 @@ def run_command(command, cwd=None, name=None):
     log_prefix = f"[{name}] " if name else ""
 
     print_colored(f"{log_prefix}执行命令: {' '.join(command)}", 'blue')
-    print_colored(f"{log_prefix}工作目录: {cwd}", 'blue')
-
-    # 创建进程，设置不同的输出管道
+    print_colored(f"{log_prefix}工作目录: {cwd}", 'blue')    # 创建进程，设置不同的输出管道
     process = subprocess.Popen(
         command,
         cwd=cwd,
@@ -153,7 +151,9 @@ def run_command(command, cwd=None, name=None):
         stderr=subprocess.PIPE,
         text=True,
         bufsize=1,
-        universal_newlines=True
+        universal_newlines=True,
+        encoding='utf-8',
+        errors='replace'  # 遇到编码错误时替换为?而不是抛出异常
     )
 
     # 将进程添加到全局列表
@@ -162,8 +162,17 @@ def run_command(command, cwd=None, name=None):
     # 创建输出处理线程
     def handle_output(stream, is_error=False):
         prefix_color = 'red' if is_error else 'green'
-        for line in stream:
-            print_colored(f"{log_prefix}{line.rstrip()}", prefix_color)
+        try:
+            for line in stream:
+                # 额外的编码安全处理
+                try:
+                    safe_line = line.encode('utf-8', errors='replace').decode('utf-8')
+                    print_colored(f"{log_prefix}{safe_line.rstrip()}", prefix_color)
+                except UnicodeError:
+                    # 如果还有编码问题，直接跳过这行
+                    print_colored(f"{log_prefix}[编码错误，跳过一行日志]", 'yellow')
+        except Exception as e:
+            print_colored(f"{log_prefix}输出处理异常: {e}", 'red')
 
     # 启动输出处理线程
     stdout_thread = threading.Thread(target=handle_output, args=(process.stdout, False))

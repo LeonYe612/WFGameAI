@@ -10,7 +10,9 @@
       "remark": "启动应用并处理权限",
       "params": {
         "app_name": "card2prepare-wetest",
-        "handle_permission": false,
+        "package_name": "com.beeplay.card2prepare",
+        "activity_name": "com.beeplay.card2prepare/com.beeplay.splash.launcher.SplashActivity",
+        "handle_permission": true,
         "permission_wait": 15,
         "allow_permission": true,
         "first_only": true

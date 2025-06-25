@@ -81,20 +81,25 @@ class AccountManager:
                 print(f"设备 {device_serial} 使用已分配账号: {username}")
                 return username, password
 
-            # 计算当前已分配设备数量，用于确定分配顺序
-            allocated_count = len(self.device_allocations)
+            # 基于设备序列号的哈希值来确定分配顺序，保证稳定分配
+            import hashlib
+            device_hash = int(hashlib.md5(device_serial.encode()).hexdigest()[:8], 16)
 
-            # 检查是否有足够的账号
-            if allocated_count >= len(self.accounts):
+            # 找到第一个未分配的账号
+            allocated_accounts = set(self.device_allocations.values())
+            available_accounts = [acc for acc in self.accounts if acc not in allocated_accounts]
+
+            if not available_accounts:
                 print(f"错误: 账号不足，无法为设备 {device_serial} 分配账号")
-                print(f"当前已分配: {allocated_count}, 总账号数: {len(self.accounts)}")
+                print(f"当前已分配: {len(self.device_allocations)}, 总账号数: {len(self.accounts)}")
                 return None
 
-            # 按顺序分配账号
-            username, password = self.accounts[allocated_count]
+            # 使用设备哈希值选择账号，确保同一设备总是得到相同账号
+            account_index = device_hash % len(available_accounts)
+            username, password = available_accounts[account_index]
             self.device_allocations[device_serial] = (username, password)
 
-            print(f"为设备 {device_serial} 分配账号: {username} (第{allocated_count + 1}个)")
+            print(f"为设备 {device_serial} 分配账号: {username} (稳定分配算法)")
             return username, password
 
     def get_account(self, device_serial: str) -> Optional[Tuple[str, str]]:

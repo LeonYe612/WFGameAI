@@ -1,0 +1,174 @@
+{
+  "meta": {
+    "name": "新用户注册登录完整流程 - 参数化版本",
+    "description": "使用参数化target_selector的标准化脚本，依赖enhanced_input_handler内置的ElementPatterns",
+    "version": "2.0",
+    "created_date": "2025-06-24",
+    "author": "WFGameAI开发团队",
+    "tags": ["登录", "注册", "新用户", "参数化", "标准化"]
+  },
+  "steps": [
+    {
+      "step": 0.5,
+      "action": "delay",
+      "params": {
+        "seconds": 5
+      },
+      "remark": "等待应用启动后界面稳定，避免热更新导致的黑屏影响检测"
+    },
+    {
+      "step": 1,
+      "action": "wait_if_exists",
+      "class": "system-newResources",
+      "polling_interval": 5000,
+      "max_duration": 300,
+      "confidence": 0.7135645747184753,
+      "timestamp": "2025-06-24 10:00:00.000000",
+      "remark": "判断启动APP后是否出现"热更资源"图标，如果存在则需要等待新资源加载完成"
+    },
+    {
+      "step": 2,
+      "action": "click_target",
+      "target_selector": {
+        "type": "login_switch_button",
+        "skip_if_not_found": true
+      },
+      "confidence": 0.9,
+      "timestamp": "2025-06-24 10:00:05.000000",
+      "remark": "切换到账号密码登录模式（如果存在其他登录方式选项）"
+    },
+    {
+      "step": 2.5,
+      "action": "delay",
+      "params": {
+        "seconds": 2
+      },
+      "remark": "等待登录方式切换完成，界面稳定后再进行下一步操作"
+    },
+    {
+      "step": 3,
+      "action": "input",
+      "text": "${account:username}",
+      "target_selector": {
+        "type": "username_field"
+      },
+      "confidence": 0.95,
+      "timestamp": "2025-06-24 10:00:10.000000",
+      "remark": "输入登录用户名（使用USERNAME_PATTERNS自动识别）"
+    },
+    {
+      "step": 4,
+      "action": "input",
+      "text": "${account:password}",
+      "target_selector": {
+        "type": "password_field"
+      },
+      "confidence": 0.95,
+      "timestamp": "2025-06-24 10:00:15.000000",
+      "remark": "输入登录密码（使用PASSWORD_PATTERNS自动识别）"
+    },
+    {
+      "step": 5,
+      "action": "checkbox",
+      "target_selector": {
+        "type": "agreement_checkbox"
+      },
+      "confidence": 0.95,
+      "timestamp": "2025-06-24 10:00:20.000000",
+      "remark": "勾选用户协议（使用CHECKBOX_PATTERNS自动识别）"
+    },
+    {
+      "step": 6,
+      "action": "click_target",
+      "target_selector": {
+        "type": "login_button"
+      },
+      "confidence": 0.92,
+      "timestamp": "2025-06-24 10:00:25.000000",
+      "remark": "点击登录按钮（使用LOGIN_BUTTON_PATTERNS自动识别）"
+    },
+    {
+      "step": 7,
+      "action": "delay",
+      "params": {
+        "seconds": 3
+      },
+      "remark": "等待登录处理完成"
+    },
+    {
+      "step": 8,
+      "action": "wait_if_exists",
+      "class": "system-permission",
+      "polling_interval": 2000,
+      "max_duration": 15,
+      "confidence": 0.8,
+      "timestamp": "2025-06-24 10:00:30.000000",
+      "remark": "检测是否出现系统权限弹窗，如存在则等待权限管理器处理"
+    },
+    {
+      "step": 9,
+      "action": "wait_if_exists",
+      "class": "newbie-guide",
+      "polling_interval": 3000,
+      "max_duration": 20,
+      "confidence": 0.75,
+      "timestamp": "2025-06-24 10:00:35.000000",
+      "remark": "检测新手引导界面，如存在则等待引导完成"
+    },
+    {
+      "step": 10,
+      "action": "click_target",
+      "target_selector": {
+        "type": "skip_button",
+        "skip_if_not_found": true
+      },
+      "confidence": 0.8,
+      "timestamp": "2025-06-24 10:00:40.000000",
+      "remark": "尝试跳过新手引导（如果存在跳过按钮）"
+    },
+    {
+      "step": 11,
+      "action": "wait_if_exists",
+      "class": "main-interface",
+      "polling_interval": 5000,
+      "max_duration": 30,
+      "confidence": 0.85,
+      "timestamp": "2025-06-24 10:00:45.000000",
+      "remark": "等待进入游戏主界面"
+    },
+    {
+      "step": 12,
+      "action": "delay",
+      "params": {
+        "seconds": 2
+      },
+      "remark": "主界面稳定等待"
+    },
+    {
+      "step": 13,
+      "action": "screenshot",
+      "params": {
+        "filename": "login_success_main_interface.png"
+      },
+      "remark": "截取登录成功后的主界面截图"
+    }
+  ],
+  "config": {
+    "element_patterns": {
+      "username_field": "使用内置USERNAME_PATTERNS自动识别",
+      "password_field": "使用内置PASSWORD_PATTERNS自动识别",
+      "agreement_checkbox": "使用内置CHECKBOX_PATTERNS自动识别",
+      "login_button": "使用内置LOGIN_BUTTON_PATTERNS自动识别",
+      "login_switch_button": "使用内置切换登录方式模式识别",
+      "skip_button": "使用内置跳过按钮模式识别"
+    },
+    "smart_retry": {
+      "enabled": true,
+      "description": "启用智能重试机制，当元素查找失败时自动尝试不同策略"
+    },
+    "account_allocation": {
+      "enabled": true,
+      "description": "启用智能账号分配，当需要账号参数时自动分配可用账号"
+    }
+  }
+}

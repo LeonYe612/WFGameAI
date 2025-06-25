@@ -211,11 +211,22 @@ def load_yolo_model(model_path=None, device="auto", base_dir=None, model_class=N
     # 根据设备类型自动选择运行设备
     if device == "auto" or device is None:
         if os.name == "nt":  # Windows系统
-            device = "cuda" if os.system("nvidia-smi") == 0 else "cpu"
+            # 屏蔽nvidia-smi输出，仅检测是否可用
+            try:
+                import subprocess
+                result = subprocess.run(["nvidia-smi"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                device = "cuda" if result.returncode == 0 else "cpu"
+            except Exception:
+                device = "cpu"
         elif sys.platform == "darwin":  # macOS系统
             device = "mps"
         else:  # Linux等其他系统
-            device = "cuda" if os.system("nvidia-smi") == 0 else "cpu"
+            try:
+                import subprocess
+                result = subprocess.run(["nvidia-smi"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                device = "cuda" if result.returncode == 0 else "cpu"
+            except Exception:
+                device = "cpu"
 
     # 确保存在YOLO类
     if not yolo_imported and model_class is None:

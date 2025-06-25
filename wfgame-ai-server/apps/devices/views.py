@@ -6,6 +6,7 @@ import subprocess
 import json
 import os
 import sys
+import logging
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, status, views
@@ -22,6 +23,133 @@ from .serializers import (
     DeviceLogSerializer
 )
 
+# === UTF-8编码环境强制设置 ===
+# 强制设置UTF-8环境变量
+os.environ['PYTHONIOENCODING'] = 'utf-8'
+os.environ['PYTHONUTF8'] = '1'
+
+# Windows控制台UTF-8设置
+try:
+    subprocess.run(['chcp', '65001'], shell=True, capture_output=True, check=False)
+except:
+    pass
+
+# 重新配置标准流为UTF-8
+try:
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+except:
+    pass
+
+# === UTF-8日志处理器 ===
+class UTF8StreamHandler(logging.StreamHandler):
+    """UTF-8流处理器，解决Unicode编码问题"""
+
+    def emit(self, record):
+        try:
+            msg = self.format(record)
+            stream = self.stream
+
+            # 尝试多种方式输出UTF-8内容
+            if hasattr(stream, 'buffer'):
+                # 直接写入字节流
+                try:
+                    stream.buffer.write(msg.encode('utf-8', errors='replace') + b'\n')
+                    stream.buffer.flush()
+                    return
+                except:
+                    pass
+
+            # 标准输出方式
+            try:
+                stream.write(msg + '\n')
+                stream.flush()
+            except UnicodeEncodeError:
+                # 编码失败时使用替换策略
+                try:
+                    safe_msg = msg.encode('utf-8', errors='replace').decode('utf-8')
+                    stream.write(safe_msg + '\n')
+                    stream.flush()
+                except:
+                    # 最后的回退方案
+                    stream.write(repr(msg) + '\n')
+                    stream.flush()
+        except Exception:
+            # 静默处理所有异常，防止日志系统崩溃
+            pass
+
+def setup_utf8_logging():
+    """设置UTF-8日志系统"""
+    # 获取当前模块的logger
+    logger = logging.getLogger(__name__)
+
+    # 清除所有现有处理器
+    for handler in logger.handlers[:]:
+        logger.removeHandler(handler)
+
+    # 创建UTF-8处理器
+    handler = UTF8StreamHandler(sys.stdout)
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
+
+    # 配置根logger
+    root_logger = logging.getLogger()
+    for handler in root_logger.handlers[:]:
+        root_logger.removeHandler(handler)
+
+    root_handler = UTF8StreamHandler(sys.stdout)
+    root_handler.setFormatter(formatter)
+    root_logger.addHandler(root_handler)
+    root_logger.setLevel(logging.INFO)
+
+    # 防止重复日志
+    logger.propagate = False
+
+    return logger
+
+# 初始化日志系统
+logger = setup_utf8_logging()
+
+# === UTF-8子进程包装器 ===
+def run_subprocess_utf8(cmd, **kwargs):
+    """UTF-8子进程运行包装器"""
+    # 强制UTF-8编码设置
+    kwargs.setdefault('encoding', 'utf-8')
+    kwargs.setdefault('errors', 'replace')
+    kwargs.setdefault('text', True)
+
+    # 设置UTF-8环境变量
+    env = kwargs.get('env', os.environ.copy())
+    env.update({
+        'PYTHONIOENCODING': 'utf-8',
+        'PYTHONUTF8': '1'
+    })
+    kwargs['env'] = env
+
+    return subprocess.run(cmd, **kwargs)
+
+def create_subprocess_utf8(cmd, **kwargs):
+    """UTF-8子进程创建包装器"""
+    # 强制UTF-8编码设置
+    kwargs.setdefault('encoding', 'utf-8')
+    kwargs.setdefault('errors', 'replace')
+    kwargs.setdefault('text', True)
+
+    # 设置UTF-8环境变量
+    env = kwargs.get('env', os.environ.copy())
+    env.update({
+        'PYTHONIOENCODING': 'utf-8',
+        'PYTHONUTF8': '1'
+    })
+    kwargs['env'] = env
+
+    return subprocess.Popen(cmd, **kwargs)
+
 # 添加设备信息增强器的导入
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 if project_root not in sys.path:
@@ -32,7 +160,7 @@ try:
     device_enhancer = DeviceInfoEnhancer()
 except ImportError:
     device_enhancer = None
-    print("警告: 在views.py中无法导入设备信息增强器")
+    logger.warning("设备信息增强器导入失败，将使用基础功能")
 
 
 class DeviceTypeViewSet(viewsets.ModelViewSet):
@@ -85,11 +213,9 @@ class ConnectDeviceView(views.APIView):
     http_method_names = ['post']  # 只允许POST方法
 
     def post(self, request, pk):
-        device = get_object_or_404(Device, pk=pk)
-
-        # --- 增强：连接前实时检测ADB状态并同步数据库 ---
+        device = get_object_or_404(Device, pk=pk)        # --- 增强：连接前实时检测ADB状态并同步数据库 ---
         try:
-            adb_result = subprocess.run(['adb', 'devices'], capture_output=True, text=True)
+            adb_result = run_subprocess_utf8(['adb', 'devices'], capture_output=True, check=True)
             adb_lines = adb_result.stdout.strip().split('\n')[1:]
             adb_online_ids = set()
             for line in adb_lines:
@@ -154,11 +280,9 @@ class DisconnectDeviceView(views.APIView):
     http_method_names = ['post']  # 只允许POST方法
 
     def post(self, request, pk):
-        device = get_object_or_404(Device, pk=pk)
-
-        # --- 增强：断开前实时检测ADB状态并同步数据库 ---
+        device = get_object_or_404(Device, pk=pk)        # --- 增强：断开前实时检测ADB状态并同步数据库 ---
         try:
-            adb_result = subprocess.run(['adb', 'devices'], capture_output=True, text=True)
+            adb_result = run_subprocess_utf8(['adb', 'devices'], capture_output=True, check=True)
             adb_lines = adb_result.stdout.strip().split('\n')[1:]
             adb_online_ids = set()
             for line in adb_lines:
@@ -392,10 +516,8 @@ class ScanDevicesView(views.APIView):
     def post(self, request):
         try:
             # 步骤1：先进行USB连接检查
-            usb_check_result = self._perform_usb_check()
-
-            # 步骤2：然后进行ADB设备扫描
-            result = subprocess.run(['adb', 'devices'], capture_output=True, text=True)
+            usb_check_result = self._perform_usb_check()            # 步骤2：然后进行ADB设备扫描
+            result = run_subprocess_utf8(['adb', 'devices'], capture_output=True, check=True)
             if result.returncode != 0:
                 return Response(
                     {"detail": "扫描设备失败", "error": result.stderr},
@@ -557,16 +679,13 @@ class ScanDevicesView(views.APIView):
             return checker.check_all_connections()
         except Exception as e:
             raise Exception(f"USB checker failed: {str(e)}")
-
     def _check_with_adb(self):
         """使用基础ADB命令检查"""
         try:
-            adb_result = subprocess.run(
+            adb_result = run_subprocess_utf8(
                 ['adb', 'devices'],
                 capture_output=True,
-                text=True,
-                encoding='utf-8',
-                errors='replace'
+                check=True
             )
 
             if adb_result.returncode != 0:
@@ -580,7 +699,8 @@ class ScanDevicesView(views.APIView):
                     continue
 
                 parts = line.split('\t')
-                if len(parts) >= 2:                    devices.append({
+                if len(parts) >= 2:
+                    devices.append({
                         'device_id': parts[0].strip(),
                         'connection_status': 'connected' if parts[1].strip() == 'device' else 'disconnected',
                         'authorization_status': 'authorized' if parts[1].strip() == 'device' else 'unauthorized'
@@ -616,7 +736,7 @@ class USBConnectionCheckView(views.APIView):
                 result = checker.check_all_connections()
             except ImportError:
                 # Fallback to basic ADB scan if USB checker not available
-                adb_result = subprocess.run(['adb', 'devices'], capture_output=True, text=True)
+                adb_result = run_subprocess_utf8(['adb', 'devices'], capture_output=True, check=True)
                 if adb_result.returncode != 0:
                     raise Exception(f"ADB command failed: {adb_result.stderr}")
 

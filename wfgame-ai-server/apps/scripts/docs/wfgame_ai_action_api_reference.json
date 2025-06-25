@@ -1,146 +1,85 @@
 {
   "WFGameAI_Action_API": {
-    "version": "1.0",
-    "updated": "2025-06-13",
+    "version": "2.0",
+    "updated": "2025-06-24",
+    "description": "WFGameAI Action API 快速参考",
 
-    "✅ 已实现的Actions": {
-      "基础操作": {
-        "click": "点击操作 (默认action)",
+    "📚 文档导航": {
+      "精简版技术文档": "docs/WFGameAI回放功能技术文档_精简版.md",
+      "Action使用手册（精简版）": "docs/WFGameAI_Action_使用手册_精简版.md",
+      "完整技术文档": "docs/WFGameAI回放功能完整技术文档.md",
+      "完整Action手册": "docs/WFGameAI_Action_使用手册.md"
+    },
+
+    "🎯 快速参考": {
+      "常用Actions": {
+        "click": "基础点击操作",
+        "click_target": "智能点击（推荐）",
+        "input": "文本输入（支持${account:username}/${account:password}）",
+        "delay": "延时等待",
         "swipe": "滑动操作",
-        "input": "文本输入 (支持${account:username}/${account:password})",
-        "delay": "延时等待"
+        "wait_if_exists": "条件等待（热更新处理）",
+        "app_start": "应用启动",
+        "auto_login": "自动登录流程"
       },
-      "高级操作": {
-        "wait_if_exists": "条件等待 - 元素存在时等待消失",
-        "click_target": "智能目标点击 (多种定位方式)",
-        "checkbox": "复选框勾选",
-        "auto_login": "完整自动登录流程"
-      },
-      "应用管理": {
-        "app_start": "应用启动 (含权限处理)",
-        "app_stop": "应用停止",
-        "device_preparation": "设备预处理"
-      },
-      "工具类": {
-        "log": "日志记录"
+      "核心特性": {
+        "账号变量": "${account:username}, ${account:password}, ${account:phone}",
+        "智能定位": "text_hints, resource_id_keywords, class_types",
+        "容错机制": "skip_if_not_found, retry_count, retry_interval",
+        "时序控制": "polling_interval, max_duration, stability_duration"
       }
     },
 
-    "🚀 建议实现的Actions (解决时序问题)": {
-      "第一阶段 - 关键功能": {
-        "wait_for_appearance": {
-          "说明": "等待元素出现",
-          "解决": "界面状态转换时序问题",
-          "优先级": "⭐⭐⭐",
-          "示例": {
-            "action": "wait_for_appearance",
-            "target_selector": {"text_hints": ["其他登录方式"]},
-            "timeout": 10
-          }
-        },
-        "wait_for_stable": {
-          "说明": "等待界面稳定",
-          "解决": "步骤间界面过渡时间不确定",
-          "优先级": "⭐⭐⭐",
-          "示例": {
-            "action": "wait_for_stable",
-            "stability_duration": 2,
-            "max_wait": 10
-          }
-        },
-        "retry_until_success": {
-          "说明": "重试直到成功",
-          "解决": "偶发性元素定位失败",
-          "优先级": "⭐⭐⭐",
-          "示例": {
-            "action": "retry_until_success",
-            "target_action": "click_target",
-            "max_retries": 5,
-            "retry_interval": 1
-          }
-        }
-      },
-
-      "第二阶段 - 增强功能": {
-        "wait_for_all": {
-          "说明": "等待多个条件同时满足",
-          "优先级": "⭐⭐",
-          "示例": {
-            "action": "wait_for_all",
-            "conditions": [
-              {"type": "disappear", "target_selector": {"class": "loading"}},
-              {"type": "appear", "target_selector": {"text_hints": ["登录"]}}
-            ]
-          }
-        },
-        "fallback_actions": {
-          "说明": "失败时的备选操作",
-          "优先级": "⭐⭐",
-          "示例": {
-            "action": "fallback_actions",
-            "primary_action": {"action": "click_target", "target_selector": {"text_hints": ["其他登录方式"]}},
-            "fallback_actions": [
-              {"action": "click_target", "target_selector": {"text_hints": ["切换登录"]}}
-            ]
-          }
-        }
-      }
-    },
-
-    "💡 解决您的时序问题": {
-      "问题": "步骤1 (wait_if_exists) 完成后，步骤2 (click_target) 立即执行但界面还未稳定",
-      "解决方案": {
-        "方案1 - 添加稳定性检查": [
-          {"step": 1, "action": "wait_if_exists", "class": "system-newResources"},
-          {"step": 1.5, "action": "wait_for_stable", "stability_duration": 2},
-          {"step": 2, "action": "click_target", "target_selector": {"text_hints": ["其他登录方式"]}}
-        ],
-        "方案2 - 智能重试": [
-          {"step": 1, "action": "wait_if_exists", "class": "system-newResources"},
-          {"step": 2, "action": "retry_until_success", "target_action": "click_target", "max_retries": 5}
-        ],
-        "方案3 - 等待元素出现": [
-          {"step": 1, "action": "wait_if_exists", "class": "system-newResources"},
-          {"step": 2, "action": "wait_for_appearance", "target_selector": {"text_hints": ["其他登录方式"]}},
-          {"step": 3, "action": "click_target", "target_selector": {"text_hints": ["其他登录方式"]}}
-        ]
-      }
-    },
-
-    "📚 常用示例": {
-      "基础点击": {
-        "action": "click",
-        "class": "button-login",
-        "remark": "点击登录按钮"
-      },
-      "文本输入": {
-        "action": "input",
-        "text": "${account:username}",
-        "target_selector": {"placeholder": "请输入用户名"},
-        "remark": "输入用户名"
-      },
+    "⭐ 推荐Action模式": {
       "智能点击": {
         "action": "click_target",
         "target_selector": {
-          "text_hints": ["其他登录方式", "切换登录"],
-          "skip_if_not_found": true
-        },
-        "remark": "点击登录方式切换"
+          "text_hints": ["登录", "进入游戏"],
+          "resource_id_keywords": ["login", "btn"],
+          "skip_if_not_found": true,
+          "retry_count": 3
+        }
       },
-      "应用启动": {
-        "class": "app_start",
-        "params": {
-          "app_name": "com.example.app",
-          "handle_permission": true
-        },
-        "remark": "启动应用并处理权限"
-      }
+      "账号输入": {
+        "action": "input",
+        "text": "${account:username}",
+        "target_selector": {
+          "placeholder": "请输入用户名",
+          "clear_previous_text": true
+        }
+      },
+      "热更新等待": {
+        "action": "wait_if_exists",
+        "class": "system-newResources",
+        "polling_interval": 5000,
+        "max_duration": 300
+      },
+      "登录流程": [
+        {"action": "wait_if_exists", "class": "system-newResources", "max_duration": 300},
+        {"action": "delay", "params": {"seconds": 3}},
+        {"action": "click_target", "target_selector": {"text_hints": ["其他登录方式"]}},
+        {"action": "input", "text": "${account:username}", "target_selector": {"placeholder": "请输入用户名"}},
+        {"action": "input", "text": "${account:password}", "target_selector": {"placeholder": "请输入密码"}},
+        {"action": "click_target", "target_selector": {"text_hints": ["登录", "立即登录"]}}
+      ]
     },
 
-    "🔧 实施计划": {
-      "立即实施": ["wait_for_stable", "retry_until_success"],
-      "短期计划": ["wait_for_appearance", "wait_for_all"],
-      "长期计划": ["fallback_actions", "adaptive_delay"]
+    "🚀 建议新增Actions": {
+      "wait_for_stable": {
+        "说明": "等待界面稳定",
+        "优先级": "⭐⭐⭐",
+        "解决": "步骤间界面过渡时间不确定"
+      },
+      "retry_until_success": {
+        "说明": "重试直到成功",
+        "优先级": "⭐⭐⭐",
+        "解决": "偶发性元素定位失败"
+      },
+      "wait_for_appearance": {
+        "说明": "等待元素出现",
+        "优先级": "⭐⭐⭐",
+        "解决": "界面状态转换时序问题"
+      }
     }
   }
 }

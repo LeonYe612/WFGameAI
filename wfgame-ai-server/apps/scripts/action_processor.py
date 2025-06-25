@@ -14,13 +14,13 @@ import os
 
 # 尝试导入相关模块，如果失败则使用占位符
 try:
-    from .enhanced_input_handler import EnhancedInputHandler
-except ImportError:
+    from .enhanced_input_handler import DeviceScriptReplayer
+except (ImportError, AttributeError):
     try:
-        from enhanced_input_handler import EnhancedInputHandler
-    except ImportError:
-        print("⚠️ 警告: 无法导入enhanced_input_handler，部分功能可能不可用")
-        EnhancedInputHandler = None
+        from enhanced_input_handler import DeviceScriptReplayer
+    except (ImportError, AttributeError):
+        print("⚠️ 警告: 无法导入DeviceScriptReplayer，部分功能可能不可用")
+        DeviceScriptReplayer = None
 
 try:
     from .app_lifecycle_manager import AppLifecycleManager
@@ -94,7 +94,7 @@ class ActionContext:
     """Action执行上下文类 - 统一接口"""
 
     def __init__(self, device, input_handler=None, config=None, screenshot_dir=None, script_name=None,
-                 device_name=None, log_dir=None, queues=None):
+                 device_name=None, log_dir=None, queues=None, step_idx=None):
         """
         初始化ActionContext - 支持多种初始化方式
 
@@ -107,12 +107,14 @@ class ActionContext:
             device_name: 设备名称（兼容旧接口）
             log_dir: 日志目录（兼容旧接口）
             queues: 队列字典（兼容旧接口）
+            step_idx: 步骤索引（用于多设备模式下的简化日志）
         """
         self.device = device
         self.input_handler = input_handler
         self.config = config or {}
         self.screenshot_dir = screenshot_dir or log_dir
         self.script_name = script_name
+        self.step_idx = step_idx
 
         # 兼容旧接口
         self.device_name = device_name
@@ -158,10 +160,24 @@ class ActionResult:
         # 兼容旧接口
         self.executed = executed if executed is not None else success
         self.should_continue = should_continue if should_continue is not None else (not should_stop)
-
     def to_tuple(self):
         """转换为元组格式，兼容现有代码"""
         return (self.success, self.executed, self.should_continue)
+
+    @classmethod
+    def from_tuple(cls, tuple_result):
+        """从元组创建ActionResult对象"""
+        if len(tuple_result) == 3:
+            success, executed, should_continue = tuple_result
+            return cls(
+                success=success,
+                executed=executed,
+                should_continue=should_continue,
+                message="操作完成" if success else "操作失败"
+            )
+        else:
+            # 如果元组格式不对，返回默认的失败结果
+            return cls(success=False, message="无效的元组格式")
 
 
 class ActionProcessor:
@@ -185,9 +201,7 @@ class ActionProcessor:
         self.device = device
         self.input_handler = None
         self.ai_service = None
-        self.config = {}
-
-        # 兼容旧接口
+        self.config = {}        # 兼容旧接口
         self.device_name = device_name
         self.log_txt_path = log_txt_path
         self.detect_buttons = detect_buttons_func
@@ -196,6 +210,65 @@ class ActionProcessor:
     def set_device_account(self, device_account):
         """设置设备账号信息"""
         self.device_account = device_account
+
+    def _auto_allocate_device_account(self):
+        """自动为设备分配账号（智能重试机制）"""
+        try:
+            # 尝试获取设备序列号
+            device_serial = getattr(self.device, 'serial', None)
+            if not device_serial:
+                device_serial = self.device_name
+
+            if not device_serial:
+                print("⚠️ 无法获取设备序列号，无法自动分配账号")
+                return False
+
+            print(f"🔄 正在为设备 {device_serial} 自动分配账号...")
+
+            # 导入账号管理器
+            try:
+                from account_manager import get_account_manager
+                account_manager = get_account_manager()
+            except ImportError as e:
+                print(f"❌ 无法导入账号管理器: {e}")
+                return False
+
+            # 尝试分配账号
+            device_account = account_manager.allocate_account(device_serial)
+
+            if device_account:
+                self.set_device_account(device_account)
+                username, password = device_account
+                print(f"✅ 自动为设备 {device_serial} 分配账号成功: {username}")
+                return True
+            else:
+                print(f"❌ 无法为设备 {device_serial} 分配账号（账号池可能已满）")
+
+                # 获取详细的分配状态信息
+                try:
+                    total_accounts = len(account_manager.accounts)
+                    available_count = account_manager.get_available_accounts_count()
+                    allocation_status = account_manager.get_allocation_status()
+
+                    print(f"📊 账号池状态: 总账号数={total_accounts}, 可用={available_count}, 已分配={len(allocation_status)}")
+
+                    if allocation_status:
+                        print("📋 当前分配状态:")
+                        for dev_serial, username in list(allocation_status.items())[:5]:  # 只显示前5个
+                            print(f"   - {dev_serial}: {username}")
+                        if len(allocation_status) > 5:
+                            print(f"   ... 还有 {len(allocation_status) - 5} 个分配")
+
+                except Exception as status_e:
+                    print(f"⚠️ 获取账号状态信息失败: {status_e}")
+
+                return False
+
+        except Exception as e:
+            print(f"❌ 自动账号分配过程中发生异常: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
 
     def process_action(self, step, context_or_step_idx, log_dir_or_context=None):
         """
@@ -234,8 +307,8 @@ class ActionProcessor:
         try:
             # 懒加载输入处理器
             if not self.input_handler and hasattr(context, 'device'):
-                from enhanced_input_handler import EnhancedInputHandler
-                self.input_handler = EnhancedInputHandler(context.device.serial)
+                from enhanced_input_handler import DeviceScriptReplayer
+                self.input_handler = DeviceScriptReplayer(context.device.serial)
 
             # 处理不同类型的步骤
             if step_class == "delay":
@@ -396,7 +469,23 @@ class ActionProcessor:
 
             if success and handle_screen_lock and device_manager:
                 print("🔓 处理屏幕锁定...")
-                device_manager._handle_screen_lock(self.device.serial)
+                print("⚠️ 警告: 正在使用旧版屏幕处理逻辑，建议切换到智能预处理")
+                # 在旧版预处理中也尝试使用智能屏幕检测，避免误操作
+                try:
+                    from screen_state_detector import ScreenStateDetector
+                    detector = ScreenStateDetector(self.device.serial)
+                    screen_ready = detector.ensure_screen_ready()
+                    if screen_ready:
+                        print("✅ 智能屏幕检测成功，跳过旧版屏幕处理")
+                    else:
+                        print("⚠️ 智能屏幕检测失败，使用旧版屏幕处理")
+                        device_manager._handle_screen_lock(self.device.serial)
+                except ImportError:
+                    print("⚠️ 无法导入智能屏幕检测，使用旧版屏幕处理")
+                    device_manager._handle_screen_lock(self.device.serial)
+                except Exception as e:
+                    print(f"❌ 智能屏幕检测异常: {e}，使用旧版屏幕处理")
+                    device_manager._handle_screen_lock(self.device.serial)
 
             if success and setup_input_method and device_manager:
                 print("⌨️ 设置输入法...")
@@ -437,6 +526,7 @@ class ActionProcessor:
 
     def _handle_app_start(self, step, step_idx):
         """处理应用启动步骤"""
+        print(f"处理应用启动步骤: {step_idx + 1}")
         params = step.get("params", {})
         step_remark = step.get("remark", "")
         app_name = params.get("app_name", "")
@@ -461,14 +551,16 @@ class ActionProcessor:
             "allow": allow_permission,
             "first_only": first_only
         }
-        print(f"🔧 权限配置: handle={handle_permission}, wait={permission_wait}s, allow={allow_permission}, first_only={first_only}")
+        print(f"🔧 权限配置:permission_config={permission_config}")
+        # print(f"🔧 权限配置:handle={handle_permission}, wait={permission_wait}s, allow={allow_permission}, first_only={first_only}")
         try:
             # 步骤1: 首先实际启动应用
             app_identifier = app_name or package_name
 
-            print(f"🚀 正在启动应用: {app_identifier}")            # 使用AppLifecycleManager来实际启动应用
+            print(f"🚀 正在启动应用: {app_identifier}")
+            # 使用AppLifecycleManager来实际启动应用
             app_manager = AppLifecycleManager() if AppLifecycleManager else None
-
+            print(f"应用管理器2: {app_manager}")
             # 现在所有信息都在脚本中提供，直接使用package_name启动
             if package_name and app_manager:
                 print(f"🔍 使用脚本中提供的包名直接启动: {package_name}")
@@ -476,12 +568,14 @@ class ActionProcessor:
             else:
                 print(f"❌ 缺少package_name参数或AppLifecycleManager不可用，无法启动应用")
                 startup_success = False
-            print(f"应用启动命令执行: {'成功' if startup_success else '失败'}")            # 步骤2: 如果应用启动成功，等待一下然后处理权限
+            print(f"应用启动命令执行: {'成功' if startup_success else '失败'}")
+            # 步骤2: 如果应用启动成功，等待一下然后处理权限
             if startup_success:
                 print("⏱️ 等待应用完全启动...")
                 time.sleep(5)  # 增加等待时间到5秒，给应用更多时间加载权限弹窗
 
-                print("🔍 开始权限弹窗检测和处理...")                # 处理权限弹窗
+                print("🔍 开始权限弹窗检测和处理...")
+                # 处理权限弹窗
                 try:
                     if integrate_with_app_launch:
                         result = integrate_with_app_launch(
@@ -551,6 +645,7 @@ class ActionProcessor:
 
         try:
             app_manager = AppLifecycleManager() if AppLifecycleManager else None
+            print(f"应用管理器: {app_manager}")
 
             if package_name and app_manager:
                 # 直接使用包名停止应用
@@ -946,13 +1041,22 @@ class ActionProcessor:
         target_selector = step.get("target_selector", {})
         step_remark = step.get("remark", "")
 
+        # 智能账号分配：如果需要账号参数但没有分配，尝试自动分配
+        if ("${account:username}" in input_text or "${account:password}" in input_text):
+            if not self.device_account:
+                print("🔄 检测到需要账号参数但设备未分配账号，尝试自动分配...")
+                self._auto_allocate_device_account()
+
         # 参数替换处理：${account:username} 和 ${account:password}
         if "${account:username}" in input_text:
             if self.device_account and len(self.device_account) >= 1:
                 input_text = input_text.replace("${account:username}", self.device_account[0])
                 print(f"✅ 替换用户名参数: {self.device_account[0]}")
             else:
-                print(f"❌ 错误: 设备 {self.device_name} 没有分配账号，无法替换用户名参数")
+                device_serial = getattr(self.device, 'serial', self.device_name)
+                print(f"❌ 错误: 设备 {device_serial} 没有分配账号，无法替换用户名参数")
+                print("💡 可能原因: 1)账号池已满 2)账号文件错误 3)账号管理器初始化失败")
+                print("💡 解决建议: 检查 datasets/accounts_info/accounts.txt 或运行账号诊断工具")
                 return True, False, True
 
         if "${account:password}" in input_text:
@@ -960,22 +1064,43 @@ class ActionProcessor:
                 input_text = input_text.replace("${account:password}", self.device_account[1])
                 print(f"✅ 替换密码参数")
             else:
-                print(f"❌ 错误: 设备 {self.device_name} 没有分配账号，无法替换密码参数")
+                device_serial = getattr(self.device, 'serial', self.device_name)
+                print(f"❌ 错误: 设备 {device_serial} 没有分配账号，无法替换密码参数")
+                print("💡 可能原因: 1)账号池已满 2)账号文件错误 3)账号管理器初始化失败")
+                print("💡 解决建议: 检查 datasets/accounts_info/accounts.txt 或运行账号诊断工具")
                 return True, False, True
-
-        print(f"执行文本输入 - {step_remark}")
+            print(f"执行文本输入 - {step_remark}")
         try:
             # 获取截图目录
             log_dir = None
             if self.log_txt_path:
-                log_dir = os.path.dirname(self.log_txt_path)            # 初始化增强输入处理器
-            if EnhancedInputHandler:
-                input_handler = EnhancedInputHandler(self.device.serial)
+                log_dir = os.path.dirname(self.log_txt_path)
 
-                # 执行输入动作
-                success = input_handler.input_text_with_focus_detection(input_text, target_selector)
+            # 初始化增强输入处理器
+            if DeviceScriptReplayer:
+                input_handler = DeviceScriptReplayer(self.device.serial)
+
+                # 检查是否使用智能参数化选择器
+                if target_selector.get('type'):
+                    print(f"🤖 使用智能参数化输入: type={target_selector.get('type')}")
+                    # 先查找目标输入框
+                    target_element = input_handler.find_element_smart(target_selector)
+                    if target_element:
+                        print(f"✅ 找到目标输入框: {target_element.get('text', '')[:20]}...")
+                        # 点击获取焦点后输入文本
+                        if input_handler.tap_element(target_element):
+                            success = input_handler.input_text_smart(input_text)
+                        else:
+                            print("❌ 点击输入框获取焦点失败")
+                            success = False
+                    else:
+                        print("❌ 未找到匹配的输入框元素")
+                        success = False
+                else:
+                    # 传统方式：使用增强版焦点检测
+                    success = input_handler.input_text_with_focus_detection(input_text, target_selector)
             else:
-                print("⚠️ EnhancedInputHandler不可用，无法执行文本输入")
+                print("⚠️ DeviceScriptReplayer不可用，无法执行文本输入")
                 return True, False, True
 
             if success:
@@ -1030,38 +1155,42 @@ class ActionProcessor:
         step_remark = step.get("remark", "")
 
         print(f"执行checkbox勾选操作 - {step_remark}")
-
         try:
             # 获取截图目录
             log_dir = None
             if self.log_txt_path:
-                log_dir = os.path.dirname(self.log_txt_path)            # 初始化增强输入处理器
-            if EnhancedInputHandler:
-                input_handler = EnhancedInputHandler(self.device.serial)
+                log_dir = os.path.dirname(self.log_txt_path)
+
+            # 初始化增强输入处理器
+            if DeviceScriptReplayer:
+                input_handler = DeviceScriptReplayer(self.device.serial)
 
                 # 获取UI结构
                 xml_content = input_handler.get_ui_hierarchy()
-            else:
-                print("⚠️ EnhancedInputHandler不可用，无法执行checkbox操作")
-                return True, False, True
-            if xml_content:
-                elements = input_handler._parse_ui_xml(xml_content)
+                if xml_content:
+                    elements = input_handler._parse_ui_xml(xml_content)
 
-                # 查找checkbox
-                checkbox = input_handler.find_agreement_checkbox(elements)
-                if checkbox:
-                    success = input_handler.check_checkbox(checkbox)
+                    # 查找checkbox - 使用智能查找方法
+                    if target_selector.get('type'):
+                        # 新版：使用智能元素查找
+                        checkbox = input_handler.find_element_smart(target_selector)
+                    else:
+                        # 传统方式：使用具体的CHECKBOX_PATTERNS
+                        checkbox = input_handler.find_agreement_checkbox(elements, target_selector)
 
-                    if success:
-                        print(f"✅ checkbox勾选成功")
+                    if checkbox:
+                        success = input_handler.check_checkbox(checkbox)
 
-                        # 创建screen对象以支持报告截图显示
-                        screen_data = self._create_unified_screen_object(
-                            log_dir,
-                            pos_list=[],
-                            confidence=1.0,
-                            rect_info=[]
-                        )
+                        if success:
+                            print(f"✅ checkbox勾选成功")
+
+                            # 创建screen对象以支持报告截图显示
+                            screen_data = self._create_unified_screen_object(
+                                log_dir,
+                                pos_list=[],
+                                confidence=1.0,
+                                rect_info=[]
+                            )
 
                         # 记录checkbox操作日志
                         timestamp = time.time()
@@ -1119,21 +1248,37 @@ class ActionProcessor:
         input_handler = None
         click_pos = []
         try:
-            if EnhancedInputHandler:
-                input_handler = EnhancedInputHandler(self.device.serial)
-                # 获取UI结构和目标元素中心点
-                xml_content = input_handler.get_ui_hierarchy()
-                elements = input_handler._parse_ui_xml(xml_content) if xml_content else []
-                target_element = input_handler.find_custom_target_element(elements, target_selector) if elements else None
-                if target_element:
-                    bounds = target_element.get('bounds', '')
-                    coords = input_handler._parse_bounds(bounds) if bounds else None
-                    if coords:
-                        click_pos = [int(coords[0]), int(coords[1])]
-                # 执行点击
-                success = input_handler.perform_click_target_action(target_selector)
+            if DeviceScriptReplayer:
+                input_handler = DeviceScriptReplayer(self.device.serial)
+
+                # 检查是否使用智能参数化选择器
+                if target_selector.get('type'):
+                    print(f"🤖 使用智能参数化点击: type={target_selector.get('type')}")
+                    # 使用智能元素查找
+                    target_element = input_handler.find_element_smart(target_selector)
+                    if target_element:
+                        bounds = target_element.get('bounds', '')
+                        coords = input_handler._parse_bounds(bounds) if bounds else None
+                        if coords:
+                            click_pos = [int(coords[0]), int(coords[1])]
+                        success = input_handler.tap_element(target_element)
+                    else:
+                        print("❌ 未找到匹配的目标元素")
+                        success = False
+                else:
+                    # 传统方式：使用自定义目标元素查找
+                    xml_content = input_handler.get_ui_hierarchy()
+                    elements = input_handler._parse_ui_xml(xml_content) if xml_content else []
+                    target_element = input_handler.find_custom_target_element(elements, target_selector) if elements else None
+                    if target_element:
+                        bounds = target_element.get('bounds', '')
+                        coords = input_handler._parse_bounds(bounds) if bounds else None
+                        if coords:
+                            click_pos = [int(coords[0]), int(coords[1])]
+                    # 执行点击
+                    success = input_handler.perform_click_target_action(target_selector)
             else:
-                print("⚠️ EnhancedInputHandler不可用，无法执行点击目标操作")
+                print("⚠️ DeviceScriptReplayer不可用，无法执行点击目标操作")
                 return True, False, True
 
             if success:
@@ -1190,13 +1335,22 @@ class ActionProcessor:
         username = params.get("username", "")
         password = params.get("password", "")
 
+        # 智能账号分配：如果需要账号参数但没有分配，尝试自动分配
+        if ("${account:username}" in username or "${account:password}" in password):
+            if not self.device_account:
+                print("🔄 检测到需要账号参数但设备未分配账号，尝试自动分配...")
+                self._auto_allocate_device_account()
+
         # 参数替换处理
         if "${account:username}" in username:
             if self.device_account and len(self.device_account) >= 1:
                 username = username.replace("${account:username}", self.device_account[0])
                 print(f"✅ 替换用户名参数: {self.device_account[0]}")
             else:
-                print(f"❌ 错误: 设备 {self.device_name} 没有分配账号，无法替换用户名参数")
+                device_serial = getattr(self.device, 'serial', self.device_name)
+                print(f"❌ 错误: 设备 {device_serial} 没有分配账号，无法替换用户名参数")
+                print("💡 可能原因: 1)账号池已满 2)账号文件错误 3)账号管理器初始化失败")
+                print("💡 解决建议: 检查 datasets/accounts_info/accounts.txt 或运行账号诊断工具")
                 return True, False, True
 
         if "${account:password}" in password:
@@ -1204,7 +1358,10 @@ class ActionProcessor:
                 password = password.replace("${account:password}", self.device_account[1])
                 print(f"✅ 替换密码参数")
             else:
-                print(f"❌ 错误: 设备 {self.device_name} 没有分配账号，无法替换密码参数")
+                device_serial = getattr(self.device, 'serial', self.device_name)
+                print(f"❌ 错误: 设备 {device_serial} 没有分配账号，无法替换密码参数")
+                print("💡 可能原因: 1)账号池已满 2)账号文件错误 3)账号管理器初始化失败")
+                print("💡 解决建议: 检查 datasets/accounts_info/accounts.txt 或运行账号诊断工具")
                 return True, False, True
             print(f"执行完整自动登录流程 - {step_remark}")
         print(f"用户名: {username}")
@@ -1215,13 +1372,13 @@ class ActionProcessor:
             log_dir = None
             if self.log_txt_path:
                 log_dir = os.path.dirname(self.log_txt_path)            # 初始化增强输入处理器
-            if EnhancedInputHandler:
-                input_handler = EnhancedInputHandler(self.device.serial)
+            if DeviceScriptReplayer:
+                input_handler = DeviceScriptReplayer(self.device.serial)
 
                 # 执行完整的自动登录流程
                 success = input_handler.perform_auto_login(username, password)
             else:
-                print("⚠️ EnhancedInputHandler不可用，无法执行自动登录")
+                print("⚠️ DeviceScriptReplayer不可用，无法执行自动登录")
                 return True, False, True
 
             if success:
@@ -1599,122 +1756,233 @@ class ActionProcessor:
         return ActionResult(success=True, message=f"延时 {delay_seconds} 秒完成")
 
     def _handle_device_preparation_new(self, step, context):
-        """设备预处理 - 新接口"""
-        return ActionResult(success=True, message="Device preparation completed")
+        """设备预处理 - 新接口，集成屏幕状态检测，完全替代旧方法"""
+        device_serial = getattr(self.device, 'serial', None)
+        if not device_serial:
+            print("⚠️ 无法获取设备序列号")
+            return ActionResult(success=False, message="无法获取设备序列号")
+
+        # 获取预处理参数
+        params = step.get("params", {})
+        check_usb = params.get("check_usb", True)
+        setup_wireless = params.get("setup_wireless", False)
+        configure_permissions = params.get("configure_permissions", True)
+        handle_screen_lock = params.get("handle_screen_lock", True)
+        setup_input_method = params.get("setup_input_method", True)
+        save_logs = params.get("save_logs", False)
+
+        print(f"🔍 开始智能设备预处理 - 设备 {device_serial}")
+        print(f"📋 预处理参数: USB检查={check_usb}, 屏幕锁定={handle_screen_lock}, 输入法设置={setup_input_method}")
+
+        # 预处理结果统计
+        results = {
+            "screen_ready": False,
+            "usb_check": False,
+            "permissions": False,
+            "input_method": False
+        }
+
+        # 1. 智能屏幕状态检测和处理（最重要，必须先执行）
+        if handle_screen_lock:
+            try:
+                from screen_state_detector import ScreenStateDetector
+                print(f"🔍 检查设备 {device_serial} 屏幕状态...")
+                detector = ScreenStateDetector(device_serial)
+                screen_ready = detector.ensure_screen_ready()
+                results["screen_ready"] = screen_ready
+                if screen_ready:
+                    print(f"✅ 设备 {device_serial} 屏幕已就绪")
+                else:
+                    print(f"⚠️ 设备 {device_serial} 屏幕准备失败")
+            except ImportError:
+                print("⚠️ 无法导入屏幕状态检测器")
+                results["screen_ready"] = False
+            except Exception as e:
+                print(f"❌ 屏幕状态检测异常: {e}")
+                results["screen_ready"] = False
+
+        # 2. 执行其他预处理步骤（即使有步骤失败也继续执行，不回退到旧版）
+        if check_usb:
+            try:
+                print("🔍 执行USB连接检查...")
+                if EnhancedDevicePreparationManager:
+                    device_manager = EnhancedDevicePreparationManager()
+                    results["usb_check"] = device_manager._check_usb_connections()
+                    if results["usb_check"]:
+                        print("✅ USB连接检查通过")
+                    else:
+                        print("⚠️ USB连接检查失败")
+                else:
+                    print("⚠️ 设备预处理管理器不可用")
+                    results["usb_check"] = False
+            except Exception as e:
+                print(f"❌ USB检查异常: {e}")
+                results["usb_check"] = False
+
+        if configure_permissions:
+            try:
+                print("🔐 配置设备权限...")
+                if EnhancedDevicePreparationManager:
+                    device_manager = EnhancedDevicePreparationManager()
+                    device_manager._fix_device_permissions(device_serial)
+                    results["permissions"] = True
+                    print("✅ 设备权限配置完成")
+                else:
+                    print("⚠️ 设备预处理管理器不可用")
+                    results["permissions"] = False
+            except Exception as e:
+                print(f"❌ 权限配置异常: {e}")
+                results["permissions"] = False
+
+        if setup_input_method:
+            try:
+                print("⌨️ 设置输入法...")
+                if EnhancedDevicePreparationManager:
+                    device_manager = EnhancedDevicePreparationManager()
+                    input_result = device_manager._wake_up_yousite(device_serial)
+                    results["input_method"] = input_result
+                    if input_result:
+                        print("✅ 输入法设置成功")
+                    else:
+                        print("⚠️ 输入法设置失败")
+                else:
+                    print("⚠️ 设备预处理管理器不可用")
+                    results["input_method"] = False
+            except Exception as e:
+                print(f"❌ 输入法设置异常: {e}")
+                results["input_method"] = False
+
+        # 3. 评估总体结果（屏幕准备是最关键的）
+        critical_success = results["screen_ready"] if handle_screen_lock else True
+        overall_success = critical_success and (
+            not check_usb or results["usb_check"]
+        ) and (
+            not configure_permissions or results["permissions"]
+        ) and (
+            not setup_input_method or results["input_method"]
+        )
+
+        print(f"📊 智能设备预处理结果统计:")
+        print(f"   - 屏幕就绪: {'✅' if results['screen_ready'] else '❌'}")
+        print(f"   - USB检查: {'✅' if results['usb_check'] else '❌'}")
+        print(f"   - 权限配置: {'✅' if results['permissions'] else '❌'}")
+        print(f"   - 输入法设置: {'✅' if results['input_method'] else '❌'}")
+        print(f"✅ 智能设备预处理完成 - 设备 {device_serial}，总体结果: {'成功' if overall_success else '部分成功'}")
+
+        # 4. 记录详细日志
+        timestamp = time.time()
+        device_prep_entry = {
+            "tag": "function",
+            "depth": 1,
+            "time": timestamp,
+            "data": {
+                "name": "device_preparation_smart",
+                "call_args": {
+                    "device_serial": device_serial,
+                    "check_usb": check_usb,
+                    "setup_wireless": setup_wireless,
+                    "configure_permissions": configure_permissions,
+                    "handle_screen_lock": handle_screen_lock,
+                    "setup_input_method": setup_input_method,
+                    "save_logs": save_logs
+                },
+                "start_time": timestamp,
+                "ret": {
+                    "overall_success": overall_success,
+                    "results": results
+                },
+                "end_time": timestamp + 1.0
+            }
+        }
+        self._write_log_entry(device_prep_entry)
+
+        # 5. 绝不回退到旧版预处理，避免二次屏幕操作
+        return ActionResult(
+            success=overall_success,
+            message=f"智能设备预处理完成，关键步骤: {'成功' if critical_success else '失败'}",
+            details=results
+        )
 
     def _handle_app_start_new(self, step, context):
         """应用启动 - 新接口"""
-        return ActionResult(success=True, message="App start completed")
+        # 使用旧接口的完整实现来确保真实操作
+        # 将ActionContext转换为step_idx参数
+        step_idx = getattr(context, 'step_idx', 0)
+        result = self._handle_app_start(step, step_idx)
+        return ActionResult.from_tuple(result)
 
     def _handle_app_stop_new(self, step, context):
         """应用停止 - 新接口"""
-        return ActionResult(success=True, message="App stop completed")
+        # 使用旧接口的完整实现来确保真实操作
+        # 将ActionContext转换为step_idx参数
+        step_idx = getattr(context, 'step_idx', 0)
+        result = self._handle_app_stop(step, step_idx)
+        return ActionResult.from_tuple(result)
 
     def _handle_log_new(self, step, context):
         """日志记录 - 新接口"""
-        return ActionResult(success=True, message="Log completed")
+        # 使用旧接口的完整实现来确保真实操作
+        # 将ActionContext转换为step_idx参数
+        step_idx = getattr(context, 'step_idx', 0)
+        result = self._handle_log(step, step_idx)
+        return ActionResult.from_tuple(result)
 
     def _handle_wait_if_exists_new(self, step, context):
         """条件等待 - 新接口"""
-        return ActionResult(success=True, message="Wait if exists completed")
+        # 使用旧接口的完整实现来确保真实操作
+        # 将ActionContext转换为step_idx和log_dir参数
+        step_idx = getattr(context, 'step_idx', 0)
+        log_dir = getattr(context, 'screenshot_dir', None)
+        result = self._handle_wait_if_exists(step, step_idx, log_dir)
+        return ActionResult.from_tuple(result)
 
     def _handle_swipe_new(self, step, context):
         """滑动操作 - 新接口"""
-        return ActionResult(success=True, message="Swipe completed")
+        # 使用旧接口的完整实现来确保真实操作
+        # 将ActionContext转换为step_idx参数
+        step_idx = getattr(context, 'step_idx', 0)
+        result = self._handle_swipe(step, step_idx)
+        return ActionResult.from_tuple(result)
 
     def _handle_input_new(self, step, context):
         """文本输入 - 新接口"""
-        return ActionResult(success=True, message="Input completed")
+        # 使用旧接口的完整实现来确保真实操作
+        # 将ActionContext转换为step_idx参数
+        step_idx = getattr(context, 'step_idx', 0)
+        result = self._handle_input(step, step_idx)
+        return ActionResult.from_tuple(result)
+
     def _handle_checkbox_new(self, step, context):
         """勾选框操作 - 新接口"""
-        return ActionResult(success=True, message="Checkbox completed")
-
+        # 使用旧接口的完整实现来确保真实操作
+        # 将ActionContext转换为step_idx参数
+        step_idx = getattr(context, 'step_idx', 0)
+        result = self._handle_checkbox(step, step_idx)
+        return ActionResult.from_tuple(result)
     def _handle_click_target_new(self, step, context):
         """目标点击 - 新接口"""
-        target_selector = step.get("target_selector", {})
-        step_remark = step.get("remark", "")
-
-        print(f"执行点击目标操作 - {step_remark}")
-        print(f"目标选择器: {target_selector}")
-
-        # 获取截图目录
-        log_dir = None
-        if self.log_txt_path:
-            log_dir = os.path.dirname(self.log_txt_path)
-        input_handler = None
-        click_pos = []
-        try:
-            if EnhancedInputHandler:
-                input_handler = EnhancedInputHandler(self.device.serial)
-                # 获取UI结构和目标元素中心点
-                xml_content = input_handler.get_ui_hierarchy()
-                elements = input_handler._parse_ui_xml(xml_content) if xml_content else []
-                target_element = input_handler.find_custom_target_element(elements, target_selector) if elements else None
-                if target_element:
-                    bounds = target_element.get('bounds', '')
-                    coords = input_handler._parse_bounds(bounds) if bounds else None
-                    if coords:
-                        click_pos = [int(coords[0]), int(coords[1])]
-                # 执行点击
-                success = input_handler.perform_click_target_action(target_selector)
-            else:
-                print("⚠️ EnhancedInputHandler不可用，无法执行点击目标操作")
-                return True, False, True
-
-            if success:
-                print(f"✅ 点击目标操作成功")
-
-                # 创建screen对象以支持报告截图显示，写入点击点
-                screen_data = self._create_unified_screen_object(
-                    log_dir,
-                    pos_list=[click_pos] if click_pos else [],
-                    confidence=1.0,
-                    rect_info=[]
-                )
-
-                # 记录点击目标操作日志
-                timestamp = time.time()
-                title_str = f"#1 {step_remark or '点击目标操作'}"
-                click_entry = {
-                    "tag": "function",
-                    "depth": 1,
-                    "time": timestamp,
-                    "data": {
-                        "name": "click_target",
-                        "call_args": {
-                            "target_selector": target_selector
-                        },
-                        "start_time": timestamp,
-                        "ret": {"success": True},
-                        "end_time": timestamp + 1.0,
-                        "desc": step_remark or "点击目标操作",
-                        "title": title_str
-                    }
-                }
-
-                # 添加screen对象到日志条目（如果可用）
-                if screen_data:
-                    click_entry["data"]["screen"] = screen_data
-
-                self._write_log_entry(click_entry)
-
-                return True, True, True
-            else:
-                print(f"❌ 错误: 点击目标操作失败")
-                return True, False, True
-
-        except Exception as e:
-            print(f"❌ 错误: 点击目标操作过程中发生异常: {e}")
-            traceback.print_exc()
-            return True, False, True
+        # 使用旧接口的完整实现来确保真实操作
+        # 将ActionContext转换为step_idx参数
+        step_idx = getattr(context, 'step_idx', 0)
+        result = self._handle_click_target(step, step_idx)
+        return ActionResult.from_tuple(result)
 
     def _handle_auto_login_new(self, step, context):
         """自动登录 - 新接口"""
-        return ActionResult(success=True, message="Auto login completed")
+        # 使用旧接口的完整实现来确保真实操作
+        # 将ActionContext转换为step_idx参数
+        step_idx = getattr(context, 'step_idx', 0)
+        result = self._handle_auto_login(step, step_idx)
+        return ActionResult.from_tuple(result)
 
     def _handle_wait_for_disappearance_new(self, step, context):
         """等待消失 - 新接口"""
-        return ActionResult(success=True, message="Wait for disappearance completed")
+        # 使用旧接口的完整实现来确保真实操作
+        # 将ActionContext转换为step_idx和log_dir参数
+        step_idx = getattr(context, 'step_idx', 0)
+        log_dir = getattr(context, 'screenshot_dir', None)
+        result = self._handle_wait_for_disappearance(step, step_idx, log_dir)
+        return ActionResult.from_tuple(result)
 
     # 旧接口兼容方法
     def _handle_fallback_click(self, step, step_idx, log_dir):
