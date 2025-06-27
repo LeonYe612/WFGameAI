@@ -100,7 +100,7 @@
   "class": "device_preparation",
   "params": {
     "check_usb": true,
-    "configure_permissions": true,
+    "auto_handle_dialog": true,
     "handle_screen_lock": true
   },
   "remark": "设备初始化"
@@ -222,6 +222,65 @@
 | 元素找不到 | 使用 `skip_if_not_found: true` |
 | 输入失败 | 检查 `placeholder` 匹配，设置 `clear_previous_text` |
 | 热更新卡住 | 调整 `polling_interval` 和 `max_duration` |
+
+---
+
+## 🛡️ 系统弹窗自动处理参数化方案（2025-06-25补充）
+
+### 方案说明
+自动化回放过程中，常遇到系统权限、存储等弹窗。可通过 JSON 脚本参数灵活控制弹窗处理行为。
+
+### JSON 脚本写法
+
+**全局控制（meta 内）：**
+```json
+{
+  "meta": {
+    "auto_handle_dialog": true,
+    "dialog_max_wait": 8,
+    "dialog_retry_interval": 0.5,
+    "dialog_duration": 1.0
+  },
+  "steps": [ ... ]
+}
+```
+
+**单步控制（step 内，覆盖全局）：**
+```json
+{
+  "step": 2,
+  "action": "retry_until_success",
+  "auto_handle_dialog": true,
+  "dialog_max_wait": 6,
+  "dialog_retry_interval": 0.3,
+  "dialog_duration": 1.2,
+  ...
+}
+```
+
+**参数说明：**
+- `auto_handle_dialog`：是否自动处理弹窗（true/false）
+- `dialog_max_wait`：弹窗处理最大等待时间（秒）
+- `dialog_retry_interval`：弹窗检测重试间隔（秒）
+- `dialog_duration`：点击弹窗后等待消失的时间（秒）
+
+如未指定，使用代码默认值。
+
+### 代码调用 demo
+
+```python
+auto_handle = step.get('auto_handle_dialog', meta.get('auto_handle_dialog', False))
+max_wait = step.get('dialog_max_wait', meta.get('dialog_max_wait', 5.0))
+retry_interval = step.get('dialog_retry_interval', meta.get('dialog_retry_interval', 0.5))
+duration = step.get('dialog_duration', meta.get('dialog_duration', 1.0))
+
+if auto_handle:
+    self.handle_system_dialogs(
+        max_wait=max_wait,
+        retry_interval=retry_interval,
+        duration=duration
+    )
+```
 
 ---
 

@@ -55,6 +55,202 @@ class ReportGenerator:
         self.report_manager = report_manager
         self.config = get_report_config()
 
+    def generate_unified_report(self, device_reports: List[Path], scripts: List[Dict]) -> Optional[Path]:
+        """
+        统一报告生成入口点 - Problem 6 Fix
+        Args:
+            device_reports: 设备报告目录列表
+            scripts: 执行的脚本列表
+        Returns:
+            生成的汇总报告路径，失败返回None
+        """
+        try:
+            print(f"📝 开始生成统一测试报告...")
+
+            # 1. 检查并生成设备报告
+            for device_dir in device_reports:
+                if not (device_dir / "log.html").exists():
+                    print(f"🔄 生成缺失的设备报告: {device_dir.name}")
+                    self.generate_device_report(device_dir, scripts)
+
+            # 2. 生成汇总报告
+            summary_report = self.generate_summary_report(device_reports, scripts)
+            if not summary_report:
+                print(f"⚠️ 汇总报告生成失败，使用备用方案")
+                return self._generate_fallback_summary_report(device_reports, scripts)
+
+            print(f"✅ 统一报告生成成功: {summary_report}")
+            return summary_report
+
+        except Exception as e:
+            print(f"❌ 统一报告生成失败: {e}")
+            import traceback
+            traceback.print_exc()
+            # 使用备用方案
+            return self._generate_fallback_summary_report(device_reports, scripts)
+
+    def _generate_fallback_summary_report(self, device_reports: List[Path], scripts: List[Dict]) -> Optional[Path]:
+        """
+        备用汇总报告生成 - 模板回退机制
+        """
+        try:
+            print(f"🔄 使用备用模板生成汇总报告...")
+
+            # 准备备用HTML内容
+            html_content = self._build_fallback_summary_html(device_reports, scripts)
+
+            # 保存备用报告
+            summary_reports_dir = self.report_manager.reports_root / "summary_reports"
+            summary_reports_dir.mkdir(parents=True, exist_ok=True)
+
+            timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+            summary_file = summary_reports_dir / f"fallback_summary_{timestamp}.html"
+
+            with open(summary_file, "w", encoding="utf-8") as f:
+                f.write(html_content)
+
+            print(f"✅ 备用汇总报告生成成功: {summary_file}")
+            return summary_file
+
+        except Exception as e:
+            print(f"❌ 备用汇总报告也生成失败: {e}")
+            return None
+
+    def _build_fallback_summary_html(self, device_reports: List[Path], scripts: List[Dict]) -> str:
+        """构建备用汇总报告HTML"""
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        static_url = self.config.STATIC_URL if hasattr(self.config, 'STATIC_URL') else '/static/reports/'
+
+        # 统计信息
+        total_devices = len(device_reports)
+        success_count = sum(1 for device_dir in device_reports if (device_dir / "log.html").exists())
+        success_rate = f"{(success_count / total_devices * 100):.1f}%" if total_devices > 0 else "0%"
+
+        html_content = f"""<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WFGameAI 测试汇总报告 (备用版本)</title>
+    <link href="{static_url}css/report.css" rel="stylesheet">
+    <style>
+        body {{ font-family: 'Segoe UI', Arial, sans-serif; margin: 0; background: #f8f9fa; }}
+        .container {{ max-width: 1200px; margin: 0 auto; padding: 20px; }}
+        .header {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 12px; margin-bottom: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }}
+        .stats {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }}
+        .stat-card {{ background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); text-align: center; }}
+        .stat-value {{ font-size: 2.5em; font-weight: bold; margin-bottom: 5px; }}
+        .device-grid {{ display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; }}
+        .device-card {{ background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden; transition: transform 0.2s; }}
+        .device-card:hover {{ transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.15); }}
+        .device-header {{ background: linear-gradient(45deg, #28a745, #20c997); color: white; padding: 20px; }}
+        .device-content {{ padding: 20px; }}
+        .btn {{ display: inline-block; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 6px; margin: 5px; transition: background 0.2s; }}
+        .btn:hover {{ background: #0056b3; }}
+        .status-success {{ color: #28a745; }}
+        .status-error {{ color: #dc3545; }}
+        .script-list {{ background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 15px 0; }}
+        .script-item {{ padding: 8px; margin: 5px 0; background: white; border-radius: 4px; font-size: 0.9em; }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎮 WFGameAI 测试汇总报告</h1>
+            <p>生成时间: {timestamp}</p>
+            <p style="opacity: 0.8; font-size: 0.9em;">备用模板版本 - 基础功能保证</p>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value" style="color: #007bff;">{total_devices}</div>
+                <div>测试设备数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" style="color: #28a745;">{success_count}</div>
+                <div>成功设备数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" style="color: #17a2b8;">{success_rate}</div>
+                <div>成功率</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" style="color: #6c757d;">{len(scripts)}</div>
+                <div>执行脚本数</div>
+            </div>
+        </div>
+
+        <h2>📋 执行脚本列表</h2>
+        <div class="script-list">
+"""
+
+        # 添加脚本信息
+        for i, script in enumerate(scripts, 1):
+            script_name = script.get('name', f'Script {i}')
+            script_path = script.get('path', 'N/A')
+            script_config = script.get('config', {})
+
+            html_content += f"""
+            <div class="script-item">
+                <strong>{i}. {script_name}</strong><br>
+                <small>路径: {script_path}</small><br>
+                <small>循环: {script_config.get('loop_count', 1)} 次</small>
+                {f"<br><small>最大时长: {script_config.get('max_duration')}秒</small>" if script_config.get('max_duration') else ""}
+            </div>
+"""
+
+        html_content += """
+        </div>
+
+        <h2>📱 设备报告详情</h2>
+        <div class="device-grid">
+"""
+
+        # 添加设备报告信息
+        for device_dir in device_reports:
+            urls = self.report_manager.generate_report_urls(device_dir)
+            html_exists = (device_dir / "log.html").exists()
+            log_exists = (device_dir / "log.txt").exists()
+
+            status_class = "status-success" if html_exists else "status-error"
+            status_text = "✅ 报告正常" if html_exists else "❌ 报告缺失"
+
+            device_time = device_dir.stat().st_mtime
+            device_time_str = datetime.fromtimestamp(device_time).strftime('%Y-%m-%d %H:%M:%S')
+
+            html_content += f"""
+            <div class="device-card">
+                <div class="device-header">
+                    <h3>{device_dir.name}</h3>
+                    <div style="opacity: 0.8; font-size: 0.9em;">创建时间: {device_time_str}</div>
+                </div>
+                <div class="device-content">
+                    <p><strong>报告状态:</strong> <span class="{status_class}">{status_text}</span></p>
+                    <div style="margin-top: 15px;">
+                        {"<a href='" + urls['html_report'] + "' class='btn' target='_blank'>📊 查看HTML报告</a>" if html_exists else ""}
+                        {"<a href='" + urls['log_file'] + "' class='btn' target='_blank'>📄 查看日志文件</a>" if log_exists else ""}
+                        <a href="{urls['screenshots']}" class="btn" target="_blank">📸 查看截图</a>
+                    </div>
+                </div>
+            </div>
+"""
+
+        html_content += """
+        </div>
+    </div>
+
+    <script>
+        // 简单的交互增强
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('WFGameAI 备用汇总报告加载完成');
+        });
+    </script>
+</body>
+</html>
+"""
+
+        return html_content
+
     def generate_device_report(self, device_dir: Path, scripts: List[Dict]) -> bool:
         """
         生成设备报告 - 兼容性方法

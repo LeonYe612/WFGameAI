@@ -18,7 +18,7 @@
     "editorRuler.foreground": "#750000"
   },
   "workbench.colorTheme": "Default Dark Modern",
-  "python.analysis.typeCheckingMode": "basic",
+  "python.analysis.typeCheckingMode": "off",
   "editor.codeActionsOnSave": {
     "source.organizeImports": "explicit"
   },
@@ -108,5 +108,10 @@
       "type": "ci",
       "description": "CI配置或脚本修改"
     }
-  ]
+],
+"python.analysis.autoImportCompletions": true,
+"files.autoSave": "afterDelay",
+"editor.formatOnType": true,
+"editor.formatOnSave": true,
+"editor.formatOnPaste": true
 }

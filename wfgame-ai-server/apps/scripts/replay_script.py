@@ -297,11 +297,14 @@ def detect_buttons(frame, target_class=None):
                 detected_class = model.names[cls_id]
             else:
                 detected_class = f"class_{cls_id}"
-
             if detected_class == target_class:
                 box_x, box_y = box.xywh[0][:2].tolist()
                 x, y = box_x * scale_x, box_y * scale_y
                 return True, (x, y, detected_class)
+
+        # 如果没有找到目标类别，返回失败
+        print_realtime(f"⚠️ 未找到目标类别: {target_class}")
+        return False, (None, None, None)
 
     except Exception as e:
         print_realtime(f"按钮检测失败: {e}")
@@ -598,33 +601,61 @@ def process_sequential_script(device, steps, log_dir, action_processor, max_dura
         if max_duration is not None and (time.time() - script_start_time) > max_duration:
             print_realtime(f"脚本已达到最大执行时间 {max_duration}秒，停止执行")
             break
-
         step_class = step.get("class", "")
         step_action = step.get("action", "click")
         step_remark = step.get("remark", "")
 
         display_name = step_class if step_class else step_action
-        print_realtime(f"执行步骤 {step_idx+1}/{len(steps)}: {display_name}, 备注: {step_remark}")
+        # 增强的步骤执行日志
+        step_start_time = time.time()
+        print_realtime(f"🚀 [步骤 {step_idx+1}/{len(steps)}] 步骤开始执行: {display_name}")
+        print_realtime(f"   └─ 动作类型: {step_action}")
+        print_realtime(f"   └─ 目标类别: {step_class}")
+        print_realtime(f"   └─ 备注说明: {step_remark}")
+        print_realtime(f"   └─ 开始时间: {time.strftime('%H:%M:%S', time.localtime(step_start_time))}")
+
         # 使用ActionProcessor处理步骤
         try:
-            success, has_executed, should_continue = action_processor.process_action(
-                step, step_idx, log_dir
-            )
+            result = action_processor.process_action(step, step_idx, log_dir)
+
+            # 处理新的ActionResult格式
+            if hasattr(result, 'success'):
+                # 新的ActionResult对象
+                success = result.success
+                has_executed = result.executed
+                should_continue = result.should_continue
+                step_message = result.message
+            else:
+                # 兼容旧的元组格式
+                if len(result) == 3:
+                    success, has_executed, should_continue = result
+                    step_message = "步骤执行完成"
+                else:
+                    success, has_executed, should_continue = False, False, False
+                    step_message = "未知结果格式"
+
+            step_end_time = time.time()
+            step_duration = step_end_time - step_start_time
 
             if success and has_executed:
                 has_executed_steps = True
-                print_realtime(f"✅ 步骤 {step_idx+1} 执行成功")
+                print_realtime(f"✅ [步骤 {step_idx+1}] 步骤执行完成 - 成功 (耗时: {step_duration:.2f}s)")
+                print_realtime(f"   └─ 结果: {step_message}")
             else:
-                print_realtime(f"❌ 步骤 {step_idx+1} 执行失败")
+                print_realtime(f"❌ [步骤 {step_idx+1}] 步骤执行完成 - 失败 (耗时: {step_duration:.2f}s)")
+                print_realtime(f"   └─ 原因: {step_message}")
 
             # 检查是否需要停止
             if not should_continue:
-                print_realtime(f"步骤 {step_idx+1} 要求停止执行")
+                print_realtime(f"⏹️ [步骤 {step_idx+1}] 要求停止执行")
                 break
 
         except Exception as e:
-            print_realtime(f"❌ 步骤 {step_idx+1} 执行异常: {e}")
-            traceback.print_exc()        # 短暂暂停让UI响应
+            step_end_time = time.time()
+            step_duration = step_end_time - step_start_time
+            print_realtime(f"❌ [步骤 {step_idx+1}] 执行异常 (耗时: {step_duration:.2f}s): {e}")
+            print_realtime(f"   └─ 异常详情: {str(e)[:100]}...")
+            traceback.print_exc()# 短暂暂停让UI响应
         time.sleep(0.5)
 
     print_realtime(f"顺序执行完成，共处理 {len(steps)} 个步骤")
@@ -980,10 +1011,10 @@ def main():
     if model_loaded:
         print_realtime("✅ YOLO模型加载成功，AI检测功能可用")
     else:
-        print_realtime("⚠️ YOLO模型加载失败，AI检测功能不可用")
+        print_realtime("⚠️ YOLO模型加载失败，AI检测功能不可用")    # 使用自定义参数解析以支持复杂的脚本参数格式
+    import sys
 
-    # 使用自定义参数解析以支持复杂的脚本参数格式
-    import sys# 检查是否有--script参数
+    # 检查是否有--script参数
     if '--script' not in sys.argv:
         print_realtime("❌ 错误: 必须指定 --script 参数")
         print_realtime("用法示例:")
@@ -997,7 +1028,9 @@ def main():
 
     if not scripts:
         print_realtime("❌ 未找到有效的脚本参数")
-        return    # 解析其他参数
+        return
+
+    # 解析其他参数
     show_screens = '--show-screens' in sys.argv
 
     print_realtime("🎬 启动精简版回放脚本")
@@ -1025,24 +1058,27 @@ def main():
             print_realtime("❌ 未找到连接的设备")
             return
 
-        print_realtime(f"📱 找到 {len(devices)} 个设备")
-
-        # 最终检查模型状态
+        print_realtime(f"📱 找到 {len(devices)} 个设备")        # 最终检查模型状态
         global model
         if model is not None:
             print_realtime("✅ 模型状态检查通过，AI检测功能可用")
         else:
-            print_realtime("⚠️ 模型状态检查失败，将使用备用检测模式")        # 收集实际处理的设备名称列表，用于生成报告
+            print_realtime("⚠️ 模型状态检查失败，将使用备用检测模式")
+
+        # 收集实际处理的设备名称列表，用于生成报告
         processed_device_names = []
         # 收集本次执行创建的设备报告目录路径
         current_execution_device_dirs = []
 
         # 检查是否启用多设备并发模式
-        multi_device_mode = len(devices) > 1
-        if multi_device_mode:
-            print_realtime(f"🚀 启用多设备并发模式，将并发处理 {len(devices)} 台设备")
+        # 添加强制并发模式选项
+        force_concurrent = '--force-concurrent' in sys.argv
+        multi_device_mode = len(devices) > 1 or force_concurrent
 
-            # 使用独立的多设备并发回放器
+        if force_concurrent and len(devices) == 1:
+            print_realtime(f"🚀 强制启用并发模式，单设备也将使用多进程架构")
+        elif multi_device_mode:
+            print_realtime(f"🚀 启用多设备并发模式，将并发处理 {len(devices)} 台设备")
             try:
                 from multi_device_replayer import replay_scripts_on_devices
 
@@ -1062,7 +1098,8 @@ def main():
             except ImportError as e:
                 print_realtime(f"❌ 无法导入多设备回放器: {e}")
                 print_realtime("⚠️ 回退到单设备模式")
-                multi_device_mode = False        # 如果多设备模式被禁用，回退到单设备模式
+                multi_device_mode = False
+        # 如果多设备模式被禁用，回退到单设备模式
         if not multi_device_mode:
             # 单设备模式，保持原有逻辑
             print_realtime("📱 单设备模式，顺序执行")
@@ -1136,11 +1173,12 @@ def main():
                 error_msg = f"❌ 统一报告生成器未初始化，无法生成汇总报告"
                 print_realtime(error_msg)
                 raise RuntimeError(error_msg)
-
             if not REPORT_MANAGER:
                 error_msg = f"❌ 报告管理器未初始化，无法生成汇总报告"
                 print_realtime(error_msg)
-                raise RuntimeError(error_msg)            # 使用本次执行创建的设备报告目录，而不是所有历史目录
+                raise RuntimeError(error_msg)
+
+            # 使用本次执行创建的设备报告目录，而不是所有历史目录
             device_report_dirs = current_execution_device_dirs
 
             if not device_report_dirs:

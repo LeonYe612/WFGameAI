@@ -373,11 +373,10 @@ WFGameAI使用JSON格式存储测试脚本，具有良好的可读性和可编�
     {
       "step": 1,
       "class": "device_preparation",
-      "remark": "设备预处理",
-      "params": {
+      "remark": "设备预处理",      "params": {
         "check_usb": true,
         "setup_wireless": false,
-        "configure_permissions": true,
+        "auto_handle_dialog": true,
         "handle_screen_lock": true,
         "setup_input_method": true
       }

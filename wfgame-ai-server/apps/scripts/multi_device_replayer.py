@@ -23,19 +23,17 @@ def device_worker(device_serial, scripts, shared_results):
     """
     try:
         # 在子进程中重新导入必要模块，避免循环导入
-        from adbutils import adb
-
-        # 安全导入 DeviceScriptReplayer
+        from adbutils import adb        # 安全导入新的ActionProcessor
         try:
             # 确保当前目录在 Python 路径中
             current_dir = os.path.dirname(os.path.abspath(__file__))
             if current_dir not in sys.path:
                 sys.path.insert(0, current_dir)
 
-            from enhanced_input_handler import DeviceScriptReplayer
+            from action_processor import ActionProcessor
         except ImportError as e:
             timestamp = datetime.now().strftime("%H:%M:%S")
-            print(f"[进程 {os.getpid()}][{timestamp}] 无法导入 DeviceScriptReplayer: {e}")
+            print(f"[进程 {os.getpid()}][{timestamp}] 无法导入 ActionProcessor: {e}")
             shared_results[device_serial] = {
                 'success': False,
                 'error': f'导入失败: {e}'
@@ -59,8 +57,76 @@ def device_worker(device_serial, scripts, shared_results):
                 'success': False,
                 'error': '设备连接失败'
             }
-            return        # 创建 DeviceScriptReplayer 实例 - 标记为多设备模式
-        replayer = DeviceScriptReplayer(device_serial, is_multi_device_mode=True)
+            return        # 分配账号（使用Windows兼容的跨进程安全账号管理器）
+        try:
+            try:
+                # 优先尝试跨平台版本
+                from cross_process_account_manager import get_cross_process_account_manager
+                account_manager = get_cross_process_account_manager()
+            except ImportError:
+                # 在Windows上使用Windows专用版本
+                from windows_cross_process_account_manager import get_windows_cross_process_account_manager
+                account_manager = get_windows_cross_process_account_manager()
+
+            device_account = account_manager.allocate_account(device_serial)
+
+            timestamp = datetime.now().strftime("%H:%M:%S")
+            if device_account:
+                print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} 分配账号: {device_account.get('username', 'N/A')}")
+            else:
+                print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} 账号分配失败")
+
+        except Exception as alloc_e:
+            timestamp = datetime.now().strftime("%H:%M:%S")
+            print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} 账号分配异常: {alloc_e}")
+            device_account = None        # 尝试导入AI检测功能
+        detect_buttons_func = None
+        try:
+            # 尝试导入AI检测函数
+            from replay_script import detect_buttons, load_yolo_model_for_detection
+
+            # 初始化YOLO模型
+            if load_yolo_model_for_detection():
+                detect_buttons_func = detect_buttons
+                timestamp = datetime.now().strftime("%H:%M:%S")
+                print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} AI检测功能已加载")
+            else:
+                timestamp = datetime.now().strftime("%H:%M:%S")
+                print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} YOLO模型加载失败")
+
+        except ImportError as e:
+            timestamp = datetime.now().strftime("%H:%M:%S")
+            print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} AI检测功能导入失败: {e}")
+        except Exception as e:
+            timestamp = datetime.now().strftime("%H:%M:%S")
+            print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} AI检测功能初始化异常: {e}")        # 设置日志目录和文件
+        timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+        reports_dir = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+            'staticfiles', 'reports', 'ui_run', 'WFGameAI.air', 'log'
+        )
+        os.makedirs(reports_dir, exist_ok=True)
+
+        device_dir = "".join(c for c in device_serial if c.isalnum() or c in ('-', '_'))
+        log_dir = os.path.join(reports_dir, f"{device_dir}_{timestamp}")
+        os.makedirs(log_dir, exist_ok=True)
+
+        # 创建log.txt文件
+        log_txt_path = os.path.join(log_dir, "log.txt")
+        with open(log_txt_path, "w", encoding="utf-8") as f:
+            f.write("")  # 创建空文件
+
+        # 创建 ActionProcessor 实例
+        action_processor = ActionProcessor(
+            device,
+            device_name=device_serial,
+            log_txt_path=log_txt_path,
+            detect_buttons_func=detect_buttons_func
+        )
+
+        # 设置设备账号信息
+        if device_account:
+            action_processor.set_device_account(device_account)
 
         # 执行每个脚本
         has_execution = False
@@ -81,8 +147,8 @@ def device_worker(device_serial, scripts, shared_results):
                     print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} 第 {loop+1}/{script_loop_count} 次循环")
 
                 try:
-                    result = replayer.replay_single_script(script_path)
-                    if result:
+                    result = action_processor.process_script(script_path)
+                    if result.success:
                         has_execution = True
                         total_success += 1
                         timestamp = datetime.now().strftime("%H:%M:%S")
@@ -90,14 +156,30 @@ def device_worker(device_serial, scripts, shared_results):
                     else:
                         total_failed += 1
                         timestamp = datetime.now().strftime("%H:%M:%S")
-                        print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} 脚本执行失败")
+                        print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} 脚本执行失败: {result.message}")
 
                     time.sleep(1.0)  # 循环间短暂等待
 
                 except Exception as e:
                     total_failed += 1
                     timestamp = datetime.now().strftime("%H:%M:%S")
-                    print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} 脚本执行异常: {e}")
+                    print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} 脚本执行异常: {e}")        # 释放设备账号分配（使用Windows兼容的跨进程安全账号管理器）
+        try:
+            try:
+                # 优先尝试跨平台版本
+                from cross_process_account_manager import get_cross_process_account_manager
+                account_manager = get_cross_process_account_manager()
+            except ImportError:
+                # 在Windows上使用Windows专用版本
+                from windows_cross_process_account_manager import get_windows_cross_process_account_manager
+                account_manager = get_windows_cross_process_account_manager()
+
+            account_manager.release_account(device_serial)
+            timestamp = datetime.now().strftime("%H:%M:%S")
+            print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} 账号已释放（跨进程）")
+        except Exception as release_e:
+            timestamp = datetime.now().strftime("%H:%M:%S")
+            print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} 账号释放失败: {release_e}")
 
         # 记录最终结果
         if has_execution:
@@ -116,12 +198,28 @@ def device_worker(device_serial, scripts, shared_results):
                 'total_success': 0,
                 'total_failed': total_failed
             }
-
     except Exception as e:
         timestamp = datetime.now().strftime("%H:%M:%S")
         print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} 工作进程异常: {e}")
         import traceback
-        traceback.print_exc()
+        traceback.print_exc()        # 异常时也要释放账号分配（使用Windows兼容的跨进程安全账号管理器）
+        try:
+            try:
+                # 优先尝试跨平台版本
+                from cross_process_account_manager import get_cross_process_account_manager
+                account_manager = get_cross_process_account_manager()
+            except ImportError:
+                # 在Windows上使用Windows专用版本
+                from windows_cross_process_account_manager import get_windows_cross_process_account_manager
+                account_manager = get_windows_cross_process_account_manager()
+
+            account_manager.release_account(device_serial)
+            timestamp = datetime.now().strftime("%H:%M:%S")
+            print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} 账号已释放（异常清理/跨进程）")
+        except Exception as release_e:
+            timestamp = datetime.now().strftime("%H:%M:%S")
+            print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} 账号释放失败（异常清理）: {release_e}")
+
         shared_results[device_serial] = {
             'success': False,
             'error': str(e),

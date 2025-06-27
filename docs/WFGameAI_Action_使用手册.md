@@ -265,10 +265,9 @@
 ```json
 {
   "class": "device_preparation",
-  "params": {
-    "check_usb": true,                  // 检查USB连接
+  "params": {    "check_usb": true,                  // 检查USB连接
     "setup_wireless": false,           // 设置无线连接
-    "configure_permissions": true,      // 配置权限
+    "auto_handle_dialog": true,        // 自动处理弹窗
     "handle_screen_lock": true,        // 处理屏幕锁定
     "setup_input_method": true,        // 设置输入法
     "save_logs": false                 // 是否保存日志
@@ -851,11 +850,10 @@ WFGameAI支持多种等待机制来处理复杂的界面交互：
   "steps": [
     {
       "class": "device_preparation",
-      "remark": "执行设备预处理：设备预处理示例、输入法检查，确保设备状态正常",
-      "params": {
+      "remark": "执行设备预处理：设备预处理示例、输入法检查，确保设备状态正常",      "params": {
         "check_usb": true,
         "setup_wireless": false,
-        "configure_permissions": true,
+        "auto_handle_dialog": true,
         "handle_screen_lock": true,
         "setup_input_method": true,
         "save_logs": false
@@ -927,6 +925,65 @@ WFGameAI支持多种等待机制来处理复杂的界面交互：
 - [WFGameAI回放功能完整技术文档](./WFGameAI回放功能完整技术文档.md) - 详细的技术实现文档
 - [Action API参考](../wfgame-ai-server/apps/scripts/docs/wfgame_ai_action_api_reference.json) - API接口文档
 - [项目开发规范](../.vscode/WFGameAI-Comprehensive-Dev-Standards.md) - 开发规范文档
+
+---
+
+## 🛡️ 系统弹窗自动处理参数化方案（2025-06-25补充）
+
+### 方案说明
+自动化回放过程中，常遇到系统权限、存储等弹窗。可通过 JSON 脚本参数灵活控制弹窗处理行为。
+
+### JSON 脚本写法
+
+**全局控制（meta 内）：**
+```json
+{
+  "meta": {
+    "auto_handle_dialog": true,
+    "dialog_max_wait": 8,
+    "dialog_retry_interval": 0.5,
+    "dialog_duration": 1.0
+  },
+  "steps": [ ... ]
+}
+```
+
+**单步控制（step 内，覆盖全局）：**
+```json
+{
+  "step": 2,
+  "action": "retry_until_success",
+  "auto_handle_dialog": true,
+  "dialog_max_wait": 6,
+  "dialog_retry_interval": 0.3,
+  "dialog_duration": 1.2,
+  ...
+}
+```
+
+**参数说明：**
+- `auto_handle_dialog`：是否自动处理弹窗（true/false）
+- `dialog_max_wait`：弹窗处理最大等待时间（秒）
+- `dialog_retry_interval`：弹窗检测重试间隔（秒）
+- `dialog_duration`：点击弹窗后等待消失的时间（秒）
+
+如未指定，使用代码默认值。
+
+### 代码调用 demo
+
+```python
+auto_handle = step.get('auto_handle_dialog', meta.get('auto_handle_dialog', False))
+max_wait = step.get('dialog_max_wait', meta.get('dialog_max_wait', 5.0))
+retry_interval = step.get('dialog_retry_interval', meta.get('dialog_retry_interval', 0.5))
+duration = step.get('dialog_duration', meta.get('dialog_duration', 1.0))
+
+if auto_handle:
+    self.handle_system_dialogs(
+        max_wait=max_wait,
+        retry_interval=retry_interval,
+        duration=duration
+    )
+```
 
 ---
 

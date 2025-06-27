@@ -94,7 +94,8 @@ class DeviceScreenAnalyzer:
         Args:
             model_path: YOLO模型路径，默认使用best.pt
             confidence_threshold: 检测置信度阈值
-        """        self.model_path = model_path or self._find_best_model()
+        """
+        self.model_path = model_path or self._find_best_model()
         self.confidence_threshold = confidence_threshold
         self.model = None
 

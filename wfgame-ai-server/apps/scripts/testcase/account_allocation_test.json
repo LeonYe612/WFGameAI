@@ -1,0 +1,16 @@
+{
+    "meta": {
+        "description": "账号分配测试脚本",
+        "author": "WFGameAI测试",
+        "version": "1.0",
+        "create_time": "2025-06-27 17:13:30"
+    },
+    "steps": [
+        {
+            "action": "wait_for_stable",
+            "target_class": "test",
+            "timeout": 2,
+            "description": "等待界面稳定"
+        }
+    ]
+}

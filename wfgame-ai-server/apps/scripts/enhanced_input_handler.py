@@ -1,5 +1,5 @@
 """
-WFGameAI增强输入处理器 - 修复版
+WFGameAI增强输入处理器 - 识别和处理UI elements 层级元素
 功能：集成智能登录操作器的优化算法和焦点检测，严格按照ElementPatterns执行匹配
 作者：WFGameAI开发团队
 """
@@ -76,11 +76,27 @@ class ElementPatterns:
         'resource_id_keywords': ['other_login', 'switch_login', 'login_method', 'more_login', 'password_login'],
         'class_types': ['android.widget.TextView', 'android.widget.Button', 'android.view.View'],
         'content_desc_keywords': ['其他登录方式', '登录方式', '切换登录', '更多选项']
-    }
-
-    # 系统弹窗统一处理
+    }    # 系统弹窗统一处理
     SYSTEM_DIALOG_PATTERNS = {
-        'text_hints': ['全部允许', '存储', '继续安装']
+        'text_hints': [
+            "接受", '全部允许', '允许', '同意', '确定', '继续', '继续安装',
+            '存储', '确认', 'OK', 'Allow', 'Continue', 'Agree',
+            '立即更新', '下次再说', '跳过', '知道了', '我知道了',
+            '始终允许', 'Always Allow', 'Accept', 'Confirm'
+        ],
+        'class_types': [
+                'android.widget.Button',
+                'android.widget.TextView',
+                "com.android.permissioncontroller:id/permission_allow_button",
+                "android:id/button1",  # 通常是确定/允许按钮
+                "com.android.packageinstaller:id/permission_allow_button",
+                "android:id/button_once",
+                "android:id/button_always",
+                "btn_agree", "btn_confirm", "btn_ok", "btn_allow",
+                "tv_agree", "tv_confirm", "tv_ok",
+                "com.beeplay.card2prepare:id/tv_ok"
+                ],
+        'priority_keywords': ['允许', '同意', '确定', '继续', 'Allow', 'OK', 'Continue']
     }
 
 
@@ -324,7 +340,7 @@ class DeviceScriptReplayer:
         print("❌ 未找到密码输入框")
         return None
 
-    def find_agreement_checkbox(self, elements: List[Dict[str, Any]], target_selector: Dict = None) -> Optional[Dict[str, Any]]:
+    def find_agreement_checkbox(self, elements: List[Dict[str, Any]], target_selector: Optional[Dict] = None) -> Optional[Dict[str, Any]]:
         """查找协议勾选框（严格按照CHECKBOX_PATTERNS匹配）"""
         print("🔍 查找协议勾选框（严格按照CHECKBOX_PATTERNS匹配）...")
 
@@ -902,7 +918,7 @@ class DeviceScriptReplayer:
 
                     if success:
                         print(f"✅ 位置 {i+1} 点击成功")
-                        time.sleep(1.0)  # 等待状态更新
+                        time.sleep(1.0) # 等待状态更新
 
                         # 重新检查状态
                         xml_content = self.get_ui_hierarchy()
@@ -1142,231 +1158,6 @@ class DeviceScriptReplayer:
             print(f"❌ 执行目标点击动作时发生错误: {e}")
             return False
 
-    def replay_single_script(self, script_path: str) -> bool:
-        """
-        回放单个脚本 - 支持参数化和传统格式
-
-        Args:
-            script_path: 脚本文件路径
-
-        Returns:
-            回放是否成功
-        """
-        print(f"📜 开始回放脚本: {script_path}")
-
-        try:
-            # 读取脚本文件
-            with open(script_path, 'r', encoding='utf-8') as f:
-                script_content = f.read()
-
-            # 解析JSON脚本
-            import json
-            script_json = json.loads(script_content)
-
-            # 执行每个步骤
-            for step_idx, step in enumerate(script_json.get('steps', [])):
-                # 兼容两种脚本格式：新格式使用action字段，旧格式使用class字段
-                action = step.get('action')
-                step_class = step.get('class', '')
-                target_selector = step.get('target_selector', {})
-                text = step.get('text', '')
-                params = step.get('params', {})
-                remark = step.get('remark', '')
-
-                # 如果没有action字段，根据class字段推导action
-                if not action:
-                    if step_class in ['app_start', 'start_app']:
-                        action = 'app_start'
-                    elif step_class in ['app_stop', 'stop_app']:
-                        action = 'app_stop'
-                    elif step_class in ['device_preparation']:
-                        action = 'device_preparation'
-                    elif step_class in ['delay', 'wait', 'sleep']:
-                        action = 'delay'
-                    elif step_class:  # 如果有class但没有action，默认为click
-                        action = 'click'
-                    else:
-                        action = 'click'  # 完全默认为点击
-
-                print(f"🔧 执行步骤 {step_idx + 1}: action={action}, remark={remark}")
-
-                try:
-                    if action == 'delay':
-                        # 延迟操作
-                        delay_time = params.get('seconds', 1.0)
-                        print(f"⏰ 延迟 {delay_time} 秒")
-                        time.sleep(float(delay_time))
-                    elif action == 'input':
-                        # 输入操作 - 支持参数化
-                        # 注意：参数替换已在input_text_with_focus_detection方法中处理
-                        print(f"⌨️ 执行输入操作: {text[:30]}{'...' if len(text) > 30 else ''}")
-
-                        if target_selector.get('type'):
-                            # 参数化方式
-                            success = self.input_text_with_focus_detection(text, target_selector)
-                        else:
-                            # 传统方式
-                            ui_xml = self.get_ui_hierarchy()
-                            if not ui_xml:
-                                print(f"❌ 获取UI结构失败，无法执行输入")
-                                continue
-
-                            elements = self._parse_ui_xml(ui_xml)
-                            input_field = self.find_best_input_field(target_selector)
-                            if input_field:
-                                success = self.input_text_with_focus_detection(text, target_selector)
-                            else:
-                                print("❌ 未找到输入框")
-                                success = False
-
-                        if not success:
-                            print(f"❌ 输入操作失败")
-                            continue
-
-                    elif action == 'checkbox':
-                        # checkbox操作 - 支持参数化
-                        print(f"☑️ 执行checkbox勾选操作")
-                        success = self.perform_checkbox_action(target_selector)
-
-                        if not success:
-                            print(f"❌ checkbox操作失败")
-                            continue
-
-                    elif action == 'click_target':
-                        # 点击目标操作 - 支持参数化
-                        print(f"🎯 执行点击目标操作")
-                        success = self.perform_click_target_action(target_selector)
-
-                        if not success:
-                            print(f"❌ 点击目标操作失败")
-                            if not target_selector.get('skip_if_not_found', False):
-                                continue
-
-                    elif action == 'auto_login':
-                        # 自动登录操作
-                        print(f"🔐 执行自动登录操作")
-                        username = params.get('username', '')
-                        password = params.get('password', '')
-                        success = self.perform_auto_login(username, password)
-
-                        if not success:
-                            print(f"❌ 自动登录操作失败")
-                            continue
-                    elif action in ['click', 'tap']:
-                        # 传统点击操作
-                        print(f"👆 执行传统点击操作")
-                        ui_xml = self.get_ui_hierarchy()
-                        if not ui_xml:
-                            print(f"❌ 获取UI结构失败，无法执行点击")
-                            continue
-
-                        elements = self._parse_ui_xml(ui_xml)
-                        target_element = self.find_custom_target_element(elements, target_selector)
-                        if target_element:
-                            success = self.tap_element(target_element)
-                        else:
-                            print(f"❌ 找不到点击目标")
-                            success = False
-
-                        if not success:
-                            print(f"❌ 点击操作失败")
-                            continue
-                    elif action == 'wait_for_appearance':
-                        # 等待元素出现操作 - 路由到ActionProcessor
-                        print(f"👁️ 执行等待元素出现操作")
-                        success = self._route_to_action_processor(step, step_idx, 'wait_for_appearance')
-                        if not success:
-                            print(f"❌ wait_for_appearance 操作失败")
-                            continue
-
-                    elif action == 'wait_for_stable':
-                        # 等待界面稳定操作 - 路由到ActionProcessor
-                        print(f"⏳ 执行等待界面稳定操作")
-                        success = self._route_to_action_processor(step, step_idx, 'wait_for_stable')
-                        if not success:
-                            print(f"❌ wait_for_stable 操作失败")
-                            continue
-
-                    elif action == 'retry_until_success':
-                        # 重试直到成功操作 - 路由到ActionProcessor
-                        print(f"🔄 执行重试直到成功操作")
-                        success = self._route_to_action_processor(step, step_idx, 'retry_until_success')
-                        if not success:
-                            print(f"❌ retry_until_success 操作失败")
-                            continue
-
-                    else:
-                        print(f"⚠️ 不支持的操作: {action}，跳过")
-                        continue
-
-                    # 操作间延迟
-                    time.sleep(0.5)
-
-                except Exception as e:
-                    print(f"❌ 步骤 {step_idx + 1} 执行异常: {e}")
-                    import traceback
-                    traceback.print_exc()
-                    continue
-
-            print("✅ 脚本回放完成")
-            return True
-
-        except Exception as e:
-            print(f"❌ 脚本回放过程中发生错误: {e}")
-            import traceback
-            traceback.print_exc()
-            return False
-
-    def perform_auto_login(self, username: str, password: str) -> bool:
-        """
-        执行完整的自动登录流程
-
-        Args:
-            username: 用户名
-            password: 密码
-
-        Returns:
-            登录是否成功
-        """
-        print(f"🔐 开始自动登录流程: {username}")
-
-        try:
-            # 1. 输入用户名
-            username_selector = {"type": "username_field"}
-            if not self.input_text_with_focus_detection(username, username_selector):
-                print("❌ 用户名输入失败")
-                return False
-
-            time.sleep(1)
-
-            # 2. 输入密码
-            password_selector = {"type": "password_field"}
-            if not self.input_text_with_focus_detection(password, password_selector):
-                print("❌ 密码输入失败")
-                return False
-
-            time.sleep(1)
-
-            # 3. 勾选协议
-            checkbox_selector = {"type": "agreement_checkbox"}
-            if not self.perform_checkbox_action(checkbox_selector):
-                print("⚠️ 协议勾选失败，继续尝试登录")
-
-            time.sleep(1)
-
-            # 4. 点击登录按钮
-            login_selector = {"type": "login_button"}
-            if not self.perform_click_target_action(login_selector):
-                print("❌ 登录按钮点击失败")
-                return False
-
-            print("✅ 自动登录流程完成")
-            return True
-
-        except Exception as e:
-            print(f"❌ 自动登录过程中发生错误: {e}")
-            return False
-
     def _allocate_device_account(self):
         """为设备分配账号"""
         try:
@@ -1378,15 +1169,24 @@ class DeviceScriptReplayer:
                 print(f"⚠️ 无法导入账号管理器: {e}")
                 return
 
-            # 尝试分配账号
-            device_account = account_manager.allocate_account(self.device_serial)
+            # 尝试分配账号（只在首次分配时打印日志）
+            if self.device_serial:
+                # 检查是否已有分配
+                existing_account = account_manager.get_account(self.device_serial)
+                if existing_account:
+                    self.device_account = existing_account
+                    return
 
-            if device_account:
-                self.device_account = device_account
-                username, password = device_account
-                print(f"✅ 为设备 {self.device_serial} 分配账号: {username}")
+                # 执行新分配
+                device_account = account_manager.allocate_account(self.device_serial)
+                if device_account:
+                    self.device_account = device_account
+                    username, password = device_account
+                    print(f"✅ 为设备 {self.device_serial} 分配账号: {username}")
+                else:
+                    print(f"⚠️ 设备 {self.device_serial} 账号分配失败")
             else:
-                print(f"⚠️ 设备 {self.device_serial} 账号分配失败")
+                print("⚠️ 设备序列号为空，无法分配账号")
 
         except Exception as e:
             print(f"❌ 账号分配过程中发生错误: {e}")
@@ -1422,127 +1222,101 @@ class DeviceScriptReplayer:
 
         return result_text
 
-    def _route_to_action_processor(self, step, step_idx, action_name):
+    def perform_auto_login(self, username: str, password: str) -> bool:
         """
-        路由复杂操作到ActionProcessor进行处理
+        执行完整的自动登录流程
 
         Args:
-            step: 步骤配置
-            step_idx: 步骤索引
-            action_name: 动作名称
+            username: 用户名
+            password: 密码
 
         Returns:
-            操作是否成功
+            登录是否成功
         """
+        print(f"🔐 开始执行自动登录流程")
+        print(f"👤 用户名: {username}")
+        print(f"🔑 密码: {'*' * len(password)}")
+
         try:
-            # 导入ActionProcessor
-            try:
-                from action_processor import ActionProcessor
-            except ImportError:
-                from .action_processor import ActionProcessor            # 在路由前处理参数替换
-            step_copy = step.copy()
+            # 第一步：查找并填写用户名
+            print("🔍 步骤1: 查找用户名输入框...")
+            xml_content = self.get_ui_hierarchy()
+            if not xml_content:
+                print("❌ 无法获取UI结构")
+                return False
 
-            # 对于retry_until_success中的input操作，需要特殊处理参数替换
-            if action_name == "retry_until_success" and step_copy.get("retry_action") == "input":
-                if "text" in step_copy:
-                    step_copy["text"] = self._replace_account_parameters(step_copy["text"])
-                    print(f"🔧 retry_until_success参数替换完成: {step_copy['text']}")
+            elements = self._parse_ui_xml(xml_content)
+            if not elements:
+                print("❌ 无法解析UI元素")
+                return False
 
-            # 创建临时日志目录（如果需要）
-            import tempfile
-            import os
-            temp_log_dir = tempfile.mkdtemp(prefix=f'enhanced_handler_{action_name}_')
-            log_txt_path = os.path.join(temp_log_dir, "log.txt")            # 创建一个简单的设备代理对象
+            username_field = self.find_username_field(elements)
+            if username_field:
+                print("✅ 找到用户名输入框")
+                # 点击获取焦点
+                if self.tap_element(username_field):
+                    # 输入用户名
+                    if self.input_text_smart(username):
+                        print("✅ 用户名输入成功")
+                    else:
+                        print("❌ 用户名输入失败")
+                        return False
+                else:
+                    print("❌ 用户名输入框点击失败")
+                    return False
+            else:
+                print("❌ 未找到用户名输入框")
+                return False
 
-            class DeviceProxy:
-                def __init__(self, device_serial):
-                    self.serial = device_serial
-
-                def screenshot(self):
-                    # 通过adb获取截图，避免UTF-8编码错误
-                    try:
-                        import subprocess
-                        # 使用exec-out获取原始字节数据，避免文本编码问题
-                        result = subprocess.run(
-                            f"adb -s {self.serial} exec-out screencap -p",
-                            shell=True,
-                            capture_output=True,
-                            timeout=10
-                        )
-                        if result.returncode == 0 and result.stdout:
-                            import cv2
-                            import numpy as np
-                            # 直接从字节数据解码PNG
-                            nparr = np.frombuffer(result.stdout, np.uint8)
-                            img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-                            if img is not None:
-                                # 转换为PIL Image格式
-                                from PIL import Image
-                                img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-                                return Image.fromarray(img_rgb)
-                            else:
-                                print("⚠️ 警告：无法解码截图数据")
+            # 第二步：查找并填写密码
+            print("🔍 步骤2: 查找密码输入框...")
+            xml_content = self.get_ui_hierarchy()  # 重新获取UI结构
+            if xml_content:
+                elements = self._parse_ui_xml(xml_content)
+                password_field = self.find_password_field(elements)
+                if password_field:
+                    print("✅ 找到密码输入框")
+                    # 点击获取焦点
+                    if self.tap_element(password_field):
+                        # 输入密码
+                        if self.input_text_smart(password):
+                            print("✅ 密码输入成功")
                         else:
-                            print("⚠️ 警告：screencap命令返回空数据")
-                    except subprocess.TimeoutExpired:
-                        print("❌ 截图超时")
-                    except Exception as e:
-                        print(f"获取截图失败: {e}")
-                    return None
+                            print("❌ 密码输入失败")
+                            return False
+                    else:
+                        print("❌ 密码输入框点击失败")
+                        return False
+                else:
+                    print("❌ 未找到密码输入框")
+                    return False
+            else:
+                print("❌ 无法重新获取UI结构")
+                return False
 
-                def shell(self, cmd, encoding='utf-8', timeout=None):
-                    # 执行shell命令，兼容encoding参数
-                    try:
-                        import subprocess
-
-                        # 如果encoding为None，使用字节模式
-                        if encoding is None:
-                            result = subprocess.run(
-                                f"adb -s {self.serial} shell {cmd}",
-                                shell=True, capture_output=True, timeout=timeout
-                            )
-                            return result.stdout  # 返回字节数据
-                        else:
-                            result = subprocess.run(
-                                f"adb -s {self.serial} shell {cmd}",
-                                shell=True, capture_output=True, text=True, timeout=timeout
-                            )
-                            return result.stdout  # 返回文本数据
-                    except subprocess.TimeoutExpired:
-                        print(f"❌ Shell命令超时: {cmd}")
-                        return "" if encoding else b""
-                    except Exception as e:
-                        print(f"执行shell命令失败: {e}")
-                        return "" if encoding else b""# 创建设备代理
-            device_proxy = DeviceProxy(self.device_serial)
-            # 创建ActionProcessor实例（注意：构造函数不接受device_account参数）
-            action_processor = ActionProcessor(
-                device=device_proxy,
-                device_name=self.device_serial,
-                log_txt_path=log_txt_path
-            )
-
-            # 设置设备账号信息
-            if self.device_account:
-                action_processor.set_device_account(self.device_account)
-                print(f"✅ 已为ActionProcessor设置设备账号: {self.device_account[0] if self.device_account else '无'}")
-
-            # 执行操作（使用经过参数替换的step_copy）
-            success, has_executed, should_continue = action_processor.process_action(
-                step_copy, step_idx, temp_log_dir
-            )
-
-            # 清理临时目录
-            try:
-                import shutil
-                shutil.rmtree(temp_log_dir, ignore_errors=True)
-            except:
-                pass
-
-            return success and has_executed
+            # 第三步：查找并点击登录按钮
+            print("🔍 步骤3: 查找登录按钮...")
+            xml_content = self.get_ui_hierarchy()  # 再次获取UI结构
+            if xml_content:
+                elements = self._parse_ui_xml(xml_content)
+                login_button = self.find_login_button(elements)
+                if login_button:
+                    print("✅ 找到登录按钮")
+                    # 点击登录按钮
+                    if self.tap_element(login_button):
+                        print("✅ 登录按钮点击成功")
+                        print("🎉 自动登录流程完成")
+                        return True
+                    else:
+                        print("❌ 登录按钮点击失败")
+                        return False
+                else:
+                    print("❌ 未找到登录按钮")
+                    return False
+            else:
+                print("❌ 无法重新获取UI结构")
+                return False
 
         except Exception as e:
-            print(f"❌ 路由到ActionProcessor失败: {e}")
-            import traceback
-            traceback.print_exc()
+            print(f"❌ 自动登录过程中发生错误: {e}")
             return False

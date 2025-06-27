@@ -58,7 +58,8 @@ class AndroidPermissionPatterns:
                 "android:id/button_always",
                 "btn_agree", "btn_confirm", "btn_ok", "btn_allow",
                 "tv_agree", "tv_confirm", "tv_ok",
-                "com.beeplay.card2prepare:id/tv_ok"  # 从quick测试中识别的实际ID
+                "com.beeplay.card2prepare:id/tv_ok",  # 从quick测试中识别的实际ID
+                
             ]
         },
         PermissionAction.DENY: {

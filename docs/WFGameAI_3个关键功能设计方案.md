@@ -411,4 +411,68 @@
 
 ---
 
+## 🛡️ 系统弹窗自动识别处理参数化方案（2025-06-25补充）
+
+### 方案背景
+自动化回放过程中，常遇到系统权限、存储等弹窗。为保证流程不中断且高效，支持通过 JSON 脚本参数灵活控制弹窗处理行为。
+
+### JSON 脚本写法
+
+**全局控制（meta 内），表示当前文件每一step执行前都要进行“弹窗自动处理”：**
+```json
+{
+  "meta": {
+    "auto_handle_dialog": true,
+    "dialog_max_wait": 8,
+    "dialog_retry_interval": 0.5,
+    "dialog_duration": 1.0
+  },
+  "steps": [ ... ]
+}
+```
+
+**单步控制（step 内，只有标注的step才执行“弹窗自动处理”逻辑，覆盖全局）：**
+```json
+{
+  "step": 2,
+  "action": "retry_until_success",
+  "auto_handle_dialog": true,
+  "dialog_max_wait": 6,
+  "dialog_retry_interval": 0.3,
+  "dialog_duration": 1.2,
+  ...
+}
+```
+
+**参数说明：**
+- `auto_handle_dialog`：是否自动处理弹窗（true/false）
+- `dialog_max_wait`：弹窗处理最大等待时间（秒）
+- `dialog_retry_interval`：弹窗检测重试间隔（秒）
+- `dialog_duration`：点击弹窗后等待消失的时间（秒）
+
+如未指定，使用代码默认值。
+
+### 代码调用 demo
+
+```python
+auto_handle = step.get('auto_handle_dialog', meta.get('auto_handle_dialog', False))
+max_wait = step.get('dialog_max_wait', meta.get('dialog_max_wait', 5.0))
+retry_interval = step.get('dialog_retry_interval', meta.get('dialog_retry_interval', 0.5))
+duration = step.get('dialog_duration', meta.get('dialog_duration', 1.0))
+
+if auto_handle:
+    self.handle_system_dialogs(
+        max_wait=max_wait,
+        retry_interval=retry_interval,
+        duration=duration
+    )
+```
+
+### 最佳实践
+- 推荐仅在关键步骤前后开启自动弹窗处理，兼顾效率与健壮性。
+- 参数可全局设置，也可按需在单步覆盖。
+- 只需维护 SYSTEM_DIALOG_PATTERNS 关键字即可适配更多弹窗。
+
+---
+
 *📝 备注: 本文档作为开发的标准参考，所有实现都应严格按照此设计进行*

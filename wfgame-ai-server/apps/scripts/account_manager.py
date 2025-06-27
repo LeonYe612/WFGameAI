@@ -75,17 +75,11 @@ class AccountManager:
             (username, password) 或 None (如果无可用账号)
         """
         with self.allocation_lock:
-            # 如果设备已经分配过账号，返回之前的分配
+            # 如果设备已经分配过账号，返回之前的分配（静默模式）
             if device_serial in self.device_allocations:
                 username, password = self.device_allocations[device_serial]
-                print(f"设备 {device_serial} 使用已分配账号: {username}")
-                return username, password
-
-            # 基于设备序列号的哈希值来确定分配顺序，保证稳定分配
-            import hashlib
-            device_hash = int(hashlib.md5(device_serial.encode()).hexdigest()[:8], 16)
-
-            # 找到第一个未分配的账号
+                # 静默返回，避免重复打印
+                return username, password            # 基于顺序分配账号，保证从第一个账号开始使用# 找到第一个未分配的账号
             allocated_accounts = set(self.device_allocations.values())
             available_accounts = [acc for acc in self.accounts if acc not in allocated_accounts]
 
@@ -94,12 +88,11 @@ class AccountManager:
                 print(f"当前已分配: {len(self.device_allocations)}, 总账号数: {len(self.accounts)}")
                 return None
 
-            # 使用设备哈希值选择账号，确保同一设备总是得到相同账号
-            account_index = device_hash % len(available_accounts)
-            username, password = available_accounts[account_index]
+            # 使用顺序分配策略：分配第一个可用账号
+            username, password = available_accounts[0]
             self.device_allocations[device_serial] = (username, password)
 
-            print(f"为设备 {device_serial} 分配账号: {username} (稳定分配算法)")
+            print(f"为设备 {device_serial} 分配账号: {username} (顺序分配算法)")
             return username, password
 
     def get_account(self, device_serial: str) -> Optional[Tuple[str, str]]:

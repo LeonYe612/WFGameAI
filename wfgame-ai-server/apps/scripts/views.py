@@ -459,6 +459,7 @@ def get_scripts(request):
             filename = os.path.basename(script_file)
             if filename in db_filenames:
                 continue  # 已在数据库中
+
             created_time = datetime.fromtimestamp(os.path.getctime(script_file))
             # 读取脚本内容获取步骤数
             try:
@@ -1353,7 +1354,7 @@ def debug_script(request):
                     new_script_path = find_script_path(script_basename)
                     args[1] = new_script_path
                     logger.info(f"脚本路径已更新为: {new_script_path}")
-                    process = subprocess.Popen(
+        process = subprocess.Popen(
             args,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -2024,19 +2025,19 @@ def edit_script(request, script_path=None):
                             content = content_bytes.decode('latin1')
                             logger.warning(f"使用latin1作为回退编码")
 
-                script_json_data = {}
-                try:
-                    script_json_data = json.loads(content)
-                    formatted_content = json.dumps(script_json_data, indent=2, ensure_ascii=False)
-                except json.JSONDecodeError:
-                    formatted_content = content
-                    logger.warning(f"Content of '{final_absolute_path}' is not valid JSON. Serving raw.")
+                    script_json_data = {}
+                    try:
+                        script_json_data = json.loads(content)
+                        formatted_content = json.dumps(script_json_data, indent=2, ensure_ascii=False)
+                    except json.JSONDecodeError:
+                        formatted_content = content
+                        logger.warning(f"Content of '{final_absolute_path}' is not valid JSON. Serving raw.")
 
-                created_time = datetime.fromtimestamp(os.path.getctime(final_absolute_path))
-                modified_time = datetime.fromtimestamp(os.path.getmtime(final_absolute_path))
-                step_count = len(script_json_data.get('steps', [])) if isinstance(script_json_data, dict) else 0
+                    created_time = datetime.fromtimestamp(os.path.getctime(final_absolute_path))
+                    modified_time = datetime.fromtimestamp(os.path.getmtime(final_absolute_path))
+                    step_count = len(script_json_data.get('steps', [])) if isinstance(script_json_data, dict) else 0
 
-                return JsonResponse({
+                    return JsonResponse({
                     'success': True,
                     'filename': safe_filename,
                     'path': final_absolute_path,
@@ -2044,40 +2045,40 @@ def edit_script(request, script_path=None):
                     'created': created_time.strftime('%Y-%m-%d %H:%M:%S'),
                     'modified': modified_time.strftime('%Y-%m-%d %H:%M:%S'),
                     'step_count': step_count
-                })
-            except FileNotFoundError:
-                logger.error(f"File not found: {final_absolute_path}")
-                return JsonResponse({'success': False, 'message': f'脚本文件不存在: {safe_filename}'}, status=404)
+                    })
+                except FileNotFoundError:
+                    logger.error(f"File not found: {final_absolute_path}")
+                    return JsonResponse({'success': False, 'message': f'脚本文件不存在: {safe_filename}'}, status=404)
             except Exception as e_read:
                 logger.error(f"Error reading script file '{final_absolute_path}': {str(e_read)}")
                 return JsonResponse({'success': False, 'message': f'读取脚本文件失败: {str(e_read)}'}, status=500)
 
         elif operation == 'write':
             # 更新文件内容
-            new_content_str = data.get('content')
-            if new_content_str is None:
-                return JsonResponse({'success': False, 'message': '未提供新的脚本内容'}, status=400)
+                new_content_str = data.get('content')
+                if new_content_str is None:
+                    return JsonResponse({'success': False, 'message': '未提供新的脚本内容'}, status=400)
 
             # 验证JSON格式
-            try:
-                json.loads(new_content_str)
-            except json.JSONDecodeError as e_json:
-                logger.error(f"Invalid JSON content: {str(e_json)}")
-                return JsonResponse({'success': False, 'message': f'无效的JSON格式: {str(e_json)}'}, status=400)
+                try:
+                    json.loads(new_content_str)
+                except json.JSONDecodeError as e_json:
+                    logger.error(f"Invalid JSON content: {str(e_json)}")
+                    return JsonResponse({'success': False, 'message': f'无效的JSON格式: {str(e_json)}'}, status=400)
 
             # 确保目录存在
-            os.makedirs(os.path.dirname(final_absolute_path), exist_ok=True)
+                os.makedirs(os.path.dirname(final_absolute_path), exist_ok=True)
 
-            # 写入文件
-            with open(final_absolute_path, 'w', encoding='utf-8') as file:
-                file.write(new_content_str)
-            logger.info(f"Script updated successfully: {final_absolute_path}")
+                # 写入文件
+                with open(final_absolute_path, 'w', encoding='utf-8') as file:
+                        file.write(new_content_str)
+                logger.info(f"Script updated successfully: {final_absolute_path}")
 
-            return JsonResponse({
+                return JsonResponse({
                 'success': True,
                 'message': '脚本已成功更新',
-                'modified': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            })
+                        'modified': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    })
         else:
             # 不支持的操作类型
             return JsonResponse({'success': False, 'message': f'不支持的操作类型: {operation}'}, status=400)
