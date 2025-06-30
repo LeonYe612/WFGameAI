@@ -35,8 +35,9 @@
 ```json
 {
   "action": "功能名称",
-  "detection_method": "yolo|ui",     // 可选，默认yolo
+  "detection_method": "ai|ui",     // 可选，默认ai
   "yolo_class": "YOLO类别",             // AI识别时使用
+  "execute_action": "操作类型", // click|input|checkbox等 。缺省或不写则默认click。
   "ui_type": "ElementPattern类型",     // UI识别时使用
   "timeout": 10,                   // 超时时间
   "remark": "操作说明"
@@ -163,7 +164,7 @@
 ```json
 {
   "action": "retry_until_success",
-  "retry_action": "click",
+  "execute_action": "click",
   "yolo_class": "operation-confirm",
   "max_retries": 3,
   "retry_interval": 1,
@@ -176,7 +177,7 @@
 {
   "action": "retry_until_success",
   "detection_method": "ui",
-  "retry_action": "input",
+  "execute_action": "input",
   "ui_type": "username_field",
   "text": "${account:username}",
   "max_retries": 3,
@@ -188,7 +189,7 @@
 ```json
 {
   "action": "retry_until_success",
-  "retry_action": "click",
+  "execute_action": "click",
   "yolo_class": "system-loginSwitch",
   "max_retries": 5,
   "retry_strategy": "exponential",
@@ -204,7 +205,7 @@
 {
   "action": "retry_until_success",
   "detection_method": "ai",        // ai|ui，默认ai
-  "retry_action": "click",         // 要重试的操作: click|input|click_target(废弃)|checkbox
+  "execute_action": "click",         // 要重试的操作: click|input|click_target(废弃)|checkbox
   "yolo_class": "operation-confirm",    // AI: YOLO类别
   "ui_type": "login_button",          // UI: ElementPattern类型
   "text": "输入内容",               // input操作的文本
@@ -238,11 +239,10 @@
       "timeout": 10,
       "remark": "等待登录切换按钮出现"
     },
-    {
-      "step": 2,
+    {      "step": 2,
       "detection_method": "ai",
       "action": "retry_until_success",
-      "retry_action": "click",
+      "execute_action": "click",
       "yolo_class": "system-loginSwitch",
       "max_retries": 3,
       "remark": "重试点击登录切换按钮"
@@ -263,31 +263,28 @@
       "timeout": 8,
       "remark": "等待用户名输入框出现"
     },
-    {
-      "step": 5,
+    {      "step": 5,
       "detection_method": "ui",
       "action": "retry_until_success",
-      "retry_action": "input",
+      "execute_action": "input",
       "ui_type": "username_field",
       "text": "${account:username}",
       "max_retries": 3,
       "remark": "重试输入用户名"
     },
-    {
-      "step": 6,
+    {      "step": 6,
       "detection_method": "ui",
       "action": "retry_until_success",
-      "retry_action": "input",
+      "execute_action": "input",
       "ui_type": "password_field",
       "text": "${account:password}",
       "max_retries": 3,
       "remark": "重试输入密码"
     },
-    {
-      "step": 7,
+    {      "step": 7,
       "detection_method": "ui",
       "action": "retry_until_success",
-      "retry_action": "click",
+      "execute_action": "click",
       "ui_type": "operation-confirm",
       "max_retries": 3,
       "verify_success": true,
@@ -317,10 +314,9 @@
       "timeout": 15,
       "remark": "等待战斗入口出现"
     },
-    {
-      "step": 3,
+    {      "step": 3,
       "action": "retry_until_success",
-      "retry_action": "click",
+      "execute_action": "click",
       "class": "navigation-fight",
       "max_retries": 5,
       "retry_strategy": "exponential",

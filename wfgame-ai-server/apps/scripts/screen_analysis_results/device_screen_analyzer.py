@@ -131,7 +131,7 @@ class DeviceScreenAnalyzer:
                 return str(full_path.absolute())
 
         # 如果没找到，使用默认路径
-        default_path = project_root / "wfgame-ai-server/apps/scripts/datasets/train/weights/best.pt"
+        default_path = project_root / "apps/scripts/datasets/train/weights/best.pt"
         logger.warning(f"未找到best.pt模型，将尝试使用: {default_path}")
         return str(default_path)
 

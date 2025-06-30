@@ -1731,82 +1731,85 @@ class ActionProcessor:
 
     def _create_unified_screen_object(self, log_dir, pos_list=None, confidence=0.85, rect_info=None):
         """
-        创建统一的screen对象，确保与Airtest报告格式兼容
-
-        Args:
-            log_dir: 日志目录
-            pos_list: 位置列表，格式为 [[x, y], ...]
-            confidence: 置信度
-            rect_info: 矩形信息，格式为 [{"left": x, "top": y, "width": w, "height": h}, ...]
-
-        Returns:
-            dict: screen对象或None
+        创建统一的screen对象 - 增强版
+        🔧 修复: 即使截图失败也返回基本的screen对象
         """
         try:
             if not log_dir:
-                return None
+                print("⚠️ 警告: log_dir为None，跳过screen对象创建")
+                return None            # 🔧 修复：直接使用设备报告目录，不创建log子目录
+            log_images_dir = log_dir
+            os.makedirs(log_images_dir, exist_ok=True)
 
-            # 使用try_log_screen函数生成截图和缩略图
-            if try_log_screen and hasattr(self, 'device'):
-                screen_result = try_log_screen(self.device, log_dir)
-                if screen_result:
-                    # 构建完整的screen对象
-                    screen_object = {
-                        "src": screen_result["screen"],
-                        "_filepath": screen_result["screen"],
-                        "thumbnail": screen_result["screen"].replace(".jpg", "_small.jpg"),
-                        "resolution": screen_result["resolution"],
-                        "pos": pos_list or [],
-                        "vector": [],
-                        "confidence": confidence,
-                        "rect": rect_info or []
-                    }
-                    return screen_object
+            # 生成时间戳文件名
+            timestamp = time.time()
+            screenshot_timestamp = int(timestamp * 1000)
+            screenshot_filename = f"{screenshot_timestamp}.jpg"
+            thumbnail_filename = f"{screenshot_timestamp}_small.jpg"
 
-            # 备用方案：直接使用get_device_screenshot
-            screenshot = get_device_screenshot(self.device)
-            if screenshot:
-                # 转换为OpenCV格式
-                frame = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
+            # 设置路径
+            screenshot_path = os.path.join(log_images_dir, screenshot_filename)
+            thumbnail_path = os.path.join(log_images_dir, thumbnail_filename)
 
-                # 生成时间戳文件名
-                timestamp = time.time()
-                screenshot_timestamp = int(timestamp * 1000)
-                screenshot_filename = f"{screenshot_timestamp}.jpg"
-                screenshot_path = os.path.join(log_dir, screenshot_filename)
+            # 获取设备截图
+            screenshot_success = False
+            resolution = [1080, 2400]  # 默认分辨率
 
-                # 保存主截图
-                cv2.imwrite(screenshot_path, frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
+            try:
+                screenshot = get_device_screenshot(self.device)
+                if screenshot:
+                    # 转换为OpenCV格式
+                    import cv2
+                    import numpy as np
+                    frame = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
 
-                # 创建缩略图
-                thumbnail_filename = f"{screenshot_timestamp}_small.jpg"
-                thumbnail_path = os.path.join(log_dir, thumbnail_filename)
-                small_frame = cv2.resize(frame, (0, 0), fx=0.3, fy=0.3)
-                cv2.imwrite(thumbnail_path, small_frame, [cv2.IMWRITE_JPEG_QUALITY, 60])
+                    # 保存截图
+                    cv2.imwrite(screenshot_path, frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
 
-                # 获取分辨率
-                height, width = frame.shape[:2]
-                resolution = [width, height]
+                    # 创建缩略图
+                    small_frame = cv2.resize(frame, (0, 0), fx=0.3, fy=0.3)
+                    cv2.imwrite(thumbnail_path, small_frame, [cv2.IMWRITE_JPEG_QUALITY, 60])
 
-                # 构建screen对象
-                screen_object = {
-                    "src": screenshot_filename,
-                    "_filepath": screenshot_filename,
-                    "thumbnail": thumbnail_filename,
-                    "resolution": resolution,
-                    "pos": pos_list or [],
-                    "vector": [],
-                    "confidence": confidence,
-                    "rect": rect_info or []
-                }
-                return screen_object
+                    # 获取实际分辨率
+                    height, width = frame.shape[:2]
+                    resolution = [width, height]
+                    screenshot_success = True
+
+                    print(f"✅ 截图保存成功: {screenshot_filename}")
+
+                else:
+                    print("⚠️ 截图获取失败，使用默认screen对象")
+
+            except Exception as e:
+                print(f"⚠️ 截图处理失败: {e}")            # 🔧 修复: 即使截图失败也创建screen对象，不使用log/前缀
+            screen_object = {
+                "src": screenshot_filename,
+                "_filepath": screenshot_path,
+                "thumbnail": thumbnail_filename,
+                "resolution": resolution,
+                "pos": pos_list or [],
+                "confidence": confidence,
+                "rect": rect_info or [],
+                "screenshot_success": screenshot_success
+            }
+
+            return screen_object
 
         except Exception as e:
-            print(f"❌ 创建screen对象失败: {e}")
+            print(f"❌ _create_unified_screen_object失败: {e}")
+            # 返回基本的screen对象，确保日志结构完整
 
-        return None
+            return {
+                "src": "fallback_screenshot.jpg",
+                "_filepath": "fallback_screenshot.jpg",
+                "thumbnail": "fallback_thumbnail.jpg",
+                "resolution": [1080, 2400],
+                "pos": pos_list or [],
+                "confidence": confidence,
+                "rect": rect_info or [],
+                "screenshot_success": False
+            }
 
-    # 新接口核心方法实现
     def _handle_ai_detection_click_new(self, step, context):
         """处理AI检测点击 - 新接口"""
         step_class = step.get("class", "")
@@ -2844,16 +2847,44 @@ class ActionProcessor:
         return True, success, True
 
     def _write_log_entry(self, log_entry):
-        """Write log entry to log file"""
+        """Write log entry to log file - 增强版"""
         try:
-            if self.log_txt_path and os.path.exists(os.path.dirname(self.log_txt_path)):
-                with open(self.log_txt_path, "a", encoding="utf-8") as f:
-                    log_entry_str = json.dumps(log_entry, ensure_ascii=False, separators=(',', ':'))
-                    f.write(log_entry_str + "\n")
+            # 🔧 修复: 更严格的日志写入验证
+            if not self.log_txt_path:
+                print(f"⚠️ 警告: log_txt_path未设置，无法写入日志")
+                return False
+
+            print(f"🔍 调试: 准备写入日志到: {self.log_txt_path}")
+            print(f"🔍 调试: 日志条目: {log_entry}")
+
+            log_dir = os.path.dirname(self.log_txt_path)
+            if not os.path.exists(log_dir):
+                print(f"⚠️ 警告: 日志目录不存在，尝试创建: {log_dir}")
+                os.makedirs(log_dir, exist_ok=True)
+
+            # 写入日志条目
+            with open(self.log_txt_path, "a", encoding="utf-8") as f:
+                log_entry_str = json.dumps(log_entry, ensure_ascii=False, separators=(',', ':'))
+                f.write(log_entry_str + "\n")
+                f.flush()  # 强制刷新缓冲区
+
+            # 验证写入
+            if os.path.exists(self.log_txt_path):
+                with open(self.log_txt_path, "r", encoding="utf-8") as f:
+                    content = f.read()
+                print(f"🔍 调试: 文件大小: {len(content)} 字符")
+                print(f"📝 日志条目已写入: {log_entry.get('data', {}).get('name', 'unknown')}")
             else:
-                print(f"⚠️ 警告: 无法写入日志文件 {self.log_txt_path}")
+                print(f"❌ 警告: 写入后文件不存在: {self.log_txt_path}")
+                return False
+
+            return True
+
         except Exception as e:
-            print(f"⚠️ 警告: 写入日志失败: {e}")
+            print(f"❌ 写入日志失败: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
 
     def _route_to_action_processor(self, step, step_idx, action_name):
         """
@@ -2891,13 +2922,25 @@ class ActionProcessor:
                         except Exception as e:
                             print(f"⚠️ 参数替换失败: {e}")
                     else:
-                        print("⚠️ DeviceScriptReplayer 不可用，跳过参数替换")
-
-            # 创建临时日志目录（如果需要）
+                        print("⚠️ DeviceScriptReplayer 不可用，跳过参数替换")            # 🔧 修复: 直接使用设备报告目录，不创建额外的log子目录
             import tempfile
             import os
-            temp_log_dir = tempfile.mkdtemp(prefix=f'enhanced_handler_{action_name}_')
-            log_txt_path = os.path.join(temp_log_dir, "log.txt")
+
+            # 初始化变量
+            temp_log_dir = None
+
+            if hasattr(self, 'log_txt_path') and self.log_txt_path:
+                # 获取设备报告目录（log.txt的父目录）
+                device_report_dir = os.path.dirname(self.log_txt_path)
+                log_dir = device_report_dir  # 直接使用设备报告目录
+                log_txt_path = self.log_txt_path  # 使用已设置的路径
+                print(f"🔍 调试: 使用设备报告日志路径: {log_txt_path}")
+            else:
+                # 回退到临时目录（用于兼容性）
+                temp_log_dir = tempfile.mkdtemp(prefix=f"enhanced_handler_{action_name}_")
+                log_dir = temp_log_dir
+                log_txt_path = os.path.join(temp_log_dir, "log.txt")
+                print(f"🔍 调试: 使用临时日志路径: {log_txt_path}")
             # 创建一个简单的设备代理对象
 
             class DeviceProxy:
@@ -2970,16 +3013,13 @@ class ActionProcessor:
                 device_name=self.device.serial,
                 log_txt_path=log_txt_path,
                 detect_buttons_func=self.detect_buttons
-            )
-
-            # 设置设备账号信息
+            )            # 设置设备账号信息（静默模式，避免重复打印）
             if self.device_account:
                 action_processor.set_device_account(self.device_account)
-                username = self.device_account.get('username', '无账号') if self.device_account else '无'
-                print(f"✅ 已为ActionProcessor设置设备账号: {username}")
-                # 执行操作（使用经过参数替换的step_copy）
+                # 注释掉重复的日志输出，因为账号已在初始分配时打印过
+                # # 执行操作（使用经过参数替换的step_copy）
             result = action_processor.process_action(
-                step_copy, step_idx, temp_log_dir
+                step_copy, step_idx, log_dir
             )
 
             # 处理返回值（支持ActionResult对象和旧式三元组）
@@ -2996,14 +3036,16 @@ class ActionProcessor:
                 # 单个布尔值或其他格式
                 success = bool(result)
                 has_executed = bool(result)
-                should_continue = True
-
-            # 清理临时目录
-            try:
-                import shutil
-                shutil.rmtree(temp_log_dir, ignore_errors=True)
-            except:
-                pass
+                should_continue = True            # 🔧 修复：只清理临时目录，保留设备报告目录
+            if temp_log_dir and os.path.exists(temp_log_dir):
+                try:
+                    import shutil
+                    shutil.rmtree(temp_log_dir, ignore_errors=True)
+                    print(f"🗑️ 清理临时目录: {temp_log_dir}")
+                except:
+                    pass
+            else:
+                print(f"🔧 保留设备报告目录: {log_dir}")
 
             return success and has_executed
 
@@ -3129,7 +3171,7 @@ class ActionProcessor:
             print(f"❌ 检测系统弹窗时出错: {e}")
             return False
 
-    def process_script(self, script_path: str) -> bool:
+    def process_script(self, script_path: str) -> ActionResult:
         """
         回放单个脚本 - 支持参数化和传统格式
 
@@ -3330,21 +3372,44 @@ class ActionProcessor:
                         success = self._route_to_action_processor(step, step_idx, 'device_preparation')
                         if not success:
                             print(f"❌ device_preparation 操作失败")
-                            continue
-                    # 新增支持: 应用启动操作
+                            continue                    # 新增支持: 应用启动操作
                     elif action == 'app_start':
                         print(f"🚀 执行应用启动操作")
                         success = self._route_to_action_processor(step, step_idx, 'app_start')
                         if not success:
                             print(f"❌ app_start 操作失败")
                             continue
+
+                    # 新增支持: AI检测点击操作 (Priority模式)
+                    elif action == 'ai_detection_click':
+                        print(f"🎯 执行AI检测点击操作")
+                        success = self._route_to_action_processor(step, step_idx, 'ai_detection_click')
+                        if not success:
+                            print(f"❌ ai_detection_click 操作失败")
+                            continue
+
+                    # 新增支持: 滑动操作 (Priority模式)
+                    elif action == 'swipe':
+                        print(f"👆 执行滑动操作")
+                        success = self._route_to_action_processor(step, step_idx, 'swipe')
+                        if not success:
+                            print(f"❌ swipe 操作失败")
+                            continue
+
+                    # 新增支持: 备用点击操作 (Priority模式)
+                    elif action == 'fallback_click':
+                        print(f"🔄 执行备用点击操作")
+                        success = self._route_to_action_processor(step, step_idx, 'fallback_click')
+                        if not success:
+                            print(f"❌ fallback_click 操作失败")
+                            continue
+
                     else:
                         print(f"⚠️ 不支持的操作: {action}，跳过")
                         continue
 
                     # 操作间延迟
                     time.sleep(0.5)
-
                 except Exception as e:
                     print(f"❌ 步骤 {step_idx + 1} 执行异常: {e}")
                     import traceback
@@ -3352,10 +3417,10 @@ class ActionProcessor:
                     continue
 
             print("✅ 脚本回放完成")
-            return True
+            return ActionResult(success=True, message="脚本回放完成")
 
         except Exception as e:
             print(f"❌ 脚本回放过程中发生错误: {e}")
             import traceback
             traceback.print_exc()
-            return False
+            return ActionResult(success=False, message=f"脚本回放错误: {e}")

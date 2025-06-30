@@ -60,6 +60,22 @@ alwaysApply: true
    - 禁止使用绝对路径
    - 公用的文件夹目录统一使用 WFGameAI\wfgame-ai-server\config.ini 文件进行管理
 
+8. **关于排版**
+   - 如下关键字前必须换行
+     - class
+     - def
+     - if
+     - else
+     - elif
+     - for
+     - while
+     - try
+     - except
+   - 禁止使用中文标点符号
+   - 禁止使用中文括号
+   - 禁止使用中文引号
+   - 禁止使用中文逗号
+
 ## 测试与监控
 
 1. **接口测试**

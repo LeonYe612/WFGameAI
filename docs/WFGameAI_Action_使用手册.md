@@ -920,100 +920,164 @@ WFGameAI支持多种等待机制来处理复杂的界面交互：
 
 ---
 
-## 🔗 相关文档
+## 📊 报告生成与多设备支持
 
-- [WFGameAI回放功能完整技术文档](./WFGameAI回放功能完整技术文档.md) - 详细的技术实现文档
-- [Action API参考](../wfgame-ai-server/apps/scripts/docs/wfgame_ai_action_api_reference.json) - API接口文档
-- [项目开发规范](../.vscode/WFGameAI-Comprehensive-Dev-Standards.md) - 开发规范文档
+### 多设备报告生成机制
 
----
+WFGameAI支持多台设备同时执行脚本，并自动生成完整的执行报告：
 
-## 🛡️ 系统弹窗自动处理参数化方案（2025-06-25补充）
+#### 1. 设备报告目录结构
+```
+设备序列号_YYYY-MM-DD-HH-MM-SS/
+├── log.txt                 # JSON格式执行日志
+├── log.html               # 可视化HTML报告
+├── 1751271056663.jpg      # 操作截图（原始大小）
+├── 1751271056663_small.jpg # 截图缩略图
+└── script.py              # 执行脚本副本
+```
 
-### 方案说明
-自动化回放过程中，常遇到系统权限、存储等弹窗。可通过 JSON 脚本参数灵活控制弹窗处理行为。
+#### 2. 汇总报告生成
+- 自动聚合所有设备的执行结果
+- 提供设备成功率和通过率统计
+- 包含指向每个设备详细报告的链接
 
-### JSON 脚本写法
+### Priority模式的报告增强
 
-**全局控制（meta 内）：**
+#### 支持的AI检测操作日志
+- `ai_detection_click`: AI视觉检测点击
+- `ai_detection_wait`: AI检测等待
+- `fallback_click`: 备选点击操作
+- `swipe`: 滑动操作（支持参数记录）
+
+#### 日志格式示例
 ```json
 {
-  "meta": {
-    "auto_handle_dialog": true,
-    "dialog_max_wait": 8,
-    "dialog_retry_interval": 0.5,
-    "dialog_duration": 1.0
-  },
-  "steps": [ ... ]
+  "tag": "function",
+  "depth": 1,
+  "time": 1751271058.4955873,
+  "data": {
+    "name": "touch",
+    "call_args": {"v": [614, 2430]},
+    "start_time": 1751271058.4955873,
+    "ret": [614, 2430],
+    "end_time": 1751271058.5955873,
+    "desc": "备选点击操作，防止遗漏",
+    "title": "#8 备选点击操作，防止遗漏",
+    "screen": {
+      "src": "1751271056663.jpg",
+      "thumbnail": "1751271056663_small.jpg",
+      "resolution": [1228, 2700],
+      "pos": [[614, 2430]],
+      "confidence": 1.0,
+      "rect": [{"left": 564, "top": 2380, "width": 100, "height": 100}],
+      "screenshot_success": true
+    }
+  }
 }
 ```
 
-**单步控制（step 内，覆盖全局）：**
+### 最佳实践：报告优化
+
+#### 1. 确保充分的操作记录
 ```json
 {
-  "step": 2,
-  "action": "retry_until_success",
-  "auto_handle_dialog": true,
-  "dialog_max_wait": 6,
-  "dialog_retry_interval": 0.3,
-  "dialog_duration": 1.2,
-  ...
+  "Priority": 1,
+  "action": "ai_detection_click",
+  "yolo_class": "system-skip",
+  "remark": "跳过新手引导"  // 重要：添加说明便于报告展示
 }
 ```
 
-**参数说明：**
-- `auto_handle_dialog`：是否自动处理弹窗（true/false）
-- `dialog_max_wait`：弹窗处理最大等待时间（秒）
-- `dialog_retry_interval`：弹窗检测重试间隔（秒）
-- `dialog_duration`：点击弹窗后等待消失的时间（秒）
+#### 2. 使用有意义的备选操作
+```json
+{
+  "Priority": 99,
+  "class": "unknown",
+  "action": "fallback_click",
+  "relative_x": 0.5,
+  "relative_y": 0.9,
+  "remark": "通用确认按钮位置"  // 解释备选操作用途
+}
+```
 
-如未指定，使用代码默认值。
-
-### 代码调用 demo
-
-```python
-auto_handle = step.get('auto_handle_dialog', meta.get('auto_handle_dialog', False))
-max_wait = step.get('dialog_max_wait', meta.get('dialog_max_wait', 5.0))
-retry_interval = step.get('dialog_retry_interval', meta.get('dialog_retry_interval', 0.5))
-duration = step.get('dialog_duration', meta.get('dialog_duration', 1.0))
-
-if auto_handle:
-    self.handle_system_dialogs(
-        max_wait=max_wait,
-        retry_interval=retry_interval,
-        duration=duration
-    )
+#### 3. 合理设置优先级层次
+```json
+[
+  {"Priority": 1, "remark": "紧急：系统弹窗处理"},
+  {"Priority": 10, "remark": "常规：主要功能操作"},
+  {"Priority": 90, "remark": "备选：滑动和通用操作"}
+]
 ```
 
 ---
 
-**📝 文档版本**: v1.0
-**🔄 最后更新**: 2025-06-24
-**👥 维护者**: WFGameAI开发团队
+## 🔧 故障排除
+
+### 报告相关问题
+
+#### 问题1：报告显示"0个步骤，0张截图"
+**原因**: ActionProcessor日志路径设置错误
+**解决**: 检查multi_device_replayer.py中的log_txt_path设置
+
+#### 问题2：截图不显示
+**原因**: 截图文件保存路径与HTML报告期望路径不匹配
+**解决**: 确认截图直接保存在设备目录下，不要创建log子目录
+
+#### 问题3：汇总报告为空
+**原因**: 设备报告目录没有正确收集
+**解决**: 确认replay_scripts_on_devices函数返回设备报告目录列表
+
+### Priority模式调试
+
+#### 调试AI检测不工作
+```json
+{
+  "Priority": 1,
+  "action": "ai_detection_click",
+  "yolo_class": "system-skip",
+  "debug": true,  // 启用调试模式
+  "remark": "调试：检查系统跳过按钮检测"
+}
+```
+
+#### 调试备选操作触发
+```json
+{
+  "Priority": 99,
+  "class": "unknown",
+  "action": "fallback_click",
+  "relative_x": 0.5,
+  "relative_y": 0.9,
+  "debug_info": "当所有AI检测失败时触发此操作"
+}
+```
 
 ---
 
-## 📊 Action统计信息
+## 📈 性能优化建议
 
-### 已实现的Action类型统计
+### 多设备性能优化
 
-| 分类 | 数量 | Action列表 |
-|------|------|-----------|
-| **基础操作** | 3 | `click`, `click_target`, `swipe` |
-| **文本操作** | 1 | `input` |
-| **等待操作** | 3 | `delay`, `wait_if_exists`, `wait` |
-| **应用管理** | 3 | `app_start`, `app_stop`, `device_preparation` |
-| **UI元素** | 1 | `checkbox` |
-| **高级流程** | 1 | `auto_login` |
-| **总计** | 12 | - |
+1. **合理设置设备数量**: 建议同时执行设备数不超过系统CPU核心数
+2. **优化截图频率**: 避免在每个操作中都进行不必要的截图
+3. **使用批量操作**: 对于相同的操作，尽量使用批量执行模式
 
-### Class元素统计
+### 报告生成优化
 
-| 分类 | 数量 | 示例 |
-|------|------|------|
-| **系统级** | 3 | `system-newResources`, `system-cleanUpCache`, `system-skip` |
-| **操作级** | 4 | `operation-close`, `operation-confirm`, `operation-back`, `operation-challenge` |
-| **导航级** | 2 | `navigation-fight`, `hint-guide` |
-| **工具级** | 3 | `delay`, `app_start`, `device_preparation` |
-| **通用级** | 1 | `unknown` |
-| **总计** | 13+ | - |
+1. **及时清理旧报告**: 定期清理超过30天的历史报告
+2. **压缩大型截图**: 对于分辨率较高的设备，适当压缩截图文件
+3. **异步报告生成**: 大规模多设备测试时，考虑异步生成汇总报告
+
+---
+
+## 📚 相关文档
+
+- **[多设备报告生成修复记录](./多设备报告生成修复记录.md)** - 详细修复过程和技术实现
+- **[WFGameAI回放系统双模式深度解析](./WFGameAI回放系统双模式深度解析.md)** - Step vs Priority模式详解
+- **[WFGameAI报告生成系统详细文档](./WFGameAI_报告生成系统详细文档_AI优化版.md)** - 报告系统完整技术文档
+
+---
+
+> **📝 文档版本**: v2.1.0
+> **🗓️ 最后更新**: 2025-06-30
+> **🎯 重大更新**: 多设备AI检测报告生成完全修复

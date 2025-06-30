@@ -439,10 +439,23 @@ class ReportGenerator:
             步骤列表，包含screen数据
         """
         try:
-            log_file = device_dir / "log.txt"
-            if not log_file.exists():
-                print(f"⚠️ log.txt文件不存在: {log_file}")
+            # 🔧 修复：尝试多个可能的log.txt路径
+            log_file_candidates = [
+                device_dir / "log.txt",           # 直接在设备目录下
+                device_dir / "log" / "log.txt"    # 在log子目录中
+            ]
+
+            log_file = None
+            for candidate in log_file_candidates:
+                if candidate.exists():
+                    log_file = candidate
+                    break
+
+            if not log_file:
+                print(f"⚠️ log.txt文件不存在，已尝试: {[str(c) for c in log_file_candidates]}")
                 return []
+
+            print(f"📝 找到log.txt文件: {log_file}")
 
             steps = []
             step_index = 0

@@ -1,143 +1,104 @@
 {
   "meta": {
-    "name": "主页引导步骤 - 更新版",
-    "description": "使用新的3个关键功能和标准化参数的主界面引导处理脚本",
-    "version": "3.0",
+    "name": "主页引导步骤 - Priority模式",
+    "description": "完全符合Priority执行模式的主界面引导处理脚本，使用动态循环检测",
+    "version": "4.0",
     "updated_date": "2025-01-10",
     "author": "WFGameAI开发团队",
-    "tags": ["主界面", "引导", "3关键功能", "标准化"]
+    "tags": ["主界面", "引导", "Priority模式", "动态检测"]
   },
   "steps": [
     {
-      "step": 1,
+      "Priority": 1,
       "detection_method": "ai",
-      "action": "wait_for_stable",
-      "duration": 2,
-      "max_wait": 8,
-      "remark": "等待主界面稳定"
-    },
-    {
-      "step": 2,
-      "detection_method": "ai",
-      "action": "retry_until_success",
-      "execute_action": "click",
+      "action": "ai_detection_click",
       "yolo_class": "system-skip",
-      "max_retries": 3,
-      "retry_interval": 1,
-      "fail_on_timeout": false,
       "confidence": 0.8,
-      "remark": "重试点击跳过按钮，跳过引导步骤"
+      "remark": "检测并点击【跳过】按钮"
     },
     {
-      "step": 3,
+      "Priority": 2,
       "detection_method": "ai",
-      "action": "wait_for_appearance",
+      "action": "ai_detection_click",
       "yolo_class": "hint-guide",
-      "timeout": 10,
-      "polling_interval": 2,
       "confidence": 0.75,
-      "remark": "等待引导弹窗/按钮出现"
+      "remark": "检测并点击【引导】弹窗"
     },
     {
-      "step": 4,
+      "Priority": 3,
       "detection_method": "ai",
-      "action": "retry_until_success",
-      "execute_action": "click",
-      "yolo_class": "hint-guide",
-      "max_retries": 3,
-      "retry_interval": 1,
-      "confidence": 0.75,
-      "remark": "重试点击引导弹窗/按钮，进入下个界面或下一步"
-    },
-    {
-      "step": 5,
-      "detection_method": "ai",
-      "action": "retry_until_success",
-      "execute_action": "click",
+      "action": "ai_detection_click",
       "yolo_class": "operation-confirm",
-      "max_retries": 3,
-      "retry_interval": 1,
-      "fail_on_timeout": false,
       "confidence": 0.85,
-      "remark": "重试点击确定类按钮，完成选择或确认操作"
+      "remark": "检测并点击【确定】按钮"
     },
     {
-      "step": 6,
+      "Priority": 4,
       "detection_method": "ai",
-      "action": "retry_until_success",
-      "execute_action": "click",
+      "action": "ai_detection_click",
       "yolo_class": "operation-challenge",
-      "max_retries": 3,
-      "retry_interval": 2,
-      "fail_on_timeout": false,
       "confidence": 0.8,
-      "remark": "重试进入挑战功能，开始战斗场景"
-    },    {
-      "step": 7,
+      "remark": "检测并点击【挑战】按钮"
+    },
+    {
+      "Priority": 5,
       "detection_method": "ai",
-      "action": "retry_until_success",
-      "execute_action": "click",
+      "action": "ai_detection_click",
       "yolo_class": "navigation-fight",
-      "max_retries": 3,
-      "retry_interval": 2,
-      "fail_on_timeout": false,
       "confidence": 0.8,
-      "remark": "重试点击进入战斗场景"
+      "remark": "检测并点击【战斗】按钮"
     },
     {
-      "step": 8,
+      "Priority": 6,
       "detection_method": "ai",
-      "action": "wait_for_stable",
-      "duration": 2,
-      "max_wait": 5,
-      "remark": "等待界面操作完成后稳定"
+      "action": "ai_detection_click",
+      "yolo_class": "operation-back",
+      "confidence": 0.8,
+      "remark": "检测并点击【返回】按钮"
     },
     {
-      "step": 9,
-      "detection_method": "ui",
+      "Priority": 7,
+      "detection_method": "ai",
+      "action": "ai_detection_click",
+      "yolo_class": "navigation-shop",
+      "confidence": 0.8,
+      "remark": "检测并点击【商店】按钮"
+    },
+    {
+      "Priority": 9,
+      "class": "unknown",
+      "action": "fallback_click",
+      "relative_x": 0.5,
+      "relative_y": 0.9,
+      "remark": "备选点击操作，防止遗漏"
+    },
+    {
+      "Priority": 6,
       "action": "swipe",
-      "execute_action": "swipe",
       "start_x": 1000,
       "start_y": 500,
       "end_x": 500,
       "end_y": 500,
       "duration": 1000,
-      "max_retries": 2,
-      "retry_interval": 1,
-      "remark": "重试从右向左水平滑动操作"
+      "remark": "水平滑动操作"
     },
     {
-      "step": 10,
-      "detection_method": "ui",
+      "Priority": 7,
       "action": "swipe",
-      "execute_action": "swipe",
       "start_x": 1000,
       "start_y": 700,
       "end_x": 500,
       "end_y": 300,
       "duration": 1000,
-      "max_retries": 2,
-      "retry_interval": 1,
-      "remark": "重试从右下向左上方斜向拖动操作"
+      "remark": "斜向滑动操作"
     },
     {
-      "step": 11,
-      "detection_method": "ui",
-      "action": "click",
-      "execute_action": "click",
+      "Priority": 8,
+      "class": "unknown",
+      "action": "fallback_click",
       "relative_x": 0.5,
       "relative_y": 0.9,
-      "max_retries": 2,
-      "retry_interval": 1,
-      "remark": "重试点击中下位置作为备选操作来继续完成后续流程"
-    },
-    {
-      "step": 12,
-      "detection_method": "ai",
-      "action": "wait_for_stable",
-      "duration": 3,
-      "max_wait": 10,
-      "remark": "等待所有引导操作完成，界面最终稳定"
+      "remark": "备选点击操作"
     }
   ]
 }

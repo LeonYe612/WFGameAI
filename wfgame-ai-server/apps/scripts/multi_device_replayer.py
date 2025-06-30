@@ -2,6 +2,7 @@
 """
 多设备并发脚本回放器
 专门用于多进程并发执行脚本回放，避免循环导入问题
+🔧 已修复：集成统一报告管理系统，解决设备报告目录创建问题
 """
 
 import os
@@ -15,6 +16,7 @@ import multiprocessing
 def device_worker(device_serial, scripts, shared_results):
     """
     设备工作进程 - 每台设备独立执行所有脚本
+    🔧 已修复：集成统一报告管理系统，创建设备报告目录
 
     Args:
         device_serial: 设备序列号
@@ -23,25 +25,65 @@ def device_worker(device_serial, scripts, shared_results):
     """
     try:
         # 在子进程中重新导入必要模块，避免循环导入
-        from adbutils import adb        # 安全导入新的ActionProcessor
+        from adbutils import adb
+
+        # 🔧 新增：导入统一报告管理系统
         try:
             # 确保当前目录在 Python 路径中
             current_dir = os.path.dirname(os.path.abspath(__file__))
             if current_dir not in sys.path:
                 sys.path.insert(0, current_dir)
 
+            # 导入报告管理系统
+            project_root = os.path.dirname(os.path.dirname(current_dir))
+            reports_path = os.path.join(project_root, 'apps', 'reports')
+            if reports_path not in sys.path:
+                sys.path.insert(0, reports_path)
+
+            from report_manager import ReportManager
+            from action_processor import ActionProcessor
+
+            # 初始化报告管理器
+            report_manager = ReportManager()
+
+        except ImportError as e:
+            timestamp = datetime.now().strftime("%H:%M:%S")
+            print(f"[进程 {os.getpid()}][{timestamp}] 报告系统导入失败: {e}")
+            # 继续执行，但不生成报告
+            report_manager = None
+
+        # 安全导入ActionProcessor
+        try:
             from action_processor import ActionProcessor
         except ImportError as e:
             timestamp = datetime.now().strftime("%H:%M:%S")
             print(f"[进程 {os.getpid()}][{timestamp}] 无法导入 ActionProcessor: {e}")
             shared_results[device_serial] = {
                 'success': False,
-                'error': f'导入失败: {e}'
+                'error': f'导入失败: {e}',
+                'device_report_dir': None
             }
             return
 
         timestamp = datetime.now().strftime("%H:%M:%S")
         print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} 开始处理")
+
+        # 🔧 新增：为设备创建报告目录
+        device_report_dir = None
+        if report_manager:
+            try:
+                # 清理设备名称作为目录名
+                clean_device_name = "".join(c for c in device_serial if c.isalnum() or c in ('-', '_', '.'))
+                if not clean_device_name:
+                    clean_device_name = f"device_{abs(hash(device_serial)) % 10000}"
+
+                device_report_dir = report_manager.create_device_report_dir(clean_device_name)
+                timestamp = datetime.now().strftime("%H:%M:%S")
+                print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} 报告目录创建: {device_report_dir}")
+
+            except Exception as e:
+                timestamp = datetime.now().strftime("%H:%M:%S")
+                print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} 报告目录创建失败: {e}")
 
         # 获取设备连接
         device = None
@@ -55,9 +97,12 @@ def device_worker(device_serial, scripts, shared_results):
             print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} 连接失败")
             shared_results[device_serial] = {
                 'success': False,
-                'error': '设备连接失败'
+                'error': '设备连接失败',
+                'device_report_dir': device_report_dir
             }
-            return        # 分配账号（使用Windows兼容的跨进程安全账号管理器）
+            return
+
+        # 分配账号（使用Windows兼容的跨进程安全账号管理器）
         try:
             try:
                 # 优先尝试跨平台版本
@@ -79,7 +124,9 @@ def device_worker(device_serial, scripts, shared_results):
         except Exception as alloc_e:
             timestamp = datetime.now().strftime("%H:%M:%S")
             print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} 账号分配异常: {alloc_e}")
-            device_account = None        # 尝试导入AI检测功能
+            device_account = None
+
+        # 尝试导入AI检测功能
         detect_buttons_func = None
         try:
             # 尝试导入AI检测函数
@@ -99,138 +146,141 @@ def device_worker(device_serial, scripts, shared_results):
             print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} AI检测功能导入失败: {e}")
         except Exception as e:
             timestamp = datetime.now().strftime("%H:%M:%S")
-            print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} AI检测功能初始化异常: {e}")        # 设置日志目录和文件
-        timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-        reports_dir = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
-            'staticfiles', 'reports', 'ui_run', 'WFGameAI.air', 'log'
-        )
-        os.makedirs(reports_dir, exist_ok=True)
+            print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} AI检测功能初始化异常: {e}")
+            # 🔧 修复：创建ActionProcessor实例时设置log_txt_path
+        log_txt_path = None
 
-        device_dir = "".join(c for c in device_serial if c.isalnum() or c in ('-', '_'))
-        log_dir = os.path.join(reports_dir, f"{device_dir}_{timestamp}")
-        os.makedirs(log_dir, exist_ok=True)
+        if device_report_dir:
+            # 🔧 修复：直接在设备目录下创建log.txt，不创建log子目录
+            log_txt_path = os.path.join(str(device_report_dir), "log.txt")
+            print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} 日志文件路径: {log_txt_path}")
 
-        # 创建log.txt文件
-        log_txt_path = os.path.join(log_dir, "log.txt")
-        with open(log_txt_path, "w", encoding="utf-8") as f:
-            f.write("")  # 创建空文件
-
-        # 创建 ActionProcessor 实例
         action_processor = ActionProcessor(
-            device,
+            device=device,
             device_name=device_serial,
             log_txt_path=log_txt_path,
             detect_buttons_func=detect_buttons_func
         )
 
-        # 设置设备账号信息
+        # 如果有分配到账号，设置到ActionProcessor
         if device_account:
             action_processor.set_device_account(device_account)
 
-        # 执行每个脚本
-        has_execution = False
+        # 执行脚本列表
         total_success = 0
         total_failed = 0
+        executed_scripts = []
 
         for script_config in scripts:
-            script_path = script_config["path"]
-            script_loop_count = script_config.get("loop_count", 1)
+            script_path = script_config.get('path')
+            loop_count = script_config.get('loop_count', 1)
+            max_duration = script_config.get('max_duration')
 
             timestamp = datetime.now().strftime("%H:%M:%S")
             print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} 开始执行脚本: {os.path.basename(script_path)}")
 
-            # 循环执行脚本
-            for loop in range(script_loop_count):
-                if script_loop_count > 1:
-                    timestamp = datetime.now().strftime("%H:%M:%S")
-                    print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} 第 {loop+1}/{script_loop_count} 次循环")
-
-                try:
-                    result = action_processor.process_script(script_path)
-                    if result.success:
-                        has_execution = True
-                        total_success += 1
-                        timestamp = datetime.now().strftime("%H:%M:%S")
-                        print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} 脚本执行成功")
-                    else:
-                        total_failed += 1
-                        timestamp = datetime.now().strftime("%H:%M:%S")
-                        print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} 脚本执行失败: {result.message}")
-
-                    time.sleep(1.0)  # 循环间短暂等待
-
-                except Exception as e:
-                    total_failed += 1
-                    timestamp = datetime.now().strftime("%H:%M:%S")
-                    print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} 脚本执行异常: {e}")        # 释放设备账号分配（使用Windows兼容的跨进程安全账号管理器）
-        try:
             try:
-                # 优先尝试跨平台版本
-                from cross_process_account_manager import get_cross_process_account_manager
-                account_manager = get_cross_process_account_manager()
-            except ImportError:
-                # 在Windows上使用Windows专用版本
-                from windows_cross_process_account_manager import get_windows_cross_process_account_manager
-                account_manager = get_windows_cross_process_account_manager()
+                # 🔧 修改：传递设备报告目录到ActionProcessor
+                if device_report_dir and hasattr(action_processor, 'set_device_report_dir'):
+                    action_processor.set_device_report_dir(device_report_dir)                # 执行脚本 - 使用正确的方法名
+                result = action_processor.process_script(script_path)
 
-            account_manager.release_account(device_serial)
-            timestamp = datetime.now().strftime("%H:%M:%S")
-            print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} 账号已释放（跨进程）")
-        except Exception as release_e:
-            timestamp = datetime.now().strftime("%H:%M:%S")
-            print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} 账号释放失败: {release_e}")
+                # 处理返回结果
+                if hasattr(result, 'success'):
+                    if result.success:
+                        success_count = 1
+                        failed_count = 0
+                    else:
+                        success_count = 0
+                        failed_count = 1
+                else:
+                    # 兼容其他返回格式
+                    success_count = 1 if result else 0
+                    failed_count = 0 if result else 1
 
-        # 记录最终结果
-        if has_execution:
-            timestamp = datetime.now().strftime("%H:%M:%S")
-            print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} 回放完成 - 成功:{total_success}, 失败:{total_failed}")
-            shared_results[device_serial] = {
-                'success': True,
-                'total_success': total_success,
-                'total_failed': total_failed
-            }
-        else:
-            timestamp = datetime.now().strftime("%H:%M:%S")
-            print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} 未执行任何操作")
-            shared_results[device_serial] = {
-                'success': False,
-                'total_success': 0,
-                'total_failed': total_failed
-            }
+                total_success += success_count
+                total_failed += failed_count
+                executed_scripts.append({
+                    'script': os.path.basename(script_path),
+                    'success': success_count,
+                    'failed': failed_count
+                })
+
+                timestamp = datetime.now().strftime("%H:%M:%S")
+                print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} 脚本执行成功")
+
+            except Exception as e:
+                timestamp = datetime.now().strftime("%H:%M:%S")
+                print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} 脚本执行失败: {e}")
+                total_failed += 1
+
+        # 释放分配的账号
+        if device_account:
+            try:
+                account_manager.release_account(device_serial)
+                timestamp = datetime.now().strftime("%H:%M:%S")
+                print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} 账号已释放（跨进程）")
+            except Exception as e:
+                timestamp = datetime.now().strftime("%H:%M:%S")
+                print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} 账号释放失败: {e}")
+
+        # 🔧 新增：生成设备HTML报告
+        if report_manager and device_report_dir:
+            try:
+                from report_generator import ReportGenerator
+                report_generator = ReportGenerator(report_manager)
+
+                # 准备脚本配置用于报告生成
+                script_configs = []
+                for script_config in scripts:
+                    script_configs.append({
+                        'path': script_config.get('path'),
+                        'loop_count': script_config.get('loop_count', 1),
+                        'max_duration': script_config.get('max_duration')
+                    })
+
+                # 生成设备HTML报告
+                html_report = report_generator.generate_device_html_report(
+                    device_name=clean_device_name,
+                    device_dir=device_report_dir
+                )
+
+                if html_report:
+                    timestamp = datetime.now().strftime("%H:%M:%S")
+                    print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} HTML报告生成成功")
+
+            except Exception as e:
+                timestamp = datetime.now().strftime("%H:%M:%S")
+                print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} HTML报告生成失败: {e}")
+
+        # 返回执行结果
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} 回放完成 - 成功:{total_success}, 失败:{total_failed}")
+
+        shared_results[device_serial] = {
+            'success': total_failed == 0,  # 无失败操作才算成功
+            'total_success': total_success,
+            'total_failed': total_failed,
+            'executed_scripts': executed_scripts,
+            'device_report_dir': str(device_report_dir) if device_report_dir else None  # 🔧 新增：返回设备报告目录路径
+        }
+
     except Exception as e:
         timestamp = datetime.now().strftime("%H:%M:%S")
-        print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} 工作进程异常: {e}")
+        print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} 处理异常: {e}")
         import traceback
-        traceback.print_exc()        # 异常时也要释放账号分配（使用Windows兼容的跨进程安全账号管理器）
-        try:
-            try:
-                # 优先尝试跨平台版本
-                from cross_process_account_manager import get_cross_process_account_manager
-                account_manager = get_cross_process_account_manager()
-            except ImportError:
-                # 在Windows上使用Windows专用版本
-                from windows_cross_process_account_manager import get_windows_cross_process_account_manager
-                account_manager = get_windows_cross_process_account_manager()
-
-            account_manager.release_account(device_serial)
-            timestamp = datetime.now().strftime("%H:%M:%S")
-            print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} 账号已释放（异常清理/跨进程）")
-        except Exception as release_e:
-            timestamp = datetime.now().strftime("%H:%M:%S")
-            print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} 账号释放失败（异常清理）: {release_e}")
-
+        traceback.print_exc()
         shared_results[device_serial] = {
             'success': False,
             'error': str(e),
-            'total_success': 0,
-            'total_failed': 1
+            'device_report_dir': None
         }
 
 
 def replay_scripts_on_devices(device_serials, scripts, max_workers=4):
     """
     多设备并发回放：所有设备依次执行同一批脚本
+    🔧 已修复：返回设备报告目录列表用于汇总报告生成
 
     Args:
         device_serials: 设备序列号列表
@@ -238,7 +288,7 @@ def replay_scripts_on_devices(device_serials, scripts, max_workers=4):
         max_workers: 最大并发进程数
 
     Returns:
-        dict: 每台设备的执行结果
+        tuple: (results_dict, device_report_dirs_list)
     """
     # Windows 下需要设置启动方法
     if hasattr(multiprocessing, 'set_start_method'):
@@ -281,6 +331,14 @@ def replay_scripts_on_devices(device_serials, scripts, max_workers=4):
         # 收集并返回结果
         results = dict(shared_results)
 
+        # 🔧 新增：收集设备报告目录路径
+        device_report_dirs = []
+        for device_serial, result in results.items():
+            device_report_dir = result.get('device_report_dir')
+            if device_report_dir:
+                from pathlib import Path
+                device_report_dirs.append(Path(device_report_dir))
+
         # 统计结果
         success_count = sum(1 for r in results.values() if r.get('success', False))
         total_success_ops = sum(r.get('total_success', 0) for r in results.values())
@@ -290,8 +348,9 @@ def replay_scripts_on_devices(device_serials, scripts, max_workers=4):
         print(f"[{timestamp}] ✅ 多设备并发回放完成")
         print(f"📊 成功设备: {success_count}/{len(device_serials)}")
         print(f"📊 成功操作: {total_success_ops}, 失败操作: {total_failed_ops}")
+        print(f"📂 生成设备报告: {len(device_report_dirs)} 个")  # 🔧 新增：报告目录数量
 
-        return results
+        return results, device_report_dirs  # 🔧 修改：返回结果和设备报告目录列表
 
 
 if __name__ == "__main__":
@@ -314,102 +373,45 @@ if __name__ == "__main__":
         print("❌ 未找到连接的设备")
         exit(1)
 
-    device_serials = [device.serial for device in devices]    # 确定要执行的脚本
+    device_serials = [device.serial for device in devices]
+
+    # 确定要执行的脚本
     if args.script_path:
         script_path = args.script_path
         # 如果没有testcase前缀，自动添加
         if not script_path.startswith('testcase/') and not script_path.startswith('testcase\\'):
-            if not script_path.startswith('testcase'):
-                script_path = f"testcase/{script_path}"
+            script_path = os.path.join('testcase', script_path)
     else:
-        # 提示用户必须指定脚本
-        print("❌ 错误: 必须指定脚本文件路径")
-        print("用法示例:")
-        print("  python multi_device_replayer.py testcase/1_app_start_wetest_and_permission.json")
-        print("  python multi_device_replayer.py 1_app_start_wetest_and_permission.json --max-workers 2")
-        print("  python multi_device_replayer.py testcase/scene1.json --loop-count 3")
+        # 默认脚本
+        script_path = "testcase/4_main_page_guide_steps_updated.json"
+
+    # 检查脚本文件是否存在
+    if not os.path.exists(script_path):
+        print(f"❌ 脚本文件不存在: {script_path}")
         exit(1)
 
-    # 测试脚本配置
-    scripts = [
-        {
-            "path": script_path,
-            "loop_count": args.loop_count
-        }
-    ]
+    # 构建脚本配置
+    scripts = [{
+        'path': script_path,
+        'loop_count': args.loop_count,
+        'max_duration': None
+    }]
 
-    print(f"🧪 测试多设备并发回放")
-    print(f"📱 设备: {device_serials}")
-    print(f"📄 脚本: {[s['path'] for s in scripts]}")
+    print(f"📱 找到 {len(device_serials)} 个设备: {device_serials}")
+    print(f"📜 将执行脚本: {script_path}")
     print(f"🔄 循环次数: {args.loop_count}")
-    print(f"⚙️ 最大并发数: {args.max_workers}")
 
-    results = replay_scripts_on_devices(device_serials, scripts, args.max_workers)
+    # 执行多设备并发回放
+    results, device_report_dirs = replay_scripts_on_devices(device_serials, scripts, args.max_workers)
 
-    print(f"\n📋 最终结果:")
+    # 显示结果
+    print("\n📊 执行结果:")
     for device_serial, result in results.items():
-        if result.get('success'):
-            print(f"  ✅ {device_serial}: 成功 ({result.get('total_success', 0)} 操作)")
-        else:
-            error = result.get('error', '未知错误')
-            print(f"  ❌ {device_serial}: 失败 - {error}")
+        status = "✅ 成功" if result.get('success') else "❌ 失败"
+        print(f"  {device_serial}: {status}")
+        if not result.get('success') and 'error' in result:
+            print(f"    错误: {result['error']}")
 
-
-class MultiDeviceReplayer:
-    """
-    多设备并发脚本回放器
-    提供面向对象的接口来管理多设备并发回放
-    """
-
-    def __init__(self, max_workers=4):
-        """
-        初始化多设备回放器
-
-        Args:
-            max_workers: 最大并发进程数
-        """
-        self.max_workers = max_workers
-
-    def execute_concurrent_scripts(self, device_configs):
-        """
-        执行多设备并发脚本回放
-
-        Args:
-            device_configs: 设备配置列表，每个配置包含:
-                - serial: 设备序列号
-                - scripts: 脚本配置列表
-
-        Returns:
-            dict: 每台设备的执行结果
-        """
-        if not device_configs:
-            return {}
-
-        # 提取设备序列号和脚本
-        device_serials = [config['serial'] for config in device_configs]
-        scripts = device_configs[0].get('scripts', [])  # 假设所有设备执行相同脚本
-
-        print(f"🚀 启动 {len(device_serials)} 台设备的并发回放")
-        print(f"📱 设备列表: {', '.join(device_serials)}")
-        print(f"📄 脚本数量: {len(scripts)}")
-
-        return replay_scripts_on_devices(device_serials, scripts, self.max_workers)
-
-    def execute_single_device(self, device_serial, scripts):
-        """
-        执行单设备脚本回放（用于测试）
-
-        Args:
-            device_serial: 设备序列号
-            scripts: 脚本配置列表
-
-        Returns:
-            dict: 执行结果
-        """
-        device_configs = [{
-            'serial': device_serial,
-            'scripts': scripts
-        }]
-
-        results = self.execute_concurrent_scripts(device_configs)
-        return results.get(device_serial, {'success': False, 'error': '未知错误'})
+    print(f"\n📂 生成的设备报告目录: {len(device_report_dirs)} 个")
+    for report_dir in device_report_dirs:
+        print(f"  {report_dir}")
