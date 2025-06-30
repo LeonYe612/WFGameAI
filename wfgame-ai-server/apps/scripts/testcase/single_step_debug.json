@@ -1,0 +1,31 @@
+{
+    "meta": {
+      "name": "主页引导步骤 - Priority模式",
+      "description": "完全符合Priority执行模式的主界面引导处理脚本，使用动态循环检测",
+      "updated_date": "2025-06-30",
+      "author": "WFGameAI开发团队",
+      "tags": ["主界面", "引导", "Priority模式", "动态检测"]
+    },
+    "steps": [
+      {
+        "Priority": 6,
+        "action": "swipe",
+        "start_x": 1000,
+        "start_y": 500,
+        "end_x": 500,
+        "end_y": 500,
+        "duration": 1000,
+        "remark": "水平滑动操作"
+      },
+      {
+        "Priority": 7,
+        "action": "swipe",
+        "start_x": 1000,
+        "start_y": 700,
+        "end_x": 500,
+        "end_y": 300,
+        "duration": 1000,
+        "remark": "斜向滑动操作"
+      }
+    ]
+  }
