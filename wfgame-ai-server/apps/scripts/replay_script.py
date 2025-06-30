@@ -4,6 +4,12 @@
 负责核心流程控制，具体的action处理委托给ActionProcessor
 """
 
+# 🔧 新增：禁用第三方库DEBUG日志
+import logging
+logging.getLogger('airtest').setLevel(logging.WARNING)
+logging.getLogger('airtest.core.android.adb').setLevel(logging.WARNING)
+logging.getLogger('adbutils').setLevel(logging.WARNING)
+
 from airtest.core.api import set_logdir
 import cv2
 import numpy as np
@@ -16,7 +22,6 @@ import queue
 import sys
 import argparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import logging
 import shutil
 import io
 import re

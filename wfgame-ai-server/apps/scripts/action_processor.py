@@ -4,6 +4,11 @@ Action处理器模块
 负责处理JSON脚本中的各种action操作
 """
 
+# 🔧 新增：禁用第三方库DEBUG日志
+import logging
+logging.getLogger('airtest').setLevel(logging.WARNING)
+logging.getLogger('airtest.core.android.adb').setLevel(logging.WARNING)
+
 import json
 import time
 import cv2

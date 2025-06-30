@@ -12,6 +12,16 @@ from datetime import datetime
 from multiprocessing import Process, Manager
 import multiprocessing
 
+# 🔧 新增：禁用第三方库DEBUG日志
+try:
+    from disable_debug_logs import setup_clean_logging
+    setup_clean_logging()
+except ImportError:
+    # 如果导入失败，使用简单的配置
+    import logging
+    logging.getLogger('airtest').setLevel(logging.WARNING)
+    logging.getLogger('airtest.core.android.adb').setLevel(logging.WARNING)
+
 
 def device_worker(device_serial, scripts, shared_results):
     """
@@ -277,19 +287,37 @@ def device_worker(device_serial, scripts, shared_results):
         }
 
 
-def replay_scripts_on_devices(device_serials, scripts, max_workers=4):
+def replay_scripts_on_devices(device_serials, scripts, max_workers=4, strategy="hybrid"):
     """
     多设备并发回放：所有设备依次执行同一批脚本
+    🔧 新增：支持智能混合执行策略
     🔧 已修复：返回设备报告目录列表用于汇总报告生成
 
     Args:
         device_serials: 设备序列号列表
         scripts: 脚本路径列表
-        max_workers: 最大并发进程数
+        max_workers: 最大并发进程数（传统模式使用）
+        strategy: 执行策略 ("hybrid", "unlimited", "intelligent", "traditional")
 
     Returns:
         tuple: (results_dict, device_report_dirs_list)
     """
+    # 智能混合执行策略
+    if strategy in ["hybrid", "unlimited", "intelligent"]:
+        try:
+            from optimized_hybrid_executor import replay_scripts_on_devices_hybrid
+
+            print(f"🚀 使用智能混合执行策略: {strategy}")
+            return replay_scripts_on_devices_hybrid(device_serials, scripts, strategy)
+
+        except ImportError as e:
+            print(f"❌ 智能混合执行器导入失败，回退到传统模式: {e}")
+            strategy = "traditional"
+
+    # 传统执行模式
+    if strategy == "traditional":
+        print(f"🔧 使用传统并发模式，max_workers={max_workers}")
+
     # Windows 下需要设置启动方法
     if hasattr(multiprocessing, 'set_start_method'):
         try:
@@ -359,8 +387,10 @@ if __name__ == "__main__":
     # 处理命令行参数
     parser = argparse.ArgumentParser(description='多设备并发脚本回放')
     parser.add_argument('script_path', nargs='?', default=None, help='脚本文件路径')
-    parser.add_argument('--max-workers', type=int, default=4, help='最大并发进程数')
+    parser.add_argument('--max-workers', type=int, default=4, help='最大并发进程数（传统模式）')
     parser.add_argument('--loop-count', type=int, default=1, help='脚本循环次数')
+    parser.add_argument('--strategy', choices=['hybrid', 'unlimited', 'intelligent', 'traditional'],
+                       default='hybrid', help='执行策略选择')
 
     args = parser.parse_args()
 
@@ -400,9 +430,12 @@ if __name__ == "__main__":
     print(f"📱 找到 {len(device_serials)} 个设备: {device_serials}")
     print(f"📜 将执行脚本: {script_path}")
     print(f"🔄 循环次数: {args.loop_count}")
+    print(f"⚙️ 执行策略: {args.strategy}")
 
     # 执行多设备并发回放
-    results, device_report_dirs = replay_scripts_on_devices(device_serials, scripts, args.max_workers)
+    results, device_report_dirs = replay_scripts_on_devices(
+        device_serials, scripts, args.max_workers, args.strategy
+    )
 
     # 显示结果
     print("\n📊 执行结果:")

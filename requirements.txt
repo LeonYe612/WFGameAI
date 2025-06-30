@@ -49,6 +49,10 @@ Django>=4.2.0
 djangorestframework>=3.14.0
 django-cors-headers>=4.0.0
 django-filter>=23.2
+
+# 数据库依赖
+PyMySQL>=1.0.0
+DBUtils>=3.0.0
 mysqlclient>=2.2.0
 drf-yasg>=1.21.0
 drf-yasg>=1.21.7
