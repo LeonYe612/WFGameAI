@@ -61,7 +61,7 @@ alwaysApply: true
    - 公用的文件夹目录统一使用 WFGameAI\wfgame-ai-server\config.ini 文件进行管理
 
 8. **关于排版**
-   - 如下关键字前必须换行
+   - 如下关键字前必须换行--严格执行
      - class
      - def
      - if

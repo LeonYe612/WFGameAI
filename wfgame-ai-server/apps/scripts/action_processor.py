@@ -295,166 +295,109 @@ class ActionProcessor:
             traceback.print_exc()
             return False
 
-    def process_action(self, step, context_or_step_idx, log_dir_or_context=None):
+    def process_action(self, step, step_idx, log_dir):
         """
-        处理单个action步骤 - 支持新旧接口
+        处理单个action步骤
 
-        新接口:
-            step: 步骤配置
-            context: ActionContext对象
-
-        旧接口（兼容性）:
+        Args:
             step: 步骤配置
             step_idx: 步骤索引
             log_dir: 日志目录
 
         Returns:
-            ActionResult对象（新接口）或 tuple（旧接口兼容）
+            tuple: (success, executed, should_continue)
         """
-        # 判断是新接口还是旧接口
-        if isinstance(context_or_step_idx, ActionContext):
-            # 新接口
-            context = context_or_step_idx
-            return self._process_action_new(step, context)
-        else:
-            # 旧接口兼容
-            step_idx = context_or_step_idx
-            log_dir = log_dir_or_context
-            result = self._process_action_old(step, step_idx, log_dir)
-            return result
+        return self._process_action(step, step_idx, log_dir)
 
-    def _process_action_new(self, step, context):
-        """使用新接口处理action"""
+    def _process_action(self, step, step_idx, log_dir):
+        """处理action步骤"""
         step_action = step.get("action", "click")
         step_class = step.get("class", "")
-        step_remark = step.get("remark", "")
-
-        try:
-            # 懒加载输入处理器
-            if not self.input_handler and hasattr(context, 'device'):
-                from enhanced_input_handler import DeviceScriptReplayer
-                self.input_handler = DeviceScriptReplayer(context.device.serial)
-
-            # 处理不同类型的步骤
-            if step_class == "delay":
-                return self._handle_delay_new(step, context)
-            elif step_class == "device_preparation":
-                return self._handle_device_preparation_new(step, context)
-            elif step_class == "app_start":
-                return self._handle_app_start_new(step, context)
-            elif step_class == "app_stop":
-                return self._handle_app_stop_new(step, context)
-            elif step_class == "log":
-                return self._handle_log_new(step, context)
-            elif step_action == "wait_if_exists":
-                return self._handle_wait_if_exists_new(step, context)
-            elif step_action == "swipe":
-                return self._handle_swipe_new(step, context)
-            elif step_action == "input":
-                return self._handle_input_new(step, context)
-            elif step_action == "checkbox":
-                return self._handle_checkbox_new(step, context)
-            elif step_action == "auto_login":
-                return self._handle_auto_login_new(step, context)
-            elif step_action == "wait_for_disappearance":
-                return self._handle_wait_for_disappearance_new(step, context)
-
-            # 新的3个关键功能
-            elif step_action == "wait_for_appearance":
-                return self._handle_wait_for_appearance_new(step, context)
-            elif step_action == "wait_for_stable":
-                return self._handle_wait_for_stable_new(step, context)
-            elif step_action == "retry_until_success":
-                return self._handle_retry_until_success_new(step, context)
-
-            # 废弃click_target，替换为click
-            elif step_action == "click_target":
-                print("⚠️ 警告: click_target已废弃，请使用click替代")
-                # 将click_target转换为标准click处理
-                converted_step = step.copy()
-                converted_step["action"] = "click"
-                if "target_selector" in converted_step:
-                    target_selector = converted_step["target_selector"]
-                    # 尝试从target_selector提取参数
-                    if target_selector.get("type"):
-                        converted_step["ui_type"] = target_selector["type"]
-                        converted_step["detection_method"] = "ui"
-                    del converted_step["target_selector"]
-                return self._process_action_new(converted_step, context)
-            else:
-                # 默认处理：AI检测点击或备选点击
-                if step_class == "unknown" and "relative_x" in step and "relative_y" in step:
-                    return self._handle_fallback_click_new(step, context)
-                elif step_class and step_class != "unknown":
-                    return self._handle_ai_detection_click_new(step, context)
-                else:
-                    return ActionResult(success=False, message="无法处理的步骤类型")
-
-        except Exception as e:
-            return ActionResult(
-                success=False,
-                message=f"步骤执行异常: {e}",
-                details={"exception": str(e), "step": step}
-            )
-    def _process_action_old(self, step, step_idx, log_dir):
-        """使用旧接口处理action（兼容性）"""
-        step_action = step.get("action", "click")
-        step_class = step.get("class", "")
-
-        # 处理特殊步骤类型
+        step_yolo_class = step.get("yolo_class", "")        # 处理特殊步骤类型
         if step_class == "delay":
             result = self._handle_delay(step, step_idx, log_dir)
+
         elif step_class == "device_preparation":
             result = self._handle_device_preparation(step, step_idx)
+
         elif step_class == "app_start":
             result = self._handle_app_start(step, step_idx)
+
         elif step_class == "app_stop":
             result = self._handle_app_stop(step, step_idx)
+
         elif step_class == "log":
             result = self._handle_log(step, step_idx)
 
         # 处理新的3个关键功能
+
         elif step_action == "wait_for_appearance":
             result = self._handle_wait_for_appearance(step, step_idx, log_dir)
+
         elif step_action == "wait_for_stable":
             result = self._handle_wait_for_stable(step, step_idx, log_dir)
+
         elif step_action == "retry_until_success":
             result = self._handle_retry_until_success(step, step_idx, log_dir)
 
         # 处理现有功能
+
         elif step_action == "wait_if_exists":
             result = self._handle_wait_if_exists(step, step_idx, log_dir)
+
         elif step_action == "swipe":
             result = self._handle_swipe(step, step_idx)
+
         elif step_action == "input":
             result = self._handle_input(step, step_idx)
+
         elif step_action == "checkbox":
             result = self._handle_checkbox(step, step_idx)
+
         elif step_action == "auto_login":
             result = self._handle_auto_login(step, step_idx)
+
         elif step_action == "wait_for_disappearance":
             result = self._handle_wait_for_disappearance(step, step_idx, log_dir)
 
+        # 关键修复：优先处理ai_detection_click动作
+
+        elif step_action == "ai_detection_click":
+            print(f"🎯 执行AI检测点击操作")
+            result = self._handle_ai_detection_click(step, step_idx, log_dir)
+
         # 废弃click_target，替换为click
+
         elif step_action == "click_target":
             print("⚠️ 警告: click_target已废弃，请使用click替代")
             # 将click_target转换为标准click处理
             converted_step = step.copy()
             converted_step["action"] = "click"
+
             if "target_selector" in converted_step:
                 target_selector = converted_step["target_selector"]
                 # 尝试从target_selector提取参数
+
                 if target_selector.get("type"):
                     converted_step["ui_type"] = target_selector["type"]
                     converted_step["detection_method"] = "ui"
                 del converted_step["target_selector"]
-            return self._process_action_old(converted_step, step_idx, log_dir)
+            return self._process_action(converted_step, step_idx, log_dir)
+
         else:
             # 默认处理：尝试AI检测点击
+
             if step_class == "unknown" and "relative_x" in step and "relative_y" in step:
                 result = self._handle_fallback_click(step, step_idx, log_dir)
+
+            elif step_yolo_class and step_yolo_class != "unknown":
+                # 对于Priority模式脚本，如果有yolo_class字段，执行AI检测点击
+                print(f"🎯 检测到yolo_class字段: {step_yolo_class}，执行AI检测点击")
+                result = self._handle_ai_detection_click(step, step_idx, log_dir)
+
             elif step_class and step_class != "unknown":
                 result = self._handle_ai_detection_click(step, step_idx, log_dir)
+
             else:
                 return False, False, False
 
@@ -601,7 +544,7 @@ class ActionProcessor:
 
     def _handle_ai_detection_click(self, step, step_idx, log_dir):
         """处理AI检测点击步骤"""
-        step_class = step.get("class", "")
+        step_class = step.get("yolo_class")  # 优先使用yolo_class，兼容class字段
         step_remark = step.get("remark", "")
 
         if not step_class or step_class == "unknown":
@@ -623,7 +566,10 @@ class ActionProcessor:
 
             # 使用AI检测（如果可用）
             if self.detect_buttons:
-                success, detection_result = self.detect_buttons(frame, target_class=step_class)
+                # 获取步骤中指定的置信度，如果没有则使用默认值 0.6
+                step_confidence = step.get("confidence", 0.6)
+                print(f"🎯 使用置信度阈值: {step_confidence} (步骤指定: {step.get('confidence', '默认')})")
+                success, detection_result = self.detect_buttons(frame, target_class=step_class, conf_threshold=step_confidence)
 
                 if success and detection_result[0] is not None:
                     x, y, detected_class = detection_result
@@ -1832,7 +1778,10 @@ class ActionProcessor:
 
             # 使用AI检测（如果可用）
             if self.detect_buttons:
-                success, detection_result = self.detect_buttons(frame, target_class=step_class)
+                # 获取步骤中指定的置信度，如果没有则使用默认值 0.7
+                step_confidence = step.get("confidence", 0.7)
+                print(f"🎯 使用置信度阈值: {step_confidence} (步骤指定: {step.get('confidence', '默认')})")
+                success, detection_result = self.detect_buttons(frame, target_class=step_class, conf_threshold=step_confidence)
 
                 if success and detection_result[0] is not None:
                     x, y, detected_class = detection_result

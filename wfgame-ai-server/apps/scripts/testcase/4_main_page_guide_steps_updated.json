@@ -2,8 +2,7 @@
   "meta": {
     "name": "主页引导步骤 - Priority模式",
     "description": "完全符合Priority执行模式的主界面引导处理脚本，使用动态循环检测",
-    "version": "4.0",
-    "updated_date": "2025-01-10",
+    "updated_date": "2025-06-30",
     "author": "WFGameAI开发团队",
     "tags": ["主界面", "引导", "Priority模式", "动态检测"]
   },
@@ -29,7 +28,7 @@
       "detection_method": "ai",
       "action": "ai_detection_click",
       "yolo_class": "operation-confirm",
-      "confidence": 0.85,
+      "confidence": 0.70,
       "remark": "检测并点击【确定】按钮"
     },
     {
@@ -37,7 +36,7 @@
       "detection_method": "ai",
       "action": "ai_detection_click",
       "yolo_class": "operation-challenge",
-      "confidence": 0.8,
+      "confidence": 0.7,
       "remark": "检测并点击【挑战】按钮"
     },
     {
@@ -45,7 +44,7 @@
       "detection_method": "ai",
       "action": "ai_detection_click",
       "yolo_class": "navigation-fight",
-      "confidence": 0.8,
+      "confidence": 0.7,
       "remark": "检测并点击【战斗】按钮"
     },
     {
@@ -53,7 +52,7 @@
       "detection_method": "ai",
       "action": "ai_detection_click",
       "yolo_class": "operation-back",
-      "confidence": 0.8,
+      "confidence": 0.7,
       "remark": "检测并点击【返回】按钮"
     },
     {
@@ -61,7 +60,7 @@
       "detection_method": "ai",
       "action": "ai_detection_click",
       "yolo_class": "navigation-shop",
-      "confidence": 0.8,
+      "confidence": 0.7,
       "remark": "检测并点击【商店】按钮"
     },
     {

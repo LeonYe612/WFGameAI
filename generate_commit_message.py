@@ -1275,8 +1275,7 @@ def main():
         if len(line) > 100:  # 如果行太长，可能会在终端上显示不全
             print(f"{line[:97]}...")
         else:
-            print(line)
-    print("\n================================\n")    # 保存提交信息到文件
+            print(line)    # 保存提交信息到文件
     commit_msg_file = "commit_message.txt"
     with open(commit_msg_file, 'w', encoding='utf-8') as f:
         f.write(commit_msg)
@@ -1285,6 +1284,57 @@ def main():
     print("\n💻 使用方法:")
     print(f'  1. 直接使用：git commit -F "{commit_msg_file}"')
     print(f'  2. 编辑后使用：用编辑器打开 {commit_msg_file}，修改后再使用')
+
+    # 询问是否手动编辑提交信息
+    print("\n📝 提交信息编辑选项:")
+    try:
+        edit_choice = input("是否打开 commit_message.txt 进行手动编辑？(y/n): ").strip().lower()
+        if edit_choice in ['y', 'yes']:
+            print(f"正在打开 {commit_msg_file} 进行编辑...")
+            import subprocess
+            import platform
+
+            # 根据操作系统选择合适的编辑器
+            system = platform.system()
+            try:
+                if system == "Windows":
+                    # Windows 系统优先尝试使用 notepad++，然后是 notepad
+                    try:
+                        subprocess.run(['notepad++', commit_msg_file], check=True)
+                    except (subprocess.CalledProcessError, FileNotFoundError):
+                        subprocess.run(['notepad', commit_msg_file], check=True)
+                elif system == "Darwin":  # macOS
+                    subprocess.run(['open', '-t', commit_msg_file], check=True)
+                else:  # Linux
+                    # 尝试多个编辑器
+                    editors = ['gedit', 'nano', 'vim', 'vi']
+                    editor_opened = False
+                    for editor in editors:
+                        try:
+                            subprocess.run([editor, commit_msg_file], check=True)
+                            editor_opened = True
+                            break
+                        except (subprocess.CalledProcessError, FileNotFoundError):
+                            continue
+
+                    if not editor_opened:
+                        print(f"❌ 无法找到合适的编辑器，请手动编辑 {commit_msg_file}")
+
+                print(f"✅ 已打开 {commit_msg_file}，请编辑完成后关闭编辑器")
+                input("编辑完成后按 Enter 键继续...")
+
+            except Exception as e:
+                print(f"❌ 打开编辑器失败：{str(e)}")
+                print(f"请手动编辑 {commit_msg_file} 文件")
+                input("编辑完成后按 Enter 键继续...")
+        else:
+            print("⏭️ 跳过手动编辑，使用自动生成的提交信息")
+
+    except KeyboardInterrupt:
+        print("\n⏹️ 操作已取消")
+        return
+    except Exception as e:
+        print(f"❌ 编辑过程中出现错误：{str(e)}")
 
     # 交互式提交功能
     print("\n🚀 自动执行功能:")

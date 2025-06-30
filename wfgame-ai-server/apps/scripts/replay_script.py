@@ -262,7 +262,7 @@ def load_yolo_model_for_detection(model_path=None):
         model = None
         return False
 
-def detect_buttons(frame, target_class=None):
+def detect_buttons(frame, target_class=None, conf_threshold=0.6):
     """检测按钮，与legacy版本保持一致"""
     global model
 
@@ -275,7 +275,7 @@ def detect_buttons(frame, target_class=None):
         print_realtime(f"🔍 开始检测目标类别: {target_class}")
 
         # 使用当前设备进行预测
-        results = model.predict(source=frame_for_detection, imgsz=640, conf=0.6, verbose=False)
+        results = model.predict(source=frame_for_detection, imgsz=640, conf=conf_threshold, verbose=False)
 
         # 检查预测结果是否有效
         if results is None or len(results) == 0:
