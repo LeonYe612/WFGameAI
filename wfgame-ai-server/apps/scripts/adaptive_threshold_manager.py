@@ -195,6 +195,178 @@ class AdaptiveThresholdManager:
 
         print(f"✅ 基准阈值已调整: {old_threshold} -> {new_threshold}")
 
+    def get_performance_trend(self) -> str:
+        """
+        分析性能趋势
+
+        Returns:
+            str: 趋势描述 ("improving", "declining", "stable")
+        """
+        if len(self.performance_history) < 5:
+            return "insufficient_data"
+
+        # 分析最近5次和前面5次的性能对比
+        recent_5 = self.performance_history[-5:]
+        previous_5 = self.performance_history[-10:-5] if len(self.performance_history) >= 10 else []
+
+        if not previous_5:
+            return "insufficient_data"
+
+        recent_avg = sum(recent_5) / len(recent_5)
+        previous_avg = sum(previous_5) / len(previous_5)
+
+        improvement_threshold = 0.1  # 10%改善阈值
+
+        if recent_avg > previous_avg + improvement_threshold:
+            return "improving"
+        elif recent_avg < previous_avg - improvement_threshold:
+            return "declining"
+        else:
+            return "stable"
+
+    def predict_optimal_threshold(self, device_count: int) -> int:
+        """
+        基于设备数量和历史性能预测最优阈值
+
+        Args:
+            device_count: 当前设备数量
+
+        Returns:
+            int: 预测的最优阈值
+        """
+        base_optimal = self.get_optimal_threshold()
+
+        # 基于设备数量调整
+        if device_count <= 2:
+            # 小规模设备，可以更激进
+            return min(base_optimal + 2, 16)
+        elif device_count <= 5:
+            # 中等规模
+            return base_optimal
+        elif device_count <= 10:
+            # 较大规模，保守一些
+            return max(base_optimal - 1, 4)
+        else:
+            # 大规模设备，使用智能管理
+            return max(base_optimal - 2, 6)
+
+    def get_system_load_factor(self) -> float:
+        """
+        获取系统负载因子
+
+        Returns:
+            float: 负载因子 (0.0-1.0)
+        """
+        try:
+            import psutil
+
+            cpu_percent = psutil.cpu_percent(interval=0.1)
+            memory = psutil.virtual_memory()
+            memory_percent = memory.percent
+
+            # 综合CPU和内存使用率计算负载因子
+            load_factor = (cpu_percent + memory_percent) / 200.0
+            return min(max(load_factor, 0.0), 1.0)
+
+        except ImportError:
+            # 如果没有psutil，返回中等负载
+            return 0.5
+        except Exception:
+            return 0.5
+
+    def auto_adjust_threshold(self) -> int:
+        """
+        自动调整阈值 - 综合考虑性能历史、趋势和系统负载
+
+        Returns:
+            int: 调整后的阈值
+        """
+        base_threshold = self.get_optimal_threshold()
+        trend = self.get_performance_trend()
+        load_factor = self.get_system_load_factor()
+
+        # 基于趋势调整
+        if trend == "improving":
+            threshold_adjustment = 1
+        elif trend == "declining":
+            threshold_adjustment = -1
+        else:
+            threshold_adjustment = 0
+
+        # 基于系统负载调整
+        if load_factor < 0.3:  # 系统负载低
+            load_adjustment = 2
+        elif load_factor < 0.6:  # 系统负载中等
+            load_adjustment = 0
+        elif load_factor < 0.8:  # 系统负载较高
+            load_adjustment = -1
+        else:  # 系统负载很高
+            load_adjustment = -2
+
+        # 计算最终阈值
+        adjusted_threshold = base_threshold + threshold_adjustment + load_adjustment
+
+        # 确保阈值在合理范围内
+        final_threshold = min(max(adjusted_threshold, 4), 16)
+
+        print(f"🎯 自动阈值调整: 基础={base_threshold}, 趋势调整={threshold_adjustment}, "
+              f"负载调整={load_adjustment}, 最终={final_threshold}")
+
+        return final_threshold
+
+    def get_performance_recommendations(self) -> List[str]:
+        """
+        基于历史性能数据生成优化建议
+
+        Returns:
+            List[str]: 优化建议列表
+        """
+        recommendations = []
+
+        if len(self.performance_history) < 5:
+            recommendations.append("需要更多历史数据进行分析")
+            return recommendations
+
+        trend = self.get_performance_trend()
+        avg_performance = sum(self.performance_history) / len(self.performance_history)
+        recent_performance = sum(self.performance_history[-5:]) / 5
+        load_factor = self.get_system_load_factor()
+
+        # 基于趋势的建议
+        if trend == "declining":
+            recommendations.append("性能呈下降趋势，建议降低并发数或检查系统资源")
+        elif trend == "improving":
+            recommendations.append("性能呈上升趋势，可以考虑适当增加并发数")
+
+        # 基于性能水平的建议
+        if recent_performance < 0.05:
+            recommendations.append("当前性能较低，建议优化脚本执行效率或减少并发数")
+        elif recent_performance > 0.15:
+            recommendations.append("当前性能良好，可以考虑增加设备并发数")
+
+        # 基于系统负载的建议
+        if load_factor > 0.8:
+            recommendations.append("系统负载较高，建议降低并发数或等待系统负载降低")
+        elif load_factor < 0.3:
+            recommendations.append("系统资源充足，可以考虑增加并发数提高效率")
+
+        # 基于历史波动的建议
+        if len(self.performance_history) >= 10:
+            performance_std = self._calculate_std(self.performance_history[-10:])
+            if performance_std > 0.05:
+                recommendations.append("性能波动较大，建议检查系统稳定性或调整策略")
+
+        return recommendations if recommendations else ["系统运行稳定，当前配置良好"]
+
+    def _calculate_std(self, data: List[float]) -> float:
+        """计算标准差"""
+        if len(data) < 2:
+            return 0.0
+
+        mean = sum(data) / len(data)
+        variance = sum((x - mean) ** 2 for x in data) / len(data)
+        return variance ** 0.5
+
 
 # 全局自适应阈值管理器实例
 _threshold_manager = None

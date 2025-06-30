@@ -241,6 +241,82 @@ class OptimizedHybridExecutor:
             print(f"🔓 释放账号资源...")
             self.account_manager.release_account_batch(device_serials)
 
+    def execute_multi_device_enhanced(self, device_serials: List[str], scripts: List[str]) -> Dict:
+        """
+        增强版多设备执行入口 - 包含完整的监控和调整
+
+        Args:
+            device_serials: 设备序列号列表
+            scripts: 脚本列表
+
+        Returns:
+            Dict: 详细的执行结果
+        """
+        device_count = len(device_serials)
+
+        # 使用增强的阈值预测
+        predicted_threshold = self.threshold_manager.predict_optimal_threshold(device_count)
+        auto_threshold = self.threshold_manager.auto_adjust_threshold()
+
+        # 选择更保守的阈值作为最终阈值
+        final_threshold = min(predicted_threshold, auto_threshold)
+
+        print(f"📱 设备数量: {device_count}")
+        print(f"🎯 预测阈值: {predicted_threshold}")
+        print(f"🔧 自动调整阈值: {auto_threshold}")
+        print(f"✅ 最终阈值: {final_threshold}")
+
+        # 获取性能建议
+        recommendations = self.threshold_manager.get_performance_recommendations()
+        print(f"💡 性能建议:")
+        for i, rec in enumerate(recommendations, 1):
+            print(f"   {i}. {rec}")
+
+        # 预分配账号
+        print(f"🔐 预分配账号中...")
+        account_allocations = self.account_manager.allocate_account_batch(device_serials)
+
+        if not account_allocations:
+            return {
+                'success': False,
+                'error': '账号分配失败',
+                'strategy': 'failed',
+                'device_count': device_count,
+                'threshold_used': final_threshold
+            }
+
+        try:
+            start_time = time.time()
+
+            # 动态策略选择
+            if device_count <= final_threshold:
+                print(f"🚀 执行策略：无限制并发执行 (设备数 {device_count} ≤ 阈值 {final_threshold})")
+                result = self._unlimited_execution_enhanced(device_serials, scripts, account_allocations)
+            else:
+                print(f"⚙️ 执行策略：智能动态管理 (设备数 {device_count} > 阈值 {final_threshold})")
+                result = self._intelligent_execution_enhanced(device_serials, scripts, account_allocations)
+
+            execution_time = time.time() - start_time
+
+            # 记录增强的性能数据
+            self._record_enhanced_performance(device_count, execution_time, result)
+
+            # 添加详细的执行信息
+            result.update({
+                'execution_time': execution_time,
+                'device_count': device_count,
+                'threshold_used': final_threshold,
+                'recommendations': recommendations,
+                'account_allocations': len(account_allocations)
+            })
+
+            return result
+
+        finally:
+            # 释放账号资源
+            print(f"🔓 释放账号资源...")
+            self.account_manager.release_account_batch(device_serials)
+
     def _unlimited_execution(self, device_serials: List[str], scripts: List[str],
                            account_allocations: Dict[str, dict]) -> Dict:
         """
@@ -301,6 +377,87 @@ class OptimizedHybridExecutor:
             "device_results": results
         }
 
+    def _unlimited_execution_enhanced(self, device_serials: List[str], scripts: List[str],
+                                    account_allocations: Dict[str, dict]) -> Dict:
+        """
+        增强版无限制并发执行
+        """
+        print(f"🚀 启动增强无限制并发模式，处理 {len(device_serials)} 个设备")
+
+        # 监控系统资源变化
+        initial_resources = self._evaluate_system_resources()
+        print(f"📊 初始系统资源: CPU {initial_resources.cpu_usage:.1f}%, 内存 {initial_resources.memory_usage:.1f}%")
+
+        # 使用多进程并发执行
+        processes = []
+        start_time = time.time()
+
+        # 创建共享结果字典
+        manager = Manager()
+        shared_results = manager.dict()
+
+        # 错峰启动以减少系统冲击
+        for i, device_serial in enumerate(device_serials):
+            account = account_allocations.get(device_serial)
+            if account:
+                p = Process(
+                    target=_device_worker_with_account,
+                    args=(device_serial, scripts, account, shared_results)
+                )
+                p.start()
+                processes.append(p)
+                print(f"✅ 启动设备 {device_serial} 进程: PID {p.pid}")
+
+                # 错峰启动，每0.5秒启动一个进程
+                if i < len(device_serials) - 1:
+                    time.sleep(0.5)
+            else:
+                print(f"❌ 设备 {device_serial} 没有分配到账号，跳过")
+
+        # 中期资源检查
+        if len(processes) > 2:
+            time.sleep(5)  # 等待进程稳定
+            mid_resources = self._evaluate_system_resources()
+            print(f"📊 中期系统资源: CPU {mid_resources.cpu_usage:.1f}%, 内存 {mid_resources.memory_usage:.1f}%")
+
+            # 如果资源使用过高，发出警告但继续执行
+            if mid_resources.cpu_usage > 90 or mid_resources.memory_usage > 90:
+                print(f"⚠️ 系统资源使用率过高，建议下次降低并发数")
+
+        # 等待所有设备完成
+        completed_processes = 0
+        for p in processes:
+            p.join()
+            completed_processes += 1
+            print(f"✅ 进程完成 {completed_processes}/{len(processes)}")
+
+        execution_time = time.time() - start_time
+
+        # 最终资源检查
+        final_resources = self._evaluate_system_resources()
+        print(f"📊 最终系统资源: CPU {final_resources.cpu_usage:.1f}%, 内存 {final_resources.memory_usage:.1f}%")
+
+        # 收集结果
+        results = dict(shared_results)
+
+        # 统计成功率
+        total_devices = len(device_serials)
+        successful_devices = sum(1 for r in results.values() if r.get('success', False))
+
+        return {
+            "success": successful_devices == total_devices,
+            "execution_time": execution_time,
+            "strategy": "unlimited_enhanced",
+            "total_devices": total_devices,
+            "successful_devices": successful_devices,
+            "success_rate": successful_devices / total_devices if total_devices > 0 else 0,
+            "device_results": results,
+            "resource_usage": {
+                "initial": {"cpu": initial_resources.cpu_usage, "memory": initial_resources.memory_usage},
+                "final": {"cpu": final_resources.cpu_usage, "memory": final_resources.memory_usage}
+            }
+        }
+
     def _intelligent_execution(self, device_serials: List[str], scripts: List[str],
                              account_allocations: Dict[str, dict]) -> Dict:
         """
@@ -324,36 +481,35 @@ class OptimizedHybridExecutor:
         # 实现滚动执行机制
         return self._rolling_execution(device_serials, scripts, account_allocations, max_concurrent)
 
-    def _evaluate_system_resources(self) -> SystemResourceStatus:
+    def _intelligent_execution_enhanced(self, device_serials: List[str], scripts: List[str],
+                                      account_allocations: Dict[str, dict]) -> Dict:
         """
-        评估系统资源状态
-
-        Returns:
-            SystemResourceStatus: 系统资源状态
+        增强版智能动态管理
         """
-        cpu_percent = psutil.cpu_percent(interval=1)
-        memory = psutil.virtual_memory()
-        memory_percent = memory.percent
-        cpu_count = psutil.cpu_count()
+        # 动态评估系统资源
+        resource_status = self._evaluate_system_resources()
 
-        # 动态并发数计算
-        if cpu_percent < 50 and memory_percent < 70:
-            optimal_concurrency = min(16, cpu_count * 2)
-        elif cpu_percent < 70 and memory_percent < 80:
-            optimal_concurrency = min(12, cpu_count)
-        elif cpu_percent < 80 and memory_percent < 90:
-            optimal_concurrency = min(8, cpu_count // 2)
+        # 基于系统负载和设备数量调整并发数
+        device_count = len(device_serials)
+        base_concurrent = resource_status.optimal_concurrency
+
+        # 动态调整并发数
+        if device_count > 20:
+            # 超大规模，更保守
+            max_concurrent = min(base_concurrent, 8)
+        elif device_count > 10:
+            # 大规模，适中
+            max_concurrent = min(base_concurrent, 12)
         else:
-            optimal_concurrency = 4
+            # 中等规模，可以更激进
+            max_concurrent = base_concurrent
 
-        max_safe_concurrency = min(optimal_concurrency * 2, 20)
+        print(f"⚙️ 增强智能执行模式")
+        print(f"📊 系统资源: CPU {resource_status.cpu_usage:.1f}%, 内存 {resource_status.memory_usage:.1f}%")
+        print(f"🎯 基础并发数: {base_concurrent}, 调整后并发数: {max_concurrent}")
 
-        return SystemResourceStatus(
-            cpu_usage=cpu_percent,
-            memory_usage=memory_percent,
-            optimal_concurrency=optimal_concurrency,
-            max_safe_concurrency=max_safe_concurrency
-        )
+        # 实现增强的滚动执行机制
+        return self._rolling_execution_enhanced(device_serials, scripts, account_allocations, max_concurrent)
 
     def _rolling_execution(self, device_serials: List[str], scripts: List[str],
                          account_allocations: Dict[str, dict], max_concurrent: int) -> Dict:
@@ -433,6 +589,148 @@ class OptimizedHybridExecutor:
             "max_concurrent": max_concurrent,
             "device_results": completed_results
         }
+
+    def _rolling_execution_enhanced(self, device_serials: List[str], scripts: List[str],
+                                  account_allocations: Dict[str, dict], max_concurrent: int) -> Dict:
+        """
+        增强版滚动执行机制 - 包含动态监控和调整
+        """
+        print(f"🔄 启动增强滚动执行，设备总数: {len(device_serials)}, 最大并发: {max_concurrent}")
+
+        start_time = time.time()
+        pending_devices = deque(device_serials)
+        completed_results = {}
+
+        # 资源监控数据
+        resource_history = []
+
+        with concurrent.futures.ProcessPoolExecutor(max_workers=max_concurrent) as executor:
+            running_futures = {}
+            completed_count = 0
+
+            while pending_devices or running_futures:
+                # 动态资源检查
+                if completed_count % 3 == 0 and completed_count > 0:
+                    current_resources = self._evaluate_system_resources()
+                    resource_history.append({
+                        'time': time.time() - start_time,
+                        'cpu': current_resources.cpu_usage,
+                        'memory': current_resources.memory_usage
+                    })
+
+                    # 动态调整并发数
+                    if current_resources.cpu_usage > 85 or current_resources.memory_usage > 85:
+                        # 系统负载过高，暂停启动新任务
+                        print(f"⚠️ 系统负载过高，暂停启动新任务 (CPU: {current_resources.cpu_usage:.1f}%, 内存: {current_resources.memory_usage:.1f}%)")
+                        time.sleep(2)
+                        continue
+
+                # 启动新任务直到达到并发限制
+                while len(running_futures) < max_concurrent and pending_devices:
+                    device_serial = pending_devices.popleft()
+                    account = account_allocations.get(device_serial)
+                    if account:
+                        future = executor.submit(
+                            _device_worker_with_account,
+                            device_serial, scripts, account, {}
+                        )
+                        running_futures[future] = device_serial
+                        print(f"🚀 启动设备 {device_serial} ({len(running_futures)}/{max_concurrent})")
+                    else:
+                        print(f"❌ 设备 {device_serial} 没有分配到账号，跳过")
+
+                # 检查已完成的任务
+                if running_futures:
+                    done, _ = concurrent.futures.wait(
+                        running_futures.keys(),
+                        timeout=1.0,
+                        return_when=concurrent.futures.FIRST_COMPLETED
+                    )
+
+                    for future in done:
+                        device_serial = running_futures.pop(future)
+                        completed_count += 1
+
+                        try:
+                            result = future.result()
+                            completed_results[device_serial] = result
+                            status = "✅ 成功" if result.get('success') else "❌ 失败"
+                            print(f"{status} 设备 {device_serial} 执行完成 ({completed_count}/{len(device_serials)})")
+                        except Exception as e:
+                            print(f"❌ 设备 {device_serial} 执行异常: {e}")
+                            completed_results[device_serial] = {"success": False, "error": str(e)}
+
+        execution_time = time.time() - start_time
+
+        # 统计结果
+        total_devices = len(device_serials)
+        successful_devices = sum(1 for r in completed_results.values() if r.get('success', False))
+
+        print(f"✅ 增强滚动执行完成，耗时: {execution_time:.2f}秒，成功率: {successful_devices}/{total_devices}")
+
+        return {
+            "success": successful_devices == total_devices,
+            "execution_time": execution_time,
+            "strategy": "intelligent_enhanced",
+            "total_devices": total_devices,
+            "successful_devices": successful_devices,
+            "success_rate": successful_devices / total_devices if total_devices > 0 else 0,
+            "max_concurrent": max_concurrent,
+            "device_results": completed_results,
+            "resource_history": resource_history
+        }
+
+    def _record_enhanced_performance(self, device_count: int, execution_time: float, result: Dict):
+        """
+        记录增强的性能数据
+        """
+        # 基础性能记录
+        self.threshold_manager.record_performance(device_count, execution_time)
+
+        # 记录详细性能指标
+        success_rate = result.get('success_rate', 0)
+        strategy = result.get('strategy', 'unknown')
+
+        # 计算综合性能分数
+        time_score = min(device_count / max(execution_time, 1), 1.0)  # 时间效率
+        success_score = success_rate  # 成功率
+        comprehensive_score = (time_score * 0.6 + success_score * 0.4)  # 综合分数
+
+        print(f"📈 性能评分: 时间效率={time_score:.3f}, 成功率={success_score:.3f}, 综合={comprehensive_score:.3f}")
+
+        # 可以在这里添加更详细的性能日志记录
+
+    def _evaluate_system_resources(self) -> SystemResourceStatus:
+        """
+        评估系统资源状态
+
+        Returns:
+            SystemResourceStatus: 系统资源状态
+        """
+        cpu_percent = psutil.cpu_percent(interval=1)
+        memory = psutil.virtual_memory()
+        memory_percent = memory.percent
+        cpu_count = psutil.cpu_count()
+
+        # 动态并发数计算
+        if cpu_percent < 50 and memory_percent < 70:
+            optimal_concurrency = min(16, cpu_count * 2)
+        elif cpu_percent < 70 and memory_percent < 80:
+            optimal_concurrency = min(12, cpu_count)
+        elif cpu_percent < 80 and memory_percent < 90:
+            optimal_concurrency = min(8, cpu_count // 2)
+        else:
+            optimal_concurrency = 4
+
+        max_safe_concurrency = min(optimal_concurrency * 2, 20)
+
+        return SystemResourceStatus(
+            cpu_usage=cpu_percent,
+            memory_usage=memory_percent,
+            optimal_concurrency=optimal_concurrency,
+            max_safe_concurrency=max_safe_concurrency
+        )
+
 # 便捷函数，提供与现有代码的兼容接口
 def replay_scripts_on_devices_hybrid(device_serials: List[str], scripts: List[str],
                                    strategy: str = "hybrid") -> tuple:
