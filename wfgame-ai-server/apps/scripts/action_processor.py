@@ -318,7 +318,7 @@ class ActionProcessor:
         """处理action步骤"""
         step_action = step.get("action", "click")
         step_class = step.get("class", "")
-        step_yolo_class = step.get("yolo_class", "")        # 处理特殊步骤类型
+        step_class = step.get("yolo_class", "")        # 处理特殊步骤类型
         if step_class == "delay":
             result = self._handle_delay(step, step_idx, log_dir)
 
@@ -729,7 +729,8 @@ class ActionProcessor:
             "depth": 1,
             "time": timestamp,
             "data": {
-                "name": "device_preparation",                "call_args": {
+                "name": "device_preparation",
+                "call_args": {
                     "device_serial": self.device.serial,
                     "check_usb": check_usb,
                     "setup_wireless": setup_wireless,
@@ -759,29 +760,31 @@ class ActionProcessor:
         params = step.get("params", {})
         step_remark = step.get("remark", "")
         app_name = params.get("app_name", "")
-        package_name = params.get("package_name", "")
-
-        # 扁平化权限配置参数
+        package_name = params.get("package_name", "")        # 扁平化权限配置参数（兼容多种参数名）
         handle_permission = params.get("handle_permission", True)
-        permission_wait = params.get("permission_wait", 10)
-        allow_permission = params.get("allow_permission", True)
+        permission_wait = params.get("permission_wait_time", params.get("permission_wait", 10))
+        allow_permission = params.get("auto_allow_permission", params.get("allow_permission", True))
         first_only = params.get("first_only", False)
 
         if not package_name:
             print(f"错误: app_start 步骤必须提供 package_name 参数")
-            return True, False, True
+            return ActionResult(
+                success=False,
+                message="app_start 步骤必须提供 package_name 参数",
+                details={"operation": "app_start", "error": "missing_package_name"}
+            )
 
         print(f"启动应用: {app_name or package_name} - {step_remark}")
 
         # 构建权限配置（转换为内部格式）
-        permission_config = {
-            "handle": handle_permission,
+        permission_config = {            "handle": handle_permission,
             "wait": permission_wait,
             "allow": allow_permission,
             "first_only": first_only
         }
         print(f"🔧 权限配置:permission_config={permission_config}")
         # print(f"🔧 权限配置:handle={handle_permission}, wait={permission_wait}s, allow={allow_permission}, first_only={first_only}")
+
         try:
             # 步骤1: 首先实际启动应用
             app_identifier = app_name or package_name
@@ -798,28 +801,32 @@ class ActionProcessor:
                 print(f"❌ 缺少package_name参数或AppLifecycleManager不可用，无法启动应用")
                 startup_success = False
             print(f"应用启动命令执行: {'成功' if startup_success else '失败'}")
+
             # 步骤2: 如果应用启动成功，等待一下然后处理权限
             if startup_success:
                 print("⏱️ 等待应用完全启动...")
-                time.sleep(5)  # 增加等待时间到5秒，给应用更多时间加载权限弹窗
-
-                print("🔍 开始权限弹窗检测和处理...")
-                # 处理权限弹窗
-                try:
-                    if integrate_with_app_launch:
-                        result = integrate_with_app_launch(
-                            self.device.serial,
-                            app_identifier,
-                            auto_allow_permissions=True
-                        )
-                        print(f"权限处理结果: {result}")
-                    else:
-                        print("⚠️ integrate_with_app_launch不可用，跳过权限处理")
-                        result = True
-                except Exception as e:
-                    print(f"权限处理发生异常: {e}")
-                    print("假设无权限弹窗，继续执行")
-                    result = True  # 异常时假设成功，避免阻塞
+                time.sleep(5)  # 增加等待时间到5秒，给应用更多时间加载权限弹窗                # 根据配置决定是否处理权限弹窗
+                if handle_permission:
+                    print("🔍 开始权限弹窗检测和处理...")
+                    # 处理权限弹窗
+                    try:
+                        if integrate_with_app_launch:
+                            result = integrate_with_app_launch(
+                                self.device.serial,
+                                app_identifier,
+                                auto_allow_permissions=allow_permission
+                            )
+                            print(f"权限处理结果: {result}")
+                        else:
+                            print("⚠️ integrate_with_app_launch不可用，跳过权限处理")
+                            result = True
+                    except Exception as e:
+                        print(f"权限处理发生异常: {e}")
+                        print("假设无权限弹窗，继续执行")
+                        result = True  # 异常时假设成功，避免阻塞
+                else:
+                    print("🚫 权限处理已禁用 (handle_permission=false)，跳过权限检测")
+                    result = True
 
                 # 最终结果是启动成功且权限处理成功
                 final_result = startup_success and result
@@ -849,7 +856,9 @@ class ActionProcessor:
                     "end_time": timestamp + 1
                 }
             }
-            self._write_log_entry(app_start_entry)            # 修复: 根据实际结果返回正确的状态
+            self._write_log_entry(app_start_entry)
+
+            # 修复: 根据实际结果返回正确的状态
             if final_result:
                 print("✅ 应用启动和权限处理都成功")
                 return ActionResult(
@@ -906,7 +915,11 @@ class ActionProcessor:
                 call_args = {"app_name": app_name}
             else:
                 print("错误: 未提供app_name或package_name参数，或AppLifecycleManager不可用")
-                return True, False, True
+                return ActionResult(
+                    success=False,
+                    message="未提供app_name或package_name参数，或AppLifecycleManager不可用",
+                    details={"operation": "app_stop", "error": "missing_parameters"}
+                )
 
             print(f"应用停止结果: {result}")
 
@@ -922,13 +935,26 @@ class ActionProcessor:
                     "start_time": timestamp,
                     "ret": result,
                     "end_time": timestamp + 1
-                }
-            }
+                }            }
             self._write_log_entry(app_stop_entry)
+
+            return ActionResult(
+                success=True,
+                message=f"应用停止完成: {app_name or package_name}",
+                details={
+                    "operation": "app_stop",
+                    "app_name": app_name,
+                    "package_name": package_name,
+                    "result": result
+                }
+            )
         except Exception as e:
             print(f"停止应用失败: {e}")
-
-        return True, True, True
+            return ActionResult(
+                success=False,
+                message=f"停止应用异常: {str(e)}",
+                details={"operation": "app_stop", "error": str(e)}
+            )
 
     def _handle_log(self, step, step_idx):
         """处理日志步骤"""
@@ -944,7 +970,8 @@ class ActionProcessor:
             "data": {
                 "name": "log",
                 "call_args": {"msg": log_message},
-                "start_time": timestamp,                "ret": None,
+                "start_time": timestamp,
+                "ret": None,
                 "end_time": timestamp
             }
         }
@@ -961,7 +988,8 @@ class ActionProcessor:
 
     def _handle_wait_if_exists(self, step, step_idx, log_dir):
         """处理条件等待步骤"""
-        element_class = step.get("class", "")
+        # 🔧 使用新的yolo_class参数名称（与文档一致）
+        element_class = step.get("yolo_class", "")
         step_remark = step.get("remark", "")
         polling_interval = step.get("polling_interval", 5000) / 1000.0  # 转换为秒，默认5秒轮询
         max_duration = step.get("max_duration", 300)  # 默认300秒超时
@@ -981,7 +1009,8 @@ class ActionProcessor:
 
         try:
             # 第一步：检查元素是否存在
-            print(f"\n🔍 [阶段1] 检查元素 '{element_class}' 是否存在...")            # 获取当前屏幕截图
+            print(f"\n🔍 [阶段1] 检查元素 '{element_class}' 是否存在...")
+            # 获取当前屏幕截图
             print(f"📱 正在获取屏幕截图...")
             screenshot = get_device_screenshot(self.device)
             if screenshot is None:
@@ -1021,12 +1050,16 @@ class ActionProcessor:
                         loop_count += 1
                         print(f"🔄 [循环 {loop_count}] 等待元素消失... (已等待 {time.time() - wait_start_time:.1f}秒)")
 
-                        time.sleep(polling_interval)                        # 重新检测
+                        time.sleep(polling_interval)
+
+                        # 重新检测
                         current_screenshot = get_device_screenshot(self.device)
                         if current_screenshot is not None:
                             print(f"🤖 [循环 {loop_count}] 重新检测元素...")
                             current_screenshot_array = np.array(current_screenshot)
-                            current_screenshot_cv = cv2.cvtColor(current_screenshot_array, cv2.COLOR_RGB2BGR)                            # 重新检测元素是否仍然存在
+                            current_screenshot_cv = cv2.cvtColor(current_screenshot_array, cv2.COLOR_RGB2BGR)
+
+                            # 重新检测元素是否仍然存在
                             if self.detect_buttons:
                                 current_success, current_result = self.detect_buttons(current_screenshot_cv, target_class=element_class)
                                 print(f"🔍 [循环 {loop_count}] 检测结果: success={current_success}")
@@ -1034,6 +1067,7 @@ class ActionProcessor:
                                 current_success = False  # 如果检测函数不可用，假设元素已消失
 
                             if not current_success:
+                                element_found = False
                                 wait_result = "disappeared"
                                 elapsed_time = time.time() - wait_start_time
                                 print(f"🎉 [循环 {loop_count}] 元素已消失! 总等待时间: {elapsed_time:.1f}秒")
@@ -1104,7 +1138,12 @@ class ActionProcessor:
         self._write_log_entry(wait_entry)
 
         # 返回统一的ActionResult对象
-        success = wait_result == "success"
+        # wait_if_exists 操作成功的定义：
+        # 1. not_found: 元素不存在，操作成功（无需等待）
+        # 2. disappeared: 元素存在但已消失，操作成功
+        # 3. timeout: 元素存在但超时未消失，操作失败
+        # 4. error/screenshot_failed: 发生错误，操作失败
+        success = wait_result in ["not_found", "disappeared"]
         message = f"wait_if_exists操作{'成功' if success else '失败'}: {wait_result}"
 
         return ActionResult(
@@ -1122,7 +1161,7 @@ class ActionProcessor:
 
     def _handle_wait_for_disappearance(self, step, step_idx, log_dir):
         """处理等待消失步骤"""
-        element_class = step.get("class", "")
+        element_class = step.get("yolo_class", "")
         step_remark = step.get("remark", "")
         polling_interval = step.get("polling_interval", 1000) / 1000.0  # 转换为秒，默认1秒轮询
         max_duration = step.get("max_duration", 30)  # 默认30秒超时
@@ -1225,15 +1264,28 @@ class ActionProcessor:
                 "desc": step_remark or "等待消失操作",
                 "title": f"#{step_idx+1} {step_remark or '等待消失操作'}"
             }
-        }
-
-        # 添加screen对象到日志条目（如果可用）
+        }        # 添加screen对象到日志条目（如果可用）
         if screen_data:
             wait_entry["data"]["screen"] = screen_data
 
         self._write_log_entry(wait_entry)
 
-        return True, True, True
+        # 返回统一的ActionResult对象
+        success = element_disappeared and wait_result == "disappeared"
+        message = f"wait_for_disappearance操作{'成功' if success else '失败'}: {wait_result}"
+
+        return ActionResult(
+            success=success,
+            message=message,
+            details={
+                "operation": "wait_for_disappearance",
+                "element_disappeared": element_disappeared,
+                "wait_result": wait_result,
+                "total_wait_time": total_wait_time,
+                "element_class": element_class,
+                "confidence": confidence
+            }
+        )
 
     def _handle_swipe(self, step, step_idx):
         """处理滑动步骤"""
@@ -1298,7 +1350,9 @@ class ActionProcessor:
         if screen_data:
             swipe_entry["data"]["screen"] = screen_data
 
-        self._write_log_entry(swipe_entry)        # 滑动后等待一段时间让UI响应
+        self._write_log_entry(swipe_entry)
+
+        # 滑动后等待一段时间让UI响应
         time.sleep(duration / 1000.0 + 0.5)
 
         return ActionResult(
@@ -1586,6 +1640,13 @@ class ActionProcessor:
         username = params.get("username", "")
         password = params.get("password", "")
 
+        # 解析自动登录流程参数
+        login_type = params.get("login_type", "phone")
+        handle_switch = params.get("handle_switch", True)
+        input_username = params.get("input_username", True)
+        input_password = params.get("input_password", True)
+        click_login = params.get("click_login", True)
+
         # 智能账号分配：如果需要账号参数但没有分配，尝试自动分配
         if ("${account:username}" in username or "${account:password}" in password):
             if not self.device_account:
@@ -1662,23 +1723,40 @@ class ActionProcessor:
                         "desc": step_remark or "完整自动登录操作",
                         "title": f"#{step_idx+1} {step_remark or '完整自动登录操作'}"
                     }
-                }
-
-                # 添加screen对象到日志条目（如果可用）
+                }                # 添加screen对象到日志条目（如果可用）
                 if screen_data:
                     auto_login_entry["data"]["screen"] = screen_data
 
                 self._write_log_entry(auto_login_entry)
 
-                return True, True, True
+                return ActionResult(
+                    success=True,
+                    message="完整自动登录流程执行成功",
+                    details={
+                        "operation": "auto_login",
+                        "login_type": login_type,
+                        "handle_switch": handle_switch,
+                        "input_username": input_username,
+                        "input_password": input_password,
+                        "click_login": click_login
+                    }
+                )
             else:
                 print(f"❌ 错误: 完整自动登录流程执行失败")
-                return True, False, True
+                return ActionResult(
+                    success=False,
+                    message="完整自动登录流程执行失败",
+                    details={"operation": "auto_login", "error": "login_flow_failed"}
+                )
 
         except Exception as e:
             print(f"❌ 错误: 自动登录过程中发生异常: {e}")
             traceback.print_exc()
-            return True, False, True
+            return ActionResult(
+                success=False,
+                message=f"自动登录异常: {str(e)}",
+                details={"operation": "auto_login", "error": str(e)}
+            )
 
     def _create_unified_screen_object(self, log_dir, pos_list=None, confidence=0.85, rect_info=None):
         """
@@ -2274,9 +2352,9 @@ class ActionProcessor:
 
     def _handle_wait_for_appearance(self, step, step_idx, log_dir):
         """处理等待元素出现步骤 - 等待指定元素从无到有的出现过程"""
-        # 解析参数，支持新的参数名称
-        yolo_class = step.get("yolo_class", step.get("class", ""))  # 向后兼容
-        ui_type = step.get("ui_type", step.get("type", ""))  # 向后兼容
+        # 解析参数，使用新的参数名称
+        yolo_class = step.get("yolo_class", "")
+        ui_type = step.get("ui_type", "")
         detection_method = step.get("detection_method", "ai" if yolo_class else "ui")
 
         step_remark = step.get("remark", "")
@@ -2433,19 +2511,33 @@ class ActionProcessor:
                 "desc": step_remark or "等待元素出现操作",
                 "title": f"#{step_idx+1} {step_remark or '等待元素出现操作'}"
             }
-        }
-
-        # 添加screen对象到日志条目
+        }        # 添加screen对象到日志条目
         if screen_data:
             wait_entry["data"]["screen"] = screen_data
 
         self._write_log_entry(wait_entry)
 
-        # 根据配置决定返回结果
-        if not element_appeared and fail_on_timeout:
-            return True, False, True  # 执行了但失败
-        else:
-            return True, True, True   # 成功或忽略失败
+        # 返回统一的ActionResult对象
+        success = element_appeared
+        if not element_appeared and not fail_on_timeout:
+            success = True  # 如果配置为忽略超时失败，则认为成功
+
+        message = f"wait_for_appearance操作{'成功' if success else '失败'}: {wait_result}"
+
+        return ActionResult(
+            success=success,
+            message=message,
+            details={
+                "operation": "wait_for_appearance",
+                "element_appeared": element_appeared,
+                "wait_result": wait_result,
+                "total_wait_time": total_wait_time,
+                "detected_class": detected_class,
+                "detection_method": detection_method,
+                "yolo_class": yolo_class,
+                "ui_type": ui_type
+            }
+        )
 
     def _handle_wait_for_stable(self, step, step_idx, log_dir):
         """处理等待界面稳定步骤 - 等待界面连续N秒无变化，确保操作时机"""
@@ -2593,15 +2685,25 @@ class ActionProcessor:
                 "desc": step_remark or "等待界面稳定操作",
                 "title": f"#{step_idx+1} {step_remark or '等待界面稳定操作'}"
             }
-        }
-
-        # 添加screen对象到日志条目
+        }        # 添加screen对象到日志条目
         if screen_data:
             stable_entry["data"]["screen"] = screen_data
 
         self._write_log_entry(stable_entry)
 
-        return True, True, True
+        return ActionResult(
+            success=is_stable,
+            message=f"wait_for_stable操作{'成功' if is_stable else '失败'}: {stability_result}",
+            details={
+                "operation": "wait_for_stable",
+                "is_stable": is_stable,
+                "stability_result": stability_result,
+                "total_wait_time": total_wait_time,
+                "detection_method": detection_method,
+                "duration": duration,
+                "max_wait": max_wait
+            }
+        )
 
     def _handle_retry_until_success(self, step, step_idx, log_dir):
         """处理重试直到成功步骤 - 对任意操作进行重试，直到成功或达到最大次数"""        # 解析参数
@@ -2790,15 +2892,25 @@ class ActionProcessor:
                 "desc": step_remark or "重试直到成功操作",
                 "title": f"#{step_idx+1} {step_remark or '重试直到成功操作'}"
             }
-        }
-
-        # 添加screen对象到日志条目
+        }        # 添加screen对象到日志条目
         if screen_data:
             retry_entry["data"]["screen"] = screen_data
 
         self._write_log_entry(retry_entry)
 
-        return True, success, True
+        return ActionResult(
+            success=success,
+            message=f"retry_until_success操作{'成功' if success else '失败'}，共重试{retry_count}次",
+            details={
+                "operation": "retry_until_success",
+                "final_success": success,
+                "retry_count": retry_count,
+                "total_retry_time": total_retry_time,
+                "last_error": last_error,
+                "execute_action": execute_action,
+                "detection_method": detection_method
+            }
+        )
 
     def _write_log_entry(self, log_entry):
         """Write log entry to log file - 增强版"""

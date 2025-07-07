@@ -5,8 +5,10 @@
             "detection_method": "ai",
             "action": "wait_if_exists",
             "yolo_class": "operation-confirm",
-            "polling_interval": 5000,
-            "max_duration": 300
+            "execute_action": "click_target",
+            "polling_interval": 3000,
+            "max_duration": 30,
+            "remark": "测试修复：等待确认按钮出现并消失"
         }
     ]
 }

@@ -1,6 +1,7 @@
-datasets/My First Project*
+datasets/
 external/
 train_results/
+train_model/
 ui_structure_analysis/
 *.log
 *test*.py

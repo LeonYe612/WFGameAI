@@ -5911,3 +5911,781 @@ INFO 2025-06-19 14:39:55,094 basehttp 74764 96172 "GET /static/reports/ui_run/WF
 INFO 2025-06-19 14:39:58,426 basehttp 74764 96172 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-14-36-21/1750315124370.jpg HTTP/1.1" 200 391945
 INFO 2025-06-19 14:39:59,013 basehttp 74764 96172 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-14-36-21/1750315131014.jpg HTTP/1.1" 200 390802
 INFO 2025-06-19 14:42:51,252 basehttp 74764 96172 "POST /api/reports/summary_list/ HTTP/1.1" 200 4809
+INFO 2025-06-19 17:47:25,534 basehttp 74764 135344 "POST /api/scripts/replay/ HTTP/1.1" 200 872
+INFO 2025-06-19 17:48:56,464 basehttp 74764 135344 "POST /api/reports/summary_list/ HTTP/1.1" 200 5306
+INFO 2025-06-19 17:48:58,394 basehttp 74764 135344 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-17-47-27/log.html HTTP/1.1" 200 13382
+INFO 2025-06-19 17:48:58,749 basehttp 74764 135344 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-17-47-27/1750326473124_small.jpg HTTP/1.1" 200 4407
+INFO 2025-06-19 17:48:58,749 basehttp 74764 120844 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-17-47-27/1750326475217_small.jpg HTTP/1.1" 200 4407
+INFO 2025-06-19 17:49:00,061 basehttp 74764 120844 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-17-47-27/1750326473124.jpg HTTP/1.1" 200 41427
+INFO 2025-06-19 17:49:00,509 basehttp 74764 120844 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-17-47-27/1750326475217.jpg HTTP/1.1" 200 41427
+INFO 2025-06-19 17:51:11,135 basehttp 74764 120844 "POST /api/scripts/replay/ HTTP/1.1" 200 872
+INFO 2025-06-19 17:52:56,319 basehttp 74764 120844 "POST /api/reports/summary_list/ HTTP/1.1" 200 5803
+INFO 2025-06-19 17:52:58,888 basehttp 74764 120844 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-17-51-14/log.html HTTP/1.1" 200 16010
+INFO 2025-06-19 17:52:59,246 basehttp 74764 120844 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-17-51-14/1750326701306_small.jpg HTTP/1.1" 200 23432
+INFO 2025-06-19 17:52:59,247 basehttp 74764 135344 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-17-51-14/1750326729453_small.jpg HTTP/1.1" 200 56220
+INFO 2025-06-19 17:52:59,247 basehttp 74764 125884 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-17-51-14/1750326738921_small.jpg HTTP/1.1" 200 50309
+INFO 2025-06-19 17:52:59,248 basehttp 74764 25324 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-17-51-14/1750326761021_small.jpg HTTP/1.1" 200 47216
+INFO 2025-06-19 17:52:59,248 basehttp 74764 98100 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-17-51-14/1750326754314_small.jpg HTTP/1.1" 200 46600
+INFO 2025-06-19 17:52:59,249 basehttp 74764 73284 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-17-51-14/1750326746635_small.jpg HTTP/1.1" 200 46476
+INFO 2025-06-19 17:53:01,655 basehttp 74764 25324 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-17-51-14/1750326729453.jpg HTTP/1.1" 200 500147
+INFO 2025-06-19 17:53:03,526 basehttp 74764 73284 "GET /static/reports/static/image/target.png HTTP/1.1" 200 25732
+INFO 2025-06-19 17:53:03,528 basehttp 74764 25324 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-17-51-14/1750326738921.jpg HTTP/1.1" 200 456609
+INFO 2025-06-19 17:53:05,238 basehttp 74764 25324 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-17-51-14/1750326746635.jpg HTTP/1.1" 200 418044
+INFO 2025-06-19 17:53:07,198 basehttp 74764 25324 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-17-51-14/1750326754314.jpg HTTP/1.1" 200 415131
+INFO 2025-06-19 17:53:08,597 basehttp 74764 25324 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-17-51-14/1750326761021.jpg HTTP/1.1" 200 422474
+INFO 2025-06-19 17:53:34,741 basehttp 74764 25324 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-17-51-14/1750326754314.jpg HTTP/1.1" 304 0
+INFO 2025-06-19 17:53:36,108 basehttp 74764 25324 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-17-51-14/1750326761021.jpg HTTP/1.1" 304 0
+INFO 2025-06-19 17:53:43,581 basehttp 74764 25324 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-17-51-14/1750326738921.jpg HTTP/1.1" 304 0
+INFO 2025-06-19 17:53:45,317 basehttp 74764 25324 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-17-51-14/1750326729453.jpg HTTP/1.1" 304 0
+INFO 2025-06-19 17:53:45,765 basehttp 74764 25324 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-17-51-14/1750326701306.jpg HTTP/1.1" 200 234762
+INFO 2025-06-19 17:58:03,670 basehttp 74764 30620 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-17-51-14/1750326729453.jpg HTTP/1.1" 304 0
+INFO 2025-06-19 17:58:07,460 basehttp 74764 30620 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-17-51-14/1750326746635.jpg HTTP/1.1" 304 0
+INFO 2025-06-19 17:58:15,052 basehttp 74764 30620 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-17-51-14/1750326754314.jpg HTTP/1.1" 304 0
+INFO 2025-06-19 17:58:16,765 basehttp 74764 30620 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-17-51-14/1750326738921.jpg HTTP/1.1" 304 0
+INFO 2025-06-19 18:04:13,291 basehttp 74764 54084 "POST /api/scripts/replay/ HTTP/1.1" 200 873
+INFO 2025-06-19 18:06:08,070 basehttp 74764 54084 "POST /api/reports/summary_list/ HTTP/1.1" 200 6300
+INFO 2025-06-19 18:06:09,423 basehttp 74764 54084 "GET /static/reports/summary_reports/summary_report_2025-06-19-18-06-03.html HTTP/1.1" 200 11446
+INFO 2025-06-19 18:06:10,887 basehttp 74764 54084 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-18-04-16/log.html HTTP/1.1" 200 16035
+INFO 2025-06-19 18:06:11,242 basehttp 74764 54084 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-18-04-16/1750327484487_small.jpg HTTP/1.1" 200 23433
+INFO 2025-06-19 18:06:11,242 basehttp 74764 84312 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-18-04-16/1750327523789_small.jpg HTTP/1.1" 200 47430
+INFO 2025-06-19 18:06:11,243 basehttp 74764 25952 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-18-04-16/1750327530574_small.jpg HTTP/1.1" 200 50272
+INFO 2025-06-19 18:06:11,243 basehttp 74764 76212 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-18-04-16/1750327541937_small.jpg HTTP/1.1" 200 46611
+INFO 2025-06-19 18:06:11,243 basehttp 74764 72880 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-18-04-16/1750327553207_small.jpg HTTP/1.1" 200 46685
+INFO 2025-06-19 18:06:11,244 basehttp 74764 21828 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-18-04-16/1750327559902_small.jpg HTTP/1.1" 200 46714
+INFO 2025-06-19 18:06:12,614 basehttp 74764 21828 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-18-04-16/1750327523789.jpg HTTP/1.1" 200 428390
+INFO 2025-06-19 18:06:18,627 basehttp 74764 21828 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-18-04-16/1750327530574.jpg HTTP/1.1" 200 456385
+INFO 2025-06-19 18:06:19,795 basehttp 74764 21828 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-18-04-16/1750327541937.jpg HTTP/1.1" 200 415658
+INFO 2025-06-19 18:06:20,818 basehttp 74764 21828 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-18-04-16/1750327553207.jpg HTTP/1.1" 200 417551
+INFO 2025-06-19 18:06:21,810 basehttp 74764 21828 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-18-04-16/1750327559902.jpg HTTP/1.1" 200 415363
+INFO 2025-06-19 18:11:46,999 basehttp 74764 82036 "POST /api/scripts/replay/ HTTP/1.1" 200 1187
+INFO 2025-06-19 18:20:13,664 basehttp 74764 4500 "POST /api/reports/summary_list/ HTTP/1.1" 200 7149
+INFO 2025-06-19 18:20:14,359 basehttp 74764 4500 "POST /api/reports/summary_list/ HTTP/1.1" 200 7149
+INFO 2025-06-19 18:20:15,392 basehttp 74764 4500 "GET /static/reports/summary_reports/summary_report_2025-06-19-18-19-35.html HTTP/1.1" 200 12963
+INFO 2025-06-19 18:20:17,015 basehttp 74764 4500 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-18-11-50/log.html HTTP/1.1" 200 13669
+INFO 2025-06-19 18:20:17,370 basehttp 74764 4500 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-18-11-50/1750327919939_small.jpg HTTP/1.1" 200 20516
+INFO 2025-06-19 18:20:17,371 basehttp 74764 66512 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-18-11-50/1750327923770_small.jpg HTTP/1.1" 200 20517
+INFO 2025-06-19 18:20:18,974 basehttp 74764 66512 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-18-11-50/1750327919939.jpg HTTP/1.1" 200 164913
+INFO 2025-06-19 18:20:20,734 basehttp 74764 66512 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-19-18-11-50/1750327923770.jpg HTTP/1.1" 200 165150
+INFO 2025-06-19 18:20:26,599 basehttp 74764 66512 "GET /static/reports/ui_run/WFGameAI.air/log/HONOR-RMO-AN00_2025-06-19-18-13-25/log.html HTTP/1.1" 200 18743
+INFO 2025-06-19 18:20:26,960 basehttp 74764 66512 "GET /static/reports/ui_run/WFGameAI.air/log/HONOR-RMO-AN00_2025-06-19-18-13-25/1750328040151_small.jpg HTTP/1.1" 200 23366
+INFO 2025-06-19 18:20:26,961 basehttp 74764 73932 "GET /static/reports/ui_run/WFGameAI.air/log/HONOR-RMO-AN00_2025-06-19-18-13-25/1750328081788_small.jpg HTTP/1.1" 200 49559
+INFO 2025-06-19 18:20:26,962 basehttp 74764 4500 "GET /static/reports/ui_run/WFGameAI.air/log/HONOR-RMO-AN00_2025-06-19-18-13-25/1750328072535_small.jpg HTTP/1.1" 200 59482
+INFO 2025-06-19 18:20:26,962 basehttp 74764 97848 "GET /static/reports/ui_run/WFGameAI.air/log/HONOR-RMO-AN00_2025-06-19-18-13-25/1750328105491_small.jpg HTTP/1.1" 200 49427
+INFO 2025-06-19 18:20:26,962 basehttp 74764 89844 "GET /static/reports/ui_run/WFGameAI.air/log/HONOR-RMO-AN00_2025-06-19-18-13-25/1750328089359_small.jpg HTTP/1.1" 200 49230
+INFO 2025-06-19 18:20:26,962 basehttp 74764 35768 "GET /static/reports/ui_run/WFGameAI.air/log/HONOR-RMO-AN00_2025-06-19-18-13-25/1750328096927_small.jpg HTTP/1.1" 200 49150
+INFO 2025-06-19 18:20:26,962 basehttp 74764 66512 "GET /static/reports/ui_run/WFGameAI.air/log/HONOR-RMO-AN00_2025-06-19-18-13-25/1750328113949_small.jpg HTTP/1.1" 200 26318
+INFO 2025-06-19 18:20:30,551 basehttp 74764 66512 "GET /static/reports/ui_run/WFGameAI.air/log/HONOR-RMO-AN00_2025-06-19-18-13-25/1750328113949.jpg HTTP/1.1" 200 246757
+INFO 2025-06-19 18:20:32,783 basehttp 74764 66512 "GET /static/reports/ui_run/WFGameAI.air/log/HONOR-RMO-AN00_2025-06-19-18-13-25/1750328105491.jpg HTTP/1.1" 200 445138
+INFO 2025-06-19 18:20:33,774 basehttp 74764 66512 "GET /static/reports/ui_run/WFGameAI.air/log/HONOR-RMO-AN00_2025-06-19-18-13-25/1750328096927.jpg HTTP/1.1" 200 439206
+INFO 2025-06-19 18:20:37,160 basehttp 74764 66512 "GET /static/reports/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00_2025-06-19-18-16-29/log.html HTTP/1.1" 200 18384
+INFO 2025-06-19 18:20:37,514 basehttp 74764 66512 "GET /static/reports/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00_2025-06-19-18-16-29/1750328222074_small.jpg HTTP/1.1" 200 27732
+INFO 2025-06-19 18:20:37,516 basehttp 74764 73932 "GET /static/reports/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00_2025-06-19-18-16-29/1750328294674_small.jpg HTTP/1.1" 200 59044
+INFO 2025-06-19 18:20:37,516 basehttp 74764 4500 "GET /static/reports/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00_2025-06-19-18-16-29/1750328286625_small.jpg HTTP/1.1" 200 58810
+INFO 2025-06-19 18:20:37,517 basehttp 74764 35768 "GET /static/reports/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00_2025-06-19-18-16-29/1750328279653_small.jpg HTTP/1.1" 200 58756
+INFO 2025-06-19 18:20:37,517 basehttp 74764 97848 "GET /static/reports/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00_2025-06-19-18-16-29/1750328272566_small.jpg HTTP/1.1" 200 59542
+INFO 2025-06-19 18:20:37,517 basehttp 74764 89844 "GET /static/reports/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00_2025-06-19-18-16-29/1750328264481_small.jpg HTTP/1.1" 200 55094
+INFO 2025-06-19 18:20:37,518 basehttp 74764 73932 "GET /static/reports/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00_2025-06-19-18-16-29/1750328302241_small.jpg HTTP/1.1" 200 23084
+INFO 2025-06-19 18:20:38,815 basehttp 74764 73932 "GET /static/reports/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00_2025-06-19-18-16-29/1750328294674.jpg HTTP/1.1" 200 530133
+INFO 2025-06-19 18:20:39,478 basehttp 74764 73932 "GET /static/reports/ui_run/WFGameAI.air/log/HUAWEI-JAD-AL00_2025-06-19-18-16-29/1750328302241.jpg HTTP/1.1" 200 229817
+INFO 2025-06-19 18:20:54,086 basehttp 74764 73932 "GET /static/reports/ui_run/WFGameAI.air/log/HONOR-RMO-AN00_2025-06-19-18-13-25/log.html HTTP/1.1" 304 0
+INFO 2025-06-19 18:22:25,972 basehttp 74764 73932 "POST /api/scripts/replay/ HTTP/1.1" 200 736
+INFO 2025-06-19 18:43:48,002 basehttp 74764 67664 "POST /api/scripts/replay/ HTTP/1.1" 200 860
+INFO 2025-06-19 18:45:36,564 basehttp 74764 67664 "POST /api/scripts/replay/ HTTP/1.1" 200 563
+INFO 2025-06-19 18:47:24,335 basehttp 74764 67664 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-06-19 18:47:24,658 basehttp 74764 67664 "POST /api/scripts/ HTTP/1.1" 200 4075
+INFO 2025-06-19 18:47:35,914 basehttp 74764 67664 "POST /api/scripts/replay/ HTTP/1.1" 200 569
+INFO 2025-06-19 18:51:07,909 basehttp 74764 67664 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-06-19 18:51:08,046 basehttp 74764 67664 "POST /api/scripts/ HTTP/1.1" 200 4089
+INFO 2025-06-19 18:51:08,387 basehttp 74764 67664 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-06-19 18:51:08,521 basehttp 74764 67664 "POST /api/scripts/ HTTP/1.1" 200 4089
+INFO 2025-06-19 18:51:08,547 basehttp 74764 67664 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-06-19 18:51:08,710 basehttp 74764 67664 "POST /api/scripts/ HTTP/1.1" 200 4089
+INFO 2025-06-19 18:51:08,865 basehttp 74764 67664 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-06-19 18:51:08,998 basehttp 74764 67664 "POST /api/scripts/ HTTP/1.1" 200 4089
+INFO 2025-06-19 18:51:31,845 basehttp 74764 67664 "POST /api/scripts/replay/ HTTP/1.1" 200 732
+INFO 2025-06-19 18:57:45,395 basehttp 74764 19984 "POST /api/scripts/replay/ HTTP/1.1" 200 732
+INFO 2025-06-20 10:20:58,093 basehttp 74764 126732 "POST /api/scripts/replay/ HTTP/1.1" 200 733
+INFO 2025-06-20 10:21:32,210 basehttp 74764 126732 "POST /api/scripts/replay/ HTTP/1.1" 200 732
+INFO 2025-06-20 10:34:40,478 basehttp 74764 86044 "POST /api/scripts/replay/ HTTP/1.1" 200 732
+INFO 2025-06-20 10:35:47,250 basehttp 74764 86044 "POST /api/scripts/replay/ HTTP/1.1" 200 733
+INFO 2025-06-20 10:36:58,728 basehttp 74764 86044 "POST /api/scripts/replay/ HTTP/1.1" 200 732
+INFO 2025-06-20 10:42:25,794 basehttp 74764 33640 "POST /api/scripts/replay/ HTTP/1.1" 200 728
+INFO 2025-06-20 10:43:38,743 basehttp 74764 33640 "POST /api/scripts/replay/ HTTP/1.1" 200 728
+INFO 2025-06-20 13:43:43,045 basehttp 74764 71300 "POST /api/scripts/replay/ HTTP/1.1" 200 728
+INFO 2025-06-20 14:21:31,740 basehttp 74764 12892 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-06-20 14:21:32,077 basehttp 74764 12892 "POST /api/scripts/ HTTP/1.1" 200 4089
+INFO 2025-06-20 14:21:47,822 basehttp 74764 12892 "POST /api/scripts/replay/ HTTP/1.1" 200 728
+INFO 2025-06-20 14:23:08,304 basehttp 74764 12892 "POST /api/scripts/replay/ HTTP/1.1" 200 729
+INFO 2025-06-20 15:39:30,838 basehttp 74764 78336 "POST /api/scripts/replay/ HTTP/1.1" 200 728
+INFO 2025-06-20 15:42:50,093 basehttp 74764 78336 "POST /api/scripts/replay/ HTTP/1.1" 200 728
+INFO 2025-06-20 16:05:28,778 basehttp 74764 788 "POST /api/scripts/replay/ HTTP/1.1" 200 728
+INFO 2025-06-20 16:22:11,617 basehttp 74764 57948 "POST /api/scripts/replay/ HTTP/1.1" 200 729
+INFO 2025-06-20 16:25:12,437 basehttp 74764 120012 "POST /api/scripts/replay/ HTTP/1.1" 200 728
+INFO 2025-06-20 16:59:32,246 basehttp 74764 127944 "POST /api/scripts/replay/ HTTP/1.1" 200 728
+INFO 2025-06-20 17:01:19,138 basehttp 74764 127944 "POST /api/scripts/replay/ HTTP/1.1" 200 729
+INFO 2025-06-20 17:04:23,553 autoreload 74764 89500 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\__init__.py changed, reloading.
+INFO 2025-06-20 17:04:24,149 autoreload 100440 70980 Watching for file changes with StatReloader
+INFO 2025-06-20 17:08:59,365 basehttp 100440 40452 "POST /api/scripts/replay/ HTTP/1.1" 200 729
+INFO 2025-06-20 17:18:44,159 autoreload 100440 70980 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\app_lifecycle_manager.py changed, reloading.
+INFO 2025-06-20 17:18:44,676 autoreload 127948 75500 Watching for file changes with StatReloader
+INFO 2025-06-20 17:25:08,825 basehttp 127948 21020 "POST /api/scripts/replay/ HTTP/1.1" 200 728
+INFO 2025-06-20 17:26:34,832 basehttp 127948 98072 "POST /api/scripts/replay/ HTTP/1.1" 200 728
+INFO 2025-06-20 17:30:47,752 basehttp 127948 98072 "POST /api/scripts/replay/ HTTP/1.1" 200 729
+INFO 2025-06-20 17:32:47,760 basehttp 127948 98072 "POST /api/scripts/replay/ HTTP/1.1" 200 728
+INFO 2025-06-20 17:33:48,435 basehttp 127948 98072 "POST /api/scripts/replay/ HTTP/1.1" 200 728
+INFO 2025-06-20 17:34:40,269 autoreload 127948 75500 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\app_lifecycle_manager.py changed, reloading.
+INFO 2025-06-20 17:34:48,277 autoreload 61948 75176 Watching for file changes with StatReloader
+INFO 2025-06-20 17:34:59,086 basehttp 61948 70000 "POST /api/scripts/replay/ HTTP/1.1" 200 728
+INFO 2025-06-20 17:35:08,581 basehttp 61948 46064 "GET /api/docs/ HTTP/1.1" 200 788
+INFO 2025-06-20 17:35:09,599 basehttp 61948 46064 "GET /api/schema/ HTTP/1.1" 200 36791
+INFO 2025-06-20 17:39:00,260 basehttp 61948 70000 "POST /api/scripts/replay/ HTTP/1.1" 200 729
+INFO 2025-06-20 17:40:09,948 basehttp 61948 70000 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-06-20 17:40:10,269 basehttp 61948 70000 "POST /api/scripts/ HTTP/1.1" 200 4089
+INFO 2025-06-20 17:40:10,931 basehttp 61948 70000 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-06-20 17:40:11,061 basehttp 61948 70000 "POST /api/scripts/ HTTP/1.1" 200 4089
+INFO 2025-06-20 17:40:32,650 basehttp 61948 70000 "POST /api/scripts/replay/ HTTP/1.1" 200 728
+INFO 2025-06-20 17:44:11,203 basehttp 61948 70000 "POST /api/scripts/replay/ HTTP/1.1" 200 728
+INFO 2025-06-20 17:46:51,833 autoreload 61948 75176 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\app_lifecycle_manager.py changed, reloading.
+INFO 2025-06-20 17:46:52,380 autoreload 132868 52932 Watching for file changes with StatReloader
+INFO 2025-06-20 17:47:36,478 autoreload 132868 52932 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\app_lifecycle_manager.py changed, reloading.
+INFO 2025-06-20 17:47:37,035 autoreload 51116 125772 Watching for file changes with StatReloader
+INFO 2025-06-20 17:48:20,111 autoreload 51116 125772 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\app_lifecycle_manager.py changed, reloading.
+INFO 2025-06-20 17:48:20,730 autoreload 34036 116844 Watching for file changes with StatReloader
+INFO 2025-06-20 17:48:42,524 autoreload 34036 116844 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\app_lifecycle_manager.py changed, reloading.
+INFO 2025-06-20 17:48:43,059 autoreload 66956 13464 Watching for file changes with StatReloader
+INFO 2025-06-20 17:49:00,566 autoreload 66956 13464 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\app_lifecycle_manager.py changed, reloading.
+INFO 2025-06-20 17:49:01,110 autoreload 89528 24504 Watching for file changes with StatReloader
+INFO 2025-06-20 17:49:23,958 autoreload 89528 24504 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\app_lifecycle_manager.py changed, reloading.
+INFO 2025-06-20 17:49:24,493 autoreload 23620 23608 Watching for file changes with StatReloader
+INFO 2025-06-20 17:49:43,079 autoreload 23620 23608 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\app_lifecycle_manager.py changed, reloading.
+INFO 2025-06-20 17:49:43,618 autoreload 87432 93396 Watching for file changes with StatReloader
+INFO 2025-06-20 17:50:04,406 autoreload 87432 93396 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\app_lifecycle_manager.py changed, reloading.
+INFO 2025-06-20 17:50:04,935 autoreload 52624 25588 Watching for file changes with StatReloader
+INFO 2025-06-20 17:50:21,850 basehttp 52624 36564 "POST /api/scripts/replay/ HTTP/1.1" 200 728
+INFO 2025-06-20 17:52:27,691 basehttp 52624 36564 "POST /api/scripts/replay/ HTTP/1.1" 200 729
+INFO 2025-06-20 17:53:50,299 basehttp 52624 36564 "POST /api/scripts/replay/ HTTP/1.1" 200 728
+INFO 2025-06-23 10:46:08,856 autoreload 18708 7896 Watching for file changes with StatReloader
+INFO 2025-06-23 10:46:13,615 basehttp 18708 77576 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-06-23 10:46:13,962 basehttp 18708 77576 "POST /api/scripts/ HTTP/1.1" 200 4089
+INFO 2025-06-23 10:46:29,132 basehttp 18708 70332 "GET /api/docs/ HTTP/1.1" 200 788
+INFO 2025-06-23 10:46:29,862 basehttp 18708 70332 "GET /api/schema/ HTTP/1.1" 200 36791
+INFO 2025-06-23 10:47:28,216 basehttp 18708 77576 "POST /api/scripts/replay/ HTTP/1.1" 200 729
+INFO 2025-06-23 11:06:52,257 autoreload 49340 58444 Watching for file changes with StatReloader
+INFO 2025-06-23 11:07:12,597 basehttp 49340 119996 "GET /api/docs/ HTTP/1.1" 200 788
+INFO 2025-06-23 11:07:12,656 basehttp 49340 58012 "POST /api/scripts/replay/ HTTP/1.1" 200 581
+INFO 2025-06-23 11:07:13,317 basehttp 49340 119996 "GET /api/schema/ HTTP/1.1" 200 36791
+INFO 2025-06-23 14:26:56,804 autoreload 89128 38680 Watching for file changes with StatReloader
+INFO 2025-06-23 14:27:17,323 basehttp 89128 62072 "GET /api/docs/ HTTP/1.1" 200 788
+INFO 2025-06-23 14:29:40,433 basehttp 89128 16768 "POST /api/scripts/replay/ HTTP/1.1" 200 581
+INFO 2025-06-23 14:38:14,334 basehttp 89128 74524 "POST /api/scripts/replay/ HTTP/1.1" 200 581
+INFO 2025-06-23 14:42:57,595 basehttp 89128 74524 "POST /api/scripts/replay/ HTTP/1.1" 200 582
+INFO 2025-06-23 15:19:28,846 basehttp 89128 120152 "POST /api/scripts/replay/ HTTP/1.1" 200 582
+INFO 2025-06-23 15:44:42,607 basehttp 89128 114092 "POST /api/scripts/replay/ HTTP/1.1" 200 581
+INFO 2025-06-23 16:48:17,519 basehttp 89128 33748 "POST /api/scripts/replay/ HTTP/1.1" 200 723
+INFO 2025-06-23 17:09:09,652 basehttp 89128 126608 "POST /api/scripts/replay/ HTTP/1.1" 200 722
+INFO 2025-06-23 17:22:18,252 basehttp 89128 44040 "GET / HTTP/1.1" 200 9788
+INFO 2025-06-23 17:22:20,222 basehttp 89128 44040 "GET /pages/reports_template.html HTTP/1.1" 302 0
+INFO 2025-06-23 17:22:20,227 basehttp 89128 44040 "GET /static/pages/reports_template.html HTTP/1.1" 304 0
+INFO 2025-06-23 17:22:20,512 basehttp 89128 44040 "POST /api/reports/summary_list/ HTTP/1.1" 200 16223
+INFO 2025-06-23 17:22:21,753 basehttp 89128 44040 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-06-20-17-52-29/log.html HTTP/1.1" 200 11839
+INFO 2025-06-23 17:22:25,596 basehttp 89128 44040 "GET /static/reports/summary_reports/summary_report_2025-06-20-17-52-57.html HTTP/1.1" 200 11439
+INFO 2025-06-23 17:22:32,430 basehttp 89128 44040 "GET /static/reports/summary_reports/summary_report_2025-06-20-17-31-16.html HTTP/1.1" 200 11446
+INFO 2025-06-23 17:36:45,556 basehttp 89128 10212 "POST /api/scripts/replay/ HTTP/1.1" 200 722
+INFO 2025-06-23 17:41:37,644 basehttp 89128 10212 "POST /api/scripts/replay/ HTTP/1.1" 200 722
+INFO 2025-06-23 17:42:25,398 basehttp 89128 10212 "POST /api/scripts/replay/ HTTP/1.1" 200 722
+INFO 2025-06-23 18:45:10,086 autoreload 55748 94140 Watching for file changes with StatReloader
+INFO 2025-06-23 18:45:23,084 basehttp 55748 74448 "POST /api/scripts/replay/ HTTP/1.1" 200 722
+INFO 2025-06-23 18:45:30,417 basehttp 55748 69268 "GET /api/docs/ HTTP/1.1" 200 788
+INFO 2025-06-23 18:45:31,490 basehttp 55748 69268 "GET /api/schema/ HTTP/1.1" 200 36791
+INFO 2025-06-23 18:59:12,382 basehttp 55748 88284 "POST /api/scripts/replay/ HTTP/1.1" 200 723
+INFO 2025-06-23 19:14:13,219 basehttp 55748 83644 "POST /api/scripts/replay/ HTTP/1.1" 200 722
+INFO 2025-06-23 19:18:39,772 basehttp 55748 83644 "GET /pages/devices.html HTTP/1.1" 302 0
+INFO 2025-06-23 19:18:39,775 basehttp 55748 83644 "GET /static/pages/devices.html HTTP/1.1" 304 0
+INFO 2025-06-23 19:18:39,785 basehttp 55748 83644 "GET /static/js/pages/devices_table_vue.js HTTP/1.1" 304 0
+INFO 2025-06-23 19:18:50,826 basehttp 55748 83644 "GET / HTTP/1.1" 200 9788
+INFO 2025-06-23 19:18:52,267 basehttp 55748 83644 "GET /pages/devices.html HTTP/1.1" 302 0
+WARNING 2025-06-23 19:18:55,223 log 55748 129888 Not Found: /.well-known/appspecific/com.chrome.devtools.json
+WARNING 2025-06-23 19:18:55,224 basehttp 55748 129888 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 5062
+INFO 2025-06-23 19:18:55,305 basehttp 55748 83644 "POST /api/devices/scan/ HTTP/1.1" 200 968
+WARNING 2025-06-23 19:19:09,833 log 55748 83644 Not Found: /favicon.ico
+WARNING 2025-06-23 19:19:09,834 basehttp 55748 83644 "GET /favicon.ico HTTP/1.1" 404 4951
+INFO 2025-06-24 10:53:24,119 basehttp 55748 10808 "POST /api/scripts/replay/ HTTP/1.1" 200 722
+INFO 2025-06-24 11:15:37,315 autoreload 110136 62512 Watching for file changes with StatReloader
+INFO 2025-06-24 11:15:57,554 basehttp 110136 68748 "GET /api/docs/ HTTP/1.1" 200 788
+INFO 2025-06-24 11:15:58,720 basehttp 110136 68748 "GET /api/schema/ HTTP/1.1" 200 36791
+INFO 2025-06-24 11:16:08,675 basehttp 110136 47000 "POST /api/scripts/replay/ HTTP/1.1" 200 858
+INFO 2025-06-24 11:22:29,169 autoreload 110136 62512 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-24 11:22:29,750 autoreload 93248 82840 Watching for file changes with StatReloader
+INFO 2025-06-24 11:25:07,168 autoreload 93248 82840 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-24 11:25:07,715 autoreload 38820 123960 Watching for file changes with StatReloader
+INFO 2025-06-24 11:38:45,024 basehttp 38820 22068 "POST /api/scripts/replay/ HTTP/1.1" 200 859
+INFO 2025-06-24 11:43:43,317 autoreload 38820 123960 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-24 11:43:43,872 autoreload 134828 120364 Watching for file changes with StatReloader
+INFO 2025-06-24 11:44:24,891 autoreload 134828 120364 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-24 11:44:25,431 autoreload 34700 75276 Watching for file changes with StatReloader
+INFO 2025-06-24 11:44:57,914 autoreload 34700 75276 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-24 11:44:58,446 autoreload 93268 20564 Watching for file changes with StatReloader
+INFO 2025-06-24 11:45:33,056 autoreload 93268 20564 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-24 11:45:33,604 autoreload 128836 52488 Watching for file changes with StatReloader
+INFO 2025-06-24 11:46:03,975 autoreload 128836 52488 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-24 11:46:04,521 autoreload 46276 106836 Watching for file changes with StatReloader
+INFO 2025-06-24 13:16:32,563 autoreload 46276 106836 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-24 13:16:33,121 autoreload 118484 84316 Watching for file changes with StatReloader
+INFO 2025-06-24 13:17:12,469 autoreload 118484 84316 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-24 13:17:13,014 autoreload 77516 64520 Watching for file changes with StatReloader
+INFO 2025-06-24 13:17:34,469 autoreload 77516 64520 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-24 13:17:34,994 autoreload 93112 102368 Watching for file changes with StatReloader
+INFO 2025-06-24 13:17:59,632 autoreload 93112 102368 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-24 13:18:00,168 autoreload 118836 46768 Watching for file changes with StatReloader
+INFO 2025-06-24 13:18:40,553 autoreload 118836 46768 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-24 13:18:41,083 autoreload 49888 39520 Watching for file changes with StatReloader
+INFO 2025-06-24 13:19:00,454 autoreload 49888 39520 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-24 13:19:01,063 autoreload 48800 98924 Watching for file changes with StatReloader
+INFO 2025-06-24 13:19:25,815 autoreload 48800 98924 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-24 13:19:26,345 autoreload 129312 87668 Watching for file changes with StatReloader
+INFO 2025-06-24 13:19:53,196 autoreload 129312 87668 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-24 13:19:53,722 autoreload 82996 122456 Watching for file changes with StatReloader
+INFO 2025-06-24 13:20:18,403 autoreload 82996 122456 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-24 13:20:18,949 autoreload 80464 53796 Watching for file changes with StatReloader
+INFO 2025-06-24 13:20:46,780 autoreload 80464 53796 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-24 13:20:47,381 autoreload 11960 83264 Watching for file changes with StatReloader
+INFO 2025-06-24 13:21:13,050 autoreload 11960 83264 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-24 13:21:13,593 autoreload 60000 103472 Watching for file changes with StatReloader
+INFO 2025-06-24 13:21:40,347 autoreload 60000 103472 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-24 13:21:40,875 autoreload 68904 17928 Watching for file changes with StatReloader
+INFO 2025-06-24 13:22:13,926 autoreload 68904 17928 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-24 13:22:14,465 autoreload 50996 80308 Watching for file changes with StatReloader
+INFO 2025-06-24 13:24:05,487 autoreload 50996 80308 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-24 13:24:06,019 autoreload 113520 92940 Watching for file changes with StatReloader
+INFO 2025-06-24 13:24:35,977 autoreload 113520 92940 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-24 13:24:36,555 autoreload 39720 93688 Watching for file changes with StatReloader
+INFO 2025-06-24 13:26:42,487 autoreload 39720 93688 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-24 13:26:43,061 autoreload 62472 44652 Watching for file changes with StatReloader
+INFO 2025-06-24 13:27:04,537 autoreload 62472 44652 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-24 13:27:05,063 autoreload 98792 35292 Watching for file changes with StatReloader
+INFO 2025-06-24 13:27:28,620 autoreload 98792 35292 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-24 13:27:29,151 autoreload 22324 91364 Watching for file changes with StatReloader
+INFO 2025-06-24 13:29:51,753 autoreload 22324 91364 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\manage.py changed, reloading.
+INFO 2025-06-24 13:29:52,306 autoreload 45536 63100 Watching for file changes with StatReloader
+INFO 2025-06-24 13:31:37,225 basehttp 45536 132288 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-06-24 13:31:37,551 basehttp 45536 132288 "POST /api/scripts/ HTTP/1.1" 200 4089
+INFO 2025-06-24 13:36:25,343 autoreload 92632 14028 Watching for file changes with StatReloader
+INFO 2025-06-24 13:36:45,639 basehttp 92632 37700 "GET /api/docs/ HTTP/1.1" 200 788
+INFO 2025-06-24 13:36:46,559 basehttp 92632 37700 "GET /api/schema/ HTTP/1.1" 200 36791
+INFO 2025-06-24 13:37:27,844 basehttp 92632 32808 "POST /api/scripts/replay/ HTTP/1.1" 200 915
+INFO 2025-06-24 13:43:26,722 autoreload 92632 14028 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-24 13:43:27,306 autoreload 134260 50488 Watching for file changes with StatReloader
+INFO 2025-06-24 13:44:02,056 autoreload 134260 50488 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-24 13:44:02,603 autoreload 121648 104972 Watching for file changes with StatReloader
+INFO 2025-06-24 13:44:45,854 autoreload 121648 104972 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-24 13:44:46,412 autoreload 21436 34980 Watching for file changes with StatReloader
+INFO 2025-06-24 13:45:07,296 autoreload 21436 34980 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-24 13:45:07,853 autoreload 97544 119892 Watching for file changes with StatReloader
+INFO 2025-06-24 13:45:35,157 autoreload 97544 119892 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-24 13:45:35,704 autoreload 135972 18380 Watching for file changes with StatReloader
+INFO 2025-06-24 13:47:24,765 autoreload 135972 18380 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-24 13:47:25,324 autoreload 92080 112916 Watching for file changes with StatReloader
+INFO 2025-06-24 13:47:56,918 autoreload 92080 112916 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-24 13:47:57,473 autoreload 113084 115484 Watching for file changes with StatReloader
+INFO 2025-06-24 13:48:29,056 autoreload 113084 115484 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-24 13:48:29,606 autoreload 102004 1672 Watching for file changes with StatReloader
+INFO 2025-06-24 13:49:04,352 autoreload 102004 1672 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-24 13:49:04,896 autoreload 37304 127876 Watching for file changes with StatReloader
+INFO 2025-06-24 13:49:23,763 autoreload 37304 127876 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-24 13:49:24,324 autoreload 89480 48796 Watching for file changes with StatReloader
+INFO 2025-06-24 13:50:14,915 autoreload 89480 48796 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-24 13:50:15,461 autoreload 119888 9840 Watching for file changes with StatReloader
+INFO 2025-06-24 13:50:47,720 autoreload 119888 9840 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-24 13:50:48,263 autoreload 101672 111168 Watching for file changes with StatReloader
+INFO 2025-06-24 13:51:29,992 autoreload 101672 111168 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-24 13:51:30,539 autoreload 102396 98572 Watching for file changes with StatReloader
+INFO 2025-06-24 13:51:53,297 autoreload 102396 98572 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-24 13:51:53,832 autoreload 135008 74124 Watching for file changes with StatReloader
+INFO 2025-06-24 13:52:34,602 autoreload 135008 74124 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-24 13:52:35,147 autoreload 68564 125132 Watching for file changes with StatReloader
+INFO 2025-06-24 13:53:00,328 autoreload 68564 125132 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\devices\views.py changed, reloading.
+INFO 2025-06-24 13:53:00,860 autoreload 65008 18360 Watching for file changes with StatReloader
+INFO 2025-06-24 13:53:13,319 autoreload 65008 18360 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-24 13:53:13,875 autoreload 55148 5112 Watching for file changes with StatReloader
+INFO 2025-06-24 13:53:59,153 autoreload 55148 5112 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-24 13:53:59,691 autoreload 20516 80188 Watching for file changes with StatReloader
+INFO 2025-06-24 13:54:24,820 autoreload 20516 80188 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-24 13:54:25,381 autoreload 133080 69908 Watching for file changes with StatReloader
+INFO 2025-06-24 13:54:44,686 autoreload 133080 69908 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-24 13:54:45,222 autoreload 41768 30772 Watching for file changes with StatReloader
+INFO 2025-06-24 13:55:07,736 autoreload 41768 30772 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-24 13:55:08,258 autoreload 44772 42108 Watching for file changes with StatReloader
+INFO 2025-06-24 13:55:34,969 autoreload 44772 42108 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-24 13:55:35,496 autoreload 124476 113924 Watching for file changes with StatReloader
+INFO 2025-06-24 13:55:57,976 autoreload 124476 113924 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-24 13:55:58,498 autoreload 79720 87460 Watching for file changes with StatReloader
+INFO 2025-06-24 13:56:16,789 autoreload 79720 87460 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-24 13:56:17,313 autoreload 13988 90376 Watching for file changes with StatReloader
+INFO 2025-06-24 13:56:37,739 autoreload 13988 90376 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-24 13:56:38,267 autoreload 75148 99840 Watching for file changes with StatReloader
+INFO 2025-06-24 13:57:07,095 autoreload 75148 99840 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-24 13:57:07,615 autoreload 99332 133524 Watching for file changes with StatReloader
+INFO 2025-06-24 13:57:33,254 autoreload 99332 133524 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-24 13:57:33,779 autoreload 115004 106820 Watching for file changes with StatReloader
+INFO 2025-06-24 13:58:50,070 autoreload 115004 106820 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-24 13:58:50,605 autoreload 25264 135848 Watching for file changes with StatReloader
+INFO 2025-06-24 13:59:28,951 autoreload 25264 135848 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-24 13:59:29,470 autoreload 28792 99572 Watching for file changes with StatReloader
+INFO 2025-06-24 13:59:58,299 autoreload 28792 99572 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-24 13:59:58,825 autoreload 96992 101428 Watching for file changes with StatReloader
+INFO 2025-06-24 14:00:36,084 autoreload 96992 101428 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-24 14:00:36,610 autoreload 33812 76728 Watching for file changes with StatReloader
+INFO 2025-06-24 14:01:25,380 basehttp 33812 60764 "POST /api/scripts/replay/ HTTP/1.1" 200 914
+INFO 2025-06-24 14:19:34,837 autoreload 33812 76728 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\app_lifecycle_manager.py changed, reloading.
+INFO 2025-06-24 14:19:35,385 autoreload 49912 97284 Watching for file changes with StatReloader
+INFO 2025-06-24 14:20:25,902 autoreload 49912 97284 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\app_lifecycle_manager.py changed, reloading.
+INFO 2025-06-24 14:20:26,459 autoreload 73720 41092 Watching for file changes with StatReloader
+INFO 2025-06-24 14:21:17,745 autoreload 73720 41092 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\app_lifecycle_manager.py changed, reloading.
+INFO 2025-06-24 14:21:18,275 autoreload 95308 34864 Watching for file changes with StatReloader
+INFO 2025-06-24 14:22:10,647 autoreload 95308 34864 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\app_lifecycle_manager.py changed, reloading.
+INFO 2025-06-24 14:22:11,173 autoreload 106664 105488 Watching for file changes with StatReloader
+INFO 2025-06-24 14:29:59,404 basehttp 106664 100556 "POST /api/scripts/replay/ HTTP/1.1" 200 1071
+INFO 2025-06-24 14:30:52,182 basehttp 106664 100556 "POST /api/scripts/replay/ HTTP/1.1" 200 1071
+INFO 2025-06-24 14:36:03,704 basehttp 106664 134388 "POST /api/scripts/replay/ HTTP/1.1" 200 891
+INFO 2025-06-24 16:35:27,478 autoreload 106664 105488 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\app_lifecycle_manager.py changed, reloading.
+INFO 2025-06-24 16:35:28,149 autoreload 72488 95568 Watching for file changes with StatReloader
+INFO 2025-06-24 16:35:49,058 autoreload 72488 95568 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\app_lifecycle_manager.py changed, reloading.
+INFO 2025-06-24 16:35:49,600 autoreload 47436 95440 Watching for file changes with StatReloader
+INFO 2025-06-24 16:37:38,297 basehttp 47436 110384 "POST /api/scripts/replay/ HTTP/1.1" 200 736
+INFO 2025-06-24 16:39:43,940 basehttp 47436 110384 "POST /api/scripts/replay/ HTTP/1.1" 200 576
+INFO 2025-06-24 17:12:42,199 basehttp 47436 91348 "POST /api/scripts/replay/ HTTP/1.1" 200 575
+INFO 2025-06-24 17:21:48,978 basehttp 47436 66668 "POST /api/scripts/replay/ HTTP/1.1" 200 575
+INFO 2025-06-24 17:23:27,205 basehttp 47436 66668 "POST /api/scripts/replay/ HTTP/1.1" 200 576
+INFO 2025-06-24 17:43:35,071 basehttp 47436 34340 "POST /api/scripts/replay/ HTTP/1.1" 200 576
+INFO 2025-06-24 18:55:20,514 basehttp 47436 71880 "POST /api/scripts/replay/ HTTP/1.1" 200 575
+INFO 2025-06-24 18:57:57,174 basehttp 47436 71880 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-06-24 18:57:57,501 basehttp 47436 71880 "POST /api/scripts/ HTTP/1.1" 200 3730
+INFO 2025-06-24 18:57:58,232 basehttp 47436 71880 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-06-24 18:57:58,371 basehttp 47436 71880 "POST /api/scripts/ HTTP/1.1" 200 3730
+INFO 2025-06-24 18:58:07,753 basehttp 47436 71880 "POST /api/scripts/replay/ HTTP/1.1" 200 591
+INFO 2025-06-24 19:07:16,852 basehttp 47436 84356 "POST /api/scripts/replay/ HTTP/1.1" 200 590
+INFO 2025-06-24 19:19:20,182 basehttp 47436 79572 "POST /api/scripts/replay/ HTTP/1.1" 200 590
+INFO 2025-06-24 19:27:48,156 basehttp 47436 1888 "POST /api/scripts/replay/ HTTP/1.1" 200 589
+INFO 2025-06-24 19:30:31,370 basehttp 47436 1888 "POST /api/scripts/replay/ HTTP/1.1" 200 590
+INFO 2025-06-25 10:29:15,136 basehttp 47436 49000 "POST /api/scripts/replay/ HTTP/1.1" 200 590
+INFO 2025-06-25 10:42:57,635 basehttp 47436 86852 "POST /api/scripts/replay/ HTTP/1.1" 200 591
+INFO 2025-06-25 17:25:43,273 basehttp 47436 35252 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-06-25 17:25:43,638 basehttp 47436 35252 "POST /api/scripts/ HTTP/1.1" 200 5158
+INFO 2025-06-25 17:25:44,278 basehttp 47436 35252 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-06-25 17:25:44,415 basehttp 47436 35252 "POST /api/scripts/ HTTP/1.1" 200 5158
+INFO 2025-06-25 17:26:11,427 basehttp 47436 35252 "POST /api/scripts/replay/ HTTP/1.1" 200 599
+INFO 2025-06-25 17:32:52,601 basehttp 47436 123808 "POST /api/scripts/replay/ HTTP/1.1" 200 598
+INFO 2025-06-25 17:47:51,241 basehttp 47436 59036 "POST /api/scripts/replay/ HTTP/1.1" 200 598
+INFO 2025-06-25 18:21:53,345 basehttp 47436 111944 "POST /api/scripts/replay/ HTTP/1.1" 200 598
+INFO 2025-06-25 18:45:12,665 basehttp 47436 36384 "POST /api/scripts/replay/ HTTP/1.1" 200 599
+INFO 2025-06-25 18:57:36,039 basehttp 47436 135236 "POST /api/scripts/replay/ HTTP/1.1" 200 598
+INFO 2025-06-25 19:41:31,284 basehttp 47436 133304 "POST /api/scripts/replay/ HTTP/1.1" 200 598
+INFO 2025-06-25 19:56:20,090 basehttp 47436 56048 "POST /api/scripts/replay/ HTTP/1.1" 200 598
+INFO 2025-06-26 11:45:18,832 autoreload 135712 116392 Watching for file changes with StatReloader
+INFO 2025-06-26 11:45:37,056 basehttp 135712 50048 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-06-26 11:45:37,415 basehttp 135712 50048 "POST /api/scripts/ HTTP/1.1" 200 3264
+INFO 2025-06-26 11:45:39,085 basehttp 135712 86508 "GET /api/docs/ HTTP/1.1" 200 788
+INFO 2025-06-26 11:45:39,826 basehttp 135712 86508 "GET /api/schema/ HTTP/1.1" 200 36791
+INFO 2025-06-26 11:46:05,649 basehttp 135712 50048 "POST /api/scripts/replay/ HTTP/1.1" 200 599
+INFO 2025-06-26 13:25:15,329 basehttp 135712 62468 "POST /api/scripts/replay/ HTTP/1.1" 200 599
+INFO 2025-06-26 13:26:23,487 basehttp 135712 62468 "POST /api/scripts/replay/ HTTP/1.1" 200 599
+INFO 2025-06-26 13:27:12,780 basehttp 135712 62468 "POST /api/scripts/replay/ HTTP/1.1" 200 599
+INFO 2025-06-26 13:27:52,969 basehttp 135712 62468 "POST /api/scripts/replay/ HTTP/1.1" 200 599
+INFO 2025-06-26 13:45:06,745 autoreload 105424 78852 Watching for file changes with StatReloader
+INFO 2025-06-26 13:45:18,002 basehttp 105424 99280 "POST /api/scripts/replay/ HTTP/1.1" 200 598
+INFO 2025-06-26 13:45:27,007 basehttp 105424 35936 "GET /api/docs/ HTTP/1.1" 200 788
+INFO 2025-06-26 13:45:27,731 basehttp 105424 35936 "GET /api/schema/ HTTP/1.1" 200 36791
+INFO 2025-06-26 13:53:34,034 basehttp 105424 113260 "POST /api/scripts/replay/ HTTP/1.1" 200 599
+INFO 2025-06-26 13:54:47,191 basehttp 105424 113260 "POST /api/scripts/replay/ HTTP/1.1" 200 599
+INFO 2025-06-26 13:59:53,137 basehttp 105424 125880 "POST /api/scripts/replay/ HTTP/1.1" 200 599
+INFO 2025-06-26 14:00:40,065 basehttp 105424 125880 "POST /api/scripts/replay/ HTTP/1.1" 200 599
+INFO 2025-06-26 16:02:25,554 basehttp 105424 82260 "POST /api/scripts/replay/ HTTP/1.1" 200 599
+INFO 2025-06-26 17:42:17,241 basehttp 105424 5628 "POST /api/scripts/replay/ HTTP/1.1" 200 600
+INFO 2025-06-26 17:49:38,051 basehttp 105424 82160 "POST /api/scripts/replay/ HTTP/1.1" 200 600
+INFO 2025-06-26 17:53:36,986 basehttp 105424 82160 "POST /api/scripts/replay/ HTTP/1.1" 200 600
+INFO 2025-06-26 17:54:30,049 basehttp 105424 82160 "POST /api/scripts/replay/ HTTP/1.1" 200 599
+INFO 2025-06-26 17:54:54,485 autoreload 83200 110644 Watching for file changes with StatReloader
+INFO 2025-06-26 17:55:02,154 basehttp 83200 123024 "POST /api/scripts/replay/ HTTP/1.1" 200 599
+INFO 2025-06-26 17:55:14,757 basehttp 83200 51116 "GET /api/docs/ HTTP/1.1" 200 788
+INFO 2025-06-26 17:55:15,253 basehttp 83200 51116 "GET /api/schema/ HTTP/1.1" 200 36791
+INFO 2025-06-26 17:55:24,113 basehttp 83200 64600 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-06-26 17:55:24,427 basehttp 83200 64600 "POST /api/scripts/ HTTP/1.1" 200 3264
+INFO 2025-06-26 17:55:24,578 basehttp 83200 64600 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-06-26 17:55:24,707 basehttp 83200 64600 "POST /api/scripts/ HTTP/1.1" 200 3264
+INFO 2025-06-26 17:55:50,419 basehttp 83200 64600 "POST /api/scripts/replay/ HTTP/1.1" 200 599
+INFO 2025-06-26 18:04:22,912 basehttp 83200 129932 "POST /api/scripts/replay/ HTTP/1.1" 200 600
+INFO 2025-06-26 18:13:06,246 basehttp 83200 23096 "POST /api/scripts/replay/ HTTP/1.1" 200 600
+INFO 2025-06-26 18:18:40,877 basehttp 83200 45920 "POST /api/scripts/replay/ HTTP/1.1" 200 599
+INFO 2025-06-26 18:23:12,439 basehttp 83200 45920 "POST /api/scripts/replay/ HTTP/1.1" 200 928
+INFO 2025-06-26 18:45:39,054 basehttp 83200 131672 "POST /api/scripts/replay/ HTTP/1.1" 200 929
+INFO 2025-06-26 18:48:53,353 basehttp 83200 131672 "POST /api/scripts/replay/ HTTP/1.1" 200 928
+INFO 2025-06-26 18:54:07,389 basehttp 83200 29960 "POST /api/scripts/replay/ HTTP/1.1" 200 928
+INFO 2025-06-26 19:17:01,060 basehttp 83200 66576 "POST /api/scripts/replay/ HTTP/1.1" 200 599
+INFO 2025-06-27 10:25:48,147 autoreload 83200 110644 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-27 10:25:48,800 autoreload 109336 73616 Watching for file changes with StatReloader
+INFO 2025-06-27 14:24:35,289 autoreload 109336 73616 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-27 14:24:35,893 autoreload 116832 86568 Watching for file changes with StatReloader
+INFO 2025-06-27 14:25:38,505 autoreload 116832 86568 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-27 14:25:39,043 autoreload 109104 127976 Watching for file changes with StatReloader
+INFO 2025-06-27 14:25:56,308 autoreload 109104 127976 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-27 14:25:56,787 autoreload 77084 92584 Watching for file changes with StatReloader
+INFO 2025-06-27 14:27:56,129 autoreload 77084 92584 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-27 14:27:56,659 autoreload 26412 14848 Watching for file changes with StatReloader
+INFO 2025-06-27 14:28:05,450 autoreload 26412 14848 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-27 14:28:05,967 autoreload 136960 25732 Watching for file changes with StatReloader
+INFO 2025-06-27 14:28:11,603 autoreload 136960 25732 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-27 14:28:12,124 autoreload 66924 30192 Watching for file changes with StatReloader
+INFO 2025-06-27 14:28:42,113 autoreload 66924 30192 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-27 14:28:42,636 autoreload 120680 25204 Watching for file changes with StatReloader
+INFO 2025-06-27 14:29:36,842 autoreload 120680 25204 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-27 14:29:37,362 autoreload 35824 20704 Watching for file changes with StatReloader
+INFO 2025-06-27 14:29:40,887 autoreload 35824 20704 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-27 14:29:41,354 autoreload 133828 131936 Watching for file changes with StatReloader
+INFO 2025-06-27 14:29:50,107 autoreload 133828 131936 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-27 14:29:50,694 autoreload 7684 41140 Watching for file changes with StatReloader
+INFO 2025-06-27 14:29:58,491 autoreload 7684 41140 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-27 14:29:59,019 autoreload 108248 113636 Watching for file changes with StatReloader
+INFO 2025-06-27 14:30:13,103 autoreload 108248 113636 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-27 14:30:13,624 autoreload 116644 49508 Watching for file changes with StatReloader
+INFO 2025-06-27 14:30:31,962 autoreload 116644 49508 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-27 14:30:32,479 autoreload 122932 29192 Watching for file changes with StatReloader
+INFO 2025-06-27 14:31:39,327 autoreload 122932 29192 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-27 14:31:39,874 autoreload 109620 14740 Watching for file changes with StatReloader
+INFO 2025-06-27 14:32:17,186 autoreload 109620 14740 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-27 14:32:17,718 autoreload 42820 98364 Watching for file changes with StatReloader
+INFO 2025-06-27 14:33:09,826 autoreload 42820 98364 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-27 14:33:10,409 autoreload 86320 39096 Watching for file changes with StatReloader
+INFO 2025-06-27 14:33:29,812 autoreload 86320 39096 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-27 14:33:30,366 autoreload 123520 8272 Watching for file changes with StatReloader
+INFO 2025-06-27 14:33:51,846 autoreload 123520 8272 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-27 14:33:52,379 autoreload 63164 85200 Watching for file changes with StatReloader
+INFO 2025-06-27 14:34:04,823 autoreload 63164 85200 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-27 14:34:05,374 autoreload 104900 27732 Watching for file changes with StatReloader
+INFO 2025-06-27 14:34:29,521 autoreload 104900 27732 C:\Users\Administrator\PycharmProjects\WFGameAI\wfgame-ai-server\apps\scripts\views.py changed, reloading.
+INFO 2025-06-27 14:34:30,070 autoreload 68460 15488 Watching for file changes with StatReloader
+INFO 2025-06-27 14:35:26,556 basehttp 68460 131252 "POST /api/scripts/replay/ HTTP/1.1" 200 598
+INFO 2025-06-27 14:57:59,923 basehttp 68460 126004 "POST /api/scripts/replay/ HTTP/1.1" 200 598
+INFO 2025-06-27 15:29:28,104 basehttp 68460 85620 "POST /api/scripts/replay/ HTTP/1.1" 200 598
+INFO 2025-06-27 16:03:52,900 basehttp 68460 130308 "POST /api/scripts/replay/ HTTP/1.1" 200 598
+INFO 2025-06-27 16:29:37,113 basehttp 68460 73208 "POST /api/scripts/replay/ HTTP/1.1" 200 599
+INFO 2025-06-27 16:38:55,835 basehttp 68460 55360 "POST /api/scripts/replay/ HTTP/1.1" 200 598
+INFO 2025-06-27 16:46:00,216 basehttp 68460 1916 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-06-27 16:46:00,551 basehttp 68460 1916 "POST /api/scripts/ HTTP/1.1" 200 3264
+INFO 2025-06-27 16:46:32,313 basehttp 68460 1916 "POST /api/scripts/replay/ HTTP/1.1" 200 599
+INFO 2025-06-27 16:48:08,773 basehttp 68460 1916 "POST /api/scripts/replay/ HTTP/1.1" 200 941
+INFO 2025-06-27 16:52:52,403 basehttp 68460 1916 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-06-27 16:52:52,571 basehttp 68460 1916 "POST /api/scripts/ HTTP/1.1" 200 2625
+INFO 2025-06-27 16:52:53,043 basehttp 68460 1916 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-06-27 16:52:53,174 basehttp 68460 1916 "POST /api/scripts/ HTTP/1.1" 200 2625
+INFO 2025-06-27 16:53:04,733 basehttp 68460 1916 "POST /api/scripts/replay/ HTTP/1.1" 200 596
+INFO 2025-06-27 17:02:06,104 basehttp 68460 100196 "POST /api/scripts/replay/ HTTP/1.1" 200 596
+INFO 2025-06-27 17:09:18,218 basehttp 68460 51596 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-06-27 17:09:18,381 basehttp 68460 51596 "POST /api/scripts/ HTTP/1.1" 200 2625
+INFO 2025-06-27 17:09:18,851 basehttp 68460 51596 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-06-27 17:09:18,986 basehttp 68460 51596 "POST /api/scripts/ HTTP/1.1" 200 2625
+INFO 2025-06-27 17:10:33,407 basehttp 68460 51596 "POST /api/scripts/replay/ HTTP/1.1" 200 939
+INFO 2025-06-27 17:14:59,770 basehttp 68460 51596 "POST /api/scripts/replay/ HTTP/1.1" 200 938
+INFO 2025-06-27 17:54:21,274 basehttp 68460 74808 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-06-27 17:54:21,449 basehttp 68460 74808 "POST /api/scripts/ HTTP/1.1" 200 2810
+INFO 2025-06-27 17:54:29,062 basehttp 68460 74808 "POST /api/scripts/replay/ HTTP/1.1" 200 595
+INFO 2025-06-27 18:01:22,384 basehttp 68460 127160 "POST /api/scripts/replay/ HTTP/1.1" 200 595
+INFO 2025-06-27 19:06:58,979 basehttp 68460 15668 "POST /api/scripts/replay/ HTTP/1.1" 200 595
+INFO 2025-06-27 19:21:36,920 basehttp 68460 31572 "POST /api/scripts/replay/ HTTP/1.1" 200 595
+INFO 2025-06-27 19:31:46,367 basehttp 68460 72808 "POST /api/scripts/replay/ HTTP/1.1" 200 595
+INFO 2025-06-27 19:56:53,850 basehttp 68460 77868 "POST /api/scripts/replay/ HTTP/1.1" 200 595
+INFO 2025-06-27 20:16:43,584 basehttp 68460 49372 "POST /api/scripts/replay/ HTTP/1.1" 200 594
+INFO 2025-06-27 20:22:50,642 basehttp 68460 30960 "POST /api/scripts/replay/ HTTP/1.1" 200 595
+INFO 2025-06-27 20:23:41,041 basehttp 68460 30960 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-06-27 20:23:41,377 basehttp 68460 30960 "POST /api/scripts/ HTTP/1.1" 200 2810
+INFO 2025-06-27 20:23:41,648 basehttp 68460 30960 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-06-27 20:23:41,791 basehttp 68460 30960 "POST /api/scripts/ HTTP/1.1" 200 2810
+INFO 2025-06-27 20:23:42,179 basehttp 68460 30960 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-06-27 20:23:42,309 basehttp 68460 30960 "POST /api/scripts/ HTTP/1.1" 200 2810
+INFO 2025-06-27 20:25:29,281 basehttp 68460 83516 "POST /api/scripts/replay/ HTTP/1.1" 200 939
+INFO 2025-06-30 10:37:45,248 basehttp 68460 79932 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-06-30 10:37:45,391 basehttp 68460 79932 "POST /api/scripts/ HTTP/1.1" 200 2810
+INFO 2025-06-30 10:38:26,312 basehttp 68460 79932 "POST /api/scripts/replay/ HTTP/1.1" 200 1110
+INFO 2025-06-30 11:19:24,589 basehttp 68460 64160 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-06-30 11:19:24,763 basehttp 68460 64160 "POST /api/scripts/ HTTP/1.1" 200 2809
+INFO 2025-06-30 11:19:38,954 basehttp 68460 64160 "POST /api/scripts/replay/ HTTP/1.1" 200 598
+INFO 2025-06-30 13:48:24,853 basehttp 68460 82320 "POST /api/scripts/replay/ HTTP/1.1" 200 597
+INFO 2025-06-30 13:49:41,436 basehttp 68460 82320 "GET /pages/reports_template.html HTTP/1.1" 302 0
+INFO 2025-06-30 13:49:41,439 basehttp 68460 82320 "GET /static/pages/reports_template.html HTTP/1.1" 304 0
+INFO 2025-06-30 13:49:41,983 basehttp 68460 82320 "POST /api/reports/summary_list/ HTTP/1.1" 200 16223
+INFO 2025-06-30 13:49:53,306 basehttp 68460 82320 "POST /api/reports/summary_list/ HTTP/1.1" 200 16223
+INFO 2025-06-30 14:10:55,272 basehttp 68460 32388 "POST /api/scripts/replay/ HTTP/1.1" 200 615
+INFO 2025-06-30 14:11:46,436 basehttp 68460 32388 "POST /api/reports/summary_list/ HTTP/1.1" 200 2168
+INFO 2025-06-30 14:11:49,328 basehttp 68460 32388 "GET /static/reports/summary_reports/summary_report_2025-06-30-14-11-04.html HTTP/1.1" 200 12194
+INFO 2025-06-30 14:11:50,924 basehttp 68460 32388 "GET /static/reports/ui_run/WFGameAI.air/log/5c41023b_2025-06-30-14-11-01/log.html HTTP/1.1" 200 8134
+INFO 2025-06-30 14:11:50,938 basehttp 68460 32388 "GET /static/reports/static/css/report.css HTTP/1.1" 304 0
+INFO 2025-06-30 14:11:50,938 basehttp 68460 127172 "GET /static/reports/static/js/jquery-1.10.2.min.js HTTP/1.1" 304 0
+INFO 2025-06-30 14:11:50,939 basehttp 68460 50868 "GET /static/reports/static/js/jquery-lang.js HTTP/1.1" 304 0
+INFO 2025-06-30 14:11:50,940 basehttp 68460 49124 "GET /static/reports/static/js/lazyload.js HTTP/1.1" 304 0
+INFO 2025-06-30 14:11:50,940 basehttp 68460 98212 "GET /static/reports/static/js/langpack/zh_CN.js HTTP/1.1" 304 0
+INFO 2025-06-30 14:11:50,940 basehttp 68460 34876 "GET /static/reports/static/image/download_log.svg HTTP/1.1" 304 0
+INFO 2025-06-30 14:11:50,940 basehttp 68460 50868 "GET /static/reports/static/image/copy.svg HTTP/1.1" 304 0
+INFO 2025-06-30 14:11:51,270 basehttp 68460 50868 "GET /static/reports/static/image/Airtest.png HTTP/1.1" 304 0
+INFO 2025-06-30 14:11:51,272 basehttp 68460 50868 "GET /static/reports/static/image/poco.png HTTP/1.1" 304 0
+INFO 2025-06-30 14:11:51,273 basehttp 68460 34876 "GET /static/reports/static/image/AirtestIDE.png HTTP/1.1" 304 0
+INFO 2025-06-30 14:11:51,277 basehttp 68460 50868 "GET /static/reports/static/js/highlight.min.js HTTP/1.1" 304 0
+INFO 2025-06-30 14:11:51,278 basehttp 68460 34876 "GET /static/reports/static/css/monokai_sublime.min.css HTTP/1.1" 304 0
+INFO 2025-06-30 14:11:51,279 basehttp 68460 98212 "GET /static/reports/static/js/paging.js HTTP/1.1" 304 0
+INFO 2025-06-30 14:11:51,279 basehttp 68460 49124 "GET /static/reports/static/js/report.js HTTP/1.1" 304 0
+INFO 2025-06-30 14:11:51,279 basehttp 68460 127172 "GET /static/reports/static/image/AirLab.png HTTP/1.1" 304 0
+INFO 2025-06-30 14:11:51,280 basehttp 68460 32388 "GET /static/reports/static/image/netease.png HTTP/1.1" 304 0
+INFO 2025-06-30 14:11:51,281 basehttp 68460 34876 "GET /static/reports/static/image/minimize.svg HTTP/1.1" 304 0
+INFO 2025-06-30 14:11:51,282 basehttp 68460 32388 "GET /static/reports/static/image/close.svg HTTP/1.1" 304 0
+INFO 2025-06-30 14:11:51,282 basehttp 68460 127172 "GET /static/reports/static/image/maximize.svg HTTP/1.1" 304 0
+INFO 2025-06-30 14:11:51,324 basehttp 68460 127172 "GET /static/reports/static/image/success.svg HTTP/1.1" 304 0
+INFO 2025-06-30 14:12:00,210 basehttp 68460 127172 "GET /static/reports/summary_reports/summary_report_2025-06-20-17-52-57.html HTTP/1.1" 200 11439
+INFO 2025-06-30 14:15:14,808 basehttp 68460 127172 "POST /api/scripts/replay/ HTTP/1.1" 200 616
+INFO 2025-06-30 14:15:48,742 basehttp 68460 127172 "POST /api/reports/summary_list/ HTTP/1.1" 200 2832
+INFO 2025-06-30 14:15:52,492 basehttp 68460 127172 "GET /static/reports/summary_reports/summary_report_2025-06-30-14-15-42.html HTTP/1.1" 200 12194
+INFO 2025-06-30 14:15:54,186 basehttp 68460 127172 "GET /static/reports/ui_run/WFGameAI.air/log/5c41023b_2025-06-30-14-15-20/log.html HTTP/1.1" 200 8134
+INFO 2025-06-30 14:27:14,415 basehttp 68460 107036 "POST /api/scripts/replay/ HTTP/1.1" 200 503
+INFO 2025-06-30 14:27:47,614 basehttp 68460 107036 "POST /api/reports/summary_list/ HTTP/1.1" 200 3496
+INFO 2025-06-30 14:27:50,129 basehttp 68460 107036 "GET /static/reports/summary_reports/summary_report_2025-06-30-14-27-42.html HTTP/1.1" 200 12194
+INFO 2025-06-30 14:27:51,746 basehttp 68460 107036 "GET /static/reports/ui_run/WFGameAI.air/log/5c41023b_2025-06-30-14-27-20/log.html HTTP/1.1" 200 8134
+INFO 2025-06-30 14:27:56,084 basehttp 68460 107036 "GET /static/reports/ui_run/WFGameAI.air/log/5c41023b_2025-06-30-14-27-20/log.txt HTTP/1.1" 200 0
+WARNING 2025-06-30 14:27:56,587 log 68460 107036 Not Found: /favicon.ico
+WARNING 2025-06-30 14:27:56,588 basehttp 68460 107036 "GET /favicon.ico HTTP/1.1" 404 4951
+INFO 2025-06-30 15:35:55,536 basehttp 68460 103068 "POST /api/scripts/replay/ HTTP/1.1" 200 504
+INFO 2025-06-30 15:36:27,878 basehttp 68460 103068 "POST /api/reports/summary_list/ HTTP/1.1" 200 4160
+INFO 2025-06-30 15:36:28,534 basehttp 68460 103068 "POST /api/reports/summary_list/ HTTP/1.1" 200 4160
+INFO 2025-06-30 15:36:30,648 basehttp 68460 103068 "GET /static/reports/summary_reports/summary_report_2025-06-30-15-36-23.html HTTP/1.1" 200 12194
+INFO 2025-06-30 15:36:32,113 basehttp 68460 103068 "GET /static/reports/ui_run/WFGameAI.air/log/5c41023b_2025-06-30-15-36-01/log.html HTTP/1.1" 200 8134
+INFO 2025-06-30 16:16:31,861 basehttp 68460 121696 "POST /api/scripts/replay/ HTTP/1.1" 200 609
+INFO 2025-06-30 16:17:59,305 basehttp 68460 121696 "POST /api/scripts/replay/ HTTP/1.1" 200 609
+INFO 2025-06-30 16:34:48,290 basehttp 68460 12972 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-06-30 16:37:56,943 basehttp 68460 12972 "POST /api/scripts/replay/ HTTP/1.1" 200 609
+INFO 2025-06-30 17:37:08,681 basehttp 68460 125564 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-06-30 17:37:09,078 basehttp 68460 125564 "POST /api/scripts/ HTTP/1.1" 200 2810
+INFO 2025-06-30 17:37:20,856 basehttp 68460 125564 "POST /api/scripts/replay/ HTTP/1.1" 200 591
+INFO 2025-06-30 17:44:32,403 basehttp 68460 38260 "POST /api/scripts/replay/ HTTP/1.1" 200 609
+INFO 2025-06-30 18:05:25,543 basehttp 68460 91624 "POST /api/scripts/replay/ HTTP/1.1" 200 609
+INFO 2025-06-30 18:06:28,423 basehttp 68460 91624 "POST /api/reports/summary_list/ HTTP/1.1" 200 7480
+INFO 2025-06-30 18:06:30,351 basehttp 68460 91624 "GET /static/reports/summary_reports/summary_report_2025-06-30-18-06-22.html HTTP/1.1" 200 12198
+INFO 2025-06-30 18:06:31,934 basehttp 68460 91624 "GET /static/reports/ui_run/WFGameAI.air/log/5c41023b_2025-06-30-18-05-31/log.html HTTP/1.1" 200 13196
+INFO 2025-06-30 18:06:32,328 basehttp 68460 86276 "GET /static/reports/static/image/step_success.svg HTTP/1.1" 304 0
+INFO 2025-06-30 18:06:32,328 basehttp 68460 91624 "GET /static/reports/ui_run/WFGameAI.air/log/5c41023b_2025-06-30-18-05-31/1751277938434_small.jpg HTTP/1.1" 200 59502
+INFO 2025-06-30 18:06:32,329 basehttp 68460 61180 "GET /static/reports/ui_run/WFGameAI.air/log/5c41023b_2025-06-30-18-05-31/1751277948318_small.jpg HTTP/1.1" 200 59479
+INFO 2025-06-30 18:06:32,329 basehttp 68460 74392 "GET /static/reports/ui_run/WFGameAI.air/log/5c41023b_2025-06-30-18-05-31/1751277957079_small.jpg HTTP/1.1" 200 59135
+INFO 2025-06-30 18:06:32,330 basehttp 68460 93172 "GET /static/reports/ui_run/WFGameAI.air/log/5c41023b_2025-06-30-18-05-31/1751277951916_small.jpg HTTP/1.1" 200 59493
+INFO 2025-06-30 18:06:32,330 basehttp 68460 100020 "GET /static/reports/ui_run/WFGameAI.air/log/5c41023b_2025-06-30-18-05-31/1751277962548_small.jpg HTTP/1.1" 200 59609
+INFO 2025-06-30 18:06:32,334 basehttp 68460 74392 "GET /static/reports/static/image/target.png HTTP/1.1" 304 0
+INFO 2025-06-30 18:06:32,334 basehttp 68460 61180 "GET /static/reports/static/image/time.svg HTTP/1.1" 304 0
+INFO 2025-06-30 18:06:32,334 basehttp 68460 86276 "GET /static/reports/static/image/eye.svg HTTP/1.1" 304 0
+INFO 2025-06-30 18:06:32,337 basehttp 68460 91624 "GET /static/reports/ui_run/WFGameAI.air/log/5c41023b_2025-06-30-18-05-31/1751277938434.jpg HTTP/1.1" 200 671704
+INFO 2025-06-30 18:06:36,177 basehttp 68460 91624 "GET /static/reports/ui_run/WFGameAI.air/log/CWM0222215003786_2025-06-30-18-05-32/log.html HTTP/1.1" 200 14011
+INFO 2025-06-30 18:06:36,572 basehttp 68460 91624 "GET /static/reports/ui_run/WFGameAI.air/log/CWM0222215003786_2025-06-30-18-05-32/1751277940796_small.jpg HTTP/1.1" 200 44382
+INFO 2025-06-30 18:06:36,573 basehttp 68460 86276 "GET /static/reports/ui_run/WFGameAI.air/log/CWM0222215003786_2025-06-30-18-05-32/1751277950291_small.jpg HTTP/1.1" 200 45518
+INFO 2025-06-30 18:06:36,573 basehttp 68460 74392 "GET /static/reports/ui_run/WFGameAI.air/log/CWM0222215003786_2025-06-30-18-05-32/1751277959051_small.jpg HTTP/1.1" 200 45368
+INFO 2025-06-30 18:06:36,573 basehttp 68460 93172 "GET /static/reports/ui_run/WFGameAI.air/log/CWM0222215003786_2025-06-30-18-05-32/1751277976417_small.jpg HTTP/1.1" 200 59685
+INFO 2025-06-30 18:06:36,573 basehttp 68460 61180 "GET /static/reports/ui_run/WFGameAI.air/log/CWM0222215003786_2025-06-30-18-05-32/1751277963411_small.jpg HTTP/1.1" 200 55682
+INFO 2025-06-30 18:06:36,573 basehttp 68460 100020 "GET /static/reports/ui_run/WFGameAI.air/log/CWM0222215003786_2025-06-30-18-05-32/1751277968987_small.jpg HTTP/1.1" 200 60218
+INFO 2025-06-30 18:06:36,578 basehttp 68460 61180 "GET /static/reports/ui_run/WFGameAI.air/log/CWM0222215003786_2025-06-30-18-05-32/1751277940796.jpg HTTP/1.1" 200 526787
+INFO 2025-06-30 18:06:41,681 basehttp 68460 61180 "GET /static/reports/ui_run/WFGameAI.air/log/CWM0222215003786_2025-06-30-18-05-32/1751277950291.jpg HTTP/1.1" 200 654045
+INFO 2025-06-30 18:06:42,702 basehttp 68460 61180 "GET /static/reports/ui_run/WFGameAI.air/log/CWM0222215003786_2025-06-30-18-05-32/1751277959051.jpg HTTP/1.1" 200 646558
+INFO 2025-06-30 18:06:43,334 basehttp 68460 61180 "GET /static/reports/ui_run/WFGameAI.air/log/CWM0222215003786_2025-06-30-18-05-32/1751277963411.jpg HTTP/1.1" 200 603230
+INFO 2025-06-30 18:06:44,822 basehttp 68460 61180 "GET /static/reports/ui_run/WFGameAI.air/log/CWM0222215003786_2025-06-30-18-05-32/1751277968987.jpg HTTP/1.1" 200 645128
+INFO 2025-06-30 18:06:47,438 basehttp 68460 61180 "GET /static/reports/ui_run/WFGameAI.air/log/CWM0222215003786_2025-06-30-18-05-32/1751277976417.jpg HTTP/1.1" 200 640382
+INFO 2025-06-30 18:41:19,520 basehttp 68460 125600 "POST /api/scripts/replay/ HTTP/1.1" 200 1290
+INFO 2025-06-30 18:50:06,252 basehttp 68460 16008 "POST /api/reports/summary_list/ HTTP/1.1" 200 8144
+INFO 2025-06-30 18:50:07,357 basehttp 68460 16008 "GET /static/reports/summary_reports/summary_report_2025-06-30-18-45-19.html HTTP/1.1" 200 12198
+INFO 2025-06-30 18:50:08,747 basehttp 68460 16008 "GET /static/reports/ui_run/WFGameAI.air/log/5c41023b_2025-06-30-18-41-26/log.html HTTP/1.1" 200 25285
+INFO 2025-06-30 18:50:09,151 basehttp 68460 16008 "GET /static/reports/ui_run/WFGameAI.air/log/5c41023b_2025-06-30-18-41-26/1751280123395_small.jpg HTTP/1.1" 200 23514
+INFO 2025-06-30 18:50:09,154 basehttp 68460 91820 "GET /static/reports/ui_run/WFGameAI.air/log/5c41023b_2025-06-30-18-41-26/1751280133528_small.jpg HTTP/1.1" 200 23498
+INFO 2025-06-30 18:50:09,154 basehttp 68460 84220 "GET /static/reports/ui_run/WFGameAI.air/log/5c41023b_2025-06-30-18-41-26/1751280154978_small.jpg HTTP/1.1" 200 50222
+INFO 2025-06-30 18:50:09,155 basehttp 68460 24420 "GET /static/reports/ui_run/WFGameAI.air/log/5c41023b_2025-06-30-18-41-26/1751280143071_small.jpg HTTP/1.1" 200 47536
+INFO 2025-06-30 18:50:09,155 basehttp 68460 42644 "GET /static/reports/ui_run/WFGameAI.air/log/5c41023b_2025-06-30-18-41-26/1751280168855_small.jpg HTTP/1.1" 200 50518
+INFO 2025-06-30 18:50:09,155 basehttp 68460 15864 "GET /static/reports/ui_run/WFGameAI.air/log/5c41023b_2025-06-30-18-41-26/1751280181282_small.jpg HTTP/1.1" 200 47066
+INFO 2025-06-30 18:50:09,155 basehttp 68460 16008 "GET /static/reports/ui_run/WFGameAI.air/log/5c41023b_2025-06-30-18-41-26/1751280193568_small.jpg HTTP/1.1" 200 46996
+INFO 2025-06-30 18:50:09,158 basehttp 68460 91820 "GET /static/reports/ui_run/WFGameAI.air/log/5c41023b_2025-06-30-18-41-26/1751280206577_small.jpg HTTP/1.1" 200 46535
+INFO 2025-06-30 18:50:09,162 basehttp 68460 24420 "GET /static/reports/ui_run/WFGameAI.air/log/5c41023b_2025-06-30-18-41-26/1751280230319_small.jpg HTTP/1.1" 200 25153
+INFO 2025-06-30 18:50:09,164 basehttp 68460 16008 "GET /static/reports/ui_run/WFGameAI.air/log/5c41023b_2025-06-30-18-41-26/1751280243387_small.jpg HTTP/1.1" 200 25089
+INFO 2025-06-30 18:50:09,166 basehttp 68460 84220 "GET /static/reports/ui_run/WFGameAI.air/log/5c41023b_2025-06-30-18-41-26/1751280260672_small.jpg HTTP/1.1" 200 55147
+INFO 2025-06-30 18:50:09,167 basehttp 68460 15864 "GET /static/reports/ui_run/WFGameAI.air/log/5c41023b_2025-06-30-18-41-26/1751280252018_small.jpg HTTP/1.1" 200 55547
+INFO 2025-06-30 18:50:09,167 basehttp 68460 91820 "GET /static/reports/ui_run/WFGameAI.air/log/5c41023b_2025-06-30-18-41-26/1751280273014_small.jpg HTTP/1.1" 200 55576
+INFO 2025-06-30 18:50:09,167 basehttp 68460 42644 "GET /static/reports/ui_run/WFGameAI.air/log/5c41023b_2025-06-30-18-41-26/1751280247115_small.jpg HTTP/1.1" 200 55288
+INFO 2025-06-30 18:50:09,168 basehttp 68460 24420 "GET /static/reports/ui_run/WFGameAI.air/log/5c41023b_2025-06-30-18-41-26/1751280282665_small.jpg HTTP/1.1" 200 55506
+INFO 2025-06-30 18:50:09,169 basehttp 68460 16008 "GET /static/reports/ui_run/WFGameAI.air/log/5c41023b_2025-06-30-18-41-26/1751280277054_small.jpg HTTP/1.1" 200 56026
+INFO 2025-06-30 18:50:09,169 basehttp 68460 84220 "GET /static/reports/ui_run/WFGameAI.air/log/5c41023b_2025-06-30-18-41-26/1751280288998_small.jpg HTTP/1.1" 200 55878
+INFO 2025-06-30 18:50:11,735 basehttp 68460 84220 "GET /static/reports/ui_run/WFGameAI.air/log/CWM0222215003786_2025-06-30-18-41-26/log.html HTTP/1.1" 200 24765
+INFO 2025-06-30 18:50:12,119 basehttp 68460 84220 "GET /static/reports/ui_run/WFGameAI.air/log/CWM0222215003786_2025-06-30-18-41-26/1751280130311_small.jpg HTTP/1.1" 200 28003
+INFO 2025-06-30 18:50:12,119 basehttp 68460 42644 "GET /static/reports/ui_run/WFGameAI.air/log/CWM0222215003786_2025-06-30-18-41-26/1751280184302_small.jpg HTTP/1.1" 200 59614
+INFO 2025-06-30 18:50:12,119 basehttp 68460 24420 "GET /static/reports/ui_run/WFGameAI.air/log/CWM0222215003786_2025-06-30-18-41-26/1751280155561_small.jpg HTTP/1.1" 200 55124
+INFO 2025-06-30 18:50:12,120 basehttp 68460 15864 "GET /static/reports/ui_run/WFGameAI.air/log/CWM0222215003786_2025-06-30-18-41-26/1751280198105_small.jpg HTTP/1.1" 200 58999
+INFO 2025-06-30 18:50:12,120 basehttp 68460 91820 "GET /static/reports/ui_run/WFGameAI.air/log/CWM0222215003786_2025-06-30-18-41-26/1751280169593_small.jpg HTTP/1.1" 200 59550
+INFO 2025-06-30 18:50:12,121 basehttp 68460 16008 "GET /static/reports/ui_run/WFGameAI.air/log/CWM0222215003786_2025-06-30-18-41-26/1751280143319_small.jpg HTTP/1.1" 200 71182
+INFO 2025-06-30 18:50:12,125 basehttp 68460 91820 "GET /static/reports/ui_run/WFGameAI.air/log/CWM0222215003786_2025-06-30-18-41-26/1751280227079_small.jpg HTTP/1.1" 200 58737
+INFO 2025-06-30 18:50:12,125 basehttp 68460 24420 "GET /static/reports/ui_run/WFGameAI.air/log/CWM0222215003786_2025-06-30-18-41-26/1751280252506_small.jpg HTTP/1.1" 200 30607
+INFO 2025-06-30 18:50:12,125 basehttp 68460 42644 "GET /static/reports/ui_run/WFGameAI.air/log/CWM0222215003786_2025-06-30-18-41-26/1751280211669_small.jpg HTTP/1.1" 200 59245
+INFO 2025-06-30 18:50:12,127 basehttp 68460 15864 "GET /static/reports/ui_run/WFGameAI.air/log/CWM0222215003786_2025-06-30-18-41-26/1751280265798_small.jpg HTTP/1.1" 200 30527
+INFO 2025-06-30 18:50:12,130 basehttp 68460 84220 "GET /static/reports/ui_run/WFGameAI.air/log/CWM0222215003786_2025-06-30-18-41-26/1751280275797_small.jpg HTTP/1.1" 200 71240
+INFO 2025-06-30 18:50:12,131 basehttp 68460 16008 "GET /static/reports/ui_run/WFGameAI.air/log/CWM0222215003786_2025-06-30-18-41-26/1751280269854_small.jpg HTTP/1.1" 200 71213
+INFO 2025-06-30 18:50:12,131 basehttp 68460 42644 "GET /static/reports/ui_run/WFGameAI.air/log/CWM0222215003786_2025-06-30-18-41-26/1751280297414_small.jpg HTTP/1.1" 200 57012
+INFO 2025-06-30 18:50:12,131 basehttp 68460 91820 "GET /static/reports/ui_run/WFGameAI.air/log/CWM0222215003786_2025-06-30-18-41-26/1751280307164_small.jpg HTTP/1.1" 200 56771
+INFO 2025-06-30 18:50:12,132 basehttp 68460 24420 "GET /static/reports/ui_run/WFGameAI.air/log/CWM0222215003786_2025-06-30-18-41-26/1751280301455_small.jpg HTTP/1.1" 200 57358
+INFO 2025-06-30 18:50:12,132 basehttp 68460 15864 "GET /static/reports/ui_run/WFGameAI.air/log/CWM0222215003786_2025-06-30-18-41-26/1751280313937_small.jpg HTTP/1.1" 200 57029
+INFO 2025-06-30 18:50:13,898 basehttp 68460 91820 "GET /static/reports/ui_run/WFGameAI.air/log/CWM0222215003786_2025-06-30-18-41-26/1751280130311.jpg HTTP/1.1" 200 388679
+INFO 2025-06-30 18:50:17,103 basehttp 68460 91820 "GET /static/reports/ui_run/WFGameAI.air/log/CWM0222215003786_2025-06-30-18-41-26/1751280143319.jpg HTTP/1.1" 200 770051
+INFO 2025-06-30 18:50:17,686 basehttp 68460 91820 "GET /static/reports/ui_run/WFGameAI.air/log/CWM0222215003786_2025-06-30-18-41-26/1751280155561.jpg HTTP/1.1" 200 619764
+INFO 2025-06-30 18:50:18,915 basehttp 68460 91820 "GET /static/reports/ui_run/WFGameAI.air/log/CWM0222215003786_2025-06-30-18-41-26/1751280169593.jpg HTTP/1.1" 200 653539
+INFO 2025-06-30 18:50:19,749 basehttp 68460 91820 "GET /static/reports/ui_run/WFGameAI.air/log/CWM0222215003786_2025-06-30-18-41-26/1751280184302.jpg HTTP/1.1" 200 651614
+INFO 2025-06-30 18:50:20,301 basehttp 68460 91820 "GET /static/reports/ui_run/WFGameAI.air/log/CWM0222215003786_2025-06-30-18-41-26/1751280198105.jpg HTTP/1.1" 200 641126
+INFO 2025-06-30 18:50:21,061 basehttp 68460 91820 "GET /static/reports/ui_run/WFGameAI.air/log/CWM0222215003786_2025-06-30-18-41-26/1751280211669.jpg HTTP/1.1" 200 644452
+INFO 2025-06-30 18:50:21,606 basehttp 68460 91820 "GET /static/reports/ui_run/WFGameAI.air/log/CWM0222215003786_2025-06-30-18-41-26/1751280227079.jpg HTTP/1.1" 200 637186
+INFO 2025-06-30 18:50:22,117 basehttp 68460 91820 "GET /static/reports/ui_run/WFGameAI.air/log/CWM0222215003786_2025-06-30-18-41-26/1751280252506.jpg HTTP/1.1" 200 385510
+INFO 2025-06-30 18:50:23,068 basehttp 68460 91820 "GET /static/reports/ui_run/WFGameAI.air/log/CWM0222215003786_2025-06-30-18-41-26/1751280265798.jpg HTTP/1.1" 200 385149
+INFO 2025-06-30 18:50:23,621 basehttp 68460 91820 "GET /static/reports/ui_run/WFGameAI.air/log/CWM0222215003786_2025-06-30-18-41-26/1751280269854.jpg HTTP/1.1" 200 806389
+INFO 2025-06-30 18:50:24,631 basehttp 68460 91820 "GET /static/reports/ui_run/WFGameAI.air/log/CWM0222215003786_2025-06-30-18-41-26/1751280275797.jpg HTTP/1.1" 200 805381
+INFO 2025-06-30 18:50:25,316 basehttp 68460 91820 "GET /static/reports/ui_run/WFGameAI.air/log/CWM0222215003786_2025-06-30-18-41-26/1751280297414.jpg HTTP/1.1" 200 673358
+INFO 2025-06-30 18:50:27,008 basehttp 68460 91820 "GET /static/reports/ui_run/WFGameAI.air/log/CWM0222215003786_2025-06-30-18-41-26/1751280301455.jpg HTTP/1.1" 200 679538
+INFO 2025-06-30 18:50:28,126 basehttp 68460 91820 "GET /static/reports/ui_run/WFGameAI.air/log/CWM0222215003786_2025-06-30-18-41-26/1751280307164.jpg HTTP/1.1" 200 697062
+INFO 2025-06-30 18:50:28,869 basehttp 68460 91820 "GET /static/reports/ui_run/WFGameAI.air/log/CWM0222215003786_2025-06-30-18-41-26/1751280313937.jpg HTTP/1.1" 200 675823
+INFO 2025-06-30 18:53:31,966 basehttp 68460 91820 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-06-30 18:53:32,318 basehttp 68460 91820 "POST /api/scripts/ HTTP/1.1" 200 2812
+INFO 2025-06-30 18:53:37,979 basehttp 68460 91820 "POST /api/scripts/replay/ HTTP/1.1" 200 578
+INFO 2025-06-30 19:06:23,777 basehttp 68460 23232 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-06-30 19:06:23,932 basehttp 68460 23232 "POST /api/scripts/ HTTP/1.1" 200 2812
+INFO 2025-06-30 19:07:09,382 basehttp 68460 23232 "POST /api/scripts/replay/ HTTP/1.1" 200 1254
+INFO 2025-06-30 19:12:24,410 basehttp 68460 97752 "GET / HTTP/1.1" 200 9788
+WARNING 2025-06-30 19:12:25,245 log 68460 97752 Not Found: /favicon.ico
+WARNING 2025-06-30 19:12:25,245 basehttp 68460 97752 "GET /favicon.ico HTTP/1.1" 404 4949
+INFO 2025-06-30 19:32:34,886 basehttp 68460 26804 "GET /pages/reports_template.html HTTP/1.1" 302 0
+INFO 2025-06-30 19:32:34,888 basehttp 68460 26804 "GET /static/pages/reports_template.html HTTP/1.1" 200 15555
+INFO 2025-06-30 19:32:35,244 basehttp 68460 26804 "POST /api/reports/summary_list/ HTTP/1.1" 200 9818
+INFO 2025-07-01 10:24:10,500 basehttp 68460 107472 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-07-01 10:24:10,834 basehttp 68460 107472 "POST /api/scripts/ HTTP/1.1" 200 2812
+INFO 2025-07-01 10:24:26,205 basehttp 68460 107472 "POST /api/scripts/replay/ HTTP/1.1" 200 593
+INFO 2025-07-01 14:17:12,671 basehttp 68460 14968 "POST /api/scripts/replay/ HTTP/1.1" 200 593
+INFO 2025-07-01 14:35:34,066 basehttp 68460 54084 "POST /api/scripts/replay/ HTTP/1.1" 200 594
+INFO 2025-07-01 14:35:55,176 basehttp 68460 54084 "POST /api/scripts/replay/ HTTP/1.1" 200 593
+INFO 2025-07-01 14:40:28,007 basehttp 68460 54084 "POST /api/scripts/replay/ HTTP/1.1" 200 593
+INFO 2025-07-01 15:05:12,126 basehttp 68460 123396 "POST /api/scripts/replay/ HTTP/1.1" 200 593
+INFO 2025-07-01 15:26:49,211 basehttp 68460 69932 "POST /api/scripts/replay/ HTTP/1.1" 200 593
+INFO 2025-07-01 15:32:23,900 autoreload 97548 45856 Watching for file changes with StatReloader
+INFO 2025-07-01 15:32:43,678 basehttp 97548 33716 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-07-01 15:32:44,128 basehttp 97548 33716 "POST /api/scripts/ HTTP/1.1" 200 2812
+INFO 2025-07-01 15:32:44,297 basehttp 97548 118244 "GET /api/docs/ HTTP/1.1" 200 788
+INFO 2025-07-01 15:32:44,832 basehttp 97548 118244 "GET /api/schema/ HTTP/1.1" 200 36791
+INFO 2025-07-01 15:32:48,906 basehttp 97548 33716 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-07-01 15:32:49,049 basehttp 97548 33716 "POST /api/scripts/ HTTP/1.1" 200 2812
+INFO 2025-07-01 15:33:01,465 basehttp 97548 33716 "POST /api/scripts/replay/ HTTP/1.1" 200 594
+INFO 2025-07-01 15:59:09,027 basehttp 97548 125764 "POST /api/scripts/replay/ HTTP/1.1" 200 594
+INFO 2025-07-01 16:08:13,015 autoreload 44868 10232 Watching for file changes with StatReloader
+INFO 2025-07-01 16:08:33,317 basehttp 44868 28512 "GET /api/docs/ HTTP/1.1" 200 788
+INFO 2025-07-01 16:08:33,892 basehttp 44868 28512 "GET /api/schema/ HTTP/1.1" 200 36791
+INFO 2025-07-01 16:19:41,346 basehttp 44868 9232 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-07-01 16:19:41,663 basehttp 44868 9232 "POST /api/scripts/ HTTP/1.1" 200 2812
+INFO 2025-07-01 16:19:54,128 basehttp 44868 9232 "POST /api/scripts/replay/ HTTP/1.1" 200 579
+INFO 2025-07-01 16:23:29,034 basehttp 44868 9232 "POST /api/scripts/replay/ HTTP/1.1" 200 578
+INFO 2025-07-01 16:25:58,957 basehttp 44868 41184 "POST /api/scripts/replay/ HTTP/1.1" 200 578
+INFO 2025-07-01 16:27:01,526 basehttp 44868 41184 "POST /api/scripts/replay/ HTTP/1.1" 200 579
+INFO 2025-07-01 16:47:05,610 basehttp 44868 78468 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-07-01 16:47:05,779 basehttp 44868 78468 "POST /api/scripts/ HTTP/1.1" 200 3176
+INFO 2025-07-01 16:47:17,603 basehttp 44868 78468 "POST /api/scripts/replay/ HTTP/1.1" 200 584
+INFO 2025-07-01 16:48:36,083 basehttp 44868 78468 "POST /api/scripts/replay/ HTTP/1.1" 200 584
+INFO 2025-07-01 16:50:52,319 basehttp 44868 78468 "POST /api/scripts/replay/ HTTP/1.1" 200 584
+INFO 2025-07-01 16:56:09,674 basehttp 44868 41344 "POST /api/scripts/replay/ HTTP/1.1" 200 594
+INFO 2025-07-01 17:54:48,596 basehttp 44868 56380 "POST /api/scripts/replay/ HTTP/1.1" 200 593
+INFO 2025-07-01 18:19:32,884 basehttp 44868 74248 "POST /api/scripts/replay/ HTTP/1.1" 200 594
+INFO 2025-07-01 19:02:26,346 basehttp 44868 131104 "POST /api/scripts/replay/ HTTP/1.1" 200 593
+INFO 2025-07-01 19:13:14,210 autoreload 88752 63644 Watching for file changes with StatReloader
+INFO 2025-07-01 19:13:19,246 basehttp 88752 45176 "POST /api/scripts/replay/ HTTP/1.1" 200 593
+INFO 2025-07-01 19:13:34,519 basehttp 88752 92444 "GET /api/docs/ HTTP/1.1" 200 788
+INFO 2025-07-01 19:13:35,317 basehttp 88752 92444 "GET /api/schema/ HTTP/1.1" 200 36791
+INFO 2025-07-02 16:12:10,001 autoreload 49924 60796 Watching for file changes with StatReloader
+INFO 2025-07-02 16:12:30,337 basehttp 49924 128876 "GET /api/docs/ HTTP/1.1" 200 788
+INFO 2025-07-02 16:12:32,119 basehttp 49924 128876 "GET /api/schema/ HTTP/1.1" 200 36791
+INFO 2025-07-02 16:14:03,656 basehttp 49924 28984 "POST /api/scripts/replay/ HTTP/1.1" 200 593
+INFO 2025-07-02 16:15:09,745 basehttp 49924 28984 "POST /api/scripts/replay/ HTTP/1.1" 200 593
+INFO 2025-07-02 16:37:16,438 basehttp 49924 122324 "POST /api/scripts/replay/ HTTP/1.1" 200 593
+INFO 2025-07-02 16:40:17,595 autoreload 41304 33164 Watching for file changes with StatReloader
+INFO 2025-07-02 16:40:33,156 basehttp 41304 60424 "POST /api/scripts/replay/ HTTP/1.1" 200 594
+INFO 2025-07-02 16:40:37,995 basehttp 41304 66892 "GET /api/docs/ HTTP/1.1" 200 788
+INFO 2025-07-02 16:40:38,448 basehttp 41304 66892 "GET /api/schema/ HTTP/1.1" 200 36791
+INFO 2025-07-02 16:42:44,821 basehttp 41304 60424 "POST /api/scripts/replay/ HTTP/1.1" 200 593
+INFO 2025-07-02 16:44:20,912 basehttp 41304 60424 "POST /api/scripts/replay/ HTTP/1.1" 200 593
+INFO 2025-07-02 16:49:18,885 autoreload 63228 38740 Watching for file changes with StatReloader
+INFO 2025-07-02 16:49:23,604 basehttp 63228 113092 "POST /api/scripts/replay/ HTTP/1.1" 200 593
+INFO 2025-07-02 16:49:39,209 basehttp 63228 66972 "GET /api/docs/ HTTP/1.1" 200 788
+INFO 2025-07-02 16:49:39,704 basehttp 63228 66972 "GET /api/schema/ HTTP/1.1" 200 36791
+INFO 2025-07-02 16:50:42,318 basehttp 63228 113092 "POST /api/scripts/replay/ HTTP/1.1" 200 593
+INFO 2025-07-02 16:51:14,883 basehttp 63228 113092 "POST /api/scripts/replay/ HTTP/1.1" 200 594
+INFO 2025-07-02 16:52:26,346 basehttp 63228 13440 "POST /api/reports/summary_list/ HTTP/1.1" 200 18980
+INFO 2025-07-02 16:52:26,869 basehttp 63228 13440 "POST /api/reports/summary_list/ HTTP/1.1" 200 18980
+INFO 2025-07-02 16:52:28,798 basehttp 63228 13440 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-ONEPLUSA5010_2025-07-02-16-51-16/log.html HTTP/1.1" 200 11477
+INFO 2025-07-02 16:52:28,810 basehttp 63228 13440 "GET /static/reports/static/css/report.css HTTP/1.1" 200 18004
+INFO 2025-07-02 16:52:28,811 basehttp 63228 48148 "GET /static/reports/static/image/download_log.svg HTTP/1.1" 200 2550
+INFO 2025-07-02 16:52:28,811 basehttp 63228 58068 "GET /static/reports/static/js/lazyload.js HTTP/1.1" 200 5587
+INFO 2025-07-02 16:52:28,811 basehttp 63228 129648 "GET /static/reports/static/js/jquery-lang.js HTTP/1.1" 200 25588
+INFO 2025-07-02 16:52:28,811 basehttp 63228 3056 "GET /static/reports/static/js/langpack/zh_CN.js HTTP/1.1" 200 2701
+INFO 2025-07-02 16:52:28,813 basehttp 63228 22368 "GET /static/reports/static/js/jquery-1.10.2.min.js HTTP/1.1" 200 93111
+INFO 2025-07-02 16:52:28,816 basehttp 63228 13440 "GET /static/reports/static/image/copy.svg HTTP/1.1" 200 1013
+INFO 2025-07-02 16:52:29,121 basehttp 63228 129648 "GET /static/reports/static/image/Airtest.png HTTP/1.1" 200 1947
+INFO 2025-07-02 16:52:29,121 basehttp 63228 48148 "GET /static/reports/static/image/poco.png HTTP/1.1" 200 1385
+INFO 2025-07-02 16:52:29,125 basehttp 63228 129648 "GET /static/reports/static/css/monokai_sublime.min.css HTTP/1.1" 200 2017
+INFO 2025-07-02 16:52:29,126 basehttp 63228 48148 "GET /static/reports/static/image/AirtestIDE.png HTTP/1.1" 200 3181
+INFO 2025-07-02 16:52:29,130 basehttp 63228 22368 "GET /static/reports/static/js/paging.js HTTP/1.1" 200 13030
+INFO 2025-07-02 16:52:29,130 basehttp 63228 48148 "GET /static/reports/static/image/minimize.svg HTTP/1.1" 200 1031
+INFO 2025-07-02 16:52:29,130 basehttp 63228 3056 "GET /static/reports/static/image/AirLab.png HTTP/1.1" 200 1954
+INFO 2025-07-02 16:52:29,131 basehttp 63228 129648 "GET /static/reports/static/image/netease.png HTTP/1.1" 200 7949
+INFO 2025-07-02 16:52:29,131 basehttp 63228 58068 "GET /static/reports/static/js/report.js HTTP/1.1" 200 31059
+INFO 2025-07-02 16:52:29,132 basehttp 63228 22368 "GET /static/reports/static/image/close.svg HTTP/1.1" 200 729
+INFO 2025-07-02 16:52:29,133 basehttp 63228 13440 "GET /static/reports/static/js/highlight.min.js HTTP/1.1" 200 184850
+INFO 2025-07-02 16:52:29,133 basehttp 63228 58068 "GET /static/reports/static/image/maximize.svg HTTP/1.1" 200 1308
+INFO 2025-07-02 16:52:29,182 basehttp 63228 129648 "GET /static/reports/static/image/time.svg HTTP/1.1" 200 820
+INFO 2025-07-02 16:52:29,182 basehttp 63228 13440 "GET /static/reports/static/image/success.svg HTTP/1.1" 200 1156
+INFO 2025-07-02 16:52:29,182 basehttp 63228 58068 "GET /static/reports/static/image/step_success.svg HTTP/1.1" 200 1144
+INFO 2025-07-02 16:52:29,182 basehttp 63228 22368 "GET /static/reports/static/image/eye.svg HTTP/1.1" 200 1935
+INFO 2025-07-02 16:53:19,411 basehttp 63228 113092 "POST /api/scripts/replay/ HTTP/1.1" 200 593
+INFO 2025-07-03 15:59:42,599 autoreload 63228 38740 F:\QA\Software\anaconda3\envs\py39_yolov10\Lib\site-packages\packaging\_structures.py changed, reloading.
+INFO 2025-07-03 15:59:43,347 autoreload 69020 77436 Watching for file changes with StatReloader
+INFO 2025-07-04 10:33:01,787 autoreload 104540 112988 Watching for file changes with StatReloader
+INFO 2025-07-04 10:33:09,350 basehttp 104540 56712 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-07-04 10:33:09,753 basehttp 104540 56712 "POST /api/scripts/ HTTP/1.1" 200 3176
+INFO 2025-07-04 10:33:12,732 basehttp 104540 56712 "POST /api/scripts/debug/ HTTP/1.1" 200 90
+INFO 2025-07-04 10:33:22,021 basehttp 104540 34180 "GET /api/docs/ HTTP/1.1" 200 788
+INFO 2025-07-04 10:33:22,477 basehttp 104540 34180 "GET /api/schema/ HTTP/1.1" 200 36791
+INFO 2025-07-04 10:34:06,278 basehttp 104540 56712 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-07-04 10:47:28,694 autoreload 84728 56384 Watching for file changes with StatReloader
+INFO 2025-07-04 10:47:33,761 basehttp 84728 56944 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-07-04 10:47:33,923 basehttp 84728 56944 "POST /api/scripts/ HTTP/1.1" 200 3176
+INFO 2025-07-04 10:47:40,552 basehttp 84728 56944 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-07-04 10:47:49,018 basehttp 84728 27480 "GET /api/docs/ HTTP/1.1" 200 788
+INFO 2025-07-04 10:47:49,457 basehttp 84728 27480 "GET /api/schema/ HTTP/1.1" 200 36791
+INFO 2025-07-04 13:23:55,870 basehttp 84728 9832 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-07-04 13:23:56,188 basehttp 84728 9832 "POST /api/scripts/ HTTP/1.1" 200 3176
+INFO 2025-07-04 13:27:54,650 basehttp 84728 73192 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-07-04 14:07:20,520 basehttp 84728 52100 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-07-04 14:11:55,282 basehttp 84728 52100 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-07-04 14:36:47,380 basehttp 84728 104696 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-07-04 14:41:54,702 basehttp 84728 32764 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-07-04 14:43:50,440 basehttp 84728 32764 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-07-04 14:54:58,372 basehttp 84728 69752 "POST /api/scripts/debug/ HTTP/1.1" 200 89
+INFO 2025-07-04 15:42:52,116 basehttp 84728 127832 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-07-04 15:42:52,459 basehttp 84728 127832 "POST /api/scripts/ HTTP/1.1" 200 3176
+INFO 2025-07-04 15:42:53,064 basehttp 84728 127832 "GET /static/pages/scripts.html HTTP/1.1" 304 0
+INFO 2025-07-04 15:42:53,192 basehttp 84728 127832 "POST /api/scripts/ HTTP/1.1" 200 3176
+INFO 2025-07-04 15:43:20,754 basehttp 84728 127832 "POST /api/scripts/replay/ HTTP/1.1" 200 581
+INFO 2025-07-04 15:44:43,691 basehttp 84728 91084 "POST /api/reports/summary_list/ HTTP/1.1" 200 19986
+INFO 2025-07-04 15:44:46,354 basehttp 84728 91084 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-07-04-15-43-22/log.html HTTP/1.1" 200 15247
+INFO 2025-07-04 15:44:46,734 basehttp 84728 91084 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-07-04-15-43-22/1751615006494_small.jpg HTTP/1.1" 200 47372
+INFO 2025-07-04 15:44:46,735 basehttp 84728 105064 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-07-04-15-43-22/1751615036217_small.jpg HTTP/1.1" 200 47064
+INFO 2025-07-04 15:44:46,736 basehttp 84728 77404 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-07-04-15-43-22/1751615019884_small.jpg HTTP/1.1" 200 47521
+INFO 2025-07-04 15:44:46,736 basehttp 84728 114136 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-07-04-15-43-22/1751615022298_small.jpg HTTP/1.1" 200 47462
+INFO 2025-07-04 15:44:46,736 basehttp 84728 62064 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-07-04-15-43-22/1751615033820_small.jpg HTTP/1.1" 200 47710
+INFO 2025-07-04 15:44:46,736 basehttp 84728 24176 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-07-04-15-43-22/1751615038695_small.jpg HTTP/1.1" 200 47505
+INFO 2025-07-04 15:44:48,021 basehttp 84728 114136 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-07-04-15-43-22/1751615006494.jpg HTTP/1.1" 200 519006
+INFO 2025-07-04 15:44:51,583 basehttp 84728 114136 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-07-04-15-43-22/1751615019884.jpg HTTP/1.1" 200 520428
+INFO 2025-07-04 15:44:52,118 basehttp 84728 114136 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-07-04-15-43-22/1751615022298.jpg HTTP/1.1" 200 519376
+INFO 2025-07-04 15:44:52,638 basehttp 84728 114136 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-07-04-15-43-22/1751615033820.jpg HTTP/1.1" 200 521744
+INFO 2025-07-04 15:44:56,806 basehttp 84728 114136 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-07-04-15-43-22/1751615036217.jpg HTTP/1.1" 200 517402
+INFO 2025-07-04 15:44:58,568 basehttp 84728 114136 "GET /static/reports/ui_run/WFGameAI.air/log/OnePlus-KB2000_2025-07-04-15-43-22/1751615038695.jpg HTTP/1.1" 200 519319
+INFO 2025-07-07 15:12:18,820 basehttp 84728 6004 "POST /api/scripts/replay/ HTTP/1.1" 200 582
+INFO 2025-07-07 16:03:52,211 basehttp 84728 47524 "POST /api/scripts/replay/ HTTP/1.1" 200 582
+INFO 2025-07-07 17:06:27,669 autoreload 15276 122788 Watching for file changes with StatReloader
+INFO 2025-07-07 17:06:48,057 basehttp 15276 131728 "GET /api/docs/ HTTP/1.1" 200 788
+INFO 2025-07-07 17:06:48,535 basehttp 15276 131728 "GET /api/schema/ HTTP/1.1" 200 36791
+INFO 2025-07-07 17:06:55,893 basehttp 15276 97080 "POST /api/scripts/replay/ HTTP/1.1" 200 581

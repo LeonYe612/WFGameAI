@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Windows兼容的跨进程账号管理器
-使用文件锁机制解决多进程环境下账号重复分配的问题
+Windows兼容的跨进程账号管理器 - 数据库迁移版
+支持从文件系统迁移到数据库的混合模式
+保持向后兼容的同时提供数据库优化
 """
 
 import os
@@ -13,17 +14,28 @@ import msvcrt  # Windows文件锁
 from typing import Optional, Tuple, Dict, List
 from datetime import datetime
 
+# 数据库迁移支持
+try:
+    from .windows_database_account_manager import WindowsDatabaseAccountManager
+    DATABASE_AVAILABLE = True
+except ImportError:
+    DATABASE_AVAILABLE = False
+    print("⚠️ 数据库账号管理器不可用，将使用文件模式")
+
 
 class WindowsCrossProcessAccountManager:
-    """Windows跨进程账号管理器 - 使用Windows文件锁实现进程间同步"""
+    """Windows跨进程账号管理器 - 支持数据库迁移的混合模式"""
 
-    def __init__(self, accounts_file: str = None, state_file: str = None):
+    def __init__(self, accounts_file: str = None, state_file: str = None,
+                 enable_database: bool = True, auto_migrate: bool = True):
         """
         初始化跨进程账号管理器
 
         Args:
             accounts_file: 账号文件路径
             state_file: 状态文件路径（用于进程间共享）
+            enable_database: 是否启用数据库模式
+            auto_migrate: 是否自动迁移到数据库
         """
         if accounts_file is None:
             current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -38,8 +50,69 @@ class WindowsCrossProcessAccountManager:
         self.lock_file = state_file + ".lock"
         self.accounts = []
 
-        self._load_accounts()
-        self._ensure_state_file()
+        # 数据库模式设置
+        self.enable_database = enable_database and DATABASE_AVAILABLE
+        self.db_manager = None
+        self.migration_completed = False
+
+        if self.enable_database:
+            try:
+                self.db_manager = WindowsDatabaseAccountManager()
+                print("✅ 数据库账号管理器初始化成功")
+
+                if auto_migrate:
+                    self._attempt_migration()
+            except Exception as e:
+                print(f"⚠️ 数据库初始化失败，回退到文件模式: {e}")
+                self.enable_database = False
+
+        # 文件模式初始化
+        if not self.enable_database or not self.migration_completed:
+            self._load_accounts()
+            self._ensure_state_file()
+            print("✅ 文件模式账号管理器初始化完成")
+
+    def _attempt_migration(self):
+        """尝试从文件迁移到数据库"""
+        try:
+            if not os.path.exists(self.accounts_file):
+                print("⚠️ 账号文件不存在，跳过迁移")
+                return
+
+            # 检查是否已经迁移过
+            if hasattr(self, '_migration_marker_file'):
+                migration_marker = os.path.join(
+                    os.path.dirname(self.state_file),
+                    '.migration_completed'
+                )
+                if os.path.exists(migration_marker):
+                    print("✅ 数据库迁移已完成")
+                    self.migration_completed = True
+                    return
+
+            print("🚀 开始从文件系统迁移到数据库...")
+            stats = self.db_manager.migrate_from_files(
+                accounts_file=self.accounts_file,
+                state_file=self.state_file
+            )
+
+            if stats['accounts_migrated'] > 0 or stats['allocations_migrated'] > 0:
+                # 创建迁移完成标记
+                migration_marker = os.path.join(
+                    os.path.dirname(self.state_file),
+                    '.migration_completed'
+                )
+                with open(migration_marker, 'w') as f:
+                    f.write(f"Migration completed at {datetime.now().isoformat()}\n")
+                    f.write(f"Stats: {stats}\n")
+
+                self.migration_completed = True
+                print(f"✅ 数据库迁移完成: {stats}")
+            else:
+                print("ℹ️ 没有需要迁移的数据")
+
+        except Exception as e:
+            print(f"❌ 数据库迁移失败: {e}")
 
     def _load_accounts(self):
         """从文件加载账号信息"""
@@ -148,7 +221,7 @@ class WindowsCrossProcessAccountManager:
 
     def allocate_account(self, device_serial: str) -> Optional[Dict]:
         """
-        为设备分配账号（跨进程安全）
+        为设备分配账号（混合模式）
 
         Args:
             device_serial: 设备序列号
@@ -156,6 +229,28 @@ class WindowsCrossProcessAccountManager:
         Returns:
             分配的账号信息，如果失败返回None
         """
+        # 优先使用数据库模式
+        if self.enable_database and self.migration_completed:
+            return self._allocate_account_database(device_serial)
+        else:
+            return self._allocate_account_file(device_serial)
+
+    def _allocate_account_database(self, device_serial: str) -> Optional[Dict]:
+        """数据库模式分配账号"""
+        try:
+            account_info = self.db_manager.allocate_account(device_serial)
+            if account_info:
+                return {
+                    'username': account_info['username'],
+                    'password': account_info['password'],
+                    'name': account_info['display_name'],
+                    'session_id': account_info['session_id']
+                }
+            return None
+        except Exception as e:
+            print(f"❌ 数据库分配失败，回退到文件模式: {e}")
+            return self._allocate_account_file(device_serial)    def _allocate_account_file(self, device_serial: str) -> Optional[Dict]:
+        """文件模式分配账号（原有逻辑）"""
         lock_fd = self._acquire_lock()
         if lock_fd is None:
             print(f"❌ 无法获取锁，设备 {device_serial} 账号分配失败")
@@ -191,6 +286,121 @@ class WindowsCrossProcessAccountManager:
             print(f"❌ 分配账号时发生异常: {e}")
             return None
 
+        finally:
+            self._release_lock(lock_fd)
+
+    def release_account(self, device_serial: str) -> bool:
+        """
+        释放设备的账号分配（混合模式）
+
+        Args:
+            device_serial: 设备序列号
+
+        Returns:
+            是否成功释放
+        """
+        # 优先使用数据库模式
+        if self.enable_database and self.migration_completed:
+            return self._release_account_database(device_serial)
+        else:
+            return self._release_account_file(device_serial)
+
+    def _release_account_database(self, device_serial: str) -> bool:
+        """数据库模式释放账号"""
+        try:
+            return self.db_manager.release_account(device_serial=device_serial)
+        except Exception as e:
+            print(f"❌ 数据库释放失败，回退到文件模式: {e}")
+            return self._release_account_file(device_serial)
+
+    def _release_account_file(self, device_serial: str) -> bool:
+        """文件模式释放账号（原有逻辑）"""
+        lock_fd = self._acquire_lock()
+        if lock_fd is None:
+            print(f"❌ 无法获取锁，设备 {device_serial} 账号释放失败")
+            return False
+
+        try:
+            state = self._load_state()
+            allocations = state.get('allocations', {})
+
+            if device_serial in allocations:
+                released_account = allocations.pop(device_serial)
+                state['allocations'] = allocations
+                self._save_state(state)
+                print(f"✅ 设备 {device_serial} 的账号 {released_account.get('username')} 已释放")
+                return True
+            else:
+                print(f"⚠️ 设备 {device_serial} 没有分配的账号")
+                return False
+
+        except Exception as e:
+            print(f"❌ 释放账号时发生异常: {e}")
+            return False
+
+        finally:
+            self._release_lock(lock_fd)
+
+    def get_allocation_status(self) -> Dict:
+        """获取当前分配状态（混合模式）"""
+        if self.enable_database and self.migration_completed:
+            return self._get_allocation_status_database()
+        else:
+            return self._get_allocation_status_file()
+
+    def _get_allocation_status_database(self) -> Dict:
+        """数据库模式获取分配状态"""
+        try:
+            return self.db_manager.get_allocation_status()
+        except Exception as e:
+            print(f"❌ 数据库获取状态失败，回退到文件模式: {e}")
+            return self._get_allocation_status_file()
+
+    def _get_allocation_status_file(self) -> Dict:
+        """文件模式获取分配状态"""
+        lock_fd = self._acquire_lock()
+        if lock_fd is None:
+            print("❌ 无法获取锁，获取分配状态失败")
+            return {}
+
+        try:
+            state = self._load_state()
+            return state.get('allocations', {})
+        finally:
+            self._release_lock(lock_fd)
+
+    def get_available_accounts_count(self) -> int:
+        """获取可用账号数量（混合模式）"""
+        if self.enable_database and self.migration_completed:
+            return self._get_available_accounts_count_database()
+        else:
+            return self._get_available_accounts_count_file()
+
+    def _get_available_accounts_count_database(self) -> int:
+        """数据库模式获取可用账号数量"""
+        try:
+            return self.db_manager.get_available_accounts_count()
+        except Exception as e:
+            print(f"❌ 数据库获取可用账号数失败，回退到文件模式: {e}")
+            return self._get_available_accounts_count_file()
+
+    def _get_available_accounts_count_file(self) -> int:
+        """文件模式获取可用账号数量"""
+        lock_fd = self._acquire_lock()
+        if lock_fd is None:
+            return 0
+
+        try:
+            state = self._load_state()
+            allocations = state.get('allocations', {})
+            allocated_usernames = {alloc.get('username') for alloc in allocations.values()}
+
+            available_count = 0
+            for account in self.accounts:
+                if account['username'] not in allocated_usernames:
+                    available_count += 1
+
+            return available_count
         finally:
             self._release_lock(lock_fd)
 

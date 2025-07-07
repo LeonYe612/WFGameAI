@@ -1,0 +1,42 @@
+{
+    "name": "Test wait_if_exists with yolo_class parameter only",
+    "description": "Verify that wait_if_exists works with only yolo_class parameter (no backward compatibility)",
+    "steps": [
+        {
+            "step": 1,
+            "detection_method": "ai",
+            "action": "wait_if_exists",
+            "yolo_class": "operation-sdk-phoneinput"
+        },
+        {
+            "step": 2,
+            "detection_method": "ai",
+            "action": "wait_for_appearance",
+            "yolo_class": "operation-sdk-yzminput"
+        },
+        {
+            "step": 3,
+            "detection_method": "ai",
+            "action": "wait_for_disappearance",
+            "yolo_class": "operation-sdk-yzm"
+        },
+        {
+            "step": 4,
+            "detection_method": "ai",
+            "action": "wait_for_appearance",
+            "yolo_class": "operation-sdk-inbox"
+        },
+        {
+            "step": 5,
+            "detection_method": "ai",
+            "action": "wait_for_disappearance",
+            "yolo_class": "operation-sdk-login"
+        },
+        {
+            "step": 6,
+            "detection_method": "ai",
+            "action": "wait_if_exists",
+            "yolo_class": "operation-sdk-login"
+        }
+    ]
+}

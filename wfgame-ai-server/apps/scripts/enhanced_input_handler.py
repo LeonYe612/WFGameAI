@@ -12,6 +12,19 @@ project_root = os.path.abspath(os.path.join(current_file, "..", "..", ".."))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
+# 导入通用UI检测器
+try:
+    # 添加项目根目录到路径以导入universal_ui_detector
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+    if project_root not in sys.path:
+        sys.path.insert(0, project_root)
+
+    from universal_ui_detector import UniversalUIDetector
+    UNIVERSAL_UI_DETECTOR_AVAILABLE = True
+except ImportError:
+    print("警告: universal_ui_detector 未找到，使用基础UI检测")
+    UNIVERSAL_UI_DETECTOR_AVAILABLE = False
+
 import os
 import time
 import xml.etree.ElementTree as ET
@@ -130,6 +143,7 @@ class ElementPatterns:
 
 class DeviceScriptReplayer:
     """增强输入处理器：结合智能登录操作器的优化算法，严格按照ElementPatterns执行匹配"""
+
     def __init__(self, device_serial: Optional[str] = None, is_multi_device_mode: bool = False):
         """
         初始化增强输入处理器
@@ -149,6 +163,49 @@ class DeviceScriptReplayer:
         self.device_account = None
         if device_serial:
             self._allocate_device_account()
+
+        # 初始化通用UI检测器
+        if UNIVERSAL_UI_DETECTOR_AVAILABLE:
+            self.ui_detector = UniversalUIDetector(
+                device_id=device_serial,
+                save_files=False,  # 回放系统不需要保存文件
+                timeout=30,
+                max_retries=2
+            )
+            self.device_strategy = None
+            self._initialize_device_strategy()
+        else:
+            self.ui_detector = None
+            self.device_strategy = None
+
+    def _initialize_device_strategy(self):
+        """初始化设备策略"""
+        if not self.ui_detector or not self.device_serial:
+            return
+
+        try:
+            # 获取设备信息
+            devices = self.ui_detector.get_connected_devices()
+            device_info = None
+
+            for device in devices:
+                if device.get('serial') == self.device_serial:
+                    device_info = device
+                    break
+
+            if device_info:
+                self.device_strategy = self.ui_detector._get_device_strategy(device_info)
+                print(f"✅ 设备策略初始化成功: {device_info.get('brand', 'unknown')} {device_info.get('model', 'unknown')}")
+                print(f"📱 Android版本: {device_info.get('android_version', 'unknown')}")
+
+                # 根据设备特性调整超时和重试设置
+                if self.device_strategy.get('requires_special_handling'):
+                    print("⚠️ 检测到需要特殊处理的设备，调整策略...")
+                    self.timeout = 45  # 增加超时时间
+            else:
+                print(f"⚠️ 未找到设备 {self.device_serial} 的详细信息，使用默认策略")
+        except Exception as e:
+            print(f"⚠️ 设备策略初始化失败: {e}")
 
     def _run_adb_command(self, command: list) -> Tuple[bool, str]:
         """
@@ -187,154 +244,417 @@ class DeviceScriptReplayer:
 
     def get_ui_hierarchy(self) -> Optional[str]:
         """
-        获取UI层次结构XML
-
-        Returns:
-            XML字符串或None
+        获取UI层次结构XML - 使用增强的设备兼容性
         """
         print("📱 获取UI层次结构...")
 
+        # 优先使用通用UI检测器
+        if self.ui_detector and self.device_serial:
+            try:
+                # 获取设备信息
+                devices = self.ui_detector.get_connected_devices()
+                device_info = None
+
+                for device in devices:
+                    if device.get('serial') == self.device_serial:
+                        device_info = device
+                        break
+
+                if device_info:
+                    # 使用通用UI检测器获取UI层次结构
+                    xml_path = self.ui_detector.dump_ui_hierarchy(self.device_serial, device_info)
+
+                    if xml_path and os.path.exists(xml_path):
+                        # 读取XML内容
+                        with open(xml_path, 'r', encoding='utf-8') as f:
+                            xml_content = f.read()
+
+                        # 清理临时文件
+                        try:
+                            os.remove(xml_path)
+                        except Exception:
+                            pass
+
+                        print("✅ UI层次结构获取成功 (通用检测器)")
+                        return xml_content
+                    else:
+                        print("⚠️ 通用检测器获取失败，尝试传统方法...")
+            except Exception as e:
+                print(f"⚠️ 通用检测器异常: {e}，尝试传统方法...")
+
+        # 回退到传统方法
+        print("🔄 使用传统UI获取方法...")
+
+        # 根据设备策略选择路径
+        dump_paths = ["/data/local/tmp/ui_dump.xml", "/data/ui_dump.xml"]
+        if self.device_strategy:
+            vendor_config = self.device_strategy.get('vendor_config', {})
+            if 'miui_paths' in vendor_config:
+                dump_paths = vendor_config['miui_paths'] + dump_paths
+            elif 'oxygenos_paths' in vendor_config:
+                dump_paths = vendor_config['oxygenos_paths'] + dump_paths
+
         # 先清理设备上的旧文件
-        self._run_adb_command(["shell", "rm", "-f", "/sdcard/ui_dump.xml"])
+        for path in dump_paths:
+            self._run_adb_command(["shell", "rm", "-f", path])
 
-        # 执行UI dump
-        success, output = self._run_adb_command(["shell", "uiautomator", "dump", "/sdcard/ui_dump.xml"])
-        if not success:
-            print(f"❌ UI dump失败: {output}")
-            return None
+        # 尝试多个路径进行UI dump
+        xml_content = None
+        for dump_path in dump_paths:
+            print(f"🔍 尝试路径: {dump_path}")
 
-        # 从设备拉取文件
-        with tempfile.NamedTemporaryFile(mode='w+', suffix='.xml', delete=False) as temp_file:
-            temp_path = temp_file.name
+            # 执行UI dump
+            success, output = self._run_adb_command(["shell", "uiautomator", "dump", dump_path])
+            if not success:
+                print(f"❌ UI dump失败: {output}")
+                continue
+
+            # 验证文件是否创建
+            success, output = self._run_adb_command(["shell", "ls", "-l", dump_path])
+            if not success:
+                continue
+
+            # 从设备拉取文件
+            with tempfile.NamedTemporaryFile(mode='w+', suffix='.xml', delete=False) as temp_file:
+                temp_path = temp_file.name
+
+            try:
+                success, output = self._run_adb_command(["pull", dump_path, temp_path])
+                if not success:
+                    print(f"❌ 拉取UI dump文件失败: {output}")
+                    continue
+
+                # 读取XML内容
+                with open(temp_path, 'r', encoding='utf-8') as f:
+                    xml_content = f.read()
+
+                if xml_content and len(xml_content) > 100:  # 确保内容有效
+                    print(f"✅ UI层次结构获取成功: {dump_path}")
+                    break
+                else:
+                    print(f"⚠️ 文件内容无效: {dump_path}")
+                    xml_content = None
+
+            except Exception as e:
+                print(f"❌ 读取UI dump文件失败: {e}")
+                continue
+            finally:
+                # 清理临时文件
+                try:
+                    os.unlink(temp_path)
+                except Exception:
+                    pass
+
+        return xml_content
+
+    def take_enhanced_screenshot(self) -> bool:
+        """
+        使用增强的截图功能
+        """
+        if not self.ui_detector or not self.device_serial:
+            return False
 
         try:
-            success, output = self._run_adb_command(["pull", "/sdcard/ui_dump.xml", temp_path])
-            if not success:
-                print(f"❌ 拉取UI dump文件失败: {output}")
-                return None
+            # 获取设备信息
+            devices = self.ui_detector.get_connected_devices()
+            device_info = None
 
-            # 读取XML内容
-            with open(temp_path, 'r', encoding='utf-8') as f:
-                xml_content = f.read()
+            for device in devices:
+                if device.get('serial') == self.device_serial:
+                    device_info = device
+                    break
 
-            print("✅ UI层次结构获取成功")
-            return xml_content
-
+            if device_info:
+                screenshot_path = self.ui_detector.take_screenshot(self.device_serial, device_info)
+                return screenshot_path is not None
+            else:            return False
         except Exception as e:
-            print(f"❌ 读取UI dump文件失败: {e}")
-            return None
-        finally:
-            # 清理临时文件
-            try:
-                os.unlink(temp_path)
-            except:
-                pass
-            # 清理设备上的文件
-            self._run_adb_command(["shell", "rm", "-f", "/sdcard/ui_dump.xml"])
+            print(f"⚠️ 增强截图失败: {e}")
+            return False
 
     def _parse_ui_xml(self, xml_content: str) -> List[Dict[str, Any]]:
-        """解析UI XML，返回元素列表"""
+        """解析UI XML，返回元素列表 - 增强版本，兼容通用UI检测器"""
         elements = []
         try:
             root = ET.fromstring(xml_content)
+
+            # 使用通用UI检测器的解析逻辑
+            if self.ui_detector:
+                # 创建临时文件用于通用检测器解析
+                import tempfile
+                with tempfile.NamedTemporaryFile(mode='w', suffix='.xml', delete=False, encoding='utf-8') as temp_file:
+                    temp_file.write(xml_content)
+                    temp_path = temp_file.name
+
+                try:
+                    # 使用通用检测器的解析方法
+                    ui_structure = self.ui_detector.parse_ui_hierarchy(temp_path)
+
+                    # 转换为回放系统期望的格式
+                    if ui_structure and ui_structure.get('elements'):
+                        for elem in ui_structure['elements']:
+                            element_info = {
+                                'text': elem.get('text', ''),
+                                'hint': '',  # 通用检测器不提取hint
+                                'resource_id': elem.get('resource_id', ''),
+                                'class': elem.get('class', ''),
+                                'content_desc': elem.get('content_desc', ''),
+                                'bounds': elem.get('bounds', ''),
+                                'clickable': elem.get('clickable', False),
+                                'focusable': True,  # 假设可交互元素都是可聚焦的
+                                'focused': elem.get('focused', False),
+                                'enabled': elem.get('enabled', True),
+                                'password': False,  # 通用检测器暂不检测密码字段
+                                'checkable': False,  # 通用检测器暂不检测checkable
+                                'checked': False,
+                                'scrollable': elem.get('scrollable', False),
+                                'package': elem.get('package', ''),
+                            }
+                            elements.append(element_info)
+
+                        print(f"✅ 使用通用检测器解析到 {len(elements)} 个元素")
+                        return elements
+
+                except Exception as e:
+                    print(f"⚠️ 通用检测器解析失败: {e}，使用传统解析方法")
+                finally:
+                    # 清理临时文件
+                    try:
+                        os.unlink(temp_path)
+                    except Exception:
+                        pass
+
+            # 回退到传统解析方法
+            print("🔄 使用传统XML解析方法...")
             for element in root.iter():
+                # 跳过非节点元素
+                if not hasattr(element, 'get'):
+                    continue
+
+                # 只处理有意义的UI元素
+                class_name = element.get('class', '')
+                text = element.get('text', '').strip()
+                clickable = element.get('clickable', 'false').lower() == 'true'
+
+                # 优化：只保留有用的元素
+                if not (text or clickable or 'EditText' in class_name or 'Button' in class_name):
+                    continue
+
                 element_info = {
-                    'text': element.get('text', ''),
+                    'text': text,
                     'hint': element.get('hint', ''),
                     'resource_id': element.get('resource-id', ''),
-                    'class': element.get('class', ''),
+                    'class': class_name,
                     'content_desc': element.get('content-desc', ''),
                     'bounds': element.get('bounds', ''),
-                    'clickable': element.get('clickable', 'false').lower() == 'true',
+                    'clickable': clickable,
                     'focusable': element.get('focusable', 'false').lower() == 'true',
                     'focused': element.get('focused', 'false').lower() == 'true',
                     'enabled': element.get('enabled', 'false').lower() == 'true',
                     'password': element.get('password', 'false').lower() == 'true',
                     'checkable': element.get('checkable', 'false').lower() == 'true',
                     'checked': element.get('checked', 'false').lower() == 'true',
+                    'scrollable': element.get('scrollable', 'false').lower() == 'true',
+                    'package': element.get('package', ''),
                 }
                 elements.append(element_info)
+
         except ET.ParseError as e:
             print(f"❌ XML解析失败: {e}")
+            print(f"✅ 传统方法解析到 {len(elements)} 个元素")
         return elements
 
     def find_username_field(self, elements: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
-        """查找用户名输入框（严格按照USERNAME_PATTERNS匹配）"""
-        print("🔍 查找用户名输入框（严格按照USERNAME_PATTERNS匹配）...")
+        """查找用户名输入框（严格按照USERNAME_PATTERNS匹配）- 增强版本"""
+        print("🔍 查找用户名输入框（使用增强识别算法）...")
 
         patterns = self.patterns.USERNAME_PATTERNS
 
-        # 优先级1：严格匹配class_types
+        # 增强策略1：优先级匹配 - 结合多个属性进行评分
+        candidates = []
+
         for element in elements:
             if element.get('class') in patterns['class_types']:
+                score = 0
                 text = element.get('text', '').lower()
                 hint = element.get('hint', '').lower()
                 resource_id = element.get('resource-id', '').lower()
                 content_desc = element.get('content-desc', '').lower()
 
-                # 检查text_hints模式
+                # 文本提示匹配评分
                 for kw in patterns['text_hints']:
                     kw_lower = kw.lower()
                     if kw_lower in text or kw_lower in hint:
-                        print(f"✅ 找到用户名输入框（text_hints匹配）: {element.get('resource-id', '无ID')} - 匹配关键字: {kw}")
-                        return element
+                        score += 10
+                        print(f"📊 文本匹配加分: {kw} -> +10分")
 
-                # 检查resource_id_keywords模式
+                # 资源ID匹配评分
                 for kw in patterns['resource_id_keywords']:
                     kw_lower = kw.lower()
                     if kw_lower in resource_id:
-                        print(f"✅ 找到用户名输入框（resource_id匹配）: {element.get('resource-id', '无ID')} - 匹配关键字: {kw}")
-                        return element
+                        score += 15  # 资源ID匹配权重更高
+                        print(f"📊 资源ID匹配加分: {kw} -> +15分")
 
-                # 检查content_desc_keywords模式
+                # content_desc匹配评分
                 for kw in patterns['content_desc_keywords']:
                     kw_lower = kw.lower()
                     if kw_lower in content_desc:
-                        print(f"✅ 找到用户名输入框（content_desc匹配）: {element.get('resource-id', '无ID')} - 匹配关键字: {kw}")
-                        return element
+                        score += 8
+                        print(f"📊 内容描述匹配加分: {kw} -> +8分")
+
+                # 布局位置评分（通常用户名输入框在屏幕上半部分）
+                bounds = element.get('bounds', '')
+                if bounds and '[' in bounds:
+                    try:
+                        # 解析bounds格式：[x1,y1][x2,y2]
+                        import re
+                        coords = re.findall(r'\[(\d+),(\d+)\]', bounds)
+                        if len(coords) >= 2:
+                            y1 = int(coords[0][1])
+                            # 如果在屏幕上半部分，加分
+                            if y1 < 1080:  # 假设1920x1080分辨率
+                                score += 3
+                                print(f"📊 位置优势加分: y={y1} -> +3分")
+                    except Exception:
+                        pass
+
+                # 是否为密码框减分
+                if element.get('password', False):
+                    score -= 20
+                    print(f"📊 密码框减分: -> -20分")
+
+                if score > 0:
+                    candidates.append((element, score))
+                    print(f"✅ 候选元素评分: {score}分 - {element.get('resource-id', '无ID')}")
+
+        # 按评分排序并返回最高分的
+        if candidates:
+            candidates.sort(key=lambda x: x[1], reverse=True)
+            best_element, best_score = candidates[0]
+            print(f"🎯 选择最佳用户名输入框: 评分{best_score}分 - {best_element.get('resource-id', '无ID')}")
+            return best_element
+
+        # 增强策略2：智能回退匹配
+        print("🔄 使用智能回退匹配...")
+        for element in elements:
+            class_name = element.get('class', '')
+
+            # 回退到任何EditText，但排除明显的密码框
+            if 'EditText' in class_name:
+                text = element.get('text', '').lower()
+                hint = element.get('hint', '').lower()
+                resource_id = element.get('resource-id', '').lower()
+
+                # 排除密码相关字段
+                password_indicators = ['password', 'pass', 'pwd', '密码', 'verification', 'verify']
+                is_password_field = any(indicator in text or indicator in hint or indicator in resource_id
+                                      for indicator in password_indicators)
+
+                if not is_password_field and not element.get('password', False):
+                    print(f"🔄 回退匹配找到输入框: {element.get('resource-id', '无ID')}")
+                    return element
 
         print("❌ 未找到用户名输入框")
         return None
 
     def find_password_field(self, elements: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
-        """查找密码输入框（严格按照PASSWORD_PATTERNS匹配）"""
-        print("🔍 查找密码输入框（严格按照PASSWORD_PATTERNS匹配）...")
+        """查找密码输入框（严格按照PASSWORD_PATTERNS匹配）- 增强版本"""
+        print("🔍 查找密码输入框（使用增强识别算法）...")
 
         patterns = self.patterns.PASSWORD_PATTERNS
 
-        # 优先级1：严格匹配class_types
+        # 增强策略1：优先级匹配 - 结合多个属性进行评分
+        candidates = []
+
         for element in elements:
             if element.get('class') in patterns['class_types']:
+                score = 0
                 text = element.get('text', '').lower()
                 hint = element.get('hint', '').lower()
                 resource_id = element.get('resource-id', '').lower()
                 content_desc = element.get('content-desc', '').lower()
-                password_field = element.get('password', False)
 
-                # 优先检查password字段标识
-                if password_field:
-                    print(f"✅ 找到密码输入框（password字段标识）: {element.get('resource-id', '无ID')}")
-                    return element
+                # password字段标识（最高权重）
+                if element.get('password', False):
+                    score += 25  # password字段标识权重最高
+                    print(f"📊 password字段标识加分: +25分")
 
-                # 检查text_hints模式
+                # 文本提示匹配评分
                 for kw in patterns['text_hints']:
                     kw_lower = kw.lower()
                     if kw_lower in text or kw_lower in hint:
-                        print(f"✅ 找到密码输入框（text_hints匹配）: {element.get('resource-id', '无ID')} - 匹配关键字: {kw}")
-                        return element
+                        score += 10
+                        print(f"📊 文本匹配加分: {kw} -> +10分")
 
-                # 检查resource_id_keywords模式
+                # 资源ID匹配评分
                 for kw in patterns['resource_id_keywords']:
                     kw_lower = kw.lower()
                     if kw_lower in resource_id:
-                        print(f"✅ 找到密码输入框（resource_id匹配）: {element.get('resource-id', '无ID')} - 匹配关键字: {kw}")
-                        return element
+                        score += 15  # 资源ID匹配权重更高
+                        print(f"📊 资源ID匹配加分: {kw} -> +15分")
 
-                # 检查content_desc_keywords模式
+                # content_desc匹配评分
                 for kw in patterns['content_desc_keywords']:
                     kw_lower = kw.lower()
                     if kw_lower in content_desc:
-                        print(f"✅ 找到密码输入框（content_desc匹配）: {element.get('resource-id', '无ID')} - 匹配关键字: {kw}")
+                        score += 8
+                        print(f"📊 内容描述匹配加分: {kw} -> +8分")
+
+                # 布局位置评分（通常密码输入框在用户名输入框下方）
+                bounds = element.get('bounds', '')
+                if bounds and '[' in bounds:
+                    try:
+                        # 解析bounds格式：[x1,y1][x2,y2]
+                        import re
+                        coords = re.findall(r'\[(\d+),(\d+)\]', bounds)
+                        if len(coords) >= 2:
+                            y1 = int(coords[0][1])
+                            # 如果在屏幕中部，加分
+                            if 500 < y1 < 1500:  # 假设1920x1080分辨率
+                                score += 3
+                                print(f"📊 位置优势加分: y={y1} -> +3分")
+                    except Exception:
+                        pass
+
+                # 用户名框加分会在这里减分
+                username_indicators = ['username', 'account', 'user', '账号', '用户名']
+                for indicator in username_indicators:
+                    if indicator in text or indicator in hint or indicator in resource_id:
+                        score -= 15  # 如果包含用户名相关字段，减分
+                        print(f"📊 用户名框减分: {indicator} -> -15分")
+
+                if score > 0:
+                    candidates.append((element, score))
+                    print(f"✅ 候选元素评分: {score}分 - {element.get('resource-id', '无ID')}")
+
+        # 按评分排序并返回最高分的
+        if candidates:
+            candidates.sort(key=lambda x: x[1], reverse=True)
+            best_element, best_score = candidates[0]
+            print(f"🎯 选择最佳密码输入框: 评分{best_score}分 - {best_element.get('resource-id', '无ID')}")
+            return best_element
+
+        # 增强策略2：智能回退匹配
+        print("🔄 使用智能回退匹配...")
+        for element in elements:
+            class_name = element.get('class', '')
+
+            # 回退到任何EditText，但优先选择标记为password的
+            if 'EditText' in class_name:
+                text = element.get('text', '').lower()
+                hint = element.get('hint', '').lower()
+                resource_id = element.get('resource-id', '').lower()
+
+                # 检查password标识
+                if element.get('password', False):
+                    print(f"🔄 回退匹配找到密码框（password标识）: {element.get('resource-id', '无ID')}")
+                    return element
+
+                # 检查密码相关字段（如果没有明显的password标识）
+                password_indicators = ['password', 'pass', 'pwd', '密码', 'secret']
+                for indicator in password_indicators:
+                    if indicator in text or indicator in hint or indicator in resource_id:
+                        print(f"🔄 回退匹配找到密码框（关键词匹配）: {element.get('resource-id', '无ID')}")
                         return element
 
         print("❌ 未找到密码输入框")

@@ -1,0 +1,27 @@
+{
+  "success": true,
+  "device_id": "a3833caf",
+  "timestamp": "2025-07-02T16:47:17.377617",
+  "screenshot_shape": [
+    2160,
+    1080,
+    3
+  ],
+  "total_detections": 1,
+  "detections": [
+    {
+      "class_name": "operation-buy",
+      "confidence": 0.617591917514801,
+      "bbox": [
+        668,
+        958,
+        943,
+        1050
+      ],
+      "center": [
+        805,
+        1004
+      ]
+    }
+  ]
+}

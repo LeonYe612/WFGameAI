@@ -27,6 +27,7 @@ import numpy as np
 from ultralytics import YOLO
 import json
 import time
+import tempfile  # 添加tempfile导入用于临时文件处理
 from datetime import datetime
 from adbutils import adb
 import argparse
@@ -56,43 +57,27 @@ logging.getLogger("PIL").setLevel(logging.ERROR)
 logging.getLogger("matplotlib").setLevel(logging.ERROR)
 
 
-# 导入我们的模型加载适配器
-try:
-    # 正确导入model_loader模块
-    from model_loader import load_model
-    print("已导入模型加载适配器")
-except ImportError as e:
-    print(f"导入模型加载适配器失败: {e}")
-    # 尝试当前目录中的utils.py
-    try:
-        from utils import load_yolo_model
-        # 为了兼容性，我们将load_yolo_model重命名为load_model
-        load_model = load_yolo_model
-        print("从当前目录的utils.py导入了load_yolo_model函数")
-    except ImportError as e2:
-        print(f"从当前目录导入load_yolo_model失败: {e2}")
-        print("直接退出，因为模型加载是必须的")
-        sys.exit(1)
-
-# 导入统一路径管理工具
 # 确保项目根目录在sys.path中
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
+# 统一只从项目根目录导入utils模块
 try:
-    from utils import get_project_root, get_scripts_dir, get_testcase_dir
+    # 直接从项目根目录导入所有需要的工具函数
+    from utils import get_project_root, get_weights_dir, get_scripts_dir, get_testcase_dir, load_yolo_model
+    print("从项目根目录utils.py导入了所需函数")
 
     # 使用配置文件中的路径
-    PROJECT_ROOT = get_scripts_dir() or os.path.dirname(os.path.abspath(__file__))
-    TESTCASE_DIR = get_testcase_dir() or os.path.join(PROJECT_ROOT, "testcase")
-    print(f"使用路径配置: PROJECT_ROOT={PROJECT_ROOT}, TESTCASE_DIR={TESTCASE_DIR}")
+    WEIGHTS_DIR = get_weights_dir()
+    PROJECT_ROOT = get_project_root()
+    SCRIPTS_DIR = get_scripts_dir()
+    TESTCASE_DIR = get_testcase_dir()
+    print(f"使用路径配置: PROJECT_ROOT={PROJECT_ROOT}, SCRIPTS_DIR={SCRIPTS_DIR}, TESTCASE_DIR={TESTCASE_DIR}, WEIGHTS_DIR={WEIGHTS_DIR}")
 except ImportError as e:
-    print(f"从项目根目录导入失败: {e}")
-    # 如果导入失败，使用相对路径
-    PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
-    TESTCASE_DIR = os.path.join(PROJECT_ROOT, "testcase")
-    print("警告: 未找到配置管理工具，使用相对路径")
+    print(f"从项目根目录导入utils模块失败: {e}")
+    print("此功能依赖于项目根目录中的utils.py，请确保其存在并包含所需功能")
+    sys.exit(1)
 
 # 全局变量
 script = {"steps": []}
@@ -904,24 +889,43 @@ def capture_and_analyze_device(device, screenshot_queue):
             has_changed = detect_screen_change(device.serial, frame)
 
             # 只有在屏幕变化或没有之前的帧时才执行完整分析
-            if has_changed or device.serial not in prev_frames:                # 使用YOLO模型预测
-                frame_for_detection = cv2.resize(frame, (640, 640))
+            if has_changed or device.serial not in prev_frames:                # 使用YOLO模型预测 - 修复检测问题
+                # 不再使用cv2.resize，直接保存原始图像让YOLO自己处理
+                import tempfile
+                with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as temp_file:
+                    temp_path = temp_file.name
+                    cv2.imwrite(temp_path, frame)
+
                 try:
-                    if model and hasattr(model, 'predict'):
-                        # 抑制YOLO模型的输出
+                    if model and hasattr(model, 'predict'):                        # 导入ThresholdConfig以使用统一的阈值管理
+                        try:
+                            sys.path.append(os.path.join(get_project_root(), 'train_model'))
+                            from infer import ThresholdConfig
+                            conf_threshold = ThresholdConfig.get_conf_threshold("default")
+                        except:
+                            conf_threshold = 0.5  # 备用阈值
+
                         results_for_detection = model.predict(
-                            source=frame_for_detection,
+                            source=temp_path,  # 传入图像路径而不是numpy数组
                             device=DEVICE,
                             imgsz=640,
-                            conf=0.6,
-                            verbose=False  # 关闭详细输出
+                            conf=conf_threshold,  # 使用统一的置信度阈值
+                            iou=0.6,   # 添加NMS IoU阈值
+                            half=True if DEVICE == "cuda" else False,  # 半精度推理
+                            max_det=300,  # 最大检测数量
+                            verbose=False
                         )
                     else:
                         results_for_detection = None
                 except Exception as model_err:
                     print(f"模型预测失败: {model_err}")
                     results_for_detection = None
-                    # 继续执行，使用空结果
+                finally:
+                    # 清理临时文件
+                    try:
+                        os.unlink(temp_path)
+                    except:
+                        pass
 
                 # 分析界面状态
                 current_state = analyze_ui_state(device.serial, frame, results_for_detection)
@@ -1177,13 +1181,14 @@ except Exception as e:
 
 # 加载模型
 try:
-    # 使用我们的适配器加载模型
-    print(f"开始加载模型，使用路径: {PROJECT_ROOT}")
+    from utils import get_weights_path
+    # 使用项目根目录中的模型加载函数，从配置文件读取模型路径
+    print(f"即将加载的模型路径: {get_weights_path()}")
 
-    model = load_model(
-        base_dir=PROJECT_ROOT,
-        model_class=YOLO,
-        device=DEVICE
+    # 简化参数调用，直接使用工具函数中的配置管理器
+    model = load_yolo_model(
+        device=DEVICE,  # 只需要指定设备类型
+        model_class=YOLO
     )
 
     if not model:
@@ -1206,16 +1211,14 @@ if is_recording:
     timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
     save_path = os.path.join(output_dir, f"scene1_{timestamp}.json")
     print(f"录制文件将保存至: {save_path}")
-
-# 修改后的启动提示
-print("启动脚本，按 'q' 退出")
-if is_recording:
+    # 修改后的启动提示
+    print("启动脚本，按 'q' 退出")
     if args.record_no_match:
         print("已进入录制模式，未识别按钮点击将被记录为比例坐标")
     else:
         print("已进入录制模式，仅记录匹配的按钮点击")
 else:
-    print("已进入交互模式，点击窗口直接操作设备，不生成 JSON")
+    print("已进入调试交互模式，点击窗口直接操作设备，不生成 JSON")
 
 # 启动设备捕获线程
 threads = []
@@ -1270,25 +1273,46 @@ while not exit_flag:
             if not any(alive_threads):
                 print("所有设备线程已停止，退出主循环")
                 break
-            continue
-
-        frame_for_detection = cv2.resize(frame, (640, 640))
+            continue        # 修复检测问题：不使用cv2.resize，直接保存原始图像
+        import tempfile
+        with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as temp_file:
+            temp_path = temp_file.name
+            cv2.imwrite(temp_path, frame)
 
         try:
-            # 使用try/except包装模型预测，防止模型错误导致整个程序崩溃
+            # 导入ThresholdConfig以使用统一的阈值管理
+            try:
+                import sys
+                import os
+                sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'train_model'))
+                from infer import ThresholdConfig
+                conf_threshold = ThresholdConfig.get_conf_threshold("default")
+            except ImportError:
+                conf_threshold = 0.5  # 后备默认值
+
+            # 使用优化的YOLO参数进行检测
             if model and hasattr(model, 'predict'):
                 results_for_detection = model.predict(
-                    source=frame_for_detection,
+                    source=temp_path,  # 传入图像路径
                     device=DEVICE,
                     imgsz=640,
-                    conf=0.6,
-                    verbose=False  # 关闭详细输出
+                    conf=conf_threshold,  # 使用统一配置的置信度阈值
+                    iou=0.6,   # NMS IoU阈值
+                    half=True if DEVICE == "cuda" else False,
+                    max_det=300,
+                    verbose=False
                 )
             else:
                 results_for_detection = None
         except Exception as model_err:
             print(f"模型预测失败: {model_err}")
             results_for_detection = None
+        finally:
+            # 清理临时文件
+            try:
+                os.unlink(temp_path)
+            except:
+                pass
             # 继续执行，使用空结果
 
         # 检查并更新窗口大小

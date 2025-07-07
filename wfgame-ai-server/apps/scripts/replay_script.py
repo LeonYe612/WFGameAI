@@ -219,6 +219,7 @@ def load_yolo_model_for_detection(model_path=None):
             print_realtime(f"🔄 加载指定模型: {model_path}")
             model = YOLO(model_path)
         elif load_yolo_model is not None:
+            print_realtime("🔄 使用load_yolo_model加载模型")
             # 使用项目的load_yolo_model函数
             base_dir = os.path.dirname(os.path.abspath(__file__))
             try:
@@ -268,7 +269,7 @@ def load_yolo_model_for_detection(model_path=None):
         return False
 
 def detect_buttons(frame, target_class=None, conf_threshold=0.6):
-    """检测按钮，与legacy版本保持一致"""
+    """检测按钮，使用优化的检测方法"""
     global model
 
     if model is None:
@@ -276,40 +277,82 @@ def detect_buttons(frame, target_class=None, conf_threshold=0.6):
         return False, (None, None, None)
 
     try:
-        frame_for_detection = cv2.resize(frame, (640, 640))
-        print_realtime(f"🔍 开始检测目标类别: {target_class}")
+        print_realtime(f"🔍 开始检测目标类别: {target_class}")        # 🔧 修复：保存临时图像文件而不是直接resize
+        import tempfile
+        import os
 
-        # 使用当前设备进行预测
-        results = model.predict(source=frame_for_detection, imgsz=640, conf=conf_threshold, verbose=False)
+        # 导入ThresholdConfig以使用统一的阈值管理
+        try:
+            import sys
+            train_model_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'train_model'))
+            if train_model_path not in sys.path:
+                sys.path.append(train_model_path)
+            from infer import ThresholdConfig
+            conf_threshold = ThresholdConfig.get_conf_threshold("default")
+        except Exception:
+            conf_threshold = 0.5  # 后备默认值
 
-        # 检查预测结果是否有效
-        if results is None or len(results) == 0:
-            print_realtime("⚠️ 警告：模型预测结果为空")
+        with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as temp_file:
+            temp_path = temp_file.name
+            cv2.imwrite(temp_path, frame)
+
+        try:
+            # 🔧 修复：使用优化的YOLO参数
+            device = "cuda" if hasattr(model, 'device') and 'cuda' in str(model.device) else "cpu"
+            results = model.predict(
+                source=temp_path,  # 传入图像路径而不是numpy数组
+                device=device,
+                imgsz=640,
+                conf=conf_threshold,  # 使用统一配置的置信度阈值
+                iou=0.6,   # NMS IoU阈值
+                half=True if device == "cuda" else False,
+                max_det=300,
+                verbose=False
+            )
+
+            # 检查预测结果是否有效
+            if results is None or len(results) == 0:
+                print_realtime("⚠️ 警告：模型预测结果为空")
+                return False, (None, None, None)
+
+            # 检查结果中是否有boxes
+            if not hasattr(results[0], 'boxes') or results[0].boxes is None:
+                print_realtime("⚠️ 警告：预测结果中没有检测框")
+                return False, (None, None, None)
+
+            orig_h, orig_w = frame.shape[:2]
+
+            for box in results[0].boxes:
+                cls_id = int(box.cls.item())
+                # 检查模型是否有names属性
+                if hasattr(model, 'names') and model.names is not None:
+                    detected_class = model.names[cls_id]
+                else:
+                    detected_class = f"class_{cls_id}"
+                if detected_class == target_class:
+                    # 🔧 修复：直接使用原始坐标，因为YOLO已经自动缩放
+                    box_coords = box.xyxy[0].tolist()  # [x1, y1, x2, y2]
+                    x = (box_coords[0] + box_coords[2]) / 2  # 中心点x
+                    y = (box_coords[1] + box_coords[3]) / 2  # 中心点y
+
+                    # 根据图像实际尺寸调整坐标
+                    if orig_w != 640 or orig_h != 640:
+                        x = x * orig_w / 640
+                        y = y * orig_h / 640
+
+                    print_realtime(f"✅ 找到目标类别 {target_class}，置信度: {box.conf.item():.3f}")
+                    return True, (x, y, detected_class)
+
+            # 如果没有找到目标类别，返回失败
+            print_realtime(f"⚠️ 未找到目标类别: {target_class}")
             return False, (None, None, None)
 
-        # 检查结果中是否有boxes
-        if not hasattr(results[0], 'boxes') or results[0].boxes is None:
-            print_realtime("⚠️ 警告：预测结果中没有检测框")
-            return False, (None, None, None)
-
-        orig_h, orig_w = frame.shape[:2]
-        scale_x, scale_y = orig_w / 640, orig_h / 640
-
-        for box in results[0].boxes:
-            cls_id = int(box.cls.item())
-            # 检查模型是否有names属性
-            if hasattr(model, 'names') and model.names is not None:
-                detected_class = model.names[cls_id]
-            else:
-                detected_class = f"class_{cls_id}"
-            if detected_class == target_class:
-                box_x, box_y = box.xywh[0][:2].tolist()
-                x, y = box_x * scale_x, box_y * scale_y
-                return True, (x, y, detected_class)
-
-        # 如果没有找到目标类别，返回失败
-        print_realtime(f"⚠️ 未找到目标类别: {target_class}")
-        return False, (None, None, None)
+        finally:
+            # 清理临时文件
+            try:
+                os.unlink(temp_path)
+            except:
+                pass
 
     except Exception as e:
         print_realtime(f"按钮检测失败: {e}")
