@@ -91,12 +91,27 @@ def _device_worker_with_account(device_serial: str, scripts: List[str],
                 }
             return {'success': False, 'error': error_msg}
 
+        # 尝试导入AI检测功能
+        detect_buttons_func = None
+        try:
+            from replay_script import detect_buttons, load_yolo_model_for_detection
+            # 初始化YOLO模型
+            if load_yolo_model_for_detection():
+                detect_buttons_func = detect_buttons
+                print(f"[Worker-{process_id}][{timestamp}] 设备 {device_serial} AI检测功能已加载")
+            else:
+                print(f"[Worker-{process_id}][{timestamp}] 设备 {device_serial} YOLO模型加载失败")
+        except ImportError as e:
+            print(f"[Worker-{process_id}][{timestamp}] 设备 {device_serial} AI检测功能导入失败: {e}")
+        except Exception as e:
+            print(f"[Worker-{process_id}][{timestamp}] 设备 {device_serial} AI检测功能初始化异常: {e}")
+
         # 创建ActionProcessor实例
         action_processor = ActionProcessor(
             device=device,
             device_name=device_serial,
             log_txt_path=None,
-            detect_buttons_func=None
+            detect_buttons_func=detect_buttons_func
         )
 
         # 设置账号信息

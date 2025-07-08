@@ -1396,9 +1396,9 @@ class AppPermissionManager:
             logger.debug(f"执行adb tap失败: {e}")
             return False
     def _click_by_simplified_method(self, device_serial: str, target_patterns: List[str]) -> bool:
-        """方式6: 简化点击方法 - 完全参考click_target成功做法"""
+        """方式6: 简化点击方法 - 完全参考click成功做法"""
         try:
-            logger.info("🔄 尝试简化点击方法（完全参考click_target成功做法）...")
+            logger.info("🔄 尝试简化点击方法（完全参考click成功做法）...")
 
             # 使用EnhancedInputHandler的方法来处理按钮点击
             from enhanced_input_handler import EnhancedInputHandler

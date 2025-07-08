@@ -196,8 +196,7 @@ try:
     print_realtime("✅ 成功导入load_yolo_model函数")
 except ImportError:
     try:
-        # 尝试从项目根目录导入
-        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
+        # 尝试从项目根目录导入        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
         if project_root not in sys.path:
             sys.path.insert(0, project_root)
         from utils import load_yolo_model
@@ -205,6 +204,46 @@ except ImportError:
     except ImportError:
         print_realtime("⚠️ 无法导入load_yolo_model函数")
         load_yolo_model = None
+
+def _letterbox_inverse_transform(x, y, orig_w, orig_h, yolo_size=640):
+    """
+    YOLO letterbox逆变换函数 - 修复坐标系统错误
+
+    YOLO在处理非正方形图像时使用letterbox技术:
+    1. 保持长宽比不变
+    2. 缩放图像使最长边为640
+    3. 短边用黑边填充至640
+
+    Args:
+        x, y: YOLO输出的坐标 (640x640空间内)
+        orig_w, orig_h: 原始图像的宽度和高度
+        yolo_size: YOLO输入尺寸 (默认640)
+
+    Returns:
+        tuple: (transformed_x, transformed_y) 原始图像空间的坐标
+    """
+    # 计算缩放比例 - 取最小值保持长宽比
+    scale = min(yolo_size / orig_w, yolo_size / orig_h)
+
+    # 计算缩放后的图像尺寸
+    scaled_w = orig_w * scale
+    scaled_h = orig_h * scale
+
+    # 计算padding（黑边）
+    pad_x = (yolo_size - scaled_w) / 2
+    pad_y = (yolo_size - scaled_h) / 2
+
+    # 逆变换：从640x640空间转换回原始图像空间
+    # 1. 减去padding
+    # 2. 除以scale因子
+    transformed_x = (x - pad_x) / scale
+    transformed_y = (y - pad_y) / scale
+
+    # 确保坐标在有效范围内
+    transformed_x = max(0, min(transformed_x, orig_w - 1))
+    transformed_y = max(0, min(transformed_y, orig_h - 1))
+
+    return transformed_x, transformed_y
 
 def load_yolo_model_for_detection(model_path=None):
     """加载YOLO模型用于AI检测"""
@@ -323,22 +362,19 @@ def detect_buttons(frame, target_class=None, conf_threshold=0.6):
             orig_h, orig_w = frame.shape[:2]
 
             for box in results[0].boxes:
-                cls_id = int(box.cls.item())
-                # 检查模型是否有names属性
+                cls_id = int(box.cls.item())                # 检查模型是否有names属性
                 if hasattr(model, 'names') and model.names is not None:
                     detected_class = model.names[cls_id]
                 else:
                     detected_class = f"class_{cls_id}"
                 if detected_class == target_class:
-                    # 🔧 修复：直接使用原始坐标，因为YOLO已经自动缩放
+                    # 🔧 修复：使用正确的letterbox逆变换
                     box_coords = box.xyxy[0].tolist()  # [x1, y1, x2, y2]
                     x = (box_coords[0] + box_coords[2]) / 2  # 中心点x
                     y = (box_coords[1] + box_coords[3]) / 2  # 中心点y
 
-                    # 根据图像实际尺寸调整坐标
-                    if orig_w != 640 or orig_h != 640:
-                        x = x * orig_w / 640
-                        y = y * orig_h / 640
+                    # 使用letterbox逆变换将坐标从640x640空间转换回原始图像空间
+                    x, y = _letterbox_inverse_transform(x, y, orig_w, orig_h)
 
                     print_realtime(f"✅ 找到目标类别 {target_class}，置信度: {box.conf.item():.3f}")
                     return True, (x, y, detected_class)

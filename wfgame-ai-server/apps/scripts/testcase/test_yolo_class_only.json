@@ -5,37 +5,37 @@
         {
             "step": 1,
             "detection_method": "ai",
-            "action": "wait_if_exists",
+            "action": "click",
             "yolo_class": "operation-sdk-phoneinput"
         },
         {
             "step": 2,
             "detection_method": "ai",
-            "action": "wait_for_appearance",
+            "action": "click",
             "yolo_class": "operation-sdk-yzminput"
         },
         {
             "step": 3,
             "detection_method": "ai",
-            "action": "wait_for_disappearance",
+            "action": "click",
             "yolo_class": "operation-sdk-yzm"
         },
         {
             "step": 4,
             "detection_method": "ai",
-            "action": "wait_for_appearance",
+            "action": "click",
             "yolo_class": "operation-sdk-inbox"
         },
         {
             "step": 5,
             "detection_method": "ai",
-            "action": "wait_for_disappearance",
+            "action": "click",
             "yolo_class": "operation-sdk-login"
         },
         {
             "step": 6,
             "detection_method": "ai",
-            "action": "wait_if_exists",
+            "action": "click",
             "yolo_class": "operation-sdk-login"
         }
     ]

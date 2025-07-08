@@ -318,7 +318,7 @@ class ActionProcessor:
         """处理action步骤"""
         step_action = step.get("action", "click")
         step_class = step.get("class", "")
-        step_class = step.get("yolo_class", "")        # 处理特殊步骤类型
+        step_yolo_class = step.get("yolo_class", "")  # 修复: 确保step_yolo_class已定义
         if step_class == "delay":
             result = self._handle_delay(step, step_idx, log_dir)
 
@@ -359,9 +359,6 @@ class ActionProcessor:
         elif step_action == "checkbox":
             result = self._handle_checkbox(step, step_idx)
 
-        elif step_action == "auto_login":
-            result = self._handle_auto_login(step, step_idx)
-
         elif step_action == "wait_for_disappearance":
             result = self._handle_wait_for_disappearance(step, step_idx, log_dir)
 
@@ -371,15 +368,10 @@ class ActionProcessor:
             print(f"🎯 执行AI检测点击操作")
             result = self._handle_ai_detection_click(step, step_idx, log_dir)
 
-        # 废弃click_target，替换为click
-
-        elif step_action == "click_target":
-            print("⚠️ 警告: click_target已废弃，请使用click替代")
-            # 将click_target转换为标准click处理
-            converted_step = step.copy()
-            converted_step["action"] = "click"
-
-            if "target_selector" in converted_step:
+        elif step_action == "click":
+            if "target_selector" in step:
+                # 处理 target_selector 逻辑
+                converted_step = step.copy()
                 target_selector = converted_step["target_selector"]
                 # 尝试从target_selector提取参数
 
@@ -387,24 +379,23 @@ class ActionProcessor:
                     converted_step["ui_type"] = target_selector["type"]
                     converted_step["detection_method"] = "ui"
                 del converted_step["target_selector"]
-            return self._process_action(converted_step, step_idx, log_dir)
-
-        else:
-            # 默认处理：尝试AI检测点击
-
-            if step_class == "unknown" and "relative_x" in step and "relative_y" in step:
-                result = self._handle_fallback_click(step, step_idx, log_dir)
-
-            elif step_yolo_class and step_yolo_class != "unknown":
-                # 对于Priority模式脚本，如果有yolo_class字段，执行AI检测点击
-                print(f"🎯 检测到yolo_class字段: {step_yolo_class}，执行AI检测点击")
-                result = self._handle_ai_detection_click(step, step_idx, log_dir)
-
-            elif step_class and step_class != "unknown":
-                result = self._handle_ai_detection_click(step, step_idx, log_dir)
-
+                return self._process_action(converted_step, step_idx, log_dir)
             else:
-                return False, False, False
+                # 默认处理：尝试AI检测点击
+
+                if step_class == "unknown" and "relative_x" in step and "relative_y" in step:
+                    result = self._handle_fallback_click(step, step_idx, log_dir)
+
+                elif step_yolo_class and step_yolo_class != "unknown":
+                    # 对于Priority模式脚本，如果有yolo_class字段，执行AI检测点击
+                    print(f"🎯 检测到yolo_class字段: {step_yolo_class}，执行AI检测点击")
+                    result = self._handle_ai_detection_click(step, step_idx, log_dir)
+
+                elif step_class and step_class != "unknown":
+                    result = self._handle_ai_detection_click(step, step_idx, log_dir)
+
+                else:
+                    return False, False, False
 
         # 转换ActionResult对象为元组（向后兼容）
         if isinstance(result, ActionResult):
@@ -1609,155 +1600,6 @@ class ActionProcessor:
             )
 
 
-    def _handle_click_target(self, step, step_idx=None):
-        """处理通用目标点击步骤 - 已废弃，请使用click替代"""
-        print("⚠️ 警告: _handle_click_target已废弃，请使用标准click操作替代")
-        print("💡 建议: 将target_selector转换为detection_method + ui_type参数")
-
-        # 转换为标准点击操作
-        converted_step = step.copy()
-        converted_step["action"] = "click"
-
-        if "target_selector" in converted_step:
-            target_selector = converted_step["target_selector"]
-            # 尝试从target_selector提取参数
-            if target_selector.get("type"):
-                converted_step["ui_type"] = target_selector["type"]
-                converted_step["detection_method"] = "ui"
-            del converted_step["target_selector"]
-
-        # 使用旧接口处理转换后的步骤
-        log_dir = None
-        if self.log_txt_path:
-            log_dir = os.path.dirname(self.log_txt_path)
-
-        return self._process_action_old(converted_step, step_idx or 0, log_dir)
-
-    def _handle_auto_login(self, step, step_idx):
-        """处理完整自动登录流程"""
-        params = step.get("params", {})
-        step_remark = step.get("remark", "")
-        username = params.get("username", "")
-        password = params.get("password", "")
-
-        # 解析自动登录流程参数
-        login_type = params.get("login_type", "phone")
-        handle_switch = params.get("handle_switch", True)
-        input_username = params.get("input_username", True)
-        input_password = params.get("input_password", True)
-        click_login = params.get("click_login", True)
-
-        # 智能账号分配：如果需要账号参数但没有分配，尝试自动分配
-        if ("${account:username}" in username or "${account:password}" in password):
-            if not self.device_account:
-                print("🔄 检测到需要账号参数但设备未分配账号，尝试自动分配...")
-                self._auto_allocate_device_account()
-
-        # 参数替换处理
-        if "${account:username}" in username:
-            if self.device_account and len(self.device_account) >= 1:
-                username = username.replace("${account:username}", self.device_account[0])
-                print(f"✅ 替换用户名参数: {self.device_account[0]}")
-            else:
-                device_serial = getattr(self.device, 'serial', self.device_name)
-                print(f"❌ 错误: 设备 {device_serial} 没有分配账号，无法替换用户名参数")
-                print("💡 可能原因: 1)账号池已满 2)账号文件错误 3)账号管理器初始化失败")
-                print("💡 解决建议: 检查 datasets/accounts_info/accounts.txt 或运行账号诊断工具")
-                return True, False, True
-
-        if "${account:password}" in password:
-            if self.device_account and len(self.device_account) >= 2:
-                password = password.replace("${account:password}", self.device_account[1])
-                print(f"✅ 替换密码参数")
-            else:
-                device_serial = getattr(self.device, 'serial', self.device_name)
-                print(f"❌ 错误: 设备 {device_serial} 没有分配账号，无法替换密码参数")
-                print("💡 可能原因: 1)账号池已满 2)账号文件错误 3)账号管理器初始化失败")
-                print("💡 解决建议: 检查 datasets/accounts_info/accounts.txt 或运行账号诊断工具")
-                return True, False, True
-            print(f"执行完整自动登录流程 - {step_remark}")
-        print(f"用户名: {username}")
-        print(f"密码: {'*' * len(password)}")
-
-        try:
-            # 获取截图目录
-            log_dir = None
-            if self.log_txt_path:
-                log_dir = os.path.dirname(self.log_txt_path)
-                # 初始化增强输入处理器
-            if DeviceScriptReplayer:
-                input_handler = DeviceScriptReplayer(self.device.serial)
-
-                # 执行完整的自动登录流程
-                success = input_handler.perform_auto_login(username, password)
-            else:
-                print("⚠️ DeviceScriptReplayer不可用，无法执行自动登录")
-                return True, False, True
-
-            if success:
-                print(f"✅ 完整自动登录流程执行成功")
-
-                # 创建screen对象以支持报告截图显示
-                screen_data = self._create_unified_screen_object(
-                    log_dir,
-                    pos_list=[],
-                    confidence=1.0,
-                    rect_info=[]
-                )
-
-                # 记录自动登录操作日志
-                timestamp = time.time()
-                auto_login_entry = {
-                    "tag": "function",
-                    "depth": 1,
-                    "time": timestamp,
-                    "data": {
-                        "name": "perform_auto_login",
-                        "call_args": {
-                            "username": username,
-                            "password": "***隐藏密码***"
-                        },
-                        "start_time": timestamp,
-                        "ret": {"success": True},
-                        "end_time": timestamp + 3.0,
-                        "desc": step_remark or "完整自动登录操作",
-                        "title": f"#{step_idx+1} {step_remark or '完整自动登录操作'}"
-                    }
-                }                # 添加screen对象到日志条目（如果可用）
-                if screen_data:
-                    auto_login_entry["data"]["screen"] = screen_data
-
-                self._write_log_entry(auto_login_entry)
-
-                return ActionResult(
-                    success=True,
-                    message="完整自动登录流程执行成功",
-                    details={
-                        "operation": "auto_login",
-                        "login_type": login_type,
-                        "handle_switch": handle_switch,
-                        "input_username": input_username,
-                        "input_password": input_password,
-                        "click_login": click_login
-                    }
-                )
-            else:
-                print(f"❌ 错误: 完整自动登录流程执行失败")
-                return ActionResult(
-                    success=False,
-                    message="完整自动登录流程执行失败",
-                    details={"operation": "auto_login", "error": "login_flow_failed"}
-                )
-
-        except Exception as e:
-            print(f"❌ 错误: 自动登录过程中发生异常: {e}")
-            traceback.print_exc()
-            return ActionResult(
-                success=False,
-                message=f"自动登录异常: {str(e)}",
-                details={"operation": "auto_login", "error": str(e)}
-            )
-
     def _create_unified_screen_object(self, log_dir, pos_list=None, confidence=0.85, rect_info=None):
         """
         创建统一的screen对象 - 增强版
@@ -2296,21 +2138,6 @@ class ActionProcessor:
         step_idx = getattr(context, 'step_idx', 0)
         result = self._handle_checkbox(step, step_idx)
         return ActionResult.from_tuple(result)
-    def _handle_click_target_new(self, step, context):
-        """目标点击 - 新接口"""
-        # 使用旧接口的完整实现来确保真实操作
-        # 将ActionContext转换为step_idx参数
-        step_idx = getattr(context, 'step_idx', 0)
-        result = self._handle_click_target(step, step_idx)
-        return ActionResult.from_tuple(result)
-
-    def _handle_auto_login_new(self, step, context):
-        """自动登录 - 新接口"""
-        # 使用旧接口的完整实现来确保真实操作
-        # 将ActionContext转换为step_idx参数
-        step_idx = getattr(context, 'step_idx', 0)
-        result = self._handle_auto_login(step, step_idx)
-        return ActionResult.from_tuple(result)
 
     def _handle_wait_for_disappearance_new(self, step, context):
         """等待消失 - 新接口"""
@@ -2778,7 +2605,7 @@ class ActionProcessor:
                         if DeviceScriptReplayer:
                             input_handler = DeviceScriptReplayer(self.device.serial)
                             target_selector = {"type": ui_type}
-                            operation_success = input_handler.perform_click_target_action(target_selector)
+                            operation_success = input_handler.perform_click_action(target_selector)
                             if operation_success:
                                 print(f"✅ UI点击成功")
 
@@ -3364,43 +3191,7 @@ class ActionProcessor:
                             print(f"❌ checkbox操作失败")
                             continue
 
-                    elif action == 'click_target':
-                        # 点击目标操作 - 支持参数化
-                        print(f"🎯 执行点击目标操作")
-                        if DeviceScriptReplayer is None:
-                            print("❌ DeviceScriptReplayer不可用，无法执行点击目标操作")
-                            continue
-                        input_handler = DeviceScriptReplayer(self.device.serial)
-                        success = input_handler.perform_click_target_action(target_selector)
-
-                        if not success:
-                            print(f"❌ 点击目标操作失败")
-                            if not target_selector.get('skip_if_not_found', False):
-                                continue
-
-                    elif action == 'auto_login':
-                        # 自动登录操作
-                        print(f"🔐 执行自动登录操作")
-                        username = params.get('username', '')
-                        password = params.get('password', '')
-                        if DeviceScriptReplayer is None:
-                            print("❌ DeviceScriptReplayer不可用，无法执行自动登录")
-                            continue
-                        input_handler = DeviceScriptReplayer(self.device.serial)
-                        success = input_handler.perform_auto_login(username, password)
-                        if not success:
-                            print(f"❌ 自动登录操作失败")
-                            continue
-
-                    elif action == 'wait_for_appearance':
-                        # 等待元素出现操作 - 路由到ActionProcessor
-                        print(f"👁️ 执行等待元素出现操作")
-                        success = self._route_to_action_processor(step, step_idx, 'wait_for_appearance')
-                        if not success:
-                            print(f"❌ wait_for_appearance 操作失败")
-                            continue
-
-                    elif action in ['click', 'tap']:
+                    elif action == 'click':
                         # 点击操作 - 路由到ActionProcessor以获得更好的参数处理
                         print(f"👆 执行点击操作")
                         success = self._route_to_action_processor(step, step_idx, 'click')
@@ -3408,38 +3199,8 @@ class ActionProcessor:
                             print(f"❌ click 操作失败")
                             continue
 
-                    elif action == 'wait_for_stable':
-                        # 等待界面稳定操作 - 路由到ActionProcessor
-                        print(f"⏳ 执行等待界面稳定操作")
-                        success = self._route_to_action_processor(step, step_idx, 'wait_for_stable')
-                        if not success:
-                            print(f"❌ wait_for_stable 操作失败")
-                            continue
-
-                    elif action == 'retry_until_success':
-                        # 重试直到成功操作 - 路由到ActionProcessor
-                        print(f"🔄 执行重试直到成功操作")
-                        success = self._route_to_action_processor(step, step_idx, 'retry_until_success')
-                        if not success:
-                            print(f"❌ retry_until_success 操作失败")
-                            continue
-
-                    elif action == 'wait_if_exists':
-                        # 等待元素存在操作 - 路由到ActionProcessor
-                        print(f"👁️ 执行等待元素存在操作")
-                        success = self._route_to_action_processor(step, step_idx, 'wait_if_exists')
-                        if not success:
-                            print(f"❌ wait_if_exists 操作失败")
-                            continue
-
-                    # 新增支持: 设备预处理操作
-                    elif action == 'device_preparation':
-                        print(f"🔧 执行设备预处理操作")
-                        success = self._route_to_action_processor(step, step_idx, 'device_preparation')
-                        if not success:
-                            print(f"❌ device_preparation 操作失败")
-                            continue                    # 新增支持: 应用启动操作
                     elif action == 'app_start':
+                        # 新增支持: 应用启动操作
                         print(f"🚀 执行应用启动操作")
                         success = self._route_to_action_processor(step, step_idx, 'app_start')
                         if not success:

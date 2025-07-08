@@ -1438,7 +1438,7 @@ class DeviceScriptReplayer:
             print("❌ 未找到匹配的目标元素")
             return None
 
-    def perform_click_target_action(self, target_selector: Dict[str, Any]) -> bool:
+    def perform_click_action(self, target_selector: Dict[str, Any]) -> bool:
         """执行目标点击动作（传统方式和智能方式兼容）"""
         print(f"🎯 开始执行目标点击动作")
         print(f"🔧 选择器: {target_selector}")
@@ -1542,101 +1542,4 @@ class DeviceScriptReplayer:
 
         return result_text
 
-    def perform_auto_login(self, username: str, password: str) -> bool:
-        """
-        执行完整的自动登录流程
 
-        Args:
-            username: 用户名
-            password: 密码
-
-        Returns:
-            登录是否成功
-        """
-        print(f"🔐 开始执行自动登录流程")
-        print(f"👤 用户名: {username}")
-        print(f"🔑 密码: {'*' * len(password)}")
-
-        try:
-            # 第一步：查找并填写用户名
-            print("🔍 步骤1: 查找用户名输入框...")
-            xml_content = self.get_ui_hierarchy()
-            if not xml_content:
-                print("❌ 无法获取UI结构")
-                return False
-
-            elements = self._parse_ui_xml(xml_content)
-            if not elements:
-                print("❌ 无法解析UI元素")
-                return False
-
-            username_field = self.find_username_field(elements)
-            if username_field:
-                print("✅ 找到用户名输入框")
-                # 点击获取焦点
-                if self.tap_element(username_field):
-                    # 输入用户名
-                    if self.input_text_smart(username):
-                        print("✅ 用户名输入成功")
-                    else:
-                        print("❌ 用户名输入失败")
-                        return False
-                else:
-                    print("❌ 用户名输入框点击失败")
-                    return False
-            else:
-                print("❌ 未找到用户名输入框")
-                return False
-
-            # 第二步：查找并填写密码
-            print("🔍 步骤2: 查找密码输入框...")
-            xml_content = self.get_ui_hierarchy()  # 重新获取UI结构
-            if xml_content:
-                elements = self._parse_ui_xml(xml_content)
-                password_field = self.find_password_field(elements)
-                if password_field:
-                    print("✅ 找到密码输入框")
-                    # 点击获取焦点
-                    if self.tap_element(password_field):
-                        # 输入密码
-                        if self.input_text_smart(password):
-                            print("✅ 密码输入成功")
-                        else:
-                            print("❌ 密码输入失败")
-                            return False
-                    else:
-                        print("❌ 密码输入框点击失败")
-                        return False
-                else:
-                    print("❌ 未找到密码输入框")
-                    return False
-            else:
-                print("❌ 无法重新获取UI结构")
-                return False
-
-            # 第三步：查找并点击登录按钮
-            print("🔍 步骤3: 查找登录按钮...")
-            xml_content = self.get_ui_hierarchy()  # 再次获取UI结构
-            if xml_content:
-                elements = self._parse_ui_xml(xml_content)
-                login_button = self.find_login_button(elements)
-                if login_button:
-                    print("✅ 找到登录按钮")
-                    # 点击登录按钮
-                    if self.tap_element(login_button):
-                        print("✅ 登录按钮点击成功")
-                        print("🎉 自动登录流程完成")
-                        return True
-                    else:
-                        print("❌ 登录按钮点击失败")
-                        return False
-                else:
-                    print("❌ 未找到登录按钮")
-                    return False
-            else:
-                print("❌ 无法重新获取UI结构")
-                return False
-
-        except Exception as e:
-            print(f"❌ 自动登录过程中发生错误: {e}")
-            return False

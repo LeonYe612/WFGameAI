@@ -1,12 +1,10 @@
 {
     "steps": [
         {
-            "step": 2,
+            "step": 1,
             "detection_method": "ai",
-            "action": "wait_if_exists",
-            "yolo_class": "operation-confirm",
-            "polling_interval": 5000,
-            "max_duration": 300
+            "action": "click",
+            "yolo_class": "operation-sdk-phoneinput"
         }
     ]
 }

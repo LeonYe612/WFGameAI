@@ -330,7 +330,7 @@ def decide_auto_action(device_serial, elements, current_state):
                     "ok" in element["class"].lower() or
                     "close" in element["class"].lower()):
                 return {
-                    "action": "tap",
+                    "action": "click",
                     "x": element["x"],
                     "y": element["y"],
                     "element": element
@@ -343,7 +343,7 @@ def decide_auto_action(device_serial, elements, current_state):
                     "close" in element["class"].lower() or
                     "confirm" in element["class"].lower()):
                 return {
-                    "action": "tap",
+                    "action": "click",
                     "x": element["x"],
                     "y": element["y"],
                     "element": element
@@ -363,7 +363,7 @@ def execute_action(device, action):
     if not action:
         return
 
-    if action["action"] == "tap":
+    if action["action"] == "click":
         execute_tap(device, action["x"], action["y"],
                     action.get("element", {}).get("class", None))
     elif action["action"] == "wait":
