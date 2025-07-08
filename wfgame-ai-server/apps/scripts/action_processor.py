@@ -548,17 +548,18 @@ class ActionProcessor:
             return True, False, True
 
         try:
-            print(f"执行AI检测点击: {step_class}, 备注: {step_remark}")
-
+            print(f"\n================ [AI调试] 检测前 ==================")
+            print(f"[AI调试] 目标类别: {step_class}")
             # 获取屏幕截图
             screenshot = get_device_screenshot(self.device)
             if screenshot is None:
                 print(f"❌ 无法获取设备屏幕截图")
                 return True, False, True
-
-            import cv2
-            import numpy as np
             frame = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
+            print(f"[AI调试] 输入图片shape: {frame.shape}")
+            print(f"[AI调试] 步骤置信度阈值: {step.get('confidence', 0.6)}")
+            print(f"[AI调试] 设备分辨率: {frame.shape[1]}x{frame.shape[0]}")
+            print(f"[AI调试] =========================================\n")
 
             # 使用AI检测（如果可用）
             if self.detect_buttons:
@@ -567,9 +568,14 @@ class ActionProcessor:
                 print(f"🎯 使用置信度阈值: {step_confidence} (步骤指定: {step.get('confidence', '默认')})")
                 success, detection_result = self.detect_buttons(frame, target_class=step_class, conf_threshold=step_confidence)
 
+                print(f"\n================ [AI调试] 检测后 ===================")
+                print(f"[AI调试] 检测返回: success={success}, detection_result={detection_result}")
                 if success and detection_result[0] is not None:
                     x, y, detected_class = detection_result
-
+                    print(f"[AI调试] 原始AI检测坐标: ({x}, {y})，类别: {detected_class}")
+                    print(f"[AI调试] 逆变换后坐标: ({int(x)}, {int(y)})")
+                    print(f"[AI调试] 屏幕分辨率: {frame.shape[1]}x{frame.shape[0]}")
+                    print(f"[AI调试] =========================================\n")
                     # 执行点击操作
                     self.device.shell(f"input tap {int(x)} {int(y)}")
                     print(f"✅ AI检测点击成功: {detected_class}，位置: ({int(x)}, {int(y)})")
@@ -620,6 +626,8 @@ class ActionProcessor:
                         }
                     )
                 else:
+                    print(f"[AI调试] 未检测到目标，检测结果: {detection_result}")
+                    print(f"[AI调试] =========================================\n")
                     print(f"❌ AI检测未找到目标: {step_class}")
                     return ActionResult(
                         success=False,
@@ -1842,7 +1850,7 @@ class ActionProcessor:
                     "depth": 1,
                     "time": timestamp,
                     "data": {
-                        "name": "touch",
+                                               "name": "touch",
                         "call_args": {"v": [abs_x, abs_y]},
                         "start_time": timestamp,
                         "ret": [abs_x, abs_y],
@@ -2202,6 +2210,7 @@ class ActionProcessor:
         print(f"🔄 轮询间隔: {polling_interval}秒")
         print(f"🎯 置信度: {confidence}")
         print(f"📝 备注: {step_remark}")
+        print(f"⏱️ 步骤开始时间: {time.strftime('%H:%M:%S', time.localtime())}")
 
         wait_start_time = time.time()
         element_appeared = False

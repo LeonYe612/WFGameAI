@@ -6,6 +6,7 @@
 
 # 🔧 新增：禁用第三方库DEBUG日志
 import logging
+
 logging.getLogger('airtest').setLevel(logging.WARNING)
 logging.getLogger('airtest.core.android.adb').setLevel(logging.WARNING)
 logging.getLogger('adbutils').setLevel(logging.WARNING)
@@ -31,6 +32,7 @@ import traceback
 from datetime import datetime
 import random
 from pathlib import Path
+import configparser
 
 # 导入必要的模块
 try:
@@ -205,45 +207,6 @@ except ImportError:
         print_realtime("⚠️ 无法导入load_yolo_model函数")
         load_yolo_model = None
 
-def _letterbox_inverse_transform(x, y, orig_w, orig_h, yolo_size=640):
-    """
-    YOLO letterbox逆变换函数 - 修复坐标系统错误
-
-    YOLO在处理非正方形图像时使用letterbox技术:
-    1. 保持长宽比不变
-    2. 缩放图像使最长边为640
-    3. 短边用黑边填充至640
-
-    Args:
-        x, y: YOLO输出的坐标 (640x640空间内)
-        orig_w, orig_h: 原始图像的宽度和高度
-        yolo_size: YOLO输入尺寸 (默认640)
-
-    Returns:
-        tuple: (transformed_x, transformed_y) 原始图像空间的坐标
-    """
-    # 计算缩放比例 - 取最小值保持长宽比
-    scale = min(yolo_size / orig_w, yolo_size / orig_h)
-
-    # 计算缩放后的图像尺寸
-    scaled_w = orig_w * scale
-    scaled_h = orig_h * scale
-
-    # 计算padding（黑边）
-    pad_x = (yolo_size - scaled_w) / 2
-    pad_y = (yolo_size - scaled_h) / 2
-
-    # 逆变换：从640x640空间转换回原始图像空间
-    # 1. 减去padding
-    # 2. 除以scale因子
-    transformed_x = (x - pad_x) / scale
-    transformed_y = (y - pad_y) / scale
-
-    # 确保坐标在有效范围内
-    transformed_x = max(0, min(transformed_x, orig_w - 1))
-    transformed_y = max(0, min(transformed_y, orig_h - 1))
-
-    return transformed_x, transformed_y
 
 def load_yolo_model_for_detection(model_path=None):
     """加载YOLO模型用于AI检测"""
@@ -307,8 +270,15 @@ def load_yolo_model_for_detection(model_path=None):
         model = None
         return False
 
-def detect_buttons(frame, target_class=None, conf_threshold=0.6):
-    """检测按钮，使用优化的检测方法"""
+def detect_buttons(frame, target_class=None, conf_threshold=None):
+    """
+    检测按钮，使用YOLO模型进行推理。
+    坐标逆变换、类别匹配、置信度阈值等均支持灵活配置。
+    - frame: 输入的原始图像（numpy数组）
+    - target_class: 目标类别名（如'button'）
+    - conf_threshold: 置信度阈值（可选，优先级高于配置文件）
+    返回: (success, (x, y, detected_class))
+    """
     global model
 
     if model is None:
@@ -316,67 +286,72 @@ def detect_buttons(frame, target_class=None, conf_threshold=0.6):
         return False, (None, None, None)
 
     try:
-        print_realtime(f"🔍 开始检测目标类别: {target_class}")        # 🔧 修复：保存临时图像文件而不是直接resize
+        print_realtime(f"🔍 开始检测目标类别: {target_class}")
         import tempfile
         import os
 
-        # 导入ThresholdConfig以使用统一的阈值管理
-        try:
-            import sys
-            train_model_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'train_model'))
-            if train_model_path not in sys.path:
-                sys.path.append(train_model_path)
-            from infer import ThresholdConfig
-            conf_threshold = ThresholdConfig.get_conf_threshold("default")
-        except Exception:
-            conf_threshold = 0.5  # 后备默认值
+        # 优先使用传入参数，否则从config读取
+        if conf_threshold is None:
+            conf_threshold = get_confidence_threshold_from_config()
 
+        # 将frame保存为临时图片，供YOLO模型推理
         with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as temp_file:
             temp_path = temp_file.name
             cv2.imwrite(temp_path, frame)
 
         try:
-            # 🔧 修复：使用优化的YOLO参数
+            # 选择推理设备
             device = "cuda" if hasattr(model, 'device') and 'cuda' in str(model.device) else "cpu"
+            # 执行YOLO推理，传入图片路径和相关参数
             results = model.predict(
-                source=temp_path,  # 传入图像路径而不是numpy数组
-                device=device,
-                imgsz=640,
-                conf=conf_threshold,  # 使用统一配置的置信度阈值
-                iou=0.6,   # NMS IoU阈值
-                half=True if device == "cuda" else False,
-                max_det=300,
-                verbose=False
+                source=temp_path,      # 输入图片路径，YOLO要求文件路径而非numpy数组
+                device=device,         # 推理设备，'cuda'表示GPU，'cpu'表示CPU
+                imgsz=640,             # 推理时图片缩放到的尺寸（YOLO常用640x640）
+                conf=conf_threshold,   # 置信度阈值，低于该值的目标会被过滤
+                iou=0.6,               # NMS（非极大值抑制）IoU阈值，控制重叠框的合并
+                half=True if device == "cuda" else False,  # 是否使用半精度加速，仅GPU可用
+                max_det=300,           # 最大检测目标数，防止极端场景下过多框
+                verbose=False          # 是否输出详细推理日志
             )
 
             # 检查预测结果是否有效
             if results is None or len(results) == 0:
+                # 如果模型推理结果为空，直接返回失败
                 print_realtime("⚠️ 警告：模型预测结果为空")
                 return False, (None, None, None)
 
-            # 检查结果中是否有boxes
+            # 检查结果中是否有boxes属性且不为None
             if not hasattr(results[0], 'boxes') or results[0].boxes is None:
+                # 如果没有检测框，返回失败
                 print_realtime("⚠️ 警告：预测结果中没有检测框")
                 return False, (None, None, None)
 
+            # 获取原始图片的高和宽，用于坐标逆变换
             orig_h, orig_w = frame.shape[:2]
+            print_realtime(f"📏 原始图片尺寸: {orig_w}x{orig_h}")
 
+
+            # 遍历所有检测到的目标框
             for box in results[0].boxes:
-                cls_id = int(box.cls.item())                # 检查模型是否有names属性
+                # print_realtime(f"🔍 检测到目标框: {box.xyxy[0].tolist()}, 置信度: {box.conf.item():.3f}, 类别ID: {int(box.cls.item())}")
+                cls_id = int(box.cls.item())  # 获取类别ID
+                # 检查模型是否有类别名映射
                 if hasattr(model, 'names') and model.names is not None:
-                    detected_class = model.names[cls_id]
+                    detected_class = model.names[cls_id]  # 获取类别名
                 else:
                     detected_class = f"class_{cls_id}"
+                # 判断检测到的类别是否为目标类别
                 if detected_class == target_class:
-                    # 🔧 修复：使用正确的letterbox逆变换
+                    # 取检测框的左上和右下坐标，计算中心点坐标
                     box_coords = box.xyxy[0].tolist()  # [x1, y1, x2, y2]
+                    # print_realtime(f"🔍 检测到目标类别: {detected_class}, 坐标: {box_coords}")
                     x = (box_coords[0] + box_coords[2]) / 2  # 中心点x
                     y = (box_coords[1] + box_coords[3]) / 2  # 中心点y
+                    # print_realtime(f"🔍 计算得到中心点坐标: ({x:.2f}, {y:.2f})")
 
-                    # 使用letterbox逆变换将坐标从640x640空间转换回原始图像空间
-                    x, y = _letterbox_inverse_transform(x, y, orig_w, orig_h)
-
-                    print_realtime(f"✅ 找到目标类别 {target_class}，置信度: {box.conf.item():.3f}")
+                    # 打印检测到目标的日志，包括类别和置信度
+                    print_realtime(f"✅ 找到目标类别 {target_class}，中心坐标: ({x:.2f}, {y:.2f})，置信度: {box.conf.item():.3f}")
+                    # 返回检测成功和中心点坐标、类别名
                     return True, (x, y, detected_class)
 
             # 如果没有找到目标类别，返回失败
@@ -1392,6 +1367,22 @@ def main():
     except Exception as e:
         print_realtime(f"❌ 设备处理失败: {e}")
         traceback.print_exc()
+
+
+def get_confidence_threshold_from_config():
+    """
+    从config.ini的[settings]节读取AI检测置信度阈值。
+    若未配置则返回默认值0.6。
+    """
+    config = configparser.ConfigParser()
+    # 构造config.ini的绝对路径（假设本文件在wfgame-ai-server\apps\scripts下）
+    config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), 'config.ini')
+    config.read(config_path, encoding='utf-8')
+    try:
+        # 优先从[settings]读取confidence_threshold，没有则用默认值0.6
+        return float(config.get('settings', 'confidence_threshold', fallback='0.6'))
+    except Exception:
+        return 0.6
 
 
 if __name__ == "__main__":
