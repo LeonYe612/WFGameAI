@@ -28,6 +28,8 @@ import time
 import json
 import argparse
 import logging
+import tempfile
+import configparser
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Any
@@ -87,15 +89,39 @@ class AnalysisSession:
 class DeviceScreenAnalyzer:
     """设备屏幕分析器"""
 
-    def __init__(self, model_path: str = None, confidence_threshold: float = 0.6):
+    def __init__(self, config_path: str = None, confidence_threshold: float = 0.6):
         """
         初始化屏幕分析器
 
         Args:
-            model_path: YOLO模型路径，默认使用best.pt
+            config_path: 配置文件路径，默认自动查找 config.ini
             confidence_threshold: 检测置信度阈值
         """
-        self.model_path = model_path or self._find_best_model()
+        # 读取 config.ini 获取模型路径
+        config_file = config_path or os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../..', 'config.ini'))
+        config = configparser.ConfigParser()
+        if not os.path.exists(config_file):
+            raise FileNotFoundError(f"未找到配置文件: {config_file}")
+        config.read(config_file, encoding='utf-8')
+        try:
+            self.model_path = config.get('paths', 'model_path')
+            # 递归多轮替换所有 ${xxx} 变量
+            for _ in range(10):  # 最多递归10次，防止死循环
+                replaced = False
+                for section in config.sections():
+                    for key, value in config.items(section):
+                        var = f'${{{key}}}'
+                        if var in self.model_path:
+                            self.model_path = self.model_path.replace(var, value)
+                            replaced = True
+                self.model_path = os.path.expandvars(self.model_path)
+                if not replaced:
+                    break
+            self.model_path = os.path.abspath(self.model_path)
+        except Exception as e:
+            raise RuntimeError(f"无法从 config.ini 读取 [paths] 段 model_path: {e}")
+        if not os.path.isfile(self.model_path):
+            raise FileNotFoundError(f"模型文件不存在: {self.model_path} (请检查 config.ini 的 [paths] 段 model_path 配置)")
         self.confidence_threshold = confidence_threshold
         self.model = None
 
@@ -116,11 +142,6 @@ class DeviceScreenAnalyzer:
         """查找best.pt模型文件"""
         # 可能的模型路径
         potential_paths = [
-            "datasets/train/weights/best.pt",
-            "apps/scripts/datasets/train/weights/best.pt",
-            "wfgame-ai-server/apps/scripts/datasets/train/weights/best.pt",
-            str(project_root / "wfgame-ai-server/apps/scripts/datasets/train/weights/best.pt"),
-            "best.pt",
             "models/best.pt"
         ]
 
@@ -129,11 +150,8 @@ class DeviceScreenAnalyzer:
             if full_path.exists():
                 logger.info(f"找到模型文件: {full_path}")
                 return str(full_path.absolute())
-
-        # 如果没找到，使用默认路径
-        default_path = project_root / "apps/scripts/datasets/train/weights/best.pt"
-        logger.warning(f"未找到best.pt模型，将尝试使用: {default_path}")
-        return str(default_path)
+        logger.error("未找到best.pt模型文件，请检查路径设置")
+        return ""
 
     def _load_model(self):
         """加载YOLO模型"""
@@ -144,11 +162,11 @@ class DeviceScreenAnalyzer:
             logger.info(f"加载YOLO模型: {self.model_path}")
             self.model = YOLO(self.model_path)
 
-            # 获取模型类别信息
-            if hasattr(self.model, 'names'):
-                logger.info(f"模型类别: {self.model.names}")
-            else:
-                logger.warning("无法获取模型类别信息")
+            # # 获取模型类别信息
+            # if hasattr(self.model, 'names'):
+            #     logger.info(f"模型类别: {self.model.names}")
+            # else:
+            #     logger.warning("无法获取模型类别信息")
 
             logger.info("YOLO模型加载成功")
 
@@ -226,9 +244,7 @@ class DeviceScreenAnalyzer:
 
             if screenshot is not None:
                 # 转换为OpenCV格式
-                frame = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
-
-                # 更新会话统计
+                frame = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)                # 更新会话统计
                 if device_id in self.analysis_sessions:
                     self.analysis_sessions[device_id].total_screenshots += 1
 
@@ -242,33 +258,49 @@ class DeviceScreenAnalyzer:
             return None
 
     def analyze_screenshot(self, frame: np.ndarray, device_id: str = None) -> List[DetectionResult]:
-        """分析截图并返回检测结果"""
+        """分析截图并返回检测结果 - 采用与回放逻辑一致的方法"""
         try:
             if self.model is None:
                 logger.error("YOLO模型未加载")
                 return []
 
-            # 调整图像尺寸用于推理
-            inference_frame = cv2.resize(frame, (640, 640))
+            # 将frame保存为临时图片，供YOLO模型推理
+            # 重要：不使用letterbox预处理，直接保存原始图像让YOLO自己处理
+            with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as temp_file:
+                temp_path = temp_file.name
+                cv2.imwrite(temp_path, frame)
 
-            # 进行推理
-            results = self.model.predict(
-                source=inference_frame,
-                conf=self.confidence_threshold,
-                verbose=False
-            )
+            try:
+                # 选择推理设备
+                device = "cuda" if hasattr(self.model, 'device') and 'cuda' in str(self.model.device) else "cpu"
 
-            if not results or len(results) == 0:
-                return []
+                # 执行YOLO推理，传入图片路径和相关参数
+                results = self.model.predict(
+                    source=temp_path,      # 输入图片路径，YOLO要求文件路径而非numpy数组
+                    device=device,         # 推理设备，'cuda'表示GPU，'cpu'表示CPU
+                    imgsz=640,             # 推理时图片缩放到的尺寸（YOLO常用640x640）
+                    conf=self.confidence_threshold,   # 置信度阈值，低于该值的目标会被过滤
+                    iou=0.6,               # NMS（非极大值抑制）IoU阈值，控制重叠框的合并
+                    half=True if device == "cuda" else False,  # 是否使用半精度加速，仅GPU可用
+                    max_det=300,           # 最大检测目标数，防止极端场景下过多框
+                    verbose=False          # 是否输出详细推理日志
+                )
 
-            # 解析检测结果
-            detections = []
-            result = results[0]
+                if not results or len(results) == 0:
+                    logger.debug(f"设备 {device_id}: 模型预测结果为空")
+                    return []
 
-            if hasattr(result, 'boxes') and result.boxes is not None:
+                # 检查结果中是否有boxes属性且不为None
+                if not hasattr(results[0], 'boxes') or results[0].boxes is None:
+                    logger.debug(f"设备 {device_id}: 预测结果中没有检测框")
+                    return []
+
+                # 解析检测结果
+                detections = []
+                result = results[0]
                 boxes = result.boxes
-                orig_h, orig_w = frame.shape[:2]
-                scale_x, scale_y = orig_w / 640, orig_h / 640
+
+                logger.debug(f"设备 {device_id}: 检测到 {len(boxes)} 个目标框")
 
                 for i, box in enumerate(boxes):
                     # 获取类别信息
@@ -280,12 +312,9 @@ class DeviceScreenAnalyzer:
                     # 获取置信度
                     confidence = float(box.conf.item())
 
-                    # 获取边界框（转换回原始图像尺寸）
-                    xyxy = box.xyxy[0].tolist()
-                    x1 = int(xyxy[0] * scale_x)
-                    y1 = int(xyxy[1] * scale_y)
-                    x2 = int(xyxy[2] * scale_x)
-                    y2 = int(xyxy[3] * scale_y)
+                    # 获取边界框坐标（注意：这里直接使用YOLO返回的坐标，无需额外变换）
+                    box_coords = box.xyxy[0].tolist()  # [x1, y1, x2, y2]
+                    x1, y1, x2, y2 = map(int, box_coords)
 
                     # 计算中心点
                     center_x = int((x1 + x2) / 2)
@@ -304,10 +333,18 @@ class DeviceScreenAnalyzer:
                 if device_id and device_id in self.analysis_sessions:
                     self.analysis_sessions[device_id].total_detections += len(detections)
 
-            return detections
+                logger.info(f"设备 {device_id}: 成功检测到 {len(detections)} 个元素")
+                return detections
+
+            finally:
+                # 清理临时文件
+                try:
+                    os.unlink(temp_path)
+                except:
+                    pass
 
         except Exception as e:
-            logger.error(f"分析截图失败: {e}")
+            logger.error(f"设备 {device_id} 分析截图失败: {e}")
             return []
 
     def visualize_results(self, frame: np.ndarray, detections: List[DetectionResult]) -> np.ndarray:
@@ -406,7 +443,6 @@ class DeviceScreenAnalyzer:
 
             logger.info(f"设备 {device_id} 分析完成，检测到 {len(detections)} 个元素")
             return result_data
-
         except Exception as e:
             logger.error(f"分析设备 {device_id} 截图失败: {e}")
             return {"success": False, "error": str(e)}
@@ -498,8 +534,7 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
 
-    # 基本参数
-    parser.add_argument('--model', type=str, help='YOLO模型路径（默认使用best.pt）')
+    # 只保留必要参数，不再支持 --model
     parser.add_argument('--confidence', type=float, default=0.6, help='检测置信度阈值')
     parser.add_argument('--device', type=str, help='指定设备ID（auto表示自动选择）')
 
@@ -519,11 +554,8 @@ def main():
     args = parser.parse_args()
 
     try:
-        # 创建分析器实例
-        analyzer = DeviceScreenAnalyzer(
-            model_path=args.model,
-            confidence_threshold=args.confidence
-        )
+        # 只从 config.ini 读取模型路径
+        analyzer = DeviceScreenAnalyzer(confidence_threshold=args.confidence)
 
         # 设置输出目录
         if args.output_dir:

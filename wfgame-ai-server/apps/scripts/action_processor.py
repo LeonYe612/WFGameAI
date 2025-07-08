@@ -362,14 +362,17 @@ class ActionProcessor:
         elif step_action == "wait_for_disappearance":
             result = self._handle_wait_for_disappearance(step, step_idx, log_dir)
 
-        # 关键修复：优先处理ai_detection_click动作
-
-        elif step_action == "ai_detection_click":
+        # 关键修复：优先处理ai_detection_click动作        elif step_action == "ai_detection_click":
             print(f"🎯 执行AI检测点击操作")
             result = self._handle_ai_detection_click(step, step_idx, log_dir)
 
         elif step_action == "click":
-            if "target_selector" in step:
+            # 检查是否有execute_action字段（点击后执行其他操作）
+            execute_action = step.get("execute_action")
+            if execute_action:
+                print(f"🎯 检测到组合操作: click + {execute_action}")
+                result = self._handle_click_with_execute_action(step, step_idx, log_dir)
+            elif "target_selector" in step:
                 # 处理 target_selector 逻辑
                 converted_step = step.copy()
                 target_selector = converted_step["target_selector"]
@@ -548,18 +551,18 @@ class ActionProcessor:
             return True, False, True
 
         try:
-            print(f"\n================ [AI调试] 检测前 ==================")
-            print(f"[AI调试] 目标类别: {step_class}")
+            # print(f"\n================ [AI调试] 检测前 ==================")
+            # print(f"[AI调试] 目标类别: {step_class}")
             # 获取屏幕截图
             screenshot = get_device_screenshot(self.device)
             if screenshot is None:
                 print(f"❌ 无法获取设备屏幕截图")
                 return True, False, True
             frame = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
-            print(f"[AI调试] 输入图片shape: {frame.shape}")
-            print(f"[AI调试] 步骤置信度阈值: {step.get('confidence', 0.6)}")
-            print(f"[AI调试] 设备分辨率: {frame.shape[1]}x{frame.shape[0]}")
-            print(f"[AI调试] =========================================\n")
+            # print(f"[AI调试] 输入图片shape: {frame.shape}")
+            # print(f"[AI调试] 步骤置信度阈值: {step.get('confidence', 0.6)}")
+            # print(f"[AI调试] 设备分辨率: {frame.shape[1]}x{frame.shape[0]}")
+            # print(f"[AI调试] =========================================\n")
 
             # 使用AI检测（如果可用）
             if self.detect_buttons:
@@ -568,14 +571,14 @@ class ActionProcessor:
                 print(f"🎯 使用置信度阈值: {step_confidence} (步骤指定: {step.get('confidence', '默认')})")
                 success, detection_result = self.detect_buttons(frame, target_class=step_class, conf_threshold=step_confidence)
 
-                print(f"\n================ [AI调试] 检测后 ===================")
-                print(f"[AI调试] 检测返回: success={success}, detection_result={detection_result}")
+                # print(f"\n================ [AI调试] 检测后 ===================")
+                # print(f"[AI调试] 检测返回: success={success}, detection_result={detection_result}")
                 if success and detection_result[0] is not None:
                     x, y, detected_class = detection_result
-                    print(f"[AI调试] 原始AI检测坐标: ({x}, {y})，类别: {detected_class}")
-                    print(f"[AI调试] 逆变换后坐标: ({int(x)}, {int(y)})")
-                    print(f"[AI调试] 屏幕分辨率: {frame.shape[1]}x{frame.shape[0]}")
-                    print(f"[AI调试] =========================================\n")
+                    # print(f"[AI调试] 原始AI检测坐标: ({x}, {y})，类别: {detected_class}")
+                    # print(f"[AI调试] 逆变换后坐标: ({int(x)}, {int(y)})")
+                    # print(f"[AI调试] 屏幕分辨率: {frame.shape[1]}x{frame.shape[0]}")
+                    # print(f"[AI调试] =========================================\n")
                     # 执行点击操作
                     self.device.shell(f"input tap {int(x)} {int(y)}")
                     print(f"✅ AI检测点击成功: {detected_class}，位置: ({int(x)}, {int(y)})")
@@ -1386,8 +1389,6 @@ class ActionProcessor:
             else:
                 device_serial = getattr(self.device, 'serial', self.device_name)
                 print(f"❌ 错误: 设备 {device_serial} 没有分配账号，无法替换用户名参数")
-                print("💡 可能原因: 1)账号池已满 2)账号文件错误 3)账号管理器初始化失败")
-                print("💡 解决建议: 检查 datasets/accounts_info/accounts.txt 或运行账号诊断工具")
                 return True, False, True
 
         if "${account:password}" in input_text:
@@ -1397,8 +1398,6 @@ class ActionProcessor:
             else:
                 device_serial = getattr(self.device, 'serial', self.device_name)
                 print(f"❌ 错误: 设备 {device_serial} 没有分配账号，无法替换密码参数")
-                print("💡 可能原因: 1)账号池已满 2)账号文件错误 3)账号管理器初始化失败")
-                print("💡 解决建议: 检查 datasets/accounts_info/accounts.txt 或运行账号诊断工具")
                 return True, False, True
             print(f"执行文本输入 - {step_remark}")
         try:
@@ -1850,14 +1849,14 @@ class ActionProcessor:
                     "depth": 1,
                     "time": timestamp,
                     "data": {
-                                               "name": "touch",
+                        "name": "touch",
                         "call_args": {"v": [abs_x, abs_y]},
                         "start_time": timestamp,
                         "ret": [abs_x, abs_y],
                         "end_time": timestamp + 0.1,
                         "desc": step_remark or f"备选点击({rel_x:.3f}, {rel_y:.3f})",
-                        "title": f"#{step_remark or f'备选点击({rel_x:.3f}, {rel_y:.3f})'}"
-                    }
+                        "title": f"#{step_remark or f'备选点击({rel_x:.3f})'}"
+                }
                 }
 
                 # 添加screenshot数据到entry中
@@ -2587,7 +2586,7 @@ class ActionProcessor:
                     "ui_type": ui_type,
                     "text": text,
                     "remark": f"重试操作 {attempt + 1}: {step_remark}"
-                }                # 根据execute_action执行对应操作
+                }                # 根据execute_action执行相应操作
                 operation_success = False
                 if execute_action == "click":
                     if detection_method == "ai" and yolo_class:
@@ -2618,7 +2617,7 @@ class ActionProcessor:
                             if operation_success:
                                 print(f"✅ UI点击成功")
 
-                elif execute_action == "input" and text:
+                elif execute_action == "input":
                     # 文本输入操作
                     if detection_method == "ui" and ui_type:
                         if DeviceScriptReplayer:
@@ -2757,7 +2756,7 @@ class ActionProcessor:
                 return False
 
             print(f"🔍 调试: 准备写入日志到: {self.log_txt_path}")
-            print(f"🔍 调试: 日志条目: {log_entry}")
+            # print(f"🔍 调试: 日志条目: {log_entry}")
 
             log_dir = os.path.dirname(self.log_txt_path)
             if not os.path.exists(log_dir):
@@ -2956,7 +2955,6 @@ class ActionProcessor:
             import traceback
             traceback.print_exc()
             return False
-
 
     def handle_system_dialogs(
         self,
@@ -3260,3 +3258,156 @@ class ActionProcessor:
             import traceback
             traceback.print_exc()
             return ActionResult(success=False, message=f"脚本回放错误: {e}")
+
+    def _handle_click_with_execute_action(self, step, step_idx, log_dir):
+        """处理点击后执行其他操作的组合步骤"""
+        step_remark = step.get("remark", "")
+        execute_action = step.get("execute_action")
+
+        print(f"🎯 执行组合操作: 点击 + {execute_action} - {step_remark}")
+
+        try:
+            # 第一步：执行点击操作
+            print(f"📍 第1步: 执行AI检测点击")
+            click_result = self._handle_ai_detection_click(step, step_idx, log_dir)
+
+            # 检查点击是否成功
+            if not click_result.success:
+                print(f"❌ 点击操作失败，跳过后续{execute_action}操作")
+                return click_result
+
+            print(f"✅ 点击操作成功，等待界面响应...")
+            time.sleep(1.0)  # 等待界面响应
+
+            # 第二步：根据execute_action执行相应操作
+            if execute_action == "input":
+                print(f"📝 第2步: 执行文本输入操作")
+                input_result = self._handle_input_after_click(step, step_idx, log_dir)
+
+                if input_result.success:
+                    print(f"✅ 组合操作成功: 点击 + 输入")
+                    return ActionResult(
+                        success=True,
+                        message=f"点击并输入操作成功: {step_remark}",
+                        details={
+                            "operation": "click_with_input",
+                            "click_result": click_result.details,
+                            "input_result": input_result.details
+                        }
+                    )
+                else:
+                    print(f"❌ 输入操作失败")
+                    return input_result
+            else:
+                print(f"⚠️ 不支持的execute_action: {execute_action}")
+                return ActionResult(
+                    success=False,
+                    message=f"不支持的execute_action: {execute_action}",
+                    details={"operation": "click_with_execute", "error": "unsupported_execute_action"}
+                )
+
+        except Exception as e:
+            print(f"❌ 组合操作过程中发生异常: {e}")
+            traceback.print_exc()
+            return ActionResult(
+                success=False,
+                message=f"组合操作异常: {str(e)}",
+                details={"operation": "click_with_execute", "error": str(e)}
+            )
+
+    def _handle_input_after_click(self, step, step_idx, log_dir):
+        """处理点击后的输入操作（基于原_handle_input逻辑）"""
+        input_text = step.get("text", "")
+        step_remark = step.get("remark", "")
+
+        # 智能账号分配：如果需要账号参数但没有分配，尝试自动分配
+        if ("${account:username}" in input_text or "${account:password}" in input_text):
+            if not self.device_account:
+                print("🔄 检测到需要账号参数但设备未分配账号，尝试自动分配...")
+                self._auto_allocate_device_account()
+
+        # 参数替换处理：${account:username} 和 ${account:password}
+        if "${account:username}" in input_text:
+            if self.device_account and len(self.device_account) >= 1:
+                input_text = input_text.replace("${account:username}", self.device_account[0])
+                print(f"✅ 替换用户名参数: {self.device_account[0]}")
+            else:
+                device_serial = getattr(self.device, 'serial', self.device_name)
+                print(f"❌ 错误: 设备 {device_serial} 没有分配账号，无法替换用户名参数")
+                return ActionResult(
+                    success=False,
+                    message="设备没有分配账号，无法替换用户名参数",
+                    details={"operation": "input_after_click", "error": "no_account_assigned"}
+                )
+
+        if "${account:password}" in input_text:
+            if self.device_account and len(self.device_account) >= 2:
+                input_text = input_text.replace("${account:password}", self.device_account[1])
+                print(f"✅ 替换密码参数")
+            else:
+                device_serial = getattr(self.device, 'serial', self.device_name)
+                print(f"❌ 错误: 设备 {device_serial} 没有分配账号，无法替换密码参数")
+                return ActionResult(
+                    success=False,
+                    message="设备没有分配账号，无法替换密码参数",
+                    details={"operation": "input_after_click", "error": "no_account_assigned"}
+                )
+
+        print(f"📝 执行文本输入: {input_text}")
+
+        try:
+            # 直接使用adb input text命令输入文本
+            escaped_text = input_text.replace(" ", "%s").replace("'", "\\'").replace('"', '\\"')
+            self.device.shell(f"input text '{escaped_text}'")
+
+            print(f"✅ 文本输入成功: {input_text}")
+
+            # 创建screen对象以支持报告截图显示
+            screen_data = self._create_unified_screen_object(
+                log_dir,
+                pos_list=[],
+                confidence=1.0,
+                rect_info=[]
+            )
+
+            # 记录输入操作日志
+            timestamp = time.time()
+            input_entry = {
+                "tag": "function",
+                "depth": 1,
+                "time": timestamp,
+                "data": {
+                    "name": "input_text",
+                    "call_args": {"text": input_text},
+                    "start_time": timestamp,
+                    "ret": input_text,
+                    "end_time": timestamp + 0.5,
+                    "desc": step_remark or f"输入文本: {input_text}",
+                    "title": f"#{step_idx+1} {step_remark or f'输入文本: {input_text}'}"
+                }
+            }
+
+            # 添加screen对象到日志条目（如果可用）
+            if screen_data:
+                input_entry["data"]["screen"] = screen_data
+
+            self._write_log_entry(input_entry)
+
+            return ActionResult(
+                success=True,
+                message=f"文本输入成功: {input_text}",
+                details={
+                    "operation": "input_after_click",
+                    "text": input_text,
+                    "has_screenshot": screen_data is not None
+                }
+            )
+
+        except Exception as e:
+            print(f"❌ 文本输入过程中发生异常: {e}")
+            traceback.print_exc()
+            return ActionResult(
+                success=False,
+                message=f"文本输入异常: {str(e)}",
+                details={"operation": "input_after_click", "error": str(e)}
+            )

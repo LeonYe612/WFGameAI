@@ -484,10 +484,11 @@ def get_device_screenshot(device):
 
     # 🔧 修复1: 多种截图方法，确保成功率
     methods = [
-        ("adb_shell_screencap", lambda: _screenshot_method_adb_shell(device)),
         ("subprocess_screencap", lambda: _screenshot_method_subprocess(device)),
         ("airtest_snapshot", lambda: _screenshot_method_airtest(device)),
-        ("mock_screenshot", lambda: _screenshot_method_mock(device))
+        ("mock_screenshot", lambda: _screenshot_method_mock(device)),
+        # ("adb_shell_screencap", lambda: _screenshot_method_adb_shell(device)) # 此方法会报错
+
     ]
 
     for method_name, method_func in methods:
