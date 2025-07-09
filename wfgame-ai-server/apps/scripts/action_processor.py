@@ -763,9 +763,9 @@ class ActionProcessor:
         step_remark = step.get("remark", "")
         app_name = params.get("app_name", "")
         package_name = params.get("package_name", "")        # 扁平化权限配置参数（兼容多种参数名）
-        handle_permission = params.get("handle_permission", True)
+        handle_permission = params.get("handle_permission", True)  # 废弃，使用AI代替。250709 17:23
         permission_wait = params.get("permission_wait_time", params.get("permission_wait", 10))
-        allow_permission = params.get("auto_allow_permission", params.get("allow_permission", True))
+        allow_permission = params.get("auto_allow_permission", params.get("allow_permission", True)) # 废弃，使用AI代替。250709 17:23
         first_only = params.get("first_only", False)
 
         if not package_name:
@@ -779,7 +779,8 @@ class ActionProcessor:
         print(f"启动应用: {app_name or package_name} - {step_remark}")
 
         # 构建权限配置（转换为内部格式）
-        permission_config = {            "handle": handle_permission,
+        permission_config = {
+            "handle": handle_permission,
             "wait": permission_wait,
             "allow": allow_permission,
             "first_only": first_only
@@ -807,8 +808,9 @@ class ActionProcessor:
             # 步骤2: 如果应用启动成功，等待一下然后处理权限
             if startup_success:
                 print("⏱️ 等待应用完全启动...")
-                time.sleep(5)  # 增加等待时间到5秒，给应用更多时间加载权限弹窗                # 根据配置决定是否处理权限弹窗
+                # 根据配置决定是否处理权限弹窗
                 if handle_permission:
+                    time.sleep(5)  # 增加等待时间到5秒，给应用更多时间加载权限弹窗
                     print("🔍 开始权限弹窗检测和处理...")
                     # 处理权限弹窗
                     try:
@@ -993,7 +995,7 @@ class ActionProcessor:
         # 🔧 使用新的yolo_class参数名称（与文档一致）
         element_class = step.get("yolo_class", "")
         step_remark = step.get("remark", "")
-        polling_interval = step.get("polling_interval", 5000) / 1000.0  # 转换为秒，默认5秒轮询
+        polling_interval = step.get("polling_interval", 5)   # 默认5秒轮询
         max_duration = step.get("max_duration", 300)  # 默认300秒超时
         confidence = step.get("confidence", 0.8)  # 默认置信度
 
@@ -1165,7 +1167,7 @@ class ActionProcessor:
         """处理等待消失步骤"""
         element_class = step.get("yolo_class", "")
         step_remark = step.get("remark", "")
-        polling_interval = step.get("polling_interval", 1000) / 1000.0  # 转换为秒，默认1秒轮询
+        polling_interval = step.get("polling_interval", 1)  # 默认1秒轮询
         max_duration = step.get("max_duration", 30)  # 默认30秒超时
         confidence = step.get("confidence", 0.8)  # 默认置信度
 

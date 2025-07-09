@@ -1,0 +1,152 @@
+{
+    "steps": [
+        {
+            "step": 1,
+            "detection_method": "ai",
+            "action": "wait_for_stable",
+            "duration": 5,
+            "max_wait": 10,
+            "remark": "等待应用启动后界面稳定"
+        },
+        {
+            "step": 2,
+            "detection_method": "ai",
+            "action": "click",
+            "yolo_class": "operation-confirm",
+            "remark": "点击确认按钮，处理可能的权限弹窗"
+        },
+        {
+            "step": 1,
+            "detection_method": "ai",
+            "action": "wait_for_stable",
+            "duration": 5,
+            "max_wait": 8,
+            "remark": "等待应用启动后界面稳定，避免热更新导致的黑屏影响检测"
+        },
+        {
+            "step": 2,
+            "detection_method": "ai",
+            "action": "wait_if_exists",
+            "yolo_class": "system-newResources",
+            "polling_interval": 5,
+            "max_duration": 300,
+            "remark": "判断启动APP后是否出现热更资源图标，如果存在则需要等待新资源加载完成"
+        },
+        {
+            "step": 3,
+            "detection_method": "ai",
+            "action": "wait_for_appearance",
+            "yolo_class": "operation-sdk-enter",
+            "remark": "通过等待[进入游戏]按钮出现，来判断已成功完成“热更”进入“加载界面”"
+        },
+        {
+            "step": 1,
+            "detection_method": "ai",
+            "action": "retry_until_success",
+            "execute_action": "input",
+            "text": "${account:username}",
+            "yolo_class": "operation-sdk-phoneinput",
+            "max_retries": 3,
+            "retry_interval": 1,
+            "remark": "使用retry函数来确保已经成功进入登录界面"
+        },
+        {
+            "step": 2,
+            "detection_method": "ai",
+            "action": "click",
+            "execute_action": "input",
+            "text": "${account:password}",
+            "yolo_class": "operation-sdk-yzminput"
+        },
+        {
+            "step": 3,
+            "detection_method": "ai",
+            "action": "click",
+            "yolo_class": "operation-sdk-yzm"
+        },
+        {
+            "step": 4,
+            "detection_method": "ai",
+            "action": "click",
+            "yolo_class": "system-protocol-box"
+        },
+        {
+            "step": 5,
+            "detection_method": "ai",
+            "action": "click",
+            "yolo_class": "operation-sdk-enter"
+        },
+        {
+            "step": 6,
+            "detection_method": "ai",
+            "action": "click",
+            "yolo_class": "operation-confirm",
+            "remark": "会提示【验证码】不正确，点击确认"
+        },
+        {
+            "step": 7,
+            "detection_method": "ai",
+            "action": "click",
+            "yolo_class": "operation-sdk-register"
+        },
+        {
+            "step": 8,
+            "detection_method": "ai",
+            "action": "click",
+            "yolo_class": "operation-sdk-back",
+            "remark": "点击返回按钮，返回登录界面"
+        },
+        {
+            "step": 9,
+            "detection_method": "ai",
+            "action": "click",
+            "yolo_class": "operation-sdk-login"
+        },
+        {
+            "step": 10,
+            "detection_method": "ai",
+            "action": "click",
+            "execute_action": "input",
+            "text": "${account:username}",
+            "yolo_class": "operation-sdk-accnput",
+            "remark": "点击手机号输入框，输入用户名"
+        },
+        {
+            "step": 9,
+            "detection_method": "ai",
+            "action": "click",
+            "execute_action": "input",
+            "text": "${account:password}",
+            "yolo_class": "operation-sdk-mminput",
+            "remark": "点击验证码输入框，输入密码"
+        },
+        {
+            "step": 10,
+            "detection_method": "ai",
+            "action": "click",
+            "yolo_class": "system-protocol-box",
+            "remark": "点击系统协议框，确保协议已同意"
+        },
+        {
+            "step": 11,
+            "detection_method": "ai",
+            "action": "click",
+            "yolo_class": "operation-sdk-enter",
+            "remark": "点击登录按钮"
+        },
+        {
+            "step": 12,
+            "detection_method": "ai",
+            "action": "click",
+            "yolo_class": "operation-confirm",
+            "remark": "会提示账户名或密码不正确，点击确认"
+        },
+        {
+            "step": 12,
+            "detection_method": "ai",
+            "action": "click",
+            "yolo_class": "operation-confirm",
+            "remark": "再次点击登录按钮，确保登录成功"
+        }
+    ]
+}

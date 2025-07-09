@@ -39,7 +39,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
 # 添加项目路径
-project_root = Path(__file__).resolve().parent.parent.parent.parent
+project_root = Path(__file__).resolve().parents[4]  # 指向WFGameAI项目根目录
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
@@ -58,10 +58,10 @@ except ImportError as e:
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler('device_screen_analyzer.log', encoding='utf-8')
-    ]
+    # handlers=[
+    #     logging.StreamHandler(),
+    #     logging.FileHandler('device_screen_analyzer.log', encoding='utf-8')
+    # ]
 )
 logger = logging.getLogger(__name__)
 
@@ -427,8 +427,8 @@ class DeviceScreenAnalyzer:
                 cv2.imwrite(str(image_path), result_frame)
 
                 # 保存原始截图
-                original_path = self.results_dir / f"{device_id}_{timestamp}_original.jpg"
-                cv2.imwrite(str(original_path), frame)
+                # original_path = self.results_dir / f"{device_id}_{timestamp}_original.jpg"
+                # cv2.imwrite(str(original_path), frame)
 
                 # 保存JSON数据
                 json_path = self.results_dir / f"{device_id}_{timestamp}_data.json"
@@ -437,11 +437,11 @@ class DeviceScreenAnalyzer:
 
                 result_data["saved_files"] = {
                     "result_image": str(image_path),
-                    "original_image": str(original_path),
+                    # "original_image": str(original_path),
                     "json_data": str(json_path)
                 }
 
-            logger.info(f"设备 {device_id} 分析完成，检测到 {len(detections)} 个元素")
+            logger.info(f"设备 {device_id} 分析完成，检测到 {len(detections)} 个元素,分别是: {[d.class_name for d in detections]}")
             return result_data
         except Exception as e:
             logger.error(f"分析设备 {device_id} 截图失败: {e}")
@@ -550,12 +550,25 @@ def main():
     # 输出选项
     parser.add_argument('--save-results', action='store_true', default=True, help='保存分析结果')
     parser.add_argument('--output-dir', type=str, help='结果输出目录')
+    # 新增：支持指定模型文件路径，覆盖config.ini中的model_path
+    parser.add_argument('--model', type=str, help='指定YOLO模型文件路径（覆盖config.ini中的model_path）')
 
     args = parser.parse_args()
 
     try:
-        # 只从 config.ini 读取模型路径
+        # 初始化分析器，默认从 config.ini 读取模型路径
         analyzer = DeviceScreenAnalyzer(confidence_threshold=args.confidence)
+        # 如果指定了模型路径，覆盖config.ini并重新加载
+        if args.model:
+            # 解析用户指定的模型路径，支持相对项目根目录
+            model_path = args.model
+            if not os.path.isabs(model_path):
+                model_path = str(project_root / model_path)
+            if not os.path.isfile(model_path):
+                logger.error(f"指定的模型文件不存在: {model_path}")
+                return
+            analyzer.model_path = model_path
+            analyzer._load_model()
 
         # 设置输出目录
         if args.output_dir:

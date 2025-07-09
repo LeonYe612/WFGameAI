@@ -1,102 +1,96 @@
 {
-  "meta": {
-    "name": "参数化标准示例",
-    "description": "演示所有支持的参数化type类型和ElementPatterns的使用",
-    "version": "2.0",
-    "created_date": "2025-06-24",
-    "author": "WFGameAI开发团队",
-    "tags": ["参数化", "标准", "ElementPatterns", "示例"]
-  },
-  "steps": [
-    {
-      "step": 1,
-      "action": "click_target",
-      "target_selector": {
-        "type": "login_switch_button",
-        "skip_if_not_found": true
-      },
-      "confidence": 0.9,
-      "timestamp": "2025-06-24 10:00:00.000000",
-      "remark": "切换到账号密码登录模式（使用LOGIN_SWITCH_BUTTON_PATTERNS自动识别）"
+    "meta": {
+        "name": "参数化标准示例",
+        "description": "演示所有支持的参数化type类型和ElementPatterns的使用",
+        "version": "2.0",
+        "created_date": "2025-06-24",
+        "author": "WFGameAI开发团队",
+        "tags": [
+            "参数化",
+            "标准",
+            "ElementPatterns",
+            "示例"
+        ]
     },
-    {
-      "step": 2,
-      "action": "input",
-      "text": "${account:username}",
-      "target_selector": {
-        "type": "username_field"
-      },
-      "confidence": 0.95,
-      "timestamp": "2025-06-24 10:00:05.000000",
-      "remark": "输入登录用户名（使用USERNAME_PATTERNS自动识别）"
+    "steps": [
+        {
+            "step": 1,
+            "action": "click",
+            "target_selector": {
+                "type": "login_switch_button",
+                "skip_if_not_found": true
+            },
+            "confidence": 0.9,
+            "timestamp": "2025-06-24 10:00:00.000000",
+            "remark": "切换到账号密码登录模式（使用LOGIN_SWITCH_BUTTON_PATTERNS自动识别）"
+        },
+        {
+            "step": 2,
+            "action": "input",
+            "text": "${account:username}",
+            "target_selector": {
+                "type": "username_field"
+            },
+            "confidence": 0.95,
+            "timestamp": "2025-06-24 10:00:05.000000",
+            "remark": "输入登录用户名（使用USERNAME_PATTERNS自动识别）"
+        },
+        {
+            "step": 3,
+            "action": "input",
+            "text": "${account:password}",
+            "target_selector": {
+                "type": "password_field"
+            },
+            "confidence": 0.95,
+            "timestamp": "2025-06-24 10:00:10.000000",
+            "remark": "输入登录密码（使用PASSWORD_PATTERNS自动识别）"
+        },
+        {
+            "step": 4,
+            "action": "checkbox",
+            "target_selector": {
+                "type": "agreement_checkbox"
+            },
+            "confidence": 0.95,
+            "timestamp": "2025-06-24 10:00:15.000000",
+            "remark": "勾选用户协议（使用CHECKBOX_PATTERNS自动识别）"
+        },
+        {
+            "step": 5,
+            "action": "click",
+            "target_selector": {
+                "type": "login_button"
+            },
+            "confidence": 0.92,
+            "timestamp": "2025-06-24 10:00:20.000000",
+            "remark": "点击登录按钮（使用LOGIN_BUTTON_PATTERNS自动识别）"
+        },
+        {
+            "step": 6,
+            "action": "click",
+            "target_selector": {
+                "type": "skip_button",
+                "skip_if_not_found": true
+            },
+            "confidence": 0.9,
+            "timestamp": "2025-06-24 10:00:25.000000",
+            "remark": "跳过引导或广告（使用SKIP_BUTTON_PATTERNS自动识别）"
+        }
+    ],
+    "supported_types": {
+        "username_field": "使用USERNAME_PATTERNS识别用户名输入框",
+        "password_field": "使用PASSWORD_PATTERNS识别密码输入框",
+        "agreement_checkbox": "使用CHECKBOX_PATTERNS识别协议勾选框",
+        "login_button": "使用LOGIN_BUTTON_PATTERNS识别登录按钮",
+        "skip_button": "使用SKIP_BUTTON_PATTERNS识别跳过按钮",
+        "login_switch_button": "使用LOGIN_SWITCH_BUTTON_PATTERNS识别登录方式切换按钮"
     },
-    {
-      "step": 3,
-      "action": "input",
-      "text": "${account:password}",
-      "target_selector": {
-        "type": "password_field"
-      },
-      "confidence": 0.95,
-      "timestamp": "2025-06-24 10:00:10.000000",
-      "remark": "输入登录密码（使用PASSWORD_PATTERNS自动识别）"
-    },
-    {
-      "step": 4,
-      "action": "checkbox",
-      "target_selector": {
-        "type": "agreement_checkbox"
-      },
-      "confidence": 0.95,
-      "timestamp": "2025-06-24 10:00:15.000000",
-      "remark": "勾选用户协议（使用CHECKBOX_PATTERNS自动识别）"
-    },
-    {
-      "step": 5,
-      "action": "click_target",
-      "target_selector": {
-        "type": "login_button"
-      },
-      "confidence": 0.92,
-      "timestamp": "2025-06-24 10:00:20.000000",
-      "remark": "点击登录按钮（使用LOGIN_BUTTON_PATTERNS自动识别）"
-    },
-    {
-      "step": 6,
-      "action": "click_target",
-      "target_selector": {
-        "type": "skip_button",
-        "skip_if_not_found": true
-      },
-      "confidence": 0.9,
-      "timestamp": "2025-06-24 10:00:25.000000",
-      "remark": "跳过引导或广告（使用SKIP_BUTTON_PATTERNS自动识别）"
-    },
-    {
-      "step": 7,
-      "action": "auto_login",
-      "params": {
-        "username": "${account:username}",
-        "password": "${account:password}"
-      },
-      "confidence": 0.95,
-      "timestamp": "2025-06-24 10:00:30.000000",
-      "remark": "执行完整自动登录流程（内部使用所有ElementPatterns）"
-    }
-  ],
-  "supported_types": {
-    "username_field": "使用USERNAME_PATTERNS识别用户名输入框",
-    "password_field": "使用PASSWORD_PATTERNS识别密码输入框",
-    "agreement_checkbox": "使用CHECKBOX_PATTERNS识别协议勾选框",
-    "login_button": "使用LOGIN_BUTTON_PATTERNS识别登录按钮",
-    "skip_button": "使用SKIP_BUTTON_PATTERNS识别跳过按钮",
-    "login_switch_button": "使用LOGIN_SWITCH_BUTTON_PATTERNS识别登录方式切换按钮"
-  },
-  "usage_notes": [
-    "使用type参数替代传统的text_hints、resource_id_keywords等",
-    "所有ElementPatterns在enhanced_input_handler.py中预定义",
-    "支持skip_if_not_found等额外参数",
-    "参数化方式提供更好的维护性和一致性",
-    "兼容传统target_selector方式（传统方式仍然支持）"
-  ]
+    "usage_notes": [
+        "使用type参数替代传统的text_hints、resource_id_keywords等",
+        "所有ElementPatterns在enhanced_input_handler.py中预定义",
+        "支持skip_if_not_found等额外参数",
+        "参数化方式提供更好的维护性和一致性",
+        "兼容传统target_selector方式（传统方式仍然支持）"
+    ]
 }

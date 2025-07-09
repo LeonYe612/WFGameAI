@@ -32,9 +32,8 @@
             "detection_method": "ai",
             "action": "wait_if_exists",
             "yolo_class": "system-newResources",
-            "polling_interval": 5000,
+            "polling_interval": 5,
             "max_duration": 300,
-            "confidence": 0.7135645747184753,
             "remark": "判断启动APP后是否出现热更资源图标，如果存在则需要等待新资源加载完成"
         },
         {
@@ -102,7 +101,7 @@
         {
             "step": 11,
             "detection_method": "ui",
-            "action": "click_target",
+            "action": "click",
             "ui_type": "login_button",
             "execute_action": "click",
             "auto_handle_dialog": false,

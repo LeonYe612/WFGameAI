@@ -208,67 +208,53 @@ except ImportError:
         load_yolo_model = None
 
 
-def load_yolo_model_for_detection(model_path=None):
-    """加载YOLO模型用于AI检测"""
+def load_yolo_model_for_detection():
+    """只从config.ini的[paths]段读取model_path加载YOLO模型，未找到直接抛异常。禁止使用绝对路径。"""
     global model
-
     if YOLO is None:
         print_realtime("❌ 无法加载YOLO模型：ultralytics未正确导入")
-        return False
-
+        raise RuntimeError("YOLO未正确导入")
     try:
-        if model_path and os.path.exists(model_path):
-            print_realtime(f"🔄 加载指定模型: {model_path}")
-            model = YOLO(model_path)
-        elif load_yolo_model is not None:
-            print_realtime("🔄 使用load_yolo_model加载模型")
-            # 使用项目的load_yolo_model函数
-            base_dir = os.path.dirname(os.path.abspath(__file__))
-            try:
-                model = load_yolo_model(
-                    base_dir=base_dir,
-                    model_class=YOLO,
-                    specific_model=None,
-                    exit_on_failure=False
-                )
-                if model is not None:
-                    print_realtime("✅ 成功使用load_yolo_model加载模型")
-                else:
-                    print_realtime("⚠️ load_yolo_model返回None")
-                    return False
-            except Exception as e:
-                print_realtime(f"⚠️ load_yolo_model加载失败: {e}")
-                return False
-        else:
-            # 尝试查找默认模型路径
-            possible_paths = [
-                os.path.join(os.path.dirname(__file__), "datasets", "train", "weights", "best.pt"),
-                os.path.join(os.path.dirname(__file__), "best.pt"),
-                os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "models", "best.pt")
-            ]
-
-            model_found = False
-            for path in possible_paths:
-                if os.path.exists(path):
-                    print_realtime(f"🔄 找到并加载模型: {path}")
-                    model = YOLO(path)
-                    model_found = True
+        # 获取项目根目录并定位 config.ini
+        from pathlib import Path
+        project_root = Path(__file__).resolve().parents[3]
+        config_path = project_root / 'config.ini'
+        if not config_path.exists():
+            raise FileNotFoundError(f"未找到配置文件: {config_path}")
+        # 读取配置
+        config = configparser.ConfigParser()
+        config.read(str(config_path), encoding='utf-8')
+        if 'paths' not in config or 'model_path' not in config['paths']:
+            raise KeyError("config.ini的[paths]段未配置model_path")
+        # 递归变量替换
+        def resolve_var(val, section):
+            import re
+            pattern = re.compile(r'\$\{([^}]+)\}')
+            while True:
+                match = pattern.search(val)
+                if not match:
                     break
-
-            if not model_found:
-                print_realtime("⚠️ 未找到可用的YOLO模型文件")
-                return False
-
+                var = match.group(1)
+                rep = config[section].get(var) or config['paths'].get(var) or ''
+                val = val.replace(f'${{{var}}}', rep)
+            return val
+        raw_path = resolve_var(config['paths']['model_path'], 'paths')
+        # 构造模型文件绝对路径
+        model_file = Path(raw_path)
+        if not model_file.is_absolute():
+            model_file = project_root / model_file
+        if not model_file.exists():
+            raise FileNotFoundError(f"[paths]段model_path指定的模型文件不存在: {model_file}")
+        print_realtime(f"🔄 加载模型文件: {model_file}")
+        model = YOLO(str(model_file))
         print_realtime(f"✅ YOLO模型加载成功: {type(model)}")
         if model is not None and hasattr(model, 'names'):
-            # print_realtime(f"📋 模型类别: {model.names}")
             print_realtime(f"📋 模型类别(过长，未打印)...")
         return True
-
     except Exception as e:
         print_realtime(f"❌ YOLO模型加载失败: {e}")
         model = None
-        return False
+        raise
 
 def detect_buttons(frame, target_class=None, conf_threshold=None):
     """

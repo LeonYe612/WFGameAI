@@ -2,7 +2,7 @@
     "meta": {
         "name": "设备预处理和应用启动 - WeTest权限处理",
         "description": "预处理、APP启动、权限循环检测处理",
-        "auto_handle_dialog": true,
+        "auto_handle_dialog": false,
         "dialog_max_wait": 5,
         "dialog_retry_interval": 1,
         "dialog_duration": 1.0
@@ -28,8 +28,8 @@
                 "app_name": "card2prepare-wetest",
                 "package_name": "com.beeplay.card2prepare",
                 "activity_name": "com.beeplay.card2prepare/com.beeplay.splash.launcher.SplashActivity",
-                "handle_permission": true,
-                "auto_allow_permission": true,
+                "handle_permission": false,
+                "auto_allow_permission": false,
                 "permission_wait_time": 10,
                 "remark": "启动应用并自动识别和处理权限"
             }
