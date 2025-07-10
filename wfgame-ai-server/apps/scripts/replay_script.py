@@ -198,7 +198,8 @@ try:
     print_realtime("✅ 成功导入load_yolo_model函数")
 except ImportError:
     try:
-        # 尝试从项目根目录导入        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
+        # 尝试从项目根目录导入
+        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
         if project_root not in sys.path:
             sys.path.insert(0, project_root)
         from utils import load_yolo_model

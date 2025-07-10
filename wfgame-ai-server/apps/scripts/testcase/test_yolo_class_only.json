@@ -1,13 +1,13 @@
 {
     "name": "Test wait_if_exists with yolo_class parameter only",
-    "description": "Verify that wait_if_exists works with only yolo_class parameter (no backward compatibility)",
+    "description": "",
     "steps": [
         {
             "step": 1,
             "detection_method": "ai",
             "action": "wait_for_stable",
-            "duration": 3,
-            "max_wait": 8,
+            "duration": 5,
+            "max_wait": 10,
             "remark": "等待应用启动后界面稳定"
         },
         {
@@ -18,7 +18,7 @@
             "remark": "点击确认按钮，处理可能的权限弹窗"
         },
         {
-            "step": 2,
+            "step": 3,
             "detection_method": "ai",
             "action": "wait_if_exists",
             "yolo_class": "system-newResources",
@@ -27,30 +27,34 @@
             "remark": "判断启动APP后是否出现热更资源图标，如果存在则需要等待新资源加载完成"
         },
         {
-            "step": 3,
+            "step": 4,
             "detection_method": "ai",
             "action": "wait_for_appearance",
             "yolo_class": "operation-sdk-enter",
+            "max_wait": 60,
+            "polling_interval": 3,
             "remark": "通过等待[进入游戏]按钮出现，来判断已成功完成“热更”进入“加载界面”"
         },
         {
-            "step": 1,
+            "step": 5,
             "detection_method": "ai",
             "action": "retry_until_success",
             "execute_action": "input",
             "text": "${account:username}",
             "yolo_class": "operation-sdk-phoneinput",
-            "max_retries": 3,
-            "retry_interval": 1,
+            "max_retries": 5,
+            "retry_interval": 3,
             "remark": "使用retry函数来确保已经成功进入登录界面"
         },
         {
-            "step": 2,
+            "step": 6,
             "detection_method": "ai",
-            "action": "click",
+            "action": "retry_until_success",
             "execute_action": "input",
             "text": "${account:password}",
-            "yolo_class": "operation-sdk-yzminput"
+            "yolo_class": "operation-sdk-yzminput",
+            "max_retries": 5,
+            "retry_interval": 3
         }
     ]
 }

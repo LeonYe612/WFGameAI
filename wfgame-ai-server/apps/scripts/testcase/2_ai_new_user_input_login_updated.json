@@ -80,8 +80,8 @@
             "step": 6,
             "detection_method": "ai",
             "action": "click",
-            "yolo_class": "operation-confirm",
-            "remark": "会提示【验证码】不正确，点击确认"
+            "yolo_class": "operation-sdk-screenshot",
+            "remark": "会提示【验证码】不正确，点击确认。此图有误，暂时将错就错"
         },
         {
             "step": 7,

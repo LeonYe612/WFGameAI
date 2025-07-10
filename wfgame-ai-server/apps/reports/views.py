@@ -59,7 +59,7 @@ paths = config['paths']
 logger.info(f'已加载配置文件: {CONFIG_PATH}')
 logger.info(f'REPORTS_DIR将被设置为: {paths["reports_dir"]}')
 logger.info(f'UI_REPORTS_DIR将被设置为: {paths["ui_reports_dir"]}')
-
+logger.info(f'已加载YOLO模型: {paths["model_path"]}')
 # Get report paths from config.ini
 REPORTS_DIR = os.path.abspath(paths['reports_dir'])
 

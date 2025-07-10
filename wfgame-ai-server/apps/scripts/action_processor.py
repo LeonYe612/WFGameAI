@@ -8,14 +8,14 @@ Action处理器模块
 import logging
 logging.getLogger('airtest').setLevel(logging.WARNING)
 logging.getLogger('airtest.core.android.adb').setLevel(logging.WARNING)
-
+import os
 import json
 import time
+import subprocess
+import tempfile
+import traceback
 import cv2
 import numpy as np
-import traceback
-import queue
-import os
 from collections import namedtuple
 
 # 尝试导入相关模块，如果失败则使用占位符
@@ -1103,6 +1103,7 @@ class ActionProcessor:
         print(f"   - 等待结果: {wait_result}")
         print(f"   - 总等待时间: {total_wait_time:.1f}秒")
         print(f"⏱️ 步骤结束时间: {time.strftime('%H:%M:%S', time.localtime())}")
+        print(f"⏱️ 步骤结束时间: {time.strftime('%H:%M:%S', time.localtime())}")
         print(f"{'='*60}")        # 创建screen对象以支持报告截图显示
         screen_data = self._create_unified_screen_object(
             log_dir,
@@ -1240,7 +1241,7 @@ class ActionProcessor:
         screen_data = self._create_unified_screen_object(
             log_dir,
             pos_list=[],
-            confidence=confidence,
+            confidence=1.0,
             rect_info=[]
         )
 
@@ -1786,8 +1787,7 @@ class ActionProcessor:
             else:
                 return ActionResult(success=False, message="AI检测功能不可用")
 
-        except Exception as e:
-            return ActionResult(
+        except Exception as e:            return ActionResult(
                 success=False,
                 message=f"AI检测点击异常: {e}",
                 details={"exception": str(e)}
@@ -1796,6 +1796,7 @@ class ActionProcessor:
     def _handle_fallback_click_new(self, step, context):
         """处理备选点击 - 新接口"""
         step_remark = step.get("remark", "")
+        step_idx = getattr(context, 'step_idx', 0)
 
         if "relative_x" not in step or "relative_y" not in step:
             return ActionResult(success=False, message="备选步骤缺少相对坐标信息")
@@ -1857,10 +1858,9 @@ class ActionProcessor:
                         "ret": [abs_x, abs_y],
                         "end_time": timestamp + 0.1,
                         "desc": step_remark or f"备选点击({rel_x:.3f}, {rel_y:.3f})",
-                        "title": f"#{step_remark or f'备选点击({rel_x:.3f})'}"
+                        "title": f"#{step_idx+1} {step_remark or f'备选点击({rel_x:.3f}, {rel_y:.3f})'}"
                 }
                 }
-
                 # 添加screenshot数据到entry中
                 if screen_data:
                     touch_entry["data"]["screen"] = screen_data
@@ -2194,7 +2194,7 @@ class ActionProcessor:
         detection_method = step.get("detection_method", "ai" if yolo_class else "ui")
 
         step_remark = step.get("remark", "")
-        timeout = step.get("timeout", 10)
+        max_wait = step.get("max_wait", 10)
         polling_interval = step.get("polling_interval", 1)
         confidence = step.get("confidence", 0.8)
         fail_on_timeout = step.get("fail_on_timeout", True)
@@ -2207,7 +2207,7 @@ class ActionProcessor:
             print(f"🎯 AI类别: '{yolo_class}'")
         elif detection_method == "ui" and ui_type:
             print(f"🎯 UI类型: '{ui_type}'")
-        print(f"⏰ 超时时间: {timeout}秒")
+        print(f"⏰ 超时时间: {max_wait}秒")
         print(f"🔄 轮询间隔: {polling_interval}秒")
         print(f"🎯 置信度: {confidence}")
         print(f"📝 备注: {step_remark}")
@@ -2221,7 +2221,7 @@ class ActionProcessor:
 
         try:
             loop_count = 0
-            while time.time() - wait_start_time < timeout:
+            while time.time() - wait_start_time < max_wait:
                 loop_count += 1
                 print(f"\n🔍 [循环 {loop_count}] 检查元素是否出现...")
                 # 根据detection_method选择检测方式
@@ -2333,7 +2333,7 @@ class ActionProcessor:
                     "detection_method": detection_method,
                     "yolo_class": yolo_class,
                     "ui_type": ui_type,
-                    "timeout": timeout,
+                    "max_wait": max_wait,
                     "polling_interval": polling_interval,
                     "confidence": confidence
                 },
@@ -2552,8 +2552,8 @@ class ActionProcessor:
         step_remark = step.get("remark", "")
 
         max_retries = step.get("max_retries", 5)
-        retry_strategy = step.get("retry_strategy", "fixed")
         retry_interval = step.get("retry_interval", 1)
+        polling_interval = step.get("polling_interval", retry_interval)
         initial_delay = step.get("initial_delay", 1)
         max_delay = step.get("max_delay", 10)
         backoff_multiplier = step.get("backoff_multiplier", 2)
@@ -2567,7 +2567,6 @@ class ActionProcessor:
         elif detection_method == "ui" and ui_type:
             print(f"🎯 UI类型: '{ui_type}'")
         print(f"🔄 最大重试次数: {max_retries}")
-        print(f"⏰ 重试策略: {retry_strategy}")
         print(f"📝 备注: {step_remark}")
 
         retry_start_time = time.time()
@@ -2611,8 +2610,7 @@ class ActionProcessor:
                                 operation_success = True
                                 print(f"✅ AI点击成功: ({x:.1f}, {y:.1f})")
                     elif detection_method == "ui" and ui_type:
-                        # UI检测点击
-                        if DeviceScriptReplayer:
+                        # UI检测点击                        if DeviceScriptReplayer:
                             input_handler = DeviceScriptReplayer(self.device.serial)
                             target_selector = {"type": ui_type}
                             operation_success = input_handler.perform_click_action(target_selector)
@@ -2621,19 +2619,67 @@ class ActionProcessor:
 
                 elif execute_action == "input":
                     # 文本输入操作
-                    if detection_method == "ui" and ui_type:
+                    # 🔧 重要修复：在retry中也需要进行参数化替换
+                    input_text = text
+
+                    # 智能账号分配：如果需要账号参数但没有分配，尝试自动分配
+                    if ("${account:username}" in input_text or "${account:password}" in input_text):
+                        if not self.device_account:
+                            print("🔄 检测到需要账号参数但设备未分配账号，尝试自动分配...")
+                            self._auto_allocate_device_account()
+
+                    # 参数替换处理：${account:username} 和 ${account:password}
+                    if "${account:username}" in input_text:
+                        if self.device_account and len(self.device_account) >= 1:
+                            input_text = input_text.replace("${account:username}", self.device_account[0])
+                            print(f"✅ 替换用户名参数: {self.device_account[0]}")
+                        else:
+                            device_serial = getattr(self.device, 'serial', self.device_name)
+                            print(f"❌ 错误: 设备 {device_serial} 没有分配账号，无法替换用户名参数")
+                            continue
+
+                    if "${account:password}" in input_text:
+                        if self.device_account and len(self.device_account) >= 2:
+                            input_text = input_text.replace("${account:password}", self.device_account[1])
+                            print(f"✅ 替换密码参数")
+                        else:
+                            device_serial = getattr(self.device, 'serial', self.device_name)
+                            print(f"❌ 错误: 设备 {device_serial} 没有分配账号，无法替换密码参数")
+                            continue
+
+                    # 支持AI定位的输入框后聚焦输入
+                    if detection_method == "ai" and yolo_class:
+                        if self.detect_buttons:
+                            screenshot = get_device_screenshot(self.device)
+                            if screenshot is None:
+                                print("❌ 无法获取屏幕截图")
+                            else:
+                                import cv2
+                                import numpy as np
+                                frame = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
+                                ai_ok, detection_result = self.detect_buttons(frame, target_class=yolo_class)
+                                if ai_ok and detection_result[0] is not None:
+                                    x, y = detection_result[0], detection_result[1]
+                                    # 点击输入框聚焦
+                                    self.device.shell(f"input tap {int(x)} {int(y)}")
+                                    time.sleep(0.5)
+                                    # 输入文本 - 使用替换后的input_text
+                                    escaped_text = input_text.replace(' ', '%s').replace("'", "\\'")
+                                    self.device.shell(f"input text '{escaped_text}'")
+                                    operation_success = True
+                                    print(f"✅ AI文本输入成功: ({x:.1f}, {y:.1f})")                    # 兼容UI方式输入
+                    elif detection_method == "ui" and ui_type:
                         if DeviceScriptReplayer:
                             input_handler = DeviceScriptReplayer(self.device.serial)
                             target_selector = {"type": ui_type}
-
                             # 先找到输入框
                             target_element = input_handler.find_element_smart(target_selector)
                             if target_element:
                                 # 点击获取焦点
                                 if input_handler.tap_element(target_element):
                                     time.sleep(0.5)
-                                    # 输入文本
-                                    escaped_text = text.replace(' ', '%s').replace("'", "\\'")
+                                    # 输入文本 - 使用替换后的input_text
+                                    escaped_text = input_text.replace(' ', '%s').replace("'", "\\'")
                                     self.device.shell(f"input text '{escaped_text}'")
                                     operation_success = True
                                     print(f"✅ 文本输入成功")
@@ -2669,19 +2715,7 @@ class ActionProcessor:
 
             # 如果还有重试机会，计算延迟时间
             if attempt < max_retries and not (success and stop_on_success):
-                if retry_strategy == "exponential":
-                    delay = min(current_delay, max_delay)
-                    current_delay *= backoff_multiplier
-                elif retry_strategy == "adaptive":
-                    # 自适应策略：前几次快速重试，后面延长间隔
-                    if attempt < 2:
-                        delay = 1
-                    elif attempt < 4:
-                        delay = 3
-                    else:
-                        delay = 5
-                else:  # fixed
-                    delay = retry_interval
+                delay = polling_interval
 
                 print(f"⏳ 等待 {delay}秒后重试...")
                 time.sleep(delay)
@@ -2715,8 +2749,7 @@ class ActionProcessor:
                     "execute_action": execute_action,
                     "yolo_class": yolo_class,
                     "ui_type": ui_type,
-                    "max_retries": max_retries,
-                    "retry_strategy": retry_strategy
+                    "max_retries": max_retries
                 },
                 "start_time": retry_start_time,
                 "ret": {
@@ -3230,9 +3263,7 @@ class ActionProcessor:
                         success = self._route_to_action_processor(step, step_idx, 'swipe')
                         if not success:
                             print(f"❌ swipe 操作失败")
-                            continue
-
-                    # 新增支持: 备用点击操作 (Priority模式)
+                            continue                    # 新增支持: 备用点击操作 (Priority模式)
                     elif action == 'fallback_click':
                         print(f"🔄 执行备用点击操作")
                         success = self._route_to_action_processor(step, step_idx, 'fallback_click')
@@ -3240,8 +3271,51 @@ class ActionProcessor:
                             print(f"❌ fallback_click 操作失败")
                             continue
 
+                    # 新增支持: 三个关键等待和重试操作
+                    elif action == 'wait_for_appearance':
+                        print(f"⏳ 执行等待元素出现操作")
+                        success = self._route_to_action_processor(step, step_idx, 'wait_for_appearance')
+                        if not success:
+                            print(f"❌ wait_for_appearance 操作失败")
+                            continue
+                    elif action == 'wait_for_disappearance':
+                        print(f"⏳ 执行等待元素消失操作")
+                        success = self._route_to_action_processor(step, step_idx, 'wait_for_disappearance')
+                        if not success:
+                            print(f"❌ wait_for_disappearance 操作失败")
+                            continue
+
+                    elif action == 'wait_if_exists':
+                        print(f"⏳ 执行等待元素存在操作")
+                        success = self._route_to_action_processor(step, step_idx, 'wait_if_exists')
+                        if not success:
+                            print(f"❌ wait_if_exists 操作失败")
+                            continue
+
+                    elif action == 'wait_for_stable':
+                        print(f"⏳ 执行等待界面稳定操作")
+                        success = self._route_to_action_processor(step, step_idx, 'wait_for_stable')
+                        if not success:
+                            print(f"❌ wait_for_stable 操作失败")
+                            continue
+
+                    elif action == 'retry_until_success':
+                        print(f"🔄 执行重试直到成功操作")
+                        success = self._route_to_action_processor(step, step_idx, 'retry_until_success')
+                        if not success:
+                            print(f"❌ retry_until_success 操作失败")
+                            continue
+
+                    # 新增支持: 设备预处理操作
+                    elif action == 'device_preparation':
+                        print(f"🔧 执行设备预处理操作")
+                        success = self._route_to_action_processor(step, step_idx, 'device_preparation')
+                        if not success:
+                            print(f"❌ device_preparation 操作失败")
+                            continue
+
                     else:
-                        print(f"⚠️ 不支持的操作: {action}，跳过")
+                        print(f"⚠️ process_script不支持的操作: {action}，跳过")
                         continue
 
                     # 操作间延迟

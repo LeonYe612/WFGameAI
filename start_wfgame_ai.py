@@ -263,10 +263,10 @@ def wait_for_services(frontend_process, backend_process):
             print_colored("\n服务已成功启动！", 'green')
             print_colored("\n访问地址:", 'green')
             print_colored("- 后端: http://localhost:8000", 'cyan')
-            print_colored("- API文档: http://localhost:8000/api/docs/", 'cyan')
+            # print_colored("- API文档: http://localhost:8000/api/docs/", 'cyan')
 
             # 自动打开浏览器访问后端
-            webbrowser.open('http://localhost:8000/api/docs/')
+            # webbrowser.open('http://localhost:8000/api/docs/')
 
     except KeyboardInterrupt:
         pass
