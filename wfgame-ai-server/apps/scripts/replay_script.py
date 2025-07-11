@@ -657,87 +657,108 @@ def process_priority_based_script(device, steps, log_dir, action_processor, scre
 
     priority_start_time = time.time()
     priority_step_counter = 0
-    detection_count = 0
+    detection_count = 0    # 持续检测直到超出最大时间（执行顺序：AI检测 → 滑动 → 备选点击）
+    # 按优先级正确分类步骤
+    ai_detection_steps = sorted([s for s in steps if s.get('action') == 'ai_detection_click'],
+                               key=lambda x: x.get('Priority', 999))
+    swipe_steps = sorted([s for s in steps if s.get('action') == 'swipe'],
+                        key=lambda x: x.get('Priority', 999))
+    fallback_steps = sorted([s for s in steps if s.get('action') == 'fallback_click'],
+                           key=lambda x: x.get('Priority', 999))
 
-    # 持续检测直到超出最大时间
+    print_realtime(f"📋 步骤分类: AI检测={len(ai_detection_steps)}, 滑动={len(swipe_steps)}, 备选点击={len(fallback_steps)}")
+
     while max_duration is None or (time.time() - priority_start_time) <= max_duration:
-        cycle_count = detection_count // len(steps) + 1
-        print_realtime(f"第 {cycle_count} 轮尝试检测，已检测 {detection_count} 次")
+        cycle_count = (detection_count // (len(ai_detection_steps) + len(swipe_steps) + len(fallback_steps))) + 1
+        print_realtime(f"🔄 第 {cycle_count} 轮检测循环开始")
 
         matched_any_target = False
-        unknown_fallback_step = None
 
-        for step_idx, step in enumerate(steps):
-            # 检查是否达到最大时间
-            if max_duration is not None and (time.time() - priority_start_time) > max_duration:
-                print_realtime(f"优先级模式已达到最大执行时间 {max_duration}秒，停止执行")
-                break
-
-            step_class = step.get("class", "")
-            step_remark = step.get("remark", "")
-            priority = step.get("Priority", 999)
-
-            # 记录unknown步骤作为备选
-            if step_class == "unknown":
-                unknown_fallback_step = step
-                continue
-
-            print_realtime(f"尝试优先级步骤 P{priority}: {step_class}, 备注: {step_remark}")            # 使用统一的ActionProcessor接口处理步骤
+        # 第1阶段：尝试所有AI检测步骤
+        print_realtime("🎯 [阶段1] 执行AI检测步骤")
+        for step_idx, step in enumerate(ai_detection_steps):
+            step_class = step.get('yolo_class')
+            step_remark = step.get('remark', '')
+            priority = step.get('Priority', 999)
+            print_realtime(f"  [Replay] 尝试AI检测 P{priority}: {step_class}")
             try:
-                # 尊重用户的action选择，不强制覆盖
-                priority_step = dict(step)  # 复制步骤
-
-                # 只有当action为空或为'click'时，才设置为ai_detection_click
-                if not priority_step.get('action') or priority_step.get('action') == 'click':
-                    priority_step['action'] = 'ai_detection_click'
-
                 success, has_executed, should_continue = action_processor.process_action(
-                    priority_step, step_idx, log_dir
+                    step, step_idx, log_dir
                 )
-
+                detection_count += 1
                 if success and has_executed:
                     matched_any_target = True
                     priority_step_counter += 1
-                    detection_count += 1
-                    print_realtime(f"✅ 成功执行优先级步骤: {step_remark}")
-                    time.sleep(1.0)  # 让UI响应
-                    break
+                    print_realtime(f"  ✅ [Replay] AI检测命中: {step_class}")
+                    time.sleep(1.0)
+                    break  # 只跳出AI检测循环，继续下一轮时间循环
                 else:
-                    print_realtime(f"❌ 优先级步骤未匹配: {step_class}")
-                    detection_count += 1
-
+                    print_realtime(f"  ❌ [Replay] AI检测未命中: {step_class}")
             except Exception as e:
-                print_realtime(f"❌ 优先级步骤执行异常: {e}")
+                print_realtime(f"  ❌ [Replay] AI检测异常: {e}")
                 detection_count += 1
 
-        # 如果所有目标都未匹配，执行备选步骤
-        if not matched_any_target and unknown_fallback_step is not None:
-            print_realtime("🔄 执行备选步骤")
+        # 如果AI检测有命中，继续下一轮
+        if matched_any_target:
+            continue
 
+        # 第2阶段：如果AI全部未命中，尝试滑动操作
+        print_realtime("🔄 [阶段2] 执行滑动操作")
+        for step in swipe_steps:
+            step_class = step.get('yolo_class')
+            step_remark = step.get('remark', '')
+            priority = step.get('Priority', 999)
+            print_realtime(f"  尝试滑动 P{priority}: {step_class}")
             try:
-                # 为备选步骤设置特殊的action类型
-                fallback_step = dict(unknown_fallback_step)  # 复制步骤
-                fallback_step['action'] = 'fallback_click'
-
                 success, has_executed, should_continue = action_processor.process_action(
-                    fallback_step, -1, log_dir
+                    step, -1, log_dir
                 )
-
                 if success and has_executed:
+                    matched_any_target = True
                     priority_step_counter += 1
-                    print_realtime(f"✅ 成功执行备选步骤")
+                    print_realtime(f"  ✅ 滑动完成: {step_class}")
                     time.sleep(1.0)
-
+                    break
+                else:
+                    print_realtime(f"  ❌ 滑动未执行: {step_class}")
             except Exception as e:
-                print_realtime(f"❌ 备选步骤执行异常: {e}")
+                print_realtime(f"  ❌ 滑动异常: {e}")
 
-        # 超时检查
+        # 如果滑动有执行，继续下一轮
+        if matched_any_target:
+            continue
+
+        # 第3阶段：如果滑动也未执行，尝试备选点击
+        print_realtime("🔄 [阶段3] 执行备选点击")
+        for step in fallback_steps:
+            step_class = step.get('yolo_class')
+            priority = step.get('Priority', 999)
+            print_realtime(f"  尝试备选点击 P{priority}: {step_class}")
+            try:
+                success, has_executed, should_continue = action_processor.process_action(
+                    step, -1, log_dir
+                )
+                if success and has_executed:
+                    matched_any_target = True
+                    priority_step_counter += 1
+                    print_realtime(f"  ✅ 备选点击成功: {step_class}")
+                    time.sleep(1.0)
+                    break
+                else:
+                    print_realtime(f"  ❌ 备选点击未成功: {step_class}")
+            except Exception as e:
+                print_realtime(f"  ❌ 备选点击异常: {e}")
+
+        # 检查超时条件
         if time.time() - priority_start_time > 30 and priority_step_counter == 0:
-            print_realtime("连续30秒未检测到任何优先级步骤，停止检测")
+            print_realtime("⏰ 连续30秒未检测到任何操作，停止优先级模式")
             break
 
-        time.sleep(0.5)  # 短暂暂停
+        # 如果这一轮完全没有任何操作成功，等待后继续下一轮
+        if not matched_any_target:
+            print_realtime("⚠️ 本轮所有操作都未成功，等待0.5秒后继续下一轮")
 
+        time.sleep(0.5)
     print_realtime(f"优先级模式执行完成，成功执行步骤: {priority_step_counter}")
     return priority_step_counter > 0
 

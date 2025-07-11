@@ -1,103 +1,91 @@
 {
-  "meta": {
-    "name": "主页引导步骤 - Priority模式",
-    "description": "完全符合Priority执行模式的主界面引导处理脚本，使用动态循环检测",
-    "updated_date": "2025-06-30",
-    "author": "WFGameAI开发团队",
-    "tags": ["主界面", "引导", "Priority模式", "动态检测"]
-  },
-  "steps": [
-    {
-      "Priority": 1,
-      "detection_method": "ai",
-      "action": "ai_detection_click",
-      "yolo_class": "system-skip",
-      "confidence": 0.8,
-      "remark": "检测并点击【跳过】按钮"
+    "meta": {
+        "name": "主页引导步骤 - Priority 动态检测自动执行模式",
+        "description": "完全符合Priority执行模式的主界面引导处理脚本，使用动态循环检测",
+        "updated_date": "2025-06-30",
+        "author": "WFGameAI开发团队",
+        "tags": [
+            "主界面",
+            "引导",
+            "Priority模式",
+            "动态检测",
+            "自动执行"
+        ]
     },
-    {
-      "Priority": 2,
-      "detection_method": "ai",
-      "action": "ai_detection_click",
-      "yolo_class": "hint-guide",
-      "confidence": 0.75,
-      "remark": "检测并点击【引导】弹窗"
-    },
-    {
-      "Priority": 3,
-      "detection_method": "ai",
-      "action": "ai_detection_click",
-      "yolo_class": "operation-confirm",
-      "confidence": 0.70,
-      "remark": "检测并点击【确定】按钮"
-    },
-    {
-      "Priority": 4,
-      "detection_method": "ai",
-      "action": "ai_detection_click",
-      "yolo_class": "operation-challenge",
-      "confidence": 0.7,
-      "remark": "检测并点击【挑战】按钮"
-    },
-    {
-      "Priority": 5,
-      "detection_method": "ai",
-      "action": "ai_detection_click",
-      "yolo_class": "navigation-fight",
-      "confidence": 0.7,
-      "remark": "检测并点击【战斗】按钮"
-    },
-    {
-      "Priority": 6,
-      "detection_method": "ai",
-      "action": "ai_detection_click",
-      "yolo_class": "operation-back",
-      "confidence": 0.7,
-      "remark": "检测并点击【返回】按钮"
-    },
-    {
-      "Priority": 7,
-      "detection_method": "ai",
-      "action": "ai_detection_click",
-      "yolo_class": "navigation-shop",
-      "confidence": 0.7,
-      "remark": "检测并点击【商店】按钮"
-    },
-    {
-      "Priority": 9,
-      "class": "unknown",
-      "action": "fallback_click",
-      "relative_x": 0.5,
-      "relative_y": 0.9,
-      "remark": "备选点击操作，防止遗漏"
-    },
-    {
-      "Priority": 6,
-      "action": "swipe",
-      "start_x": 1000,
-      "start_y": 500,
-      "end_x": 500,
-      "end_y": 500,
-      "duration": 1000,
-      "remark": "水平滑动操作"
-    },
-    {
-      "Priority": 7,
-      "action": "swipe",
-      "start_x": 1000,
-      "start_y": 700,
-      "end_x": 500,
-      "end_y": 300,
-      "duration": 1000,
-      "remark": "斜向滑动操作"
-    },
-    {
-      "Priority": 8,
-      "class": "unknown",
-      "action": "fallback_click",
-      "relative_x": 0.5,
-      "relative_y": 0.9,
-      "remark": "备选点击操作"
-    }
-  ]
+    "steps": [
+        {
+            "Priority": 1,
+            "detection_method": "ai",
+            "action": "ai_detection_click",
+            "yolo_class": "operation-close",
+            "remark": "检测并点击【关闭】按钮"
+        },
+        {
+            "Priority": 2,
+            "detection_method": "ai",
+            "action": "ai_detection_click",
+            "yolo_class": "system-skip",
+            "remark": "检测并点击【跳过】按钮"
+        },
+        {
+            "Priority": 3,
+            "detection_method": "ai",
+            "action": "ai_detection_click",
+            "yolo_class": "hint-guide",
+            "remark": "检测并点击【引导】弹窗"
+        },
+        {
+            "Priority": 4,
+            "detection_method": "ai",
+            "action": "ai_detection_click",
+            "yolo_class": "operation-confirm",
+            "remark": "检测并点击【确定】按钮"
+        },
+        {
+            "Priority": 5,
+            "detection_method": "ai",
+            "action": "ai_detection_click",
+            "yolo_class": "operation-challenge",
+            "remark": "检测并点击【挑战】按钮"
+        },
+        {
+            "Priority": 6,
+            "detection_method": "ai",
+            "action": "ai_detection_click",
+            "yolo_class": "navigation-fight",
+            "remark": "检测并点击【战斗】按钮"
+        },
+        {
+            "Priority": 7,
+            "detection_method": "ai",
+            "action": "ai_detection_click",
+            "yolo_class": "operation-back",
+            "remark": "检测并点击【返回】按钮"
+        },
+        {
+            "Priority": 8,
+            "detection_method": "ai",
+            "action": "ai_detection_click",
+            "yolo_class": "navigation-shop",
+            "remark": "检测并点击【商店】按钮"
+        },
+        {
+            "Priority": 9,
+            "action": "swipe",
+            "start_x": 1000,
+            "start_y": 500,
+            "end_x": 500,
+            "end_y": 500,
+            "duration": 1000,
+            "remark": "水平滑动操作"
+        },
+        {
+            "Priority": 10,
+            "detection_method": "ai",
+            "action": "fallback_click",
+            "relative_x": 0.5,
+            "relative_y": 0.9,
+            "remark": "备选[固定坐标点击]操作，防止死循环。因为swipe先执行，此步永远不会走到。"
+        }
+    ]
 }

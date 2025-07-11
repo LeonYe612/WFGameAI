@@ -312,26 +312,38 @@ class ActionProcessor:
         Returns:
             tuple: (success, executed, should_continue)
         """
-        return self._process_action(step, step_idx, log_dir)
+        result = self._process_action(step, step_idx, log_dir)
+        # 支持ActionResult和旧式tuple返回，确保统一输出tuple
+        if isinstance(result, ActionResult):
+            return result.to_tuple()
+        else:
+            return result
 
     def _process_action(self, step, step_idx, log_dir):
         """处理action步骤"""
         step_action = step.get("action", "click")
-        step_class = step.get("class", "")
-        step_yolo_class = step.get("yolo_class", "")  # 修复: 确保step_yolo_class已定义
-        if step_class == "delay":
+        step_yolo_class = step.get("yolo_class")  # 修复: 确保step_yolo_class已定义
+        print(f"[DEBUG] _process_action called: step_action={step_action}, step_yolo_class={step_yolo_class}, step_idx={step_idx}, log_dir={log_dir}")
+        # 预先初始化result变量，避免未赋值错误
+        result = ActionResult(
+            success=False,
+            message="步骤未执行",
+            details={"operation": step_action, "status": "not_executed"}
+        )
+
+        if step_action == "delay":
             result = self._handle_delay(step, step_idx, log_dir)
 
-        elif step_class == "device_preparation":
+        elif step_action == "device_preparation":
             result = self._handle_device_preparation(step, step_idx)
 
-        elif step_class == "app_start":
+        elif step_action == "app_start":
             result = self._handle_app_start(step, step_idx)
 
-        elif step_class == "app_stop":
+        elif step_action == "app_stop":
             result = self._handle_app_stop(step, step_idx)
 
-        elif step_class == "log":
+        elif step_action == "log":
             result = self._handle_log(step, step_idx)
 
         # 处理新的3个关键功能
@@ -362,10 +374,13 @@ class ActionProcessor:
         elif step_action == "wait_for_disappearance":
             result = self._handle_wait_for_disappearance(step, step_idx, log_dir)
 
-        # 关键修复：优先处理ai_detection_click动作        elif step_action == "ai_detection_click":
+        # 关键修复：优先处理ai_detection_click动作
+        elif step_action == "ai_detection_click":
             print(f"🎯 执行AI检测点击操作")
             result = self._handle_ai_detection_click(step, step_idx, log_dir)
-
+        elif step_action == "fallback_click":
+            print(f"🎯 执行备选点击操作")
+            result = self._handle_fallback_click(step, step_idx, log_dir)
         elif step_action == "click":
             # 检查是否有execute_action字段（点击后执行其他操作）
             execute_action = step.get("execute_action")
@@ -386,19 +401,22 @@ class ActionProcessor:
             else:
                 # 默认处理：尝试AI检测点击
 
-                if step_class == "unknown" and "relative_x" in step and "relative_y" in step:
+                if step_action == "fallback_click" and "relative_x" in step and "relative_y" in step:
                     result = self._handle_fallback_click(step, step_idx, log_dir)
 
-                elif step_yolo_class and step_yolo_class != "unknown":
+                elif step_yolo_class and step_yolo_class != "fallback_click":
                     # 对于Priority模式脚本，如果有yolo_class字段，执行AI检测点击
                     print(f"🎯 检测到yolo_class字段: {step_yolo_class}，执行AI检测点击")
                     result = self._handle_ai_detection_click(step, step_idx, log_dir)
-
-                elif step_class and step_class != "unknown":
+                elif step_yolo_class and step_yolo_class != "fallback_click":
                     result = self._handle_ai_detection_click(step, step_idx, log_dir)
 
                 else:
-                    return False, False, False
+                    result = ActionResult(
+                        success=False,
+                        message="步骤类型不匹配或无法识别",
+                        details={"operation": step_action, "step_yolo_class": step_yolo_class}
+                    )
 
         # 转换ActionResult对象为元组（向后兼容）
         if isinstance(result, ActionResult):
@@ -461,14 +479,22 @@ class ActionProcessor:
 
         if "relative_x" not in step or "relative_y" not in step:
             print(f"错误: fallback click 步骤缺少相对坐标信息")
-            return True, False, True
+            return ActionResult(
+                success=False,
+                message="fallback_click 步骤缺少相对坐标信息",
+                details={"operation": "fallback_click", "error": "missing_relative_coordinates"}
+            )
 
         try:
             # 获取屏幕截图以获取分辨率
             screenshot = get_device_screenshot(self.device)
             if screenshot is None:
                 print(f"❌ 无法获取屏幕截图")
-                return True, False, True
+                return ActionResult(
+                    success=False,
+                    message="无法获取屏幕截图",
+                    details={"operation": "fallback_click", "error": "screenshot_failed"}
+                )
 
             import cv2
             import numpy as np
@@ -542,22 +568,33 @@ class ActionProcessor:
             )
 
     def _handle_ai_detection_click(self, step, step_idx, log_dir):
-        """处理AI检测点击步骤"""
+        print(f"[DEBUG] 进入_handle_ai_detection_click, step={step}, step_idx={step_idx}, log_dir={log_dir}")
+        print(f"[DEBUG] self.detect_buttons: {self.detect_buttons}")
+
         step_class = step.get("yolo_class")  # 优先使用yolo_class，兼容class字段
         step_remark = step.get("remark", "")
+        print(f"[DEBUG] step_class: {step_class}, step_remark: {step_remark}")
 
         if not step_class or step_class == "unknown":
             print(f"错误: AI检测点击步骤缺少有效的检测类别")
-            return True, False, True
+            return ActionResult(
+                success=False,
+                message="AI检测点击步骤缺少有效的检测类别",
+                details={"operation": "ai_detection_click", "error": "invalid_class"}
+            )
 
         try:
             # print(f"\n================ [AI调试] 检测前 ==================")
-            # print(f"[AI调试] 目标类别: {step_class}")
+            print(f"[AI调试] 目标类别: {step_class}")
             # 获取屏幕截图
             screenshot = get_device_screenshot(self.device)
             if screenshot is None:
                 print(f"❌ 无法获取设备屏幕截图")
-                return True, False, True
+                return ActionResult(
+                    success=False,
+                    message="无法获取设备屏幕截图",
+                    details={"operation": "ai_detection_click", "error": "screenshot_failed"}
+                )
             frame = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
             # print(f"[AI调试] 输入图片shape: {frame.shape}")
             # print(f"[AI调试] 步骤置信度阈值: {step.get('confidence', 0.6)}")
@@ -570,71 +607,23 @@ class ActionProcessor:
                 step_confidence = step.get("confidence", 0.6)
                 print(f"🎯 使用置信度阈值: {step_confidence} (步骤指定: {step.get('confidence', '默认')})")
                 success, detection_result = self.detect_buttons(frame, target_class=step_class, conf_threshold=step_confidence)
+                print(f"🔍 AI检测输出: success={success}, detection_result={detection_result}")
 
-                # print(f"\n================ [AI调试] 检测后 ===================")
-                # print(f"[AI调试] 检测返回: success={success}, detection_result={detection_result}")
                 if success and detection_result[0] is not None:
                     x, y, detected_class = detection_result
-                    # print(f"[AI调试] 原始AI检测坐标: ({x}, {y})，类别: {detected_class}")
-                    # print(f"[AI调试] 逆变换后坐标: ({int(x)}, {int(y)})")
-                    # print(f"[AI调试] 屏幕分辨率: {frame.shape[1]}x{frame.shape[0]}")
-                    # print(f"[AI调试] =========================================\n")
+
                     # 执行点击操作
                     self.device.shell(f"input tap {int(x)} {int(y)}")
-                    print(f"✅ AI检测点击成功: {detected_class}，位置: ({int(x)}, {int(y)})")
-
-                    # 创建screen对象以支持报告截图显示
-                    screen_data = self._create_unified_screen_object(
-                        log_dir,
-                        pos_list=[[int(x), int(y)]],
-                        confidence=0.85,
-                        rect_info=[{
-                            "left": max(0, int(x) - 50),
-                            "top": max(0, int(y) - 50),
-                            "width": 100,
-                            "height": 100
-                        }]
-                    )
-
-                    # 记录触摸操作日志
-                    timestamp = time.time()
-                    touch_entry = {
-                        "tag": "function",
-                        "depth": 1,
-                        "time": timestamp,
-                        "data": {
-                            "name": "touch",
-                            "call_args": {"v": [int(x), int(y)]},
-                            "start_time": timestamp,
-                            "ret": [int(x), int(y)],
-                            "end_time": timestamp + 0.1,
-                            "desc": step_remark or f"点击{detected_class}",
-                            "title": f"#{step_idx+1} {step_remark or f'点击{detected_class}'}"
-                        }
-                    }                    # 添加screenshot数据到entry中
-                    if screen_data:
-                        touch_entry["data"]["screen"] = screen_data
-
-                    # 写入日志
-                    self._write_log_entry(touch_entry)
-
                     return ActionResult(
                         success=True,
-                        message=f"AI检测点击成功: {detected_class}，位置: ({int(x)}, {int(y)})",
-                        details={
-                            "operation": "ai_detection_click",
-                            "detected_class": detected_class,
-                            "coordinates": (int(x), int(y)),
-                            "has_screenshot": screen_data is not None
-                        }
+                        message=f"AI检测点击成功: {step_class}",
+                        details={"operation": "ai_detection_click", "target_class": step_class, "position": [int(x), int(y)]}
                     )
                 else:
-                    print(f"[AI调试] 未检测到目标，检测结果: {detection_result}")
-                    print(f"[AI调试] =========================================\n")
-                    print(f"❌ AI检测未找到目标: {step_class}")
+                    print(f"❌ AI检测未命中: {step_class}")
                     return ActionResult(
                         success=False,
-                        message=f"AI检测未找到目标: {step_class}",
+                        message=f"AI检测未命中: {step_class}",
                         details={"operation": "ai_detection_click", "target_class": step_class}
                     )
             else:
@@ -1303,7 +1292,11 @@ class ActionProcessor:
 
         if start_x is None or start_y is None or end_x is None or end_y is None:
             print(f"错误: swipe 步骤缺少必要的坐标参数")
-            return True, False, True
+            return ActionResult(
+                success=False,
+                message="swipe 步骤缺少必要的坐标参数",
+                details={"operation": "swipe", "error": "missing_coordinates"}
+            )
         print(f"执行滑动操作: ({start_x}, {start_y}) -> ({end_x}, {end_y}), 持续{duration}ms: {step_remark}")
 
         # 获取截图目录
@@ -1694,6 +1687,7 @@ class ActionProcessor:
                 "thumbnail": "fallback_thumbnail.jpg",
                 "resolution": [1080, 2400],
                 "pos": pos_list or [],
+                "pos": pos_list or [],
                 "confidence": confidence,
                 "rect": rect_info or [],
                 "screenshot_success": False
@@ -1725,6 +1719,7 @@ class ActionProcessor:
                 step_confidence = step.get("confidence", 0.7)
                 print(f"🎯 使用置信度阈值: {step_confidence} (步骤指定: {step.get('confidence', '默认')})")
                 success, detection_result = self.detect_buttons(frame, target_class=step_class, conf_threshold=step_confidence)
+                print(f"🔍 AI检测输出: success={success}, detection_result={detection_result}")
 
                 if success and detection_result[0] is not None:
                     x, y, detected_class = detection_result
@@ -1808,13 +1803,22 @@ class ActionProcessor:
         step_idx = getattr(context, 'step_idx', 0)
 
         if "relative_x" not in step or "relative_y" not in step:
-            return ActionResult(success=False, message="备选步骤缺少相对坐标信息")
+            print(f"错误: fallback click 步骤缺少相对坐标信息")
+            return ActionResult(
+                success=False,
+                message="fallback_click 步骤缺少相对坐标信息",
+                details={"operation": "fallback_click", "error": "missing_relative_coordinates"}
+            )
 
         try:
             # 获取屏幕截图以获取分辨率
             screenshot = get_device_screenshot(context.device)
             if screenshot is None:
-                return ActionResult(success=False, message="无法获取屏幕截图")
+                return ActionResult(
+                    success=False,
+                    message="无法获取屏幕截图",
+                    details={"operation": "fallback_click", "error": "screenshot_failed"}
+                )
 
             import cv2
             import numpy as np
@@ -1858,7 +1862,7 @@ class ActionProcessor:
                 timestamp = time.time()
                 touch_entry = {
                     "tag": "function",
-                    "depth": 1,
+                    "depth":  1,
                     "time": timestamp,
                     "data": {
                         "name": "touch",
@@ -1887,7 +1891,7 @@ class ActionProcessor:
                 message="Fallback click completed",
                 details={
                     "relative_coordinates": (rel_x, rel_y),
-                    "absolute_coordinates": (abs_x, abs_y),
+                    " absolute_coordinates": (abs_x, abs_y),
                     "has_screenshot": screen_data is not None
                 }
             )
@@ -2301,7 +2305,7 @@ class ActionProcessor:
                         if success and detection_result[0] is not None:
                             element_appeared = True
                             x, y, detected_class = detection_result
-                            wait_result = "appeared_fallback"
+                            wait_result = "appeared"
                             print(f"✅ [备选AI检测成功] 元素已出现!")
                     else:
                         print("❌ 无法获取屏幕截图用于备选检测")
@@ -2589,8 +2593,8 @@ class ActionProcessor:
         detection_method = step.get("detection_method", "ai")
         execute_action = step.get("execute_action",  "click")
         yolo_class = step.get("yolo_class",  "")
-        ui_type = step.get("ui_type", "")
-        text = step.get("text", "")
+        ui_type = step.get("ui_type",  "")
+        text = step.get("text",  "")
         step_remark = step.get("remark", "")
 
         max_retries = step.get("max_retries", 5)
@@ -2709,7 +2713,7 @@ class ActionProcessor:
                                     escaped_text = input_text.replace(' ', '%s').replace("'", "\\'")
                                     self.device.shell(f"input text '{escaped_text}'")
                                     operation_success = True
-                                    print(f"✅ AI文本输入成功: ({x:.1f}, {y:.1f})")                    # 兼容UI方式输入
+                                    print(f"✅ AI文本输入成功: {input_text}")                    # 兼容UI方式输入
                     elif detection_method == "ui" and ui_type:
                         if DeviceScriptReplayer:
                             input_handler = DeviceScriptReplayer(self.device.serial)
@@ -2933,8 +2937,6 @@ class ActionProcessor:
                         result = subprocess.run(
                             f"adb -s {self.serial} exec-out screencap -p",
                             shell=True,
-                            capture_output=True,
-                            timeout=10
                         )
                         if result.returncode == 0 and result.stdout:
                             import cv2
@@ -3305,7 +3307,8 @@ class ActionProcessor:
                         success = self._route_to_action_processor(step, step_idx, 'swipe')
                         if not success:
                             print(f"❌ swipe 操作失败")
-                            continue                    # 新增支持: 备用点击操作 (Priority模式)
+                            continue
+                     # 新增支持: 备用点击操作 (Priority模式)
                     elif action == 'fallback_click':
                         print(f"🔄 执行备用点击操作")
                         success = self._route_to_action_processor(step, step_idx, 'fallback_click')
