@@ -1,31 +1,5 @@
 {
-    "name": "Test wait_if_exists with yolo_class parameter only",
-    "description": "",
     "steps": [
-        {
-            "step": 1,
-            "detection_method": "ai",
-            "action": "wait_for_stable",
-            "duration": 5,
-            "max_wait": 10,
-            "remark": "等待应用启动后界面稳定"
-        },
-        {
-            "step": 2,
-            "detection_method": "ai",
-            "action": "click",
-            "yolo_class": "operation-confirm",
-            "remark": "点击确认按钮，处理可能的【权限弹窗】"
-        },
-        {
-            "step": 2,
-            "detection_method": "ai",
-            "action": "wait_if_exists",
-            "yolo_class": "system-newResources",
-            "polling_interval": 5,
-            "max_duration": 300,
-            "remark": "判断启动APP后是否出现热更资源图标，如果存在则需要等待新资源加载完成"
-        },
         {
             "step": 3,
             "detection_method": "ai",
@@ -67,13 +41,6 @@
             "action": "click",
             "yolo_class": "operation-sdk-enter",
             "remark": "点击登录按钮"
-        },
-        {
-            "step": 12,
-            "detection_method": "ai",
-            "action": "click",
-            "yolo_class": "operation-confirm",
-            "remark": "再次点击登录按钮，确保登录成功"
         }
     ]
 }

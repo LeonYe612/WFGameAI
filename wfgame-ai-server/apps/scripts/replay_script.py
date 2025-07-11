@@ -222,8 +222,8 @@ def load_yolo_model_for_detection():
         config_path = project_root / 'config.ini'
         if not config_path.exists():
             raise FileNotFoundError(f"未找到配置文件: {config_path}")
-        # 读取配置
-        config = configparser.ConfigParser()
+        # 读取配置，必须用ExtendedInterpolation保证变量递归替换
+        config = configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation())
         config.read(str(config_path), encoding='utf-8')
         if 'paths' not in config or 'model_path' not in config['paths']:
             raise KeyError("config.ini的[paths]段未配置model_path")
@@ -239,7 +239,9 @@ def load_yolo_model_for_detection():
                 rep = config[section].get(var) or config['paths'].get(var) or ''
                 val = val.replace(f'${{{var}}}', rep)
             return val
-        raw_path = resolve_var(config['paths']['model_path'], 'paths')
+        # raw_path = resolve_var(config['paths']['model_path'], 'paths')
+        # 修正为递归变量替换后，直接用configparser的get方法，自动展开变量
+        raw_path = config.get('paths', 'model_path')
         # 构造模型文件绝对路径
         model_file = Path(raw_path)
         if not model_file.is_absolute():

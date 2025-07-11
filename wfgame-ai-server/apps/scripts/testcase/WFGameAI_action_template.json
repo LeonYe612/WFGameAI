@@ -1,0 +1,132 @@
+{
+    "name": "WFGameAI Action 脚本模板",
+    "description": "请根据实际用例补充每步参数，保留所需字段，删除无关字段。所有参数均为可选，未用到的可省略。",
+    "steps": [
+        {
+            "step": 1,
+            "action": "delay",
+            "seconds": 1,
+            "remark": "延时等待"
+        },
+        {
+            "step": 2,
+            "action": "device_preparation",
+            "check_usb": true,
+            "setup_wireless": true,
+            "auto_handle_dialog": true,
+            "handle_screen_lock": true,
+            "setup_input_method": true,
+            "save_logs": true,
+            "remark": "设备预处理"
+        },
+        {
+            "step": 3,
+            "action": "app_start",
+            "app_name": "",
+            "package_name": "",
+            "handle_permission": false,
+            "permission_wait": 10,
+            "auto_allow_permission": false,
+            "first_only": false,
+            "remark": "启动应用"
+        },
+        {
+            "step": 4,
+            "action": "app_stop",
+            "app_name": "",
+            "package_name": "",
+            "remark": "停止应用"
+        },
+        {
+            "step": 5,
+            "action": "log",
+            "message": "",
+            "remark": "日志"
+        },
+        {
+            "step": 6,
+            "action": "wait_if_exists",
+            "yolo_class": "",
+            "polling_interval": 5,
+            "max_duration": 300,
+            "confidence": 0.8,
+            "remark": "条件等待"
+        },
+        {
+            "step": 7,
+            "action": "wait_for_disappearance",
+            "yolo_class": "",
+            "polling_interval": 1,
+            "max_duration": 30,
+            "confidence": 0.8,
+            "remark": "等待消失"
+        },
+        {
+            "step": 8,
+            "action": "wait_for_appearance",
+            "yolo_class": "",
+            "target_selector": {},
+            "max_duration": 30,
+            "confidence": 0.8,
+            "execute_action": "",
+            "remark": "等待出现"
+        },
+        {
+            "step": 9,
+            "action": "wait_for_stable",
+            "duration": 2,
+            "max_wait": 30,
+            "remark": "等待界面稳定"
+        },
+        {
+            "step": 10,
+            "action": "retry_until_success",
+            "execute_action": "",
+            "text": "",
+            "yolo_class": "",
+            "max_retries": 5,
+            "retry_interval": 1,
+            "remark": "重试直到成功"
+        },
+        {
+            "step": 11,
+            "action": "click",
+            "yolo_class": "",
+            "target_selector": {},
+            "execute_action": "",
+            "text": "",
+            "remark": "点击"
+        },
+        {
+            "step": 12,
+            "action": "swipe",
+            "start_x": 0,
+            "start_y": 0,
+            "end_x": 0,
+            "end_y": 0,
+            "duration": 300,
+            "remark": "滑动"
+        },
+        {
+            "step": 13,
+            "action": "input",
+            "text": "",
+            "target_selector": {},
+            "remark": "输入"
+        },
+        {
+            "step": 14,
+            "action": "checkbox",
+            "target_selector": {},
+            "checked": true,
+            "remark": "勾选"
+        },
+        {
+            "step": 15,
+            "action": "fallback_click",
+            "relative_x": 0.5,
+            "relative_y": 0.5,
+            "remark": "备用点击"
+        }
+    ]
+}

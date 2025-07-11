@@ -337,8 +337,8 @@ class ActionProcessor:
         # 处理新的3个关键功能
 
         elif step_action == "wait_for_appearance":
+            # 直接执行等待出现步骤，内部已支持 execute_action=click 的自动点击
             result = self._handle_wait_for_appearance(step, step_idx, log_dir)
-
         elif step_action == "wait_for_stable":
             result = self._handle_wait_for_stable(step, step_idx, log_dir)
 
@@ -1456,6 +1456,12 @@ class ActionProcessor:
                     "data": {
                         "name": "input_text",
                         "call_args": {
+                    "tag": "function",
+                    "depth": 1,
+                    "time": timestamp,
+                    "data": {
+                        "name": "input_text",
+                        "call_args": {
                             "text": "***" if "${account:password}" in step.get("text", "") else input_text,
                             "target_selector": target_selector
                         },
@@ -1466,6 +1472,8 @@ class ActionProcessor:
                         "title": f"#{step_idx+1} {step_remark or '文本输入操作'}"
                     }
                 }
+                }
+                   }
 
                 # 添加screen对象到日志条目（如果可用）
                 if screen_data:
@@ -1787,7 +1795,8 @@ class ActionProcessor:
             else:
                 return ActionResult(success=False, message="AI检测功能不可用")
 
-        except Exception as e:            return ActionResult(
+        except Exception as e:
+            return ActionResult(
                 success=False,
                 message=f"AI检测点击异常: {e}",
                 details={"exception": str(e)}
@@ -2198,7 +2207,6 @@ class ActionProcessor:
         polling_interval = step.get("polling_interval", 1)
         confidence = step.get("confidence", 0.8)
         fail_on_timeout = step.get("fail_on_timeout", True)
-        screenshot_on_timeout = step.get("screenshot_on_timeout", True)
         fallback_yolo_class = step.get("fallback_yolo_class", "")
 
         print(f"\n🚀 [步骤 {step_idx+1}] 开始执行 wait_for_appearance 操作")
@@ -2300,6 +2308,29 @@ class ActionProcessor:
 
             total_wait_time = time.time() - wait_start_time
 
+            # ====== 自动点击逻辑实现 ======
+            auto_clicked = False
+            click_position = None
+            click_success = None
+            click_error = None
+            execute_action = step.get("execute_action", None)
+            if element_appeared and execute_action == "click":
+                try:
+                    if detection_result and len(detection_result) >= 2 and detection_result[0] is not None and detection_result[1] is not None:
+                        abs_x, abs_y = int(detection_result[0]), int(detection_result[1])
+                        print(f"🤖 自动点击检测到的坐标: ({abs_x}, {abs_y})")
+                        self.device.shell(f"input tap {abs_x} {abs_y}")
+                        auto_clicked = True
+                        click_position = (abs_x, abs_y)
+                        click_success = True
+                    else:
+                        print("⚠️ 检测结果无有效坐标，无法自动点击")
+                        click_success = False
+                except Exception as ce:
+                    print(f"❌ 自动点击异常: {ce}")
+                    click_success = False
+                    click_error = str(ce)
+
             if element_appeared:
                 print(f"🎉 元素出现检测成功! 总等待时间: {total_wait_time:.1f}秒")
             else:
@@ -2309,7 +2340,9 @@ class ActionProcessor:
         except Exception as e:
             print(f"❌ 等待过程中发生异常: {e}")
             wait_result = "error"
-            total_wait_time = time.time() - wait_start_time        # 创建screen对象以支持报告截图显示
+            total_wait_time = time.time() - wait_start_time
+
+        # 创建screen对象以支持报告截图显示
         pos_list = []
         if detection_result and len(detection_result) >= 2 and detection_result[0] is not None and detection_result[1] is not None:
             pos_list = [[int(detection_result[0]), int(detection_result[1])]]
@@ -2335,14 +2368,19 @@ class ActionProcessor:
                     "ui_type": ui_type,
                     "max_wait": max_wait,
                     "polling_interval": polling_interval,
-                    "confidence": confidence
+                    "confidence": confidence,
+                    "execute_action": execute_action
                 },
                 "start_time": wait_start_time,
                 "ret": {
                     "element_appeared": element_appeared,
                     "wait_result": wait_result,
                     "total_wait_time": total_wait_time,
-                    "detected_class": detected_class
+                    "detected_class": detected_class,
+                    "auto_clicked": auto_clicked,
+                    "click_position": click_position,
+                    "click_success": click_success,
+                    "click_error": click_error
                 },
                 "end_time": timestamp,
                 "desc": step_remark or "等待元素出现操作",
@@ -2372,7 +2410,11 @@ class ActionProcessor:
                 "detected_class": detected_class,
                 "detection_method": detection_method,
                 "yolo_class": yolo_class,
-                "ui_type": ui_type
+                "ui_type": ui_type,
+                "auto_clicked": auto_clicked,
+                "click_position": click_position,
+                "click_success": click_success,
+                "click_error": click_error
             }
         )
 
