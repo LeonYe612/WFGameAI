@@ -467,10 +467,8 @@ class ActionProcessor:
 
         # 添加screen对象到日志条目（如果可用）
         if screen_data:
-            delay_entry["data"]["screen"] = screen_data
-
-        # 添加 executed 字段到日志条目
-        delay_entry["data"]["executed"] = success
+            delay_entry["data"]["screen"] = screen_data        # 添加 executed 字段到日志条目
+        delay_entry["data"]["executed"] = True
         self._write_log_entry(delay_entry)
 
         return ActionResult(
@@ -552,10 +550,8 @@ class ActionProcessor:
                 }
             }            # 添加screen对象到日志条目
             if screen_data:
-                click_entry["data"]["screen"] = screen_data
-
-            # 添加 executed 字段到日志条目
-            click_entry["data"]["executed"] = success
+                click_entry["data"]["screen"] = screen_data            # 添加 executed 字段到日志条目
+            click_entry["data"]["executed"] = True
 
             self._write_log_entry(click_entry)
 
@@ -662,15 +658,17 @@ class ActionProcessor:
                 if success and detection_result[0] is not None:
                     x, y, detected_class = detection_result
 
-                    # 执行点击操作
-                    self.device.shell(f"input tap {int(x)} {int(y)}")
-                    # 生成并附加截图到日志
+                    # 操作前截图，确保显示待点击目标
                     screen_data = self._create_unified_screen_object(
                         log_dir,
                         pos_list=[[int(x), int(y)]],
                         confidence=step_confidence,
                         rect_info=[{"left":int(x)-20,"top":int(y)-20,"width":40,"height":40}]
                     )
+
+                    # 执行点击操作
+                    self.device.shell(f"input tap {int(x)} {int(y)}")
+
                     ai_entry = {
                         "tag": "function",
                         "depth": 1,
@@ -1020,10 +1018,8 @@ class ActionProcessor:
             }
             # 添加screen对象到日志条目（如果可用）
             if screen_data:
-                app_start_entry["data"]["screen"] = screen_data
-
-            # 添加 executed 字段到日志条目
-            app_start_entry["data"]["executed"] = success
+                app_start_entry["data"]["screen"] = screen_data            # 添加 executed 字段到日志条目
+            app_start_entry["data"]["executed"] = final_result
 
             self._write_log_entry(app_start_entry)
 
@@ -1121,10 +1117,8 @@ class ActionProcessor:
             }
             # 添加screen对象到日志条目（如果可用）
             if screen_data:
-                app_stop_entry["data"]["screen"] = screen_data
-
-            # 添加 executed 字段到日志条目
-            app_stop_entry["data"]["executed"] = success
+                app_stop_entry["data"]["screen"] = screen_data            # 添加 executed 字段到日志条目
+            app_stop_entry["data"]["executed"] = result
 
             self._write_log_entry(app_stop_entry)
 
@@ -1163,7 +1157,7 @@ class ActionProcessor:
                 "start_time": timestamp,
                 "ret": None,
                 "end_time": timestamp,
-                "executed": success  # 日志步骤必然执行
+                "executed": True  # 日志步骤必然执行
             }
         }
         self._write_log_entry(log_entry)
@@ -1551,10 +1545,8 @@ class ActionProcessor:
 
         # 添加screen对象到日志条目（如果可用）
         if screen_data:
-            swipe_entry["data"]["screen"] = screen_data
-
-        # 添加 executed 字段到日志条目
-        swipe_entry["data"]["executed"] = success
+            swipe_entry["data"]["screen"] = screen_data        # 添加 executed 字段到日志条目
+        swipe_entry["data"]["executed"] = True
 
         self._write_log_entry(swipe_entry)
 
@@ -1675,13 +1667,12 @@ class ActionProcessor:
                 }
                 }
                    }
-
                 # 添加screen对象到日志条目（如果可用）
                 if screen_data:
                     input_entry["data"]["screen"] = screen_data
 
                 # 添加 executed 字段到日志条目
-                input_entry["data"]["executed"] = success
+                input_entry["data"]["executed"] = True
 
                 self._write_log_entry(input_entry)
 
@@ -2283,10 +2274,8 @@ class ActionProcessor:
             }
         }        # 添加screen对象到日志条目
         if screen_data:
-            stable_entry["data"]["screen"] = screen_data
-
-        # 添加 executed 字段到日志条目
-        stable_entry["data"]["executed"] = success
+            stable_entry["data"]["screen"] = screen_data        # 添加 executed 字段到日志条目
+        stable_entry["data"]["executed"] = is_stable
 
         self._write_log_entry(stable_entry)
 
@@ -3225,14 +3214,12 @@ class ActionProcessor:
                     "desc": step_remark or f"输入文本: {input_text}",
                     "title": f"#{step_idx+1} {step_remark or f'输入文本: {input_text}'}"
                 }
-            }
-
-            # 添加screen对象到日志条目（如果可用）
+            }            # 添加screen对象到日志条目（如果可用）
             if screen_data:
                 input_entry["data"]["screen"] = screen_data
 
             # 添加 executed 字段到日志条目
-            input_entry["data"]["executed"] = success
+            input_entry["data"]["executed"] = True
 
             self._write_log_entry(input_entry)
 
