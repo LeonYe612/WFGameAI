@@ -649,15 +649,16 @@ def check_device_status(device, device_name):
 
 
 def process_priority_based_script(device, steps, log_dir, action_processor, screenshot_queue, click_queue, max_duration=None):
-    """处理基于优先级的动态脚本"""
+    """处理基于优先级的动态脚本 - 修复后版本"""
     print_realtime("🎯 开始执行优先级模式脚本")
 
     # 按优先级排序
     steps.sort(key=lambda s: s.get("Priority", 999))
 
     priority_start_time = time.time()
-    priority_step_counter = 0
-    detection_count = 0    # 持续检测直到超出最大时间（执行顺序：AI检测 → 滑动 → 备选点击）
+    cycle_count = 0  # 真正的循环次数计数
+    detection_count = 0
+
     # 按优先级正确分类步骤
     ai_detection_steps = sorted([s for s in steps if s.get('action') == 'ai_detection_click'],
                                key=lambda x: x.get('Priority', 999))
@@ -669,12 +670,12 @@ def process_priority_based_script(device, steps, log_dir, action_processor, scre
     print_realtime(f"📋 步骤分类: AI检测={len(ai_detection_steps)}, 滑动={len(swipe_steps)}, 备选点击={len(fallback_steps)}")
 
     while max_duration is None or (time.time() - priority_start_time) <= max_duration:
-        cycle_count = (detection_count // (len(ai_detection_steps) + len(swipe_steps) + len(fallback_steps))) + 1
+        cycle_count += 1
         print_realtime(f"🔄 第 {cycle_count} 轮检测循环开始")
-
         matched_any_target = False
+        hit_step = None  # 记录命中的步骤
 
-        # 第1阶段：尝试所有AI检测步骤
+        # 第1阶段：尝试所有AI检测步骤（只检测，不记录日志）
         print_realtime("🎯 [阶段1] 执行AI检测步骤")
         for step_idx, step in enumerate(ai_detection_steps):
             step_class = step.get('yolo_class')
@@ -682,14 +683,13 @@ def process_priority_based_script(device, steps, log_dir, action_processor, scre
             priority = step.get('Priority', 999)
             print_realtime(f"  [Replay] 尝试AI检测 P{priority}: {step_class}")
             try:
-                success, has_executed, should_continue = action_processor.process_action(
-                    step, step_idx, log_dir
-                )
+                # 使用特殊方法只进行检测，成功时才记录日志
+                result = action_processor._handle_ai_detection_click_priority_mode(step, cycle_count, log_dir)
                 detection_count += 1
-                if success and has_executed:
+                if result.success and result.executed:
                     matched_any_target = True
-                    priority_step_counter += 1
-                    print_realtime(f"  ✅ [Replay] AI检测命中: {step_class}")
+                    hit_step = step
+                    print_realtime(f"  ✅ [Replay] AI检测命中:>>>>>>>>>>【 {step_class} 】<<<<<<<<<<")
                     time.sleep(1.0)
                     break  # 只跳出AI检测循环，继续下一轮时间循环
                 else:
@@ -698,8 +698,8 @@ def process_priority_based_script(device, steps, log_dir, action_processor, scre
                 print_realtime(f"  ❌ [Replay] AI检测异常: {e}")
                 detection_count += 1
 
-        # 如果AI检测有命中，继续下一轮
-        if matched_any_target:
+        # 如果AI检测有命中，记录日志并继续下一轮
+        if matched_any_target and hit_step:
             continue
 
         # 第2阶段：如果AI全部未命中，尝试滑动操作
@@ -710,12 +710,11 @@ def process_priority_based_script(device, steps, log_dir, action_processor, scre
             priority = step.get('Priority', 999)
             print_realtime(f"  尝试滑动 P{priority}: {step_class}")
             try:
-                success, has_executed, should_continue = action_processor.process_action(
-                    step, -1, log_dir
-                )
-                if success and has_executed:
+                # 对于滑动，直接执行并记录
+                result = action_processor._handle_swipe_priority_mode(step, cycle_count, log_dir)
+                if result.success and result.executed:
                     matched_any_target = True
-                    priority_step_counter += 1
+                    hit_step = step
                     print_realtime(f"  ✅ 滑动完成: {step_class}")
                     time.sleep(1.0)
                     break
@@ -725,7 +724,7 @@ def process_priority_based_script(device, steps, log_dir, action_processor, scre
                 print_realtime(f"  ❌ 滑动异常: {e}")
 
         # 如果滑动有执行，继续下一轮
-        if matched_any_target:
+        if matched_any_target and hit_step:
             continue
 
         # 第3阶段：如果滑动也未执行，尝试备选点击
@@ -735,12 +734,11 @@ def process_priority_based_script(device, steps, log_dir, action_processor, scre
             priority = step.get('Priority', 999)
             print_realtime(f"  尝试备选点击 P{priority}: {step_class}")
             try:
-                success, has_executed, should_continue = action_processor.process_action(
-                    step, -1, log_dir
-                )
-                if success and has_executed:
+                # 对于备选点击，直接执行并记录
+                result = action_processor._handle_fallback_click_priority_mode(step, cycle_count, log_dir)
+                if result.success and result.executed:
                     matched_any_target = True
-                    priority_step_counter += 1
+                    hit_step = step
                     print_realtime(f"  ✅ 备选点击成功: {step_class}")
                     time.sleep(1.0)
                     break
@@ -750,17 +748,16 @@ def process_priority_based_script(device, steps, log_dir, action_processor, scre
                 print_realtime(f"  ❌ 备选点击异常: {e}")
 
         # 检查超时条件
-        if time.time() - priority_start_time > 30 and priority_step_counter == 0:
+        if time.time() - priority_start_time > 30 and cycle_count == 0:
             print_realtime("⏰ 连续30秒未检测到任何操作，停止优先级模式")
-            break
-
-        # 如果这一轮完全没有任何操作成功，等待后继续下一轮
+            break        # 如果这一轮完全没有任何操作成功，等待后继续下一轮
         if not matched_any_target:
             print_realtime("⚠️ 本轮所有操作都未成功，等待0.5秒后继续下一轮")
 
         time.sleep(0.5)
-    print_realtime(f"优先级模式执行完成，成功执行步骤: {priority_step_counter}")
-    return priority_step_counter > 0
+
+    print_realtime(f"优先级模式执行完成，共执行 {cycle_count} 个循环")
+    return cycle_count > 0
 
 
 def process_sequential_script(device, steps, log_dir, action_processor, max_duration=None):

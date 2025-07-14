@@ -3,6 +3,7 @@ external/
 train_results/
 train_model/
 ui_structure_analysis/
+docs/
 *.log
 *test*.py
 *debug*.py
@@ -23,6 +24,10 @@ ui_structure_analysis/
 wfgame-ai-server/logs/
 wfgame-ai-server/staticfiles/reports/summary_reports/
 wfgame-ai-server/staticfiles/reports/ui_run/
+wfgame-ai-server/apps/scripts/screen_analysis_results/screen_analysis_results/
+wfgame-ai-server/apps/scripts/ui_detection_output/
+
+
 # Python 缓存文件
 __pycache__/
 *.py[cod]

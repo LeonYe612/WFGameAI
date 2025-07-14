@@ -418,6 +418,14 @@ class ActionProcessor:
                         details={"operation": step_action, "step_yolo_class": step_yolo_class}
                     )
 
+        # 添加 executed 字段到日志条目
+        if isinstance(result, ActionResult):
+            executed = getattr(result, 'executed', None)
+        elif isinstance(result, tuple) and len(result) > 1:
+            executed = result[1]
+        else:
+            executed = None
+
         # 转换ActionResult对象为元组（向后兼容）
         if isinstance(result, ActionResult):
             return result.to_tuple()
@@ -461,6 +469,8 @@ class ActionProcessor:
         if screen_data:
             delay_entry["data"]["screen"] = screen_data
 
+        # 添加 executed 字段到日志条目
+        delay_entry["data"]["executed"] = success
         self._write_log_entry(delay_entry)
 
         return ActionResult(
@@ -544,6 +554,9 @@ class ActionProcessor:
             if screen_data:
                 click_entry["data"]["screen"] = screen_data
 
+            # 添加 executed 字段到日志条目
+            click_entry["data"]["executed"] = success
+
             self._write_log_entry(click_entry)
 
             return ActionResult(
@@ -571,16 +584,34 @@ class ActionProcessor:
         print(f"[DEBUG] 进入_handle_ai_detection_click, step={step}, step_idx={step_idx}, log_dir={log_dir}")
         print(f"[DEBUG] self.detect_buttons: {self.detect_buttons}")
 
-        step_class = step.get("yolo_class")  # 优先使用yolo_class，兼容class字段
+        step_class = step.get("yolo_class")
         step_remark = step.get("remark", "")
         print(f"[DEBUG] step_class: {step_class}, step_remark: {step_remark}")
 
         if not step_class or step_class == "unknown":
             print(f"错误: AI检测点击步骤缺少有效的检测类别")
+            # 记录日志 executed=False
+            timestamp = time.time()
+            ai_entry = {
+                "tag": "function",
+                "depth": 1,
+                "time": timestamp,
+                "data": {
+                    "name": "ai_detection_click",
+                    "call_args": {"target_class": step_class},
+                    "start_time": timestamp,
+                    "ret": None,
+                    "end_time": timestamp,
+                    "desc": step_remark or "AI检测点击",
+                    "executed": False
+                }
+            }
+            self._write_log_entry(ai_entry)
             return ActionResult(
                 success=False,
                 message="AI检测点击步骤缺少有效的检测类别",
-                details={"operation": "ai_detection_click", "error": "invalid_class"}
+                details={"operation": "ai_detection_click", "error": "invalid_class"},
+                executed=False
             )
 
         try:
@@ -590,10 +621,28 @@ class ActionProcessor:
             screenshot = get_device_screenshot(self.device)
             if screenshot is None:
                 print(f"❌ 无法获取设备屏幕截图")
+                # 记录日志 executed=False
+                timestamp = time.time()
+                ai_entry = {
+                    "tag": "function",
+                    "depth": 1,
+                    "time": timestamp,
+                    "data": {
+                        "name": "ai_detection_click",
+                        "call_args": {"target_class": step_class},
+                        "start_time": timestamp,
+                        "ret": None,
+                        "end_time": timestamp,
+                        "desc": step_remark or "AI检测点击",
+                        "executed": False
+                    }
+                }
+                self._write_log_entry(ai_entry)
                 return ActionResult(
                     success=False,
                     message="无法获取设备屏幕截图",
-                    details={"operation": "ai_detection_click", "error": "screenshot_failed"}
+                    details={"operation": "ai_detection_click", "error": "screenshot_failed"},
+                    executed=False
                 )
             frame = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
             # print(f"[AI调试] 输入图片shape: {frame.shape}")
@@ -609,39 +658,124 @@ class ActionProcessor:
                 success, detection_result = self.detect_buttons(frame, target_class=step_class, conf_threshold=step_confidence)
                 print(f"🔍 AI检测输出: success={success}, detection_result={detection_result}")
 
+                timestamp = time.time()
                 if success and detection_result[0] is not None:
                     x, y, detected_class = detection_result
 
                     # 执行点击操作
                     self.device.shell(f"input tap {int(x)} {int(y)}")
+                    # 生成并附加截图到日志
+                    screen_data = self._create_unified_screen_object(
+                        log_dir,
+                        pos_list=[[int(x), int(y)]],
+                        confidence=step_confidence,
+                        rect_info=[{"left":int(x)-20,"top":int(y)-20,"width":40,"height":40}]
+                    )
+                    ai_entry = {
+                        "tag": "function",
+                        "depth": 1,
+                        "time": timestamp,
+                        "data": {
+                            "name": "ai_detection_click",
+                            "call_args": {"target_class": step_class, "position": [int(x), int(y)]},
+                            "start_time": timestamp,
+                            "ret": [int(x), int(y)],
+                            "end_time": timestamp,
+                            "desc": step_remark or f"AI检测点击({step_class})",
+                            "executed": True
+                        }
+                    }
+                    if screen_data:
+                        ai_entry["data"]["screen"] = screen_data
+                    self._write_log_entry(ai_entry)
                     return ActionResult(
                         success=True,
                         message=f"AI检测点击成功: {step_class}",
-                        details={"operation": "ai_detection_click", "target_class": step_class, "position": [int(x), int(y)]}
+                        details={"operation": "ai_detection_click", "target_class": step_class, "position": [int(x), int(y)]},
+                        executed=True
                     )
                 else:
+                    # 生成并附加截图到失败日志
+                    screen_data = self._create_unified_screen_object(
+                        log_dir,
+                        pos_list=[],
+                        confidence=step_confidence,
+                        rect_info=[]
+                    )
+                    ai_entry = {
+                        "tag": "function",
+                        "depth": 1,
+                        "time": timestamp,
+                        "data": {
+                            "name": "ai_detection_click",
+                            "call_args": {"target_class": step_class},
+                            "start_time": timestamp,
+                            "ret": None,
+                            "end_time": timestamp,
+                            "desc": step_remark or f"AI检测点击({step_class})",
+                            "executed": False
+                        }
+                    }
+                    if screen_data:
+                        ai_entry["data"]["screen"] = screen_data
+                    self._write_log_entry(ai_entry)
                     print(f"❌ AI检测未命中: {step_class}")
                     return ActionResult(
                         success=False,
                         message=f"AI检测未命中: {step_class}",
-                        details={"operation": "ai_detection_click", "target_class": step_class}
+                        details={"operation": "ai_detection_click", "target_class": step_class},
+                        executed=False
                     )
             else:
                 print(f"❌ AI检测功能不可用")
+                timestamp = time.time()
+                ai_entry = {
+                    "tag": "function",
+                    "depth": 1,
+                    "time": timestamp,
+                    "data": {
+                        "name": "ai_detection_click",
+                        "call_args": {"target_class": step_class},
+                        "start_time": timestamp,
+                        "ret": None,
+                        "end_time": timestamp,
+                        "desc": step_remark or f"AI检测点击({step_class})",
+                        "executed": False
+                    }
+                }
+                self._write_log_entry(ai_entry)
                 return ActionResult(
                     success=False,
                     message="AI检测功能不可用",
-                    details={"operation": "ai_detection_click", "error": "ai_detection_unavailable"}
+                    details={"operation": "ai_detection_click", "error": "ai_detection_unavailable"},
+                    executed=False
                 )
 
         except Exception as e:
             print(f"❌ AI检测点击过程中发生异常: {e}")
             import traceback
             traceback.print_exc()
+            timestamp = time.time()
+            ai_entry = {
+                "tag": "function",
+                "depth": 1,
+                "time": timestamp,
+                "data": {
+                    "name": "ai_detection_click",
+                    "call_args": {"target_class": step_class},
+                    "start_time": timestamp,
+                    "ret": None,
+                    "end_time": timestamp,
+                    "desc": step_remark or f"AI检测点击({step_class})",
+                    "executed": False
+                }
+            }
+            self._write_log_entry(ai_entry)
             return ActionResult(
                 success=False,
                 message=f"AI检测点击异常: {str(e)}",
-                details={"operation": "ai_detection_click", "error": str(e)}
+                details={"operation": "ai_detection_click", "error": str(e)},
+                executed=False
             )
 
     def _handle_device_preparation(self, step, step_idx):
@@ -713,6 +847,19 @@ class ActionProcessor:
             print(f"❌ 设备预处理过程中出现错误: {e}")
             success = False
 
+        # 获取截图目录
+        log_dir = None
+        if self.log_txt_path:
+            log_dir = os.path.dirname(self.log_txt_path)
+
+        # 创建screen对象
+        screen_data = self._create_unified_screen_object(
+            log_dir,
+            pos_list=[],
+            confidence=1.0,
+            rect_info=[]
+        )
+
         # 记录设备预处理日志
         timestamp = time.time()
         device_prep_entry = {
@@ -733,7 +880,15 @@ class ActionProcessor:
                 "start_time": timestamp,
                 "ret": success,
                 "end_time": timestamp + 1.0
-            }        }
+            }
+        }
+        # 添加screen对象到日志条目（如果可用）
+        if screen_data:
+            device_prep_entry["data"]["screen"] = screen_data
+
+        # 添加 executed 字段到日志条目
+        device_prep_entry["data"]["executed"] = success
+
         self._write_log_entry(device_prep_entry)
 
         return ActionResult(
@@ -831,6 +986,20 @@ class ActionProcessor:
 
             # 记录应用启动日志
             timestamp = time.time()
+
+            # 获取截图目录
+            log_dir = None
+            if self.log_txt_path:
+                log_dir = os.path.dirname(self.log_txt_path)
+
+            # 创建screen对象
+            screen_data = self._create_unified_screen_object(
+                log_dir,
+                pos_list=[],
+                confidence=1.0,
+                rect_info=[]
+            )
+
             app_start_entry = {
                 "tag": "function",
                 "depth": 1,
@@ -849,6 +1018,13 @@ class ActionProcessor:
                     "end_time": timestamp + 1
                 }
             }
+            # 添加screen对象到日志条目（如果可用）
+            if screen_data:
+                app_start_entry["data"]["screen"] = screen_data
+
+            # 添加 executed 字段到日志条目
+            app_start_entry["data"]["executed"] = success
+
             self._write_log_entry(app_start_entry)
 
             # 修复: 根据实际结果返回正确的状态
@@ -918,6 +1094,19 @@ class ActionProcessor:
 
             # 记录应用停止日志
             timestamp = time.time()
+            # 获取截图目录
+            log_dir = None
+            if self.log_txt_path:
+                log_dir = os.path.dirname(self.log_txt_path)
+
+            # 创建screen对象
+            screen_data = self._create_unified_screen_object(
+                log_dir,
+                pos_list=[],
+                confidence=1.0,
+                rect_info=[]
+            )
+
             app_stop_entry = {
                 "tag": "function",
                 "depth": 1,
@@ -928,7 +1117,15 @@ class ActionProcessor:
                     "start_time": timestamp,
                     "ret": result,
                     "end_time": timestamp + 1
-                }            }
+                }
+            }
+            # 添加screen对象到日志条目（如果可用）
+            if screen_data:
+                app_stop_entry["data"]["screen"] = screen_data
+
+            # 添加 executed 字段到日志条目
+            app_stop_entry["data"]["executed"] = success
+
             self._write_log_entry(app_stop_entry)
 
             return ActionResult(
@@ -965,7 +1162,8 @@ class ActionProcessor:
                 "call_args": {"msg": log_message},
                 "start_time": timestamp,
                 "ret": None,
-                "end_time": timestamp
+                "end_time": timestamp,
+                "executed": success  # 日志步骤必然执行
             }
         }
         self._write_log_entry(log_entry)
@@ -976,7 +1174,8 @@ class ActionProcessor:
             details={
                 "operation": "log",
                 "message": log_message
-            }
+            },
+            executed=True
         )
 
     def _handle_wait_if_exists(self, step, step_idx, log_dir):
@@ -1097,7 +1296,7 @@ class ActionProcessor:
         screen_data = self._create_unified_screen_object(
             log_dir,
             pos_list=[],
-            confidence=confidence,
+            confidence=1.0,
             rect_info=[]
         )
 
@@ -1128,6 +1327,9 @@ class ActionProcessor:
         # 添加screen对象到日志条目（如果可用）
         if screen_data:
             wait_entry["data"]["screen"] = screen_data
+
+        # 添加 executed 字段到日志条目
+        wait_entry["data"]["executed"] = success
 
         self._write_log_entry(wait_entry)
 
@@ -1262,6 +1464,9 @@ class ActionProcessor:
         if screen_data:
             wait_entry["data"]["screen"] = screen_data
 
+        # 添加 executed 字段到日志条目
+        wait_entry["data"]["executed"] = success
+
         self._write_log_entry(wait_entry)
 
         # 返回统一的ActionResult对象
@@ -1347,6 +1552,9 @@ class ActionProcessor:
         # 添加screen对象到日志条目（如果可用）
         if screen_data:
             swipe_entry["data"]["screen"] = screen_data
+
+        # 添加 executed 字段到日志条目
+        swipe_entry["data"]["executed"] = success
 
         self._write_log_entry(swipe_entry)
 
@@ -1471,6 +1679,10 @@ class ActionProcessor:
                 # 添加screen对象到日志条目（如果可用）
                 if screen_data:
                     input_entry["data"]["screen"] = screen_data
+
+                # 添加 executed 字段到日志条目
+                input_entry["data"]["executed"] = success
+
                 self._write_log_entry(input_entry)
 
                 return ActionResult(
@@ -1498,6 +1710,7 @@ class ActionProcessor:
                 message=f"文本输入异常: {str(e)}",
                 details={"operation": "input", "error": str(e)}
             )
+
     def _handle_checkbox(self, step, step_idx):
         """处理checkbox勾选步骤"""
         target_selector = step.get("target_selector", {})
@@ -1562,6 +1775,10 @@ class ActionProcessor:
                             # 添加screen对象到日志条目（如果可用）
                             if screen_data:
                                 checkbox_entry["data"]["screen"] = screen_data
+
+                            # 添加 executed 字段到日志条目
+                            checkbox_entry["data"]["executed"] = success
+
                             self._write_log_entry(checkbox_entry)
 
                             return ActionResult(
@@ -1609,7 +1826,6 @@ class ActionProcessor:
                 message=f"checkbox勾选异常: {str(e)}",
                 details={"operation": "checkbox", "error": str(e)}
             )
-
 
     def _create_unified_screen_object(self, log_dir, pos_list=None, confidence=0.85, rect_info=None):
         """
@@ -1692,512 +1908,6 @@ class ActionProcessor:
                 "rect": rect_info or [],
                 "screenshot_success": False
             }
-
-    def _handle_ai_detection_click_new(self, step, context):
-        """处理AI检测点击 - 新接口"""
-        step_class = step.get("class", "")
-        step_remark = step.get("remark", "")
-
-        if not step_class or step_class == "unknown":
-            return ActionResult(success=False, message="无效的检测类别")
-
-        print(f"执行AI检测点击: {step_class}, 备注: {step_remark}")
-
-        try:
-            # 获取屏幕截图
-            screenshot = get_device_screenshot(context.device)
-            if screenshot is None:
-                return ActionResult(success=False, message="无法获取设备屏幕截图")
-
-            import cv2
-            import numpy as np
-            frame = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
-
-            # 使用AI检测（如果可用）
-            if self.detect_buttons:
-                # 获取步骤中指定的置信度，如果没有则使用默认值 0.7
-                step_confidence = step.get("confidence", 0.7)
-                print(f"🎯 使用置信度阈值: {step_confidence} (步骤指定: {step.get('confidence', '默认')})")
-                success, detection_result = self.detect_buttons(frame, target_class=step_class, conf_threshold=step_confidence)
-                print(f"🔍 AI检测输出: success={success}, detection_result={detection_result}")
-
-                if success and detection_result[0] is not None:
-                    x, y, detected_class = detection_result
-
-                    # 执行点击操作
-                    context.device.shell(f"input tap {int(x)} {int(y)}")
-                    print(f"✅ AI检测点击成功: {detected_class}，位置: ({int(x)}, {int(y)})")
-
-                    # 生成带缩略图的截图日志
-                    screen_data = None
-                    if try_log_screen and hasattr(context, 'screenshot_dir') and context.screenshot_dir:
-                        screen_result = try_log_screen(context.device, context.screenshot_dir)
-                        if screen_result:
-                            height, width = frame.shape[:2]
-                            screen_data = {
-                                "src": screen_result["screen"],
-                                "_filepath": screen_result["screen"],
-                                "thumbnail": screen_result["screen"].replace(".jpg", "_small.jpg"),
-                                "resolution": screen_result["resolution"],
-                                "pos": [[int(x), int(y)]],
-                                "vector": [],
-                                "confidence": 0.85,
-                                "rect": [{
-                                    "left": max(0, int(x) - 50),
-                                    "top": max(0, int(y) - 50),
-                                    "width": 100,
-                                    "height": 100
-                                }]
-                            }
-
-                    # 记录触摸操作日志
-                    timestamp = time.time()
-                    touch_entry = {
-                        "tag": "function",
-                        "depth": 1,
-                        "time": timestamp,
-                        "data": {
-                            "name": "touch",
-                            "call_args": {"v": [int(x), int(y)]},
-                            "start_time": timestamp,
-                            "ret": [int(x), int(y)],
-                            "end_time": timestamp + 0.1,
-                            "desc": step_remark or f"点击{detected_class}",
-                            "title": f"#{step_remark or f'点击{detected_class}'}"
-                        }
-                    }
-
-                    # 添加screenshot数据到entry中
-                    if screen_data:
-                        touch_entry["data"]["screen"] = screen_data
-
-                    # 写入日志
-                    self._write_log_entry(touch_entry)
-
-                    return ActionResult(
-                        success=True,
-                        message="AI detection click completed",
-                        details={
-                            "detected_class": detected_class,
-                            "coordinates": (int(x), int(y))
-                        }
-                    )
-                else:
-                    return ActionResult(
-                        success=False,
-                        message=f"AI检测未找到目标: {step_class}"
-                    )
-            else:
-                return ActionResult(success=False, message="AI检测功能不可用")
-
-        except Exception as e:
-            return ActionResult(
-                success=False,
-                message=f"AI检测点击异常: {e}",
-                details={"exception": str(e)}
-            )
-
-    def _handle_fallback_click_new(self, step, context):
-        """处理备选点击 - 新接口"""
-        step_remark = step.get("remark", "")
-        step_idx = getattr(context, 'step_idx', 0)
-
-        if "relative_x" not in step or "relative_y" not in step:
-            print(f"错误: fallback click 步骤缺少相对坐标信息")
-            return ActionResult(
-                success=False,
-                message="fallback_click 步骤缺少相对坐标信息",
-                details={"operation": "fallback_click", "error": "missing_relative_coordinates"}
-            )
-
-        try:
-            # 获取屏幕截图以获取分辨率
-            screenshot = get_device_screenshot(context.device)
-            if screenshot is None:
-                return ActionResult(
-                    success=False,
-                    message="无法获取屏幕截图",
-                    details={"operation": "fallback_click", "error": "screenshot_failed"}
-                )
-
-            import cv2
-            import numpy as np
-            frame = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
-            height, width = frame.shape[:2]
-
-            # 计算绝对坐标
-            rel_x = float(step["relative_x"])
-            rel_y = float(step["relative_y"])
-            abs_x = int(width * rel_x)
-            abs_y = int(height * rel_y)
-            print(f"执行备选点击: 相对位置 ({rel_x}, {rel_y}) -> 绝对位置 ({abs_x}, {abs_y})")
-
-            # 执行点击操作
-            context.device.shell(f"input tap {abs_x} {abs_y}")
-
-            # 生成带缩略图的截图日志
-            screen_data = None
-            if try_log_screen and hasattr(context, 'screenshot_dir') and context.screenshot_dir:
-                screen_result = try_log_screen(context.device, context.screenshot_dir)
-                if screen_result:
-                    screen_data = {
-                        "src": screen_result["screen"],
-                        "_filepath": screen_result["screen"],
-                        "thumbnail": screen_result["screen"].replace(".jpg", "_small.jpg"),
-                        "resolution": screen_result["resolution"],
-                        "pos": [[abs_x, abs_y]],
-                        "vector": [],
-                        "confidence": 1.0,
-                        "rect": [{
-                            "left": max(0, abs_x - 50),
-                            "top": max(0, abs_y - 50),
-                            "width": 100,
-                            "height": 100
-                        }]
-                    }
-
-            # 记录触摸操作日志
-            if hasattr(context, 'log_txt_path'):
-                import time
-                timestamp = time.time()
-                touch_entry = {
-                    "tag": "function",
-                    "depth":  1,
-                    "time": timestamp,
-                    "data": {
-                        "name": "touch",
-                        "call_args": {"v": [abs_x, abs_y]},
-                        "start_time": timestamp,
-                        "ret": [abs_x, abs_y],
-                        "end_time": timestamp + 0.1,
-                        "desc": step_remark or f"备选点击({rel_x:.3f}, {rel_y:.3f})",
-                        "title": f"#{step_idx+1} {step_remark or f'备选点击({rel_x:.3f}, {rel_y:.3f})'}"
-                }
-                }
-                # 添加screenshot数据到entry中
-                if screen_data:
-                    touch_entry["data"]["screen"] = screen_data
-
-                # 写入日志
-                try:
-                    log_entry_str = json.dumps(touch_entry, ensure_ascii=False, separators=(',', ':'))
-                    with open(context.log_txt_path, "a", encoding="utf-8") as f:
-                        f.write(log_entry_str + "\n")
-                except Exception as log_e:
-                    print(f"⚠️ 警告: 写入日志失败: {log_e}")
-
-            return ActionResult(
-                success=True,
-                message="Fallback click completed",
-                details={
-                    "relative_coordinates": (rel_x, rel_y),
-                    " absolute_coordinates": (abs_x, abs_y),
-                    "has_screenshot": screen_data is not None
-                }
-            )
-
-        except Exception as e:
-            return ActionResult(
-                success=False,
-                message=f"备选点击异常: {e}",
-                details={"exception": str(e)}
-            )
-
-    def _record_assert_failure_new(self, step, context, reason):
-        """记录断言失败 - 新接口"""
-        try:
-            step_class = step.get("class", "")
-            step_remark = step.get("remark", "")
-
-            # 获取截图用于失败记录
-            screenshot = get_device_screenshot(context.device)
-            if screenshot:
-                import cv2
-                import numpy as np
-                frame = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
-
-                timestamp = time.time()
-                screenshot_timestamp = int(timestamp * 1000)
-                screenshot_filename = f"{screenshot_timestamp}_failure.jpg"
-                screenshot_path = os.path.join(context.screenshot_dir, screenshot_filename)
-                cv2.imwrite(screenshot_path, frame)
-
-                return ActionResult(
-                    success=False,
-                    message="Assert failure recorded",
-                    screenshot_path=screenshot_path,
-                    details={
-                        "reason": reason,
-                        "step_class": step_class,
-                        "step_remark": step_remark
-                    }
-                )
-            else:
-                return ActionResult(
-                    success=False,
-                    message="Assert failure recorded (no screenshot)",
-                    details={"reason": reason}
-                )
-
-        except Exception as e:
-            return ActionResult(
-                success=False,
-                message=f"记录断言失败时异常: {e}",
-                details={"exception": str(e)}
-            )
-
-    # 简化的新接口方法实现
-    def _handle_delay_new(self, step, context):
-        """处理延时步骤 - 新接口"""
-        delay_seconds = step.get("params", {}).get("seconds", 1)
-        step_remark = step.get("remark", "")
-        print(f"延时 {delay_seconds} 秒: {step_remark}")
-        time.sleep(delay_seconds)
-        return ActionResult(success=True, message=f"延时 {delay_seconds} 秒完成")
-
-    def _handle_device_preparation_new(self, step, context):
-        """设备预处理 - 新接口，集成屏幕状态检测，完全替代旧方法"""
-        device_serial = getattr(self.device, 'serial', None)
-        if not device_serial:
-            print("⚠️ 无法获取设备序列号")
-            return ActionResult(success=False, message="无法获取设备序列号")
-
-        # 获取预处理参数
-        params = step.get("params", {})
-        check_usb = params.get("check_usb", True)
-        setup_wireless = params.get("setup_wireless", False)
-        auto_handle_dialog = params.get("auto_handle_dialog", True)
-        handle_screen_lock = params.get("handle_screen_lock", True)
-        setup_input_method = params.get("setup_input_method", True)
-        save_logs = params.get("save_logs", False)
-
-        print(f"🔍 开始智能设备预处理 - 设备 {device_serial}")
-        print(f"📋 预处理参数: USB检查={check_usb}, 屏幕锁定={handle_screen_lock}, 输入法设置={setup_input_method}, 弹窗处理={auto_handle_dialog}")
-
-        # 预处理结果统计
-        results = {
-            "screen_ready": False,
-            "usb_check": False,
-            "dialog_handling": False,
-            "input_method": False
-        }
-
-        # 1. 智能屏幕状态检测和处理（最重要，必须先执行）
-        if handle_screen_lock:
-            try:
-                from screen_state_detector import ScreenStateDetector
-                print(f"🔍 检查设备 {device_serial} 屏幕状态...")
-                detector = ScreenStateDetector(device_serial)
-                screen_ready = detector.ensure_screen_ready()
-                results["screen_ready"] = screen_ready
-                if screen_ready:
-                    print(f"✅ 设备 {device_serial} 屏幕已就绪")
-                else:
-                    print(f"⚠️ 设备 {device_serial} 屏幕准备失败")
-            except ImportError:
-                print("⚠️ 无法导入屏幕状态检测器")
-                results["screen_ready"] = False
-            except Exception as e:
-                print(f"❌ 屏幕状态检测异常: {e}")
-                results["screen_ready"] = False
-
-        # 2. 执行其他预处理步骤（即使有步骤失败也继续执行，不回退到旧版）
-        if check_usb:
-            try:
-                print("🔍 执行USB连接检查...")
-                if EnhancedDevicePreparationManager:
-                    device_manager = EnhancedDevicePreparationManager()
-                    results["usb_check"] = device_manager._check_usb_connections()
-                    if results["usb_check"]:
-                        print("✅ USB连接检查通过")
-                    else:
-                        print("⚠️ USB连接检查失败")
-                else:
-                    print("⚠️ 设备预处理管理器不可用")
-                    results["usb_check"] = False
-            except Exception as e:
-                print(f"❌ USB检查异常: {e}")
-                results["usb_check"] = False
-
-        if auto_handle_dialog:
-            try:
-                print("🛡️ 配置弹窗自动处理...")
-                if EnhancedDevicePreparationManager:
-                    device_manager = EnhancedDevicePreparationManager()
-                    device_manager._fix_device_permissions(device_serial)
-                    results["dialog_handling"] = True
-                    print("✅ 弹窗自动处理配置完成")
-                else:
-                    print("⚠️ 设备预处理管理器不可用")
-                    results["dialog_handling"] = False
-            except Exception as e:
-                print(f"❌ 弹窗处理配置异常: {e}")
-                results["dialog_handling"] = False
-
-        if setup_input_method:
-            try:
-                print("⌨️ 设置输入法...")
-                if EnhancedDevicePreparationManager:
-                    device_manager = EnhancedDevicePreparationManager()
-                    input_result = device_manager._wake_up_yousite(device_serial)
-                    results["input_method"] = input_result
-                    if input_result:
-                        print("✅ 输入法设置成功")
-                    else:
-                        print("⚠️ 输入法设置失败")
-                else:
-                    print("⚠️ 设备预处理管理器不可用")
-                    results["input_method"] = False
-
-            except Exception as e:
-                print(f"❌ 输入法设置异常: {e}")
-                results["input_method"] = False
-
-        # 3. 评估总体结果（屏幕准备是最关键的）
-        critical_success = results["screen_ready"] if handle_screen_lock else True
-        overall_success = critical_success and (
-            not check_usb or results["usb_check"]
-        ) and (
-            not auto_handle_dialog or results["dialog_handling"]
-        ) and (
-            not setup_input_method or results["input_method"]
-        )
-
-        print(f"📊 智能设备预处理结果统计:")
-        print(f"   - 屏幕就绪: {'✅' if results['screen_ready'] else '❌'}")
-        print(f"   - USB检查: {'✅' if results['usb_check'] else '❌'}")
-        print(f"   - 弹窗处理: {'✅' if results['dialog_handling'] else '❌'}")
-        print(f"   - 输入法设置: {'✅' if results['input_method'] else '❌'}")
-        print(f"✅ 智能设备预处理完成 - 设备 {device_serial}，总体结果: {'成功' if overall_success else '部分成功'}")
-
-        # 4. 记录详细日志
-        timestamp = time.time()
-        device_prep_entry = {
-            "tag": "function",
-            "depth": 1,
-            "time": timestamp,
-            "data": {
-                "name": "device_preparation_smart",
-                "call_args": {
-                    "device_serial": device_serial,
-                    "check_usb": check_usb,
-                    "setup_wireless": setup_wireless,
-                    "auto_handle_dialog": auto_handle_dialog,
-                    "handle_screen_lock": handle_screen_lock,
-                    "setup_input_method": setup_input_method,
-                    "save_logs": save_logs
-                },
-                "start_time": timestamp,
-                "ret": {
-                    "overall_success": overall_success,
-                    "results": results
-                },
-                "end_time": timestamp + 1.0
-            }
-        }
-        self._write_log_entry(device_prep_entry)
-
-        # 5. 绝不回退到旧版预处理，避免二次屏幕操作
-        return ActionResult(
-            success=overall_success,
-            message=f"智能设备预处理完成，关键步骤: {'成功' if critical_success else '失败'}",
-            details=results
-        )
-
-    def _handle_app_start_new(self, step, context):
-        """应用启动 - 新接口"""
-        # 使用旧接口的完整实现来确保真实操作
-        # 将ActionContext转换为step_idx参数
-        step_idx = getattr(context, 'step_idx', 0)
-        result = self._handle_app_start(step, step_idx)
-        return ActionResult.from_tuple(result)
-
-    def _handle_app_stop_new(self, step, context):
-        """应用停止 - 新接口"""
-        # 使用旧接口的完整实现来确保真实操作
-        # 将ActionContext转换为step_idx参数
-        step_idx = getattr(context, 'step_idx', 0)
-        result = self._handle_app_stop(step, step_idx)
-        return ActionResult.from_tuple(result)
-
-    def _handle_log_new(self, step, context):
-        """日志记录 - 新接口"""
-        # 使用旧接口的完整实现来确保真实操作
-        # 将ActionContext转换为step_idx参数
-        step_idx = getattr(context, 'step_idx', 0)
-        result = self._handle_log(step, step_idx)
-        return ActionResult.from_tuple(result)
-
-    def _handle_wait_if_exists_new(self, step, context):
-        """条件等待 - 新接口"""
-        # 使用旧接口的完整实现来确保真实操作
-        # 将ActionContext转换为step_idx和log_dir参数
-        step_idx = getattr(context, 'step_idx', 0)
-        log_dir = getattr(context, 'screenshot_dir', None)
-        result = self._handle_wait_if_exists(step, step_idx, log_dir)
-        return ActionResult.from_tuple(result)
-
-    def _handle_swipe_new(self, step, context):
-        """滑动操作 - 新接口"""
-        # 使用旧接口的完整实现来确保真实操作
-        # 将ActionContext转换为step_idx参数
-        step_idx = getattr(context, 'step_idx', 0)
-        result = self._handle_swipe(step, step_idx)
-        return ActionResult.from_tuple(result)
-
-    def _handle_input_new(self, step, context):
-        """文本输入 - 新接口"""
-        # 使用旧接口的完整实现来确保真实操作
-        # 将ActionContext转换为step_idx参数
-        step_idx = getattr(context, 'step_idx', 0)
-        result = self._handle_input(step, step_idx)
-        return ActionResult.from_tuple(result)
-
-    def _handle_checkbox_new(self, step, context):
-        """勾选框操作 - 新接口"""
-        # 使用旧接口的完整实现来确保真实操作
-        # 将ActionContext转换为step_idx参数
-        step_idx = getattr(context, 'step_idx', 0)
-        result = self._handle_checkbox(step, step_idx)
-        return ActionResult.from_tuple(result)
-
-    def _handle_wait_for_disappearance_new(self, step, context):
-        """等待消失 - 新接口"""
-        # 使用旧接口的完整实现来确保真实操作
-        # 将ActionContext转换为step_idx和log_dir参数
-        step_idx = getattr(context, 'step_idx', 0)
-        log_dir = getattr(context, 'screenshot_dir', None)
-        result = self._handle_wait_for_disappearance(step, step_idx, log_dir)
-        return ActionResult.from_tuple(result)
-
-    # ===== 3个关键功能的新接口方法 =====
-
-    def _handle_wait_for_appearance_new(self, step, context):
-        """等待元素出现 - 新接口"""
-        # 使用旧接口的完整实现来确保真实操作
-        # 将ActionContext转换为step_idx和log_dir参数
-        step_idx = getattr(context, 'step_idx', 0)
-        log_dir = getattr(context, 'screenshot_dir', None)
-        result = self._handle_wait_for_appearance(step, step_idx, log_dir)
-        return ActionResult.from_tuple(result)
-
-    def _handle_wait_for_stable_new(self, step, context):
-        """等待界面稳定 - 新接口"""
-        # 使用旧接口的完整实现来确保真实操作
-        # 将ActionContext转换为step_idx和log_dir参数
-        step_idx = getattr(context, 'step_idx', 0)
-        log_dir = getattr(context, 'screenshot_dir', None)
-        result = self._handle_wait_for_stable(step, step_idx, log_dir)
-        return ActionResult.from_tuple(result)
-
-    def _handle_retry_until_success_new(self, step, context):
-        """重试直到成功 - 新接口"""
-        # 使用旧接口的完整实现来确保真实操作
-        # 将ActionContext转换为step_idx和log_dir参数
-        step_idx = getattr(context, 'step_idx', 0)
-        log_dir = getattr(context, 'screenshot_dir', None)
-        result = self._handle_retry_until_success(step, step_idx, log_dir)
-        return ActionResult.from_tuple(result)
 
     def _handle_wait_for_appearance(self, step, step_idx, log_dir):
         """处理等待元素出现步骤 - 等待指定元素从无到有的出现过程"""
@@ -2394,6 +2104,9 @@ class ActionProcessor:
         if screen_data:
             wait_entry["data"]["screen"] = screen_data
 
+        # 添加 executed 字段到日志条目
+        wait_entry["data"]["executed"] = success
+
         self._write_log_entry(wait_entry)
 
         # 返回统一的ActionResult对象
@@ -2571,6 +2284,9 @@ class ActionProcessor:
         }        # 添加screen对象到日志条目
         if screen_data:
             stable_entry["data"]["screen"] = screen_data
+
+        # 添加 executed 字段到日志条目
+        stable_entry["data"]["executed"] = success
 
         self._write_log_entry(stable_entry)
 
@@ -2812,6 +2528,9 @@ class ActionProcessor:
         if screen_data:
             retry_entry["data"]["screen"] = screen_data
 
+        # 添加 executed 字段到日志条目
+        retry_entry["data"]["executed"] = success
+
         self._write_log_entry(retry_entry)
 
         return ActionResult(
@@ -2997,7 +2716,7 @@ class ActionProcessor:
             if self.device_account:
                 action_processor.set_device_account(self.device_account)
                 # 注释掉重复的日志输出，因为账号已在初始分配时打印过
-                # # 执行操作（使用经过参数替换的step_copy）
+                # 执行操作（使用经过参数替换的step_copy）
             result = action_processor.process_action(
                 step_copy, step_idx, log_dir
             )
@@ -3512,6 +3231,9 @@ class ActionProcessor:
             if screen_data:
                 input_entry["data"]["screen"] = screen_data
 
+            # 添加 executed 字段到日志条目
+            input_entry["data"]["executed"] = success
+
             self._write_log_entry(input_entry)
 
             return ActionResult(
@@ -3531,4 +3253,294 @@ class ActionProcessor:
                 success=False,
                 message=f"文本输入异常: {str(e)}",
                 details={"operation": "input_after_click", "error": str(e)}
+            )
+
+    # =================== Priority 模式专用处理方法 ===================
+
+    def _handle_ai_detection_click_priority_mode(self, step, cycle_count, log_dir):
+        """Priority模式专用的AI检测点击处理 - 只在成功时记录日志和截图"""
+        step_class = step.get("yolo_class")
+        step_remark = step.get("remark", "")
+
+        if not step_class or step_class == "unknown":
+            return ActionResult(
+                success=False,
+                message="AI检测点击步骤缺少有效的检测类别",
+                details={"operation": "ai_detection_click_priority", "error": "invalid_class"},
+                executed=False
+            )
+
+        try:
+            # 获取屏幕截图
+            from replay_script import get_device_screenshot
+            screenshot = get_device_screenshot(self.device)
+            if screenshot is None:
+                return ActionResult(
+                    success=False,
+                    message="无法获取设备屏幕截图",
+                    details={"operation": "ai_detection_click_priority", "error": "screenshot_failed"},
+                    executed=False
+                )
+
+            import cv2
+            import numpy as np
+            frame = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
+
+            # 使用AI检测（如果可用）
+            if self.detect_buttons:
+                step_confidence = step.get("confidence", 0.6)
+                success, detection_result = self.detect_buttons(frame, target_class=step_class, conf_threshold=step_confidence)
+
+                if success and detection_result[0] is not None:
+                    x, y, detected_class = detection_result
+
+                    # 执行点击操作
+                    self.device.shell(f"input tap {int(x)} {int(y)}")
+
+                    # 只在成功时生成截图和记录日志
+                    screen_data = self._create_unified_screen_object(
+                        log_dir,
+                        pos_list=[[int(x), int(y)]],
+                        confidence=step_confidence,
+                        rect_info=[{"left":int(x)-20,"top":int(y)-20,"width":40,"height":40}]
+                    )
+
+                    timestamp = time.time()
+                    ai_entry = {
+                        "tag": "function",
+                        "depth": 1,
+                        "time": timestamp,
+                        "data": {
+                            "name": "ai_detection_click",
+                            "call_args": {"target_class": step_class, "position": [int(x), int(y)]},
+                            "start_time": timestamp,
+                            "ret": [int(x), int(y)],
+                            "end_time": timestamp,
+                            "desc": step_remark or f"[循环{cycle_count}] AI检测点击({step_class})",
+                            "title": f"#{cycle_count} {step_remark or f'AI检测点击({step_class})'}",
+                            "executed": True
+                        }
+                    }
+                    if screen_data:
+                        ai_entry["data"]["screen"] = screen_data
+
+                    self._write_log_entry(ai_entry)
+
+                    return ActionResult(
+                        success=True,
+                        message=f"AI检测点击成功: {step_class}",
+                        details={"operation": "ai_detection_click_priority", "target_class": step_class, "position": [int(x), int(y)]},
+                        executed=True
+                    )
+                else:
+                    # 检测失败，不记录日志，只返回失败结果
+                    return ActionResult(
+                        success=False,
+                        message=f"AI检测未命中: {step_class}",
+                        details={"operation": "ai_detection_click_priority", "target_class": step_class},
+                        executed=False
+                    )
+            else:
+                return ActionResult(
+                    success=False,
+                    message="AI检测功能不可用",
+                    details={"operation": "ai_detection_click_priority", "error": "ai_detection_unavailable"},
+                    executed=False
+                )
+
+        except Exception as e:
+            print(f"❌ Priority模式AI检测点击过程中发生异常: {e}")
+            import traceback
+            traceback.print_exc()
+            return ActionResult(
+                success=False,
+                message=f"AI检测点击异常: {str(e)}",
+                details={"operation": "ai_detection_click_priority", "error": str(e)},
+                executed=False
+            )
+
+    def _handle_swipe_priority_mode(self, step, cycle_count, log_dir):
+        """Priority模式专用的滑动处理 - 总是记录日志和截图"""
+        start_x = step.get("start_x")
+        start_y = step.get("start_y")
+        end_x = step.get("end_x")
+        end_y = step.get("end_y")
+        duration = step.get("duration", 300)
+        step_remark = step.get("remark", "")
+
+        if start_x is None or start_y is None or end_x is None or end_y is None:
+            return ActionResult(
+                success=False,
+                message="swipe 步骤缺少必要的坐标参数",
+                details={"operation": "swipe_priority", "error": "missing_coordinates"},
+                executed=False
+            )
+
+        try:
+            # 执行ADB滑动命令
+            self.device.shell(f"input swipe {int(start_x)} {int(start_y)} {int(end_x)} {int(end_y)} {int(duration)}")
+
+            # 滑动操作总是成功，生成截图和记录日志
+            screen_data = self._create_unified_screen_object(
+                log_dir,
+                pos_list=[[int(start_x), int(start_y)], [int(end_x), int(end_y)]],
+                confidence=1.0,
+                rect_info=[{
+                    "left": min(int(start_x), int(end_x)) - 20,
+                    "top": min(int(start_y), int(end_y)) - 20,
+                    "width": abs(int(end_x) - int(start_x)) + 40,
+                    "height": abs(int(end_y) - int(start_y)) + 40
+                }]
+            )
+
+            timestamp = time.time()
+            swipe_entry = {
+                "tag": "function",
+                "depth": 1,
+                "time": timestamp,
+                "data": {
+                    "name": "swipe",
+                    "call_args": {
+                        "start": [int(start_x), int(start_y)],
+                        "end": [int(end_x), int(end_y)],
+                        "duration": int(duration)
+                    },
+                    "start_time": timestamp,
+                    "ret": {
+                        "start_pos": [int(start_x), int(start_y)],
+                        "end_pos": [int(end_x), int(end_y)]
+                    },
+                    "end_time": timestamp + (duration / 1000.0),
+                    "desc": step_remark or f"[循环{cycle_count}] 滑动操作",
+                    "title": f"#{cycle_count} {step_remark or '滑动操作'}",
+                    "executed": True
+                }
+            }
+
+            if screen_data:
+                swipe_entry["data"]["screen"] = screen_data
+
+            self._write_log_entry(swipe_entry)
+
+            # 滑动后等待一段时间让UI响应
+            time.sleep(duration / 1000.0 + 0.5)
+
+            return ActionResult(
+                success=True,
+                message=f"滑动操作完成: ({start_x}, {start_y}) -> ({end_x}, {end_y})",
+                details={
+                    "operation": "swipe_priority",
+                    "start_position": (start_x, start_y),
+                    "end_position": (end_x, end_y),
+                    "duration": duration,
+                    "has_screenshot": screen_data is not None
+                },
+                executed=True
+            )
+
+        except Exception as e:
+            print(f"❌ Priority模式滑动过程中发生异常: {e}")
+            import traceback
+            traceback.print_exc()
+            return ActionResult(
+                success=False,
+                message=f"滑动操作异常: {str(e)}",
+                details={"operation": "swipe_priority", "error": str(e)},
+                executed=False
+            )
+
+    def _handle_fallback_click_priority_mode(self, step, cycle_count, log_dir):
+        """Priority模式专用的备选点击处理 - 总是记录日志和截图"""
+        step_remark = step.get("remark", "")
+
+        if "relative_x" not in step or "relative_y" not in step:
+            return ActionResult(
+                success=False,
+                message="fallback_click 步骤缺少相对坐标信息",
+                details={"operation": "fallback_click_priority", "error": "missing_relative_coordinates"},
+                executed=False
+            )
+
+        try:
+            # 获取屏幕截图以获取分辨率
+            from replay_script import get_device_screenshot
+            screenshot = get_device_screenshot(self.device)
+            if screenshot is None:
+                return ActionResult(
+                    success=False,
+                    message="无法获取屏幕截图",
+                    details={"operation": "fallback_click_priority", "error": "screenshot_failed"},
+                    executed=False
+                )
+
+            import cv2
+            import numpy as np
+            frame = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
+            height, width = frame.shape[:2]
+
+            # 计算绝对坐标
+            rel_x = float(step["relative_x"])
+            rel_y = float(step["relative_y"])
+            abs_x = int(width * rel_x)
+            abs_y = int(height * rel_y)
+
+            # 执行点击操作
+            self.device.shell(f"input tap {abs_x} {abs_y}")
+
+            # 备选点击总是成功，生成截图和记录日志
+            screen_data = self._create_unified_screen_object(
+                log_dir,
+                pos_list=[[abs_x, abs_y]],
+                confidence=1.0,
+                rect_info=[{
+                    "left": max(0, abs_x - 50),
+                    "top": max(0, abs_y - 50),
+                    "width": 100,
+                    "height": 100
+                }]
+            )
+
+            timestamp = time.time()
+            click_entry = {
+                "tag": "function",
+                "depth": 1,
+                "time": timestamp,
+                "data": {
+                    "name": "touch",
+                    "call_args": {"v": [abs_x, abs_y]},
+                    "start_time": timestamp,
+                    "ret": [abs_x, abs_y],
+                    "end_time": timestamp + 0.1,
+                    "desc": step_remark or f"[循环{cycle_count}] 备选点击({rel_x:.3f}, {rel_y:.3f})",
+                    "title": f"#{cycle_count} {step_remark or f'备选点击({rel_x:.3f}, {rel_y:.3f})'}",
+                    "executed": True
+                }
+            }
+
+            if screen_data:
+                click_entry["data"]["screen"] = screen_data
+
+            self._write_log_entry(click_entry)
+
+            return ActionResult(
+                success=True,
+                message=f"备选点击成功: ({rel_x:.3f}, {rel_y:.3f}) -> ({abs_x}, {abs_y})",
+                details={
+                    "operation": "fallback_click_priority",
+                    "relative_position": {"x": rel_x, "y": rel_y},
+                    "absolute_position": {"x": abs_x, "y": abs_y},
+                    "screen_size": {"width": width, "height": height}
+                },
+                executed=True
+            )
+
+        except Exception as e:
+            print(f"❌ Priority模式备选点击过程中发生异常: {e}")
+            import traceback
+            traceback.print_exc()
+            return ActionResult(
+                success=False,
+                message=f"备选点击失败: {str(e)}",
+                details={"operation": "fallback_click_priority", "error": str(e)},
+                executed=False
             )

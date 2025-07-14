@@ -78,19 +78,24 @@ for step_idx, step in enumerate(sorted_steps):
     },
     {
       "step": 2,
+      "detection_method": "ai",
       "action": "wait_for_appearance",
       "yolo_class": "login-button",
       "timeout": 10
     },
     {
       "step": 3,
+      "detection_method": "ai",
       "action": "ai_detection_click",
       "yolo_class": "login-button"
     },
     {
       "step": 4,
-      "action": "input",
-      "text": "username"
+      "detection_method": "ai",
+      "action": "retry_until_success",
+      "execute_action": "input",
+      "text": "${account:username}",
+      "yolo_class": "operation-sdk-phone-input"
     }
   ]
 }
@@ -178,34 +183,37 @@ if consecutive_no_match_time > 30:
   "steps": [
     {
       "Priority": 1,
+      "detection_method": "ai",
       "action": "ai_detection_click",
       "yolo_class": "system-skip",
       "remark": "最高优先级：跳过按钮"
     },
     {
       "Priority": 2,
+      "detection_method": "ai",
       "action": "ai_detection_click",
       "yolo_class": "hint-guide",
       "remark": "次优先级：引导提示"
     },
     {
-      "Priority": 3,
-      "action": "swipe",
-      "start_x": 1000,
-      "start_y": 500,
-      "end_x": 500,
-      "end_y": 500,
-      "remark": "无AI检测的滑动操作"
-    },
-    {
-      "Priority": 99,
-      "class": "unknown",
-      "action": "fallback_click",
-      "relative_x": 0.5,
-      "relative_y": 0.9,
-      "remark": "备选操作"
-    }
-  ]
+    "Priority": 9,
+    "action": "swipe",
+    "start_x": 1000,
+    "start_y": 500,
+    "end_x": 500,
+    "end_y": 500,
+    "duration": 1000,
+    "remark": "水平滑动操作"
+},
+{
+    "Priority": 10,
+    "detection_method": "ai",
+    "action": "fallback_click",
+    "relative_x": 0.5,
+    "relative_y": 0.9,
+    "remark": "备选[固定坐标点击]操作，防止死循环。因为swipe先执行，此步永远不会走到。"
+}
+]
 }
 ```
 
@@ -278,12 +286,65 @@ class PriorityExecution:
 {
   "name": "用户注册完整流程",
   "steps": [
-    {"step": 1, "action": "app_start"},
-    {"step": 2, "action": "click", "target": "注册按钮"},
-    {"step": 3, "action": "input", "text": "用户名"},
-    {"step": 4, "action": "input", "text": "密码"},
-    {"step": 5, "action": "click", "target": "提交"},
-    {"step": 6, "action": "wait_for_appearance", "target": "成功提示"}
+    {
+            "step": 1,
+            "detection_method": "ai",
+            "action": "wait_for_stable",
+            "duration": 5,
+            "max_wait": 10,
+            "remark": "等待应用启动后界面稳定"
+        },
+        {
+            "step": 2,
+            "detection_method": "ai",
+            "action": "click",
+            "yolo_class": "operation-confirm",
+            "remark": "点击确认按钮，处理可能的【权限弹窗】"
+        },
+        {
+            "step": 2,
+            "detection_method": "ai",
+            "action": "wait_if_exists",
+            "yolo_class": "system-newResources",
+            "polling_interval": 5,
+            "max_duration": 300,
+            "remark": "判断启动APP后是否出现热更资源图标，如果存在则需要等待新资源加载完成"
+        },
+        {
+            "step": 3,
+            "detection_method": "ai",
+            "action": "wait_for_appearance",
+            "execute_action": "click",
+            "yolo_class": "operation-sdk-login",
+            "remark": "通过等待并点击[进入游戏]按钮出现，来判断已成功完成“热更”进入“加载界面”"
+        },
+        {
+            "step": 1,
+            "detection_method": "ai",
+            "action": "retry_until_success",
+            "execute_action": "input",
+            "text": "${account:username}",
+            "yolo_class": "operation-sdk-phone-input",
+            "max_retries": 3,
+            "retry_interval": 1,
+            "remark": "使用retry函数来确保已经成功进入登录界面。输入【账号】"
+        },
+        {
+            "step": 9,
+            "detection_method": "ai",
+            "action": "click",
+            "execute_action": "input",
+            "text": "${account:password}",
+            "yolo_class": "operation-sdk-password-input",
+            "remark": "点击验证码输入框，输入密码"
+        },
+        {
+            "step": 10,
+            "detection_method": "ai",
+            "action": "click",
+            "yolo_class": "system-protocol-box",
+            "remark": "点击系统协议框，确保协议已同意"
+        }
   ]
 }
 ```
@@ -293,11 +354,65 @@ class PriorityExecution:
 {
   "name": "批量数据录入",
   "steps": [
-    {"step": 1, "action": "click", "target": "新建按钮"},
-    {"step": 2, "action": "input", "text": "${name}"},
-    {"step": 3, "action": "input", "text": "${phone}"},
-    {"step": 4, "action": "click", "target": "保存"},
-    {"step": 5, "action": "wait_for_appearance", "target": "成功消息"}
+{
+            "step": 1,
+            "detection_method": "ai",
+            "action": "wait_for_stable",
+            "duration": 5,
+            "max_wait": 10,
+            "remark": "等待应用启动后界面稳定"
+        },
+        {
+            "step": 2,
+            "detection_method": "ai",
+            "action": "click",
+            "yolo_class": "operation-confirm",
+            "remark": "点击确认按钮，处理可能的【权限弹窗】"
+        },
+        {
+            "step": 2,
+            "detection_method": "ai",
+            "action": "wait_if_exists",
+            "yolo_class": "system-newResources",
+            "polling_interval": 5,
+            "max_duration": 300,
+            "remark": "判断启动APP后是否出现热更资源图标，如果存在则需要等待新资源加载完成"
+        },
+        {
+            "step": 3,
+            "detection_method": "ai",
+            "action": "wait_for_appearance",
+            "execute_action": "click",
+            "yolo_class": "operation-sdk-login",
+            "remark": "通过等待并点击[进入游戏]按钮出现，来判断已成功完成“热更”进入“加载界面”"
+        },
+        {
+            "step": 1,
+            "detection_method": "ai",
+            "action": "retry_until_success",
+            "execute_action": "input",
+            "text": "${account:username}",
+            "yolo_class": "operation-sdk-phone-input",
+            "max_retries": 3,
+            "retry_interval": 1,
+            "remark": "使用retry函数来确保已经成功进入登录界面。输入【账号】"
+        },
+        {
+            "step": 9,
+            "detection_method": "ai",
+            "action": "click",
+            "execute_action": "input",
+            "text": "${account:password}",
+            "yolo_class": "operation-sdk-password-input",
+            "remark": "点击验证码输入框，输入密码"
+        },
+        {
+            "step": 10,
+            "detection_method": "ai",
+            "action": "click",
+            "yolo_class": "system-protocol-box",
+            "remark": "点击系统协议框，确保协议已同意"
+        }
   ]
 }
 ```
@@ -310,193 +425,36 @@ class PriorityExecution:
   "name": "游戏主界面自动导航",
   "steps": [
     {
-      "Priority": 1,
-      "action": "ai_detection_click",
-      "yolo_class": "system-popup",
-      "remark": "处理任何系统弹窗"
-    },
-    {
-      "Priority": 2,
-      "action": "ai_detection_click",
-      "yolo_class": "daily-reward",
-      "remark": "收集每日奖励"
-    },
-    {
-      "Priority": 3,
-      "action": "ai_detection_click",
-      "yolo_class": "start-battle",
-      "remark": "开始战斗"
-    }
+            "Priority": 1,
+            "detection_method": "ai",
+            "action": "ai_detection_click",
+            "yolo_class": "operation-close",
+            "remark": "检测并点击【关闭】按钮"
+        },
+        {
+            "Priority": 2,
+            "detection_method": "ai",
+            "action": "ai_detection_click",
+            "yolo_class": "system-skip",
+            "remark": "检测并点击【跳过】按钮"
+        },
+        {
+            "Priority": 3,
+            "detection_method": "ai",
+            "action": "ai_detection_click",
+            "yolo_class": "hint-guide",
+            "remark": "检测并点击【引导】弹窗"
+        },
+        {
+            "Priority": 4,
+            "detection_method": "ai",
+            "action": "ai_detection_click",
+            "yolo_class": "operation-confirm",
+            "remark": "检测并点击【确定】按钮"
+        }
   ]
 }
 ```
-
-#### 2. 异常处理自动化
-```json
-{
-  "name": "应用稳定性监控",
-  "steps": [
-    {
-      "Priority": 1,
-      "action": "ai_detection_click",
-      "yolo_class": "error-dialog",
-      "remark": "处理错误弹窗"
-    },
-    {
-      "Priority": 2,
-      "action": "ai_detection_click",
-      "yolo_class": "network-retry",
-      "remark": "网络重试"
-    },
-    {
-      "Priority": 3,
-      "action": "ai_detection_click",
-      "yolo_class": "continue-button",
-      "remark": "继续正常流程"
-    }
-  ]
-}
-```
-
----
-
-## 🏆 最佳实践
-
-### Step模式最佳实践
-
-#### 1. 合理使用等待机制
-```json
-{
-  "step": 1,
-  "action": "wait_for_appearance",
-  "yolo_class": "loading-complete",
-  "timeout": 30,
-  "polling_interval": 2
-}
-```
-
-#### 2. 设置适当的重试策略
-```json
-{
-  "step": 2,
-  "action": "retry_until_success",
-  "execute_action": "click",
-  "yolo_class": "submit-button",
-  "max_retries": 3,
-  "retry_interval": 1
-}
-```
-
-#### 3. 使用小数编号支持插入
-```json
-{
-  "steps": [
-    {"step": 1, "action": "start_app"},
-    {"step": 1.5, "action": "wait_loading"},  // 后期插入
-    {"step": 2, "action": "login"}
-  ]
-}
-```
-
-### Priority模式最佳实践
-
-#### 1. 合理设置优先级层次
-```json
-{
-  "steps": [
-    // 紧急处理（1-10）
-    {"Priority": 1, "yolo_class": "force-close"},
-    {"Priority": 2, "yolo_class": "error-popup"},
-
-    // 正常流程（11-20）
-    {"Priority": 11, "yolo_class": "main-button"},
-    {"Priority": 12, "yolo_class": "secondary-button"},
-
-    // 备选操作（90+）
-    {"Priority": 90, "action": "swipe"},
-    {"Priority": 99, "class": "unknown", "action": "fallback_click"}
-  ]
-}
-```
-
-#### 2. 必须提供备选步骤
-```json
-{
-  "Priority": 99,
-  "class": "unknown",
-  "action": "fallback_click",
-  "relative_x": 0.5,
-  "relative_y": 0.9,
-  "remark": "当所有AI检测都失败时的备选操作"
-}
-```
-
-#### 3. 避免复杂的时间控制
-```json
-// ❌ 错误：在Priority模式中使用复杂时间控制
-{
-  "Priority": 1,
-  "action": "wait_for_appearance",  // 与循环检测冲突
-  "timeout": 10
-}
-
-// ✅ 正确：使用简单的即时检测
-{
-  "Priority": 1,
-  "action": "ai_detection_click",
-  "yolo_class": "target-button"
-}
-```
-
----
-
-## ⚠️ 常见误区
-
-### 误区1：混合模式使用
-```json
-// ❌ 错误：同时使用step和Priority
-{
-  "steps": [
-    {"step": 1, "Priority": 1, "action": "click"}  // 冲突
-  ]
-}
-```
-**解决方案**：选择一种模式，不要混用。
-
-### 误区2：Priority模式中使用复杂重试
-```json
-// ❌ 错误：在Priority模式中使用retry_until_success
-{
-  "Priority": 1,
-  "action": "retry_until_success",  // 与循环检测逻辑冲突
-  "max_retries": 5
-}
-```
-**解决方案**：Priority模式自带重试机制（循环检测），无需额外重试。
-
-### 误区3：Step模式中设置Priority
-```json
-// ❌ 错误：Step模式中使用Priority字段
-{
-  "steps": [
-    {"step": 1, "Priority": 1, "action": "click"}  // Priority被忽略
-  ]
-}
-```
-**解决方案**：Step模式按step字段排序，不需要Priority。
-
-### 误区4：过度依赖fallback
-```json
-// ❌ 错误：没有有效的AI检测步骤
-{
-  "steps": [
-    {"Priority": 1, "action": "swipe"},          // 非AI检测
-    {"Priority": 2, "action": "delay"},          // 非AI检测
-    {"Priority": 99, "class": "unknown"}         // 只有fallback
-  ]
-}
-```
-**解决方案**：Priority模式应该包含足够的AI检测步骤。
 
 ---
 
@@ -505,16 +463,16 @@ class PriorityExecution:
 ### 两种模式的报告差异
 
 #### Step模式报告特征
-- **步骤记录完整**: 每个step都有明确的执行记录
-- **时间线清晰**: 按step顺序记录，便于追溯
-- **截图规律**: 根据操作类型决定是否截图
-- **日志格式标准**: 使用标准的function tag格式
+- **执行逻辑**: 按步骤顺序执行，执行次数由参数控制，每个步骤执行完毕后继续下一步
+- **日志生成**: 每个执行的步骤生成一条日志，仅记录实际执行的操作
+- **截图生成**: 只在成功操作（如点击、输入）时生成截图
+- **统计逻辑**: step_count = 实际步骤数量
 
-#### Priority模式报告特征（v2.1.0增强）
-- **AI检测记录**: 详细记录每次AI检测的结果和置信度
-- **循环执行日志**: 记录多次检测循环的过程
-- **备选操作追踪**: 记录fallback操作的触发条件
-- **实时截图**: 每次操作都包含完整的截图信息
+#### Priority模式报告特征
+- **执行逻辑**: 持续循环检测屏幕，按优先级排序尝试所有步骤，任一步骤成功则重新开始循环，循环次数+1
+- **日志生成**: 只记录每次循环中命中的AI检测、滑动或备选点击操作，每次循环只有一条操作日志
+- **截图生成**: 每次循环仅对命中的操作生成截图
+- **统计逻辑**: step_count = 循环次数
 
 ### 增强的日志格式（v2.1.0）
 
@@ -564,121 +522,7 @@ class PriorityExecution:
 4. **多设备支持**: 完善设备报告目录的收集和汇总机制
 
 ### 最佳实践：报告优化
-
-#### Priority模式脚本优化
-```json
-{
-  "steps": [
-    {
-      "Priority": 1,
-      "action": "ai_detection_click",
-      "yolo_class": "system-skip",
-      "remark": "跳过新手引导 - 最高优先级"  // 详细说明便于报告展示
-    },
-    {
-      "Priority": 10,
-      "action": "ai_detection_click",
-      "yolo_class": "main-button",
-      "remark": "主要功能按钮 - 常规优先级"
-    },
-    {
-      "Priority": 99,
-      "class": "unknown",
-      "action": "fallback_click",
-      "relative_x": 0.5,
-      "relative_y": 0.9,
-      "remark": "通用确认位置 - 备选操作"  // 解释备选用途
-    }
-  ]
-}
-```
-
-#### Step模式报告优化
-```json
-{
-  "steps": [
-    {
-      "step": 1,
-      "action": "app_start",
-      "package": "com.example.app",
-      "description": "启动应用"  // 添加操作描述
-    },
-    {
-      "step": 2,
-      "action": "wait_for_appearance",
-      "yolo_class": "login-screen",
-      "timeout": 10,
-      "description": "等待登录界面出现"
-    }
-  ]
-}
-```
-
 ---
-
-## 🔧 故障排除与调试
-
-### Priority模式常见问题
-
-#### 问题1：AI检测不工作
-**症状**: 所有AI检测都失败，只执行备选操作
-**调试方法**:
-```json
-{
-  "Priority": 1,
-  "action": "ai_detection_click",
-  "yolo_class": "system-skip",
-  "debug": true,  // 启用调试模式
-  "remark": "调试：检查系统跳过按钮检测"
-}
-```
-
-#### 问题2：循环检测超时
-**症状**: Priority模式执行时间过长，最终超时
-**解决方案**:
-- 检查优先级设置是否合理
-- 确保备选操作能够有效推进流程
-- 适当调整检测间隔时间
-
-### Step模式常见问题
-
-#### 问题1：步骤执行失败后无法继续
-**症状**: 某个step失败后，后续步骤无法正常执行
-**解决方案**:
-- 使用`retry_until_success`增加重试机制
-- 添加适当的`wait_for_appearance`确保界面稳定
-
-#### 问题2：截图缺失或不准确
-**症状**: 报告中缺少关键操作的截图
-**解决方案**:
-- 在关键操作前后添加截图步骤
-- 确保ActionProcessor的截图逻辑正常工作
-
-### 报告生成问题排查
-
-#### 检查清单
-- [ ] 设备报告目录是否正确创建
-- [ ] log.txt文件是否包含有效的JSON日志
-- [ ] 截图文件是否成功保存
-- [ ] 汇总报告的设备链接是否正确
-- [ ] 模板文件是否存在且格式正确
-
----
-
-## 📈 性能优化建议
-
-### Priority模式性能优化
-
-1. **合理设置检测间隔**: 避免过于频繁的AI检测消耗资源
-2. **优化优先级层次**: 将最常见的操作设置较高优先级
-3. **减少不必要的截图**: 在调试完成后关闭调试模式
-
-### Step模式性能优化
-
-1. **批量操作合并**: 将连续的相似操作合并为批量执行
-2. **智能等待机制**: 使用条件等待替代固定延时
-3. **资源管理**: 及时释放不需要的资源和内存
-
 ---
 
 ## 📚 相关文档
