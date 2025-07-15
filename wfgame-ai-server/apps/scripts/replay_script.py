@@ -344,7 +344,7 @@ def detect_buttons(frame, target_class=None, conf_threshold=None):
                     return True, (x, y, detected_class)
 
             # 如果没有找到目标类别，返回失败
-            print_realtime(f"⚠️ 未找到目标类别: {target_class}")
+            print_realtime(f"❌ 未找到目标类别: {target_class} ❌")
             return False, (None, None, None)
 
         finally:

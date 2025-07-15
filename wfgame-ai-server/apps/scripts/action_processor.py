@@ -693,31 +693,7 @@ class ActionProcessor:
                         executed=True
                     )
                 else:
-                    # 生成并附加截图到失败日志
-                    screen_data = self._create_unified_screen_object(
-                        log_dir,
-                        pos_list=[],
-                        confidence=step_confidence,
-                        rect_info=[]
-                    )
-                    ai_entry = {
-                        "tag": "function",
-                        "depth": 1,
-                        "time": timestamp,
-                        "data": {
-                            "name": "ai_detection_click",
-                            "call_args": {"target_class": step_class},
-                            "start_time": timestamp,
-                            "ret": None,
-                            "end_time": timestamp,
-                            "desc": step_remark or f"AI检测点击({step_class})",
-                            "executed": False
-                        }
-                    }
-                    if screen_data:
-                        ai_entry["data"]["screen"] = screen_data
-                    self._write_log_entry(ai_entry)
-                    print(f"❌ AI检测未命中: {step_class}")
+                    # 检测失败，不记录日志，只返回失败结果
                     return ActionResult(
                         success=False,
                         message=f"AI检测未命中: {step_class}",
@@ -1174,7 +1150,6 @@ class ActionProcessor:
 
     def _handle_wait_if_exists(self, step, step_idx, log_dir):
         """处理条件等待步骤"""
-        # 🔧 使用新的yolo_class参数名称（与文档一致）
         element_class = step.get("yolo_class", "")
         step_remark = step.get("remark", "")
         polling_interval = step.get("polling_interval", 5)   # 默认5秒轮询
@@ -1192,6 +1167,7 @@ class ActionProcessor:
         wait_start_time = time.time()
         element_found = False
         wait_result = "not_found"  # not_found, disappeared, timeout
+        success = False  # 修复：初始化success变量，避免UnboundLocalError
 
         try:
             # 第一步：检查元素是否存在
@@ -1249,6 +1225,15 @@ class ActionProcessor:
                             if self.detect_buttons:
                                 current_success, current_result = self.detect_buttons(current_screenshot_cv, target_class=element_class)
                                 print(f"🔍 [循环 {loop_count}] 检测结果: success={current_success}")
+
+                                if current_success:
+                                    # 元素仍然存在，继续等待
+                                    print(f"⏳ [循环 {loop_count}] 元素仍然存在，继续等待...")
+                                else:
+                                    element_found = False
+                                    wait_result = "disappeared"
+                                    elapsed_time = time.time() - wait_start_time
+                                    print(f"🎉 [循环 {loop_count}] 元素已消失! 总等待时间: {elapsed_time:.1f}秒")
                             else:
                                 current_success = False  # 如果检测函数不可用，假设元素已消失
 
@@ -1258,14 +1243,14 @@ class ActionProcessor:
                                 elapsed_time = time.time() - wait_start_time
                                 print(f"🎉 [循环 {loop_count}] 元素已消失! 总等待时间: {elapsed_time:.1f}秒")
                                 break
-                            else:
-                                print(f"⏳ [循环 {loop_count}] 元素仍然存在，继续等待...")
                         else:
                             print(f"❌ [循环 {loop_count}] 无法获取屏幕截图")
 
                     if element_found and (time.time() - wait_start_time) >= max_duration:
                         wait_result = "timeout"
                         print(f"⏰ [阶段2] 等待超时: 元素在 {max_duration}秒后仍未消失")
+                    else:
+                        print(f"🎉 元素消失监控完成")
                 else:
                     print(f"ℹ️ [阶段1] 元素 '{element_class}' 不存在，无需等待")
                     wait_result = "not_found"
@@ -1284,8 +1269,6 @@ class ActionProcessor:
         print(f"   - 元素发现: {element_found}")
         print(f"   - 等待结果: {wait_result}")
         print(f"   - 总等待时间: {total_wait_time:.1f}秒")
-        print(f"⏱️ 步骤结束时间: {time.strftime('%H:%M:%S', time.localtime())}")
-        print(f"⏱️ 步骤结束时间: {time.strftime('%H:%M:%S', time.localtime())}")
         print(f"{'='*60}")        # 创建screen对象以支持报告截图显示
         screen_data = self._create_unified_screen_object(
             log_dir,
@@ -1312,7 +1295,8 @@ class ActionProcessor:
                     "element_found": element_found,
                     "wait_result": wait_result,
                     "total_wait_time": total_wait_time
-                },                "end_time": timestamp,
+                },
+                "end_time": timestamp,
                 "desc": step_remark or "条件等待操作",
                 "title": f"#{step_idx+1} {step_remark or '条件等待操作'}"
             }
@@ -1367,6 +1351,7 @@ class ActionProcessor:
         wait_start_time = time.time()
         element_disappeared = False
         wait_result = "timeout"  # timeout, disappeared, error
+        success = False  # 修复：初始化success变量，避免UnboundLocalError
 
         try:
             loop_count = 0
@@ -1825,8 +1810,9 @@ class ActionProcessor:
         """
         try:
             if not log_dir:
-                print("⚠️ 警告: log_dir为None，跳过screen对象创建")
-                return None            # 🔧 修复：直接使用设备报告目录，不创建log子目录
+                print("⚠️ 警告: log_dir未设置，无法创建screen对象")
+                return None
+            # 🔧 修复：直接使用设备报告目录，不创建log子目录
             log_images_dir = log_dir
             os.makedirs(log_images_dir, exist_ok=True)
 
@@ -1931,6 +1917,7 @@ class ActionProcessor:
         wait_result = "not_appeared"
         detected_class = ""
         detection_result = None
+        success = False  # 修复：初始化success变量，避免UnboundLocalError
 
         try:
             loop_count = 0
@@ -3416,7 +3403,7 @@ class ActionProcessor:
                 success=True,
                 message=f"滑动操作完成: ({start_x}, {start_y}) -> ({end_x}, {end_y})",
                 details={
-                    "operation": "swipe_priority",
+                    "operation": "swipe",
                     "start_position": (start_x, start_y),
                     "end_position": (end_x, end_y),
                     "duration": duration,

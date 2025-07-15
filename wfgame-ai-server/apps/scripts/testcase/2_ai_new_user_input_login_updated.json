@@ -6,8 +6,8 @@
             "step": 1,
             "detection_method": "ai",
             "action": "wait_for_stable",
-            "duration": 5,
-            "max_wait": 10,
+            "duration": 3,
+            "max_wait": 6,
             "remark": "等待应用启动后界面稳定"
         },
         {
@@ -15,7 +15,15 @@
             "detection_method": "ai",
             "action": "click",
             "yolo_class": "operation-confirm",
-            "remark": "点击确认按钮，处理可能的【权限弹窗】"
+            "remark": "如果发现【权限弹窗】，点击【确定】按钮"
+        },
+        {
+            "step": 2,
+            "detection_method": "ai",
+            "action": "wait_for_stable",
+            "duration": 3,
+            "max_wait": 6,
+            "remark": "等待应用启动后界面稳定"
         },
         {
             "step": 2,
@@ -35,15 +43,13 @@
             "remark": "通过等待并点击[进入游戏]按钮出现，来判断已成功完成“热更”进入“加载界面”"
         },
         {
-            "step": 1,
+            "step": 4,
             "detection_method": "ai",
-            "action": "retry_until_success",
+            "action": "click",
             "execute_action": "input",
             "text": "${account:username}",
-            "yolo_class": "operation-sdk-phone-input",
-            "max_retries": 3,
-            "retry_interval": 1,
-            "remark": "使用retry函数来确保已经成功进入登录界面。输入【账号】"
+            "yolo_class": "operation-sdk-account-input",
+            "remark": "点击账号输入框。输入【账号】"
         },
         {
             "step": 9,
@@ -52,7 +58,7 @@
             "execute_action": "input",
             "text": "${account:password}",
             "yolo_class": "operation-sdk-password-input",
-            "remark": "点击验证码输入框，输入密码"
+            "remark": "点击密码框，输入密码"
         },
         {
             "step": 10,
