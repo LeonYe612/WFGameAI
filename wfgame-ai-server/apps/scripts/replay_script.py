@@ -648,7 +648,7 @@ def check_device_status(device, device_name):
         return False
 
 
-def process_priority_based_script(device, steps, log_dir, action_processor, screenshot_queue, click_queue, max_duration=None):
+def process_priority_based_script(device, steps, meta, log_dir, action_processor, screenshot_queue, click_queue, max_duration=None):
     """处理基于优先级的动态脚本 - 修复后版本"""
     print_realtime("🎯 开始执行优先级模式脚本")
 
@@ -669,19 +669,73 @@ def process_priority_based_script(device, steps, log_dir, action_processor, scre
 
     print_realtime(f"📋 步骤分类: AI检测={len(ai_detection_steps)}, 滑动={len(swipe_steps)}, 备选点击={len(fallback_steps)}")
 
+    # 读取停滞控制参数
+    stagnation_threshold = meta.get('stagnation_threshold')
+    stagnation_tolerance = meta.get('stagnation_tolerance', 0.05)  # 默认0.05
+    prev_screenshot = None
+    stagnation_counter = 0
+
     while max_duration is None or (time.time() - priority_start_time) <= max_duration:
         cycle_count += 1
         print_realtime(f"🔄 第 {cycle_count} 轮检测循环开始")
-        matched_any_target = False
-        hit_step = None  # 记录命中的步骤
 
-        # 性能优化：本轮循环开始时只截一次屏幕并复用
+        # 获取本轮通用截图用于AI检测和停滞检测
         try:
             base_screenshot = get_device_screenshot(device)
         except Exception:
             base_screenshot = None
 
-        # 第1阶段：尝试所有AI检测步骤（只检测，不记录日志）
+        # ------------------ 界面停滞检测 ------------------
+        current_screenshot = base_screenshot
+
+        # 比较截图相似度，更新停滞计数器
+        if prev_screenshot is not None and current_screenshot is not None and stagnation_threshold:
+            gray_prev = cv2.cvtColor(np.array(prev_screenshot), cv2.COLOR_RGB2GRAY)
+            gray_curr = cv2.cvtColor(np.array(current_screenshot), cv2.COLOR_RGB2GRAY)
+            diff = cv2.absdiff(gray_prev, gray_curr)
+            non_zero = np.count_nonzero(diff > 0)
+            total_pixels = diff.size
+            similarity = 1 - non_zero / total_pixels
+            if similarity >= stagnation_tolerance:
+                stagnation_counter += 1
+            else:
+                stagnation_counter = 0
+        else:
+            stagnation_counter = 0
+        prev_screenshot = current_screenshot
+
+        # 达到停滞阈值，执行特殊操作阶段
+        if stagnation_threshold and stagnation_counter >= stagnation_threshold:
+            special_steps = sorted([s for s in steps if s.get('marker')=='special'], key=lambda x: x.get('Priority', 999))
+            base_screenshot = current_screenshot
+            for step in special_steps:
+                print_realtime(f"🚧 Stagnation 特殊操作: {step.get('action')} P{step.get('Priority')} - {step.get('remark')}")
+                if step.get('action') == 'swipe':
+                    result = action_processor._handle_swipe_priority_mode(step, cycle_count, log_dir)
+                elif step.get('action') == 'fallback_click':
+                    result = action_processor._handle_fallback_click_priority_mode(step, cycle_count, log_dir)
+                else:
+                    continue
+                # 执行后检测界面变化
+                try:
+                    new_screenshot = get_device_screenshot(device)
+                except Exception:
+                    new_screenshot = None
+                if base_screenshot is not None and new_screenshot is not None:
+                    gray_base = cv2.cvtColor(np.array(base_screenshot), cv2.COLOR_RGB2GRAY)
+                    gray_new = cv2.cvtColor(np.array(new_screenshot), cv2.COLOR_RGB2GRAY)
+                    diff2 = cv2.absdiff(gray_base, gray_new)
+                    non_zero2 = np.count_nonzero(diff2 > 0)
+                    similarity2 = 1 - non_zero2 / diff2.size
+                    if similarity2 < stagnation_tolerance:
+                        print_realtime("🔄 界面已变化，重置停滞计数，重新进入常规循环")
+                        stagnation_counter = 0
+                        prev_screenshot = new_screenshot
+                        matched_any_target = False
+                        break
+            continue  # 跳过本轮常规检测，进入下一轮
+
+        # ------------------ Phase 1: AI 检测 ------------------
         print_realtime("🎯 [阶段1] 执行AI检测步骤")
         for step_idx, step in enumerate(ai_detection_steps):
             # 将截图转换并缓存
@@ -970,6 +1024,7 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
             with open(script_path, "r", encoding="utf-8") as f:
                 json_data = json.load(f)
                 steps = json_data.get("steps", [])
+                meta = json_data.get("meta", {})  # 提取脚本全局meta配置
         except Exception as e:
             print_realtime(f"❌ 读取脚本失败: {e}")
             continue
@@ -990,7 +1045,7 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
 
             if is_priority_based:
                 executed = process_priority_based_script(
-                    device, steps, log_dir, action_processor,
+                    device, steps, meta, log_dir, action_processor,
                     screenshot_queue, click_queue, max_duration
                 )
             else:

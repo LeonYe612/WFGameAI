@@ -1,6 +1,10 @@
 {
     "name": "WFGameAI Action 脚本模板",
     "description": "请根据实际用例补充每步参数，保留所需字段，删除无关字段。所有参数均为可选，未用到的可省略。",
+    "meta": {
+        "stagnation_threshold": 2,
+        "stagnation_tolerance": 0.05
+    },
     "steps": [
         {
             "step": 1,
@@ -105,7 +109,8 @@
             "end_x": 0,
             "end_y": 0,
             "duration": 300,
-            "remark": "滑动"
+            "remark": "滑动",
+            "marker": "special"
         },
         {
             "step": 13,
@@ -126,7 +131,8 @@
             "action": "fallback_click",
             "relative_x": 0.5,
             "relative_y": 0.5,
-            "remark": "备用点击"
+            "remark": "备用点击",
+            "marker": "special"
         }
     ]
 }

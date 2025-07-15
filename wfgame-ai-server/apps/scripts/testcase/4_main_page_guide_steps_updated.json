@@ -4,6 +4,8 @@
         "description": "完全符合Priority执行模式的主界面引导处理脚本，使用动态循环检测",
         "updated_date": "2025-06-30",
         "author": "WFGameAI开发团队",
+        "stagnation_threshold": 2,
+        "stagnation_tolerance": 0.05,
         "tags": [
             "主界面",
             "引导",
@@ -77,6 +79,7 @@
             "end_x": 500,
             "end_y": 500,
             "duration": 1000,
+            "marker": "special",
             "remark": "水平滑动操作"
         },
         {
@@ -85,6 +88,7 @@
             "action": "fallback_click",
             "relative_x": 0.5,
             "relative_y": 0.9,
+            "marker": "special",
             "remark": "备选[固定坐标点击]操作，防止死循环。因为swipe先执行，此步永远不会走到。"
         }
     ]
