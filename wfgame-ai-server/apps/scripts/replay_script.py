@@ -675,23 +675,38 @@ def process_priority_based_script(device, steps, log_dir, action_processor, scre
         matched_any_target = False
         hit_step = None  # 记录命中的步骤
 
+        # 性能优化：本轮循环开始时只截一次屏幕并复用
+        try:
+            base_screenshot = get_device_screenshot(device)
+        except Exception:
+            base_screenshot = None
+
         # 第1阶段：尝试所有AI检测步骤（只检测，不记录日志）
         print_realtime("🎯 [阶段1] 执行AI检测步骤")
         for step_idx, step in enumerate(ai_detection_steps):
+            # 将截图转换并缓存
+            if base_screenshot is None:
+                screenshot = get_device_screenshot(device)
+            else:
+                screenshot = base_screenshot
+            frame = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
+
             step_class = step.get('yolo_class')
-            step_remark = step.get('remark', '')
             priority = step.get('Priority', 999)
             print_realtime(f"  [Replay] 尝试AI检测 P{priority}: {step_class}")
             try:
-                # 使用特殊方法只进行检测，成功时才记录日志
-                result = action_processor._handle_ai_detection_click_priority_mode(step, cycle_count, log_dir)
+                # 使用批量检测或一次性调用detect_buttons
+                success, detection_result = action_processor.detect_buttons(frame, target_class=step_class)
                 detection_count += 1
-                if result.success and result.executed:
-                    matched_any_target = True
-                    hit_step = step
-                    print_realtime(f"  ✅ [Replay] AI检测命中:>>>>>>>>>>【 {step_class} 】<<<<<<<<<<")
-                    time.sleep(1.0)
-                    break  # 只跳出AI检测循环，继续下一轮时间循环
+                if success and detection_result[0] is not None:
+                    # 命中，执行点击和日志记录
+                    result = action_processor._handle_ai_detection_click_priority_mode(step, cycle_count, log_dir)
+                    if result.success and result.executed:
+                        matched_any_target = True
+                        hit_step = step
+                        print_realtime(f"  ✅ [Replay] AI检测命中:>>>>>>>>>>【 {step_class} 】<<<<<<<<<<")
+                        time.sleep(1.0)
+                        break
                 else:
                     print_realtime(f"  ❌ [Replay] AI检测未命中: {step_class}")
             except Exception as e:
