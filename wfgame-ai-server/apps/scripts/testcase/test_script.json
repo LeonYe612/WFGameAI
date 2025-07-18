@@ -1,0 +1,36 @@
+{
+    "meta": {
+        "title": "测试脚本",
+        "description": "用于多设备并发回放测试的脚本",
+        "version": "1.0"
+    },
+    "steps": [
+        {
+            "action": "click",
+            "name": "测试点击",
+            "target": [
+                500,
+                800
+            ],
+            "timeout": 5
+        },
+        {
+            "action": "wait",
+            "name": "等待",
+            "duration": 2
+        },
+        {
+            "action": "swipe",
+            "name": "测试滑动",
+            "start": [
+                300,
+                600
+            ],
+            "end": [
+                300,
+                400
+            ],
+            "duration": 1000
+        }
+    ]
+}

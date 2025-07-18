@@ -23,14 +23,15 @@ from .views import (
     get_latest_report,
     record_script,
     replay_script,
+    replay_status,
+    replay_cancel,
     debug_script,
     start_record,
     import_script,
     get_python_envs,
     switch_python_env,
-    edit_script_view,
-    copy_script,
-    delete_script
+    storage_status,
+    storage_cleanup
 )
 
 # 应用生命周期管理API
@@ -66,16 +67,13 @@ urlpatterns = [
     path('reports/', get_reports, name='get-reports'),
     path('latest-report/', get_latest_report, name='get-latest-report'),
     path('record/', record_script, name='record-script'),
-    path('replay/', replay_script, name='replay-script'),
-
-    # 新增API端点
-    path('debug/', debug_script, name='debug-script'),
+    path('replay/', replay_script, name='replay-script'),    # 新增API端点
+    path('replay/status/', replay_status, name='replay-status'),
+    path('replay/cancel/', replay_cancel, name='replay-cancel'),
+    path('storage/status/', storage_status, name='storage-status'),
+    path('storage/cleanup/', storage_cleanup, name='storage-cleanup'),    path('debug/', debug_script, name='debug-script'),
     path('start-record/', start_record, name='start-record'),
     path('import/', import_script, name='import-script'),
-    path('edit/', edit_script_view, name='edit-script'),
-    path('edit/<path:script_path>/', edit_script_view, name='edit-script-with-path'),
-    path('copy/', copy_script, name='copy-script'),
-    path('delete/', delete_script, name='delete-script'),
 
     # Python环境管理
     path('python-envs/', get_python_envs, name='get-python-envs'),

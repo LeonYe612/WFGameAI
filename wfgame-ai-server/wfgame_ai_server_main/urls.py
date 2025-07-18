@@ -18,7 +18,7 @@ from .views import index_view
 
 # 导入脚本相关视图函数
 from apps.scripts.views import (
-    get_scripts, edit_script, replay_script, import_script, debug_script,
+    get_scripts, replay_script, debug_script,
     get_reports, get_latest_report, record_script, get_python_envs
 )
 

@@ -27,6 +27,10 @@ import platform
 import signal
 import shutil
 import configparser # 新增：用于读取配置文件
+import time
+import psutil
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from threading import Lock
 
 # =====================
 # 强制设置UTF-8编码环境
@@ -283,6 +287,21 @@ def get_persistent_python_path():
     获取当前python解释器路径，已静态化
     """
     return sys.executable
+
+def find_script_path(script_name):
+    """查找脚本文件的完整路径"""
+    # 在当前目录查找
+    current_dir_path = os.path.join(os.path.dirname(__file__), script_name)
+    if os.path.exists(current_dir_path):
+        return current_dir_path
+
+    # 在SCRIPTS_DIR查找
+    scripts_dir_path = os.path.join(SCRIPTS_DIR, script_name)
+    if os.path.exists(scripts_dir_path):
+        return scripts_dir_path
+
+    # 返回默认路径（可能不存在）
+    return current_dir_path
 
 # 存储当前使用的Python环境路径
 CURRENT_PYTHON_ENV = {"path": get_persistent_python_path(), "initialized": True}
@@ -920,15 +939,231 @@ def record_script(request):
         logger.error(f"启动录制脚本失败: {e}")
         return Response({'error': str(e)}, status=500)
 
+# =====================
+# 方案3实现 - run_single_replay 函数
+# =====================
+
+def check_device_available(device_serial):
+    """检查设备是否可用且未被占用"""
+    try:
+        # 检查 adb 设备状态
+        result = subprocess.run(['adb', 'devices'], capture_output=True, text=True, timeout=10)
+        if device_serial in result.stdout and 'device' in result.stdout:
+            # 进一步检查设备是否被锁定（可根据实际情况实现）
+            return True
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        pass
+    return False
+
+def run_single_replay(device_serial, script_args, log_dir, timeout=3600, max_retries=2):
+    """
+    为单个设备启动回放脚本子进程，并监控其执行。
+    包含完整的错误处理、重试机制和资源清理。
+
+    Args:
+        device_serial: 设备序列号
+        script_args: 脚本参数列表
+        log_dir: 日志目录
+        timeout: 超时时间（秒）
+        max_retries: 最大重试次数
+
+    Returns:
+        dict: 执行结果 {"error": "", "exit_code": 0, "report_url": "", "device": ""}
+    """
+    # 0. 设备状态预检查
+    if not check_device_available(device_serial):
+        return {
+            "error": f"设备 {device_serial} 不可用或被占用",
+            "exit_code": -1,
+            "report_url": "",
+            "device": device_serial
+        }
+
+    # 1. 构造子进程启动命令（使用动态路径避免硬编码）
+    # 使用统一的脚本查找函数定位回放脚本
+    script_path = find_script_path('replay_script.py')
+    if not os.path.exists(script_path):
+        return {
+            "error": "回放脚本不存在",
+            "exit_code": -1,
+            "report_url": "",
+            "device": device_serial
+        }
+
+    cmd = [sys.executable, script_path, '--log-dir', log_dir, '--device', device_serial] + script_args
+    device_log_file = os.path.join(log_dir, f"{device_serial}.log")
+    result_file = os.path.join(log_dir, f"{device_serial}.result.json")
+
+    logger.info(f"设备 {device_serial} 执行命令: {' '.join(cmd)}")
+
+    # 重试机制
+    for attempt in range(max_retries + 1):
+        log_file_handle = None
+        proc = None
+        try:
+            # 2. 启动子进程，关键：直接重定向到文件避免二进制内容问题
+            creation_flags = 0
+            preexec_fn = None
+            if sys.platform == "win32":
+                creation_flags = subprocess.CREATE_NEW_PROCESS_GROUP
+            else:
+                preexec_fn = os.setsid
+
+            # 使用二进制安全的文件重定向：所有输出直接写入文件，避免在内存中处理
+            log_file_handle = open(device_log_file, 'a', encoding='utf-8', errors='replace')
+            proc = subprocess.Popen(
+                cmd,
+                stdout=log_file_handle,  # 直接重定向到文件，避免管道缓冲问题
+                stderr=subprocess.STDOUT,  # 错误输出也重定向到同一文件
+                creationflags=creation_flags,
+                preexec_fn=preexec_fn,
+                # 关键：不使用管道，避免二进制内容导致的阻塞
+                stdin=subprocess.DEVNULL  # 禁用标准输入，防止进程等待输入
+            )
+
+            logger.info(f"设备 {device_serial} 子进程已启动，PID: {proc.pid}")
+
+            # 3. 等待子进程结束，使用分阶段超时处理
+            try:
+                proc.wait(timeout=timeout)
+            except subprocess.TimeoutExpired:
+                logger.warning(f"设备 {device_serial} 执行超时，尝试优雅终止")
+                # 优雅终止：先尝试发送终止信号，给进程保存数据的机会
+                if sys.platform == "win32":
+                    proc.send_signal(signal.CTRL_BREAK_EVENT)
+                    try:
+                        proc.wait(timeout=10)  # 给10秒优雅退出时间
+                    except subprocess.TimeoutExpired:
+                        proc.kill()  # 强制终止
+                else:
+                    os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
+                    try:
+                        proc.wait(timeout=10)
+                    except subprocess.TimeoutExpired:
+                        os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+                return {
+                    "error": "执行超时",
+                    "exit_code": -1,
+                    "report_url": "",
+                    "device": device_serial
+                }
+
+            # 4. 等待结果文件写入完成（避免竞争条件）
+            result_wait_timeout = 30
+            result_start_time = time.time()
+            while not os.path.exists(result_file) and (time.time() - result_start_time) < result_wait_timeout:
+                time.sleep(0.5)
+
+            # 5. 读取并返回 result.json 的内容
+            if os.path.exists(result_file):
+                try:
+                    # 多次尝试读取，确保文件写入完整
+                    for read_attempt in range(3):
+                        try:
+                            with open(result_file, 'r', encoding='utf-8') as f:
+                                content = f.read().strip()
+                                if content:  # 确保文件不为空
+                                    result_data = json.loads(content)
+                                    # 确保返回数据包含设备信息
+                                    result_data["device"] = device_serial
+                                    logger.info(f"设备 {device_serial} 执行完成，退出码: {result_data.get('exit_code', 'unknown')}")
+                                    return result_data
+                        except (json.JSONDecodeError, ValueError):
+                            if read_attempt < 2:
+                                time.sleep(1)  # 等待文件写入完成
+                            else:
+                                raise
+                    return {
+                        "error": "结果文件为空或格式错误",
+                        "exit_code": proc.returncode,
+                        "report_url": "",
+                        "device": device_serial
+                    }
+                except (json.JSONDecodeError, ValueError) as e:
+                    if attempt < max_retries:
+                        logger.warning(f"设备 {device_serial} 结果文件格式错误，重试 {attempt + 1}/{max_retries}: {e}")
+                        time.sleep(2)  # 重试前等待
+                        continue
+                    return {
+                        "error": f"结果文件格式错误: {str(e)}",
+                        "exit_code": proc.returncode,
+                        "report_url": "",
+                        "device": device_serial
+                    }
+            else:
+                if attempt < max_retries:
+                    logger.warning(f"设备 {device_serial} 未找到结果文件，重试 {attempt + 1}/{max_retries}")
+                    time.sleep(2)
+                    continue
+                return {
+                    "error": "未找到结果文件，脚本可能已崩溃",
+                    "exit_code": proc.returncode,
+                    "report_url": "",
+                    "device": device_serial
+                }
+
+        except Exception as e:
+            if attempt < max_retries:
+                logger.warning(f"设备 {device_serial} 执行异常，重试 {attempt + 1}/{max_retries}: {e}")
+                time.sleep(2)
+                continue
+            logger.error(f"设备 {device_serial} 执行失败: {e}")
+            return {
+                "error": f"执行异常: {str(e)}",
+                "exit_code": -1,
+                "report_url": "",
+                "device": device_serial
+            }
+        finally:
+            # 确保资源清理
+            if log_file_handle:
+                try:
+                    log_file_handle.close()
+                except:
+                    pass
+            if proc and proc.poll() is None:
+                try:
+                    if sys.platform == "win32":
+                        proc.kill()
+                    else:
+                        os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+                except:
+                    pass
+
+    return {
+        "error": f"重试 {max_retries} 次后仍然失败",
+        "exit_code": -1,
+        "report_url": "",
+        "device": device_serial
+    }
+
+# =====================
+# 多设备并发回放主API
+# =====================
+
 @api_view(['POST'])
 @csrf_exempt
 @permission_classes([permissions.AllowAny])
 def replay_script(request):
-    """回放指定的测试脚本"""
+    """多设备并发回放指定的测试脚本 - 方案3实现"""
     try:
         data = json.loads(request.body)
+        logger.info(f"收到多设备并发回放请求: {data}")
 
-        # 检查脚本参数，兼容scripts数组和script_path参数
+        # 1. 检查或获取设备参数
+        devices = data.get('devices')
+        if not devices:
+            # 自动获取已连接设备列表
+            try:
+                result = run_subprocess_utf8(['adb', 'devices'], capture_output=True, check=True)
+                lines = result.stdout.strip().split('\n')[1:]
+                devices = [line.split()[0] for line in lines if line.strip() and 'device' in line]
+            except Exception as e:
+                return JsonResponse({'success': False, 'message': f'获取设备列表失败: {e}'}, status=500)
+            if not devices:
+                return JsonResponse({'success': False, 'message': '未检测到可用设备'}, status=400)
+
+        # 2. 检查脚本参数，兼容scripts数组和script_path参数
         script_configs = data.get('scripts', [])
         if not script_configs and data.get('script_path'):
             # 兼容旧版API，将script_path转换为scripts数组
@@ -945,7 +1180,7 @@ def replay_script(request):
                 'message': '未提供脚本路径'
             }, status=400)
 
-        # 对脚本路径进行规范化处理
+        # 3. 脚本路径规范化处理
         for config in script_configs:
             script_path = config.get('path')
             if not script_path:
@@ -991,216 +1226,175 @@ def replay_script(request):
                 }, status=404)
 
             # 更新配置中的路径
-            config['path'] = path_input            # 查找脚本文件的数据库记录以获取分类信息
+            config['path'] = path_input        # 4. 创建日志目录
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        log_dir_name = f"multi_device_replay_{timestamp}"
+        log_dir = os.path.join(DEVICE_REPORTS_DIR, log_dir_name)
+        os.makedirs(log_dir, exist_ok=True)
+        logger.info(f"创建日志目录: {log_dir}")
+
+        # 5. 创建任务并获取任务ID
+        task_id = task_manager.create_task(devices, script_configs, log_dir)
+        logger.info(f"创建任务: {task_id}")        # 6. 账号预分配（集成现有账号管理器）
+        from .account_manager import get_account_manager
+        account_manager = get_account_manager()
+
+        device_accounts = {}
+        account_allocation_errors = []
+
+        for device_serial in devices:
             try:
-                from .models import ScriptFile
-                script_file = None
-
-                # 1. 首先尝试通过完整路径查找
-                script_file = ScriptFile.objects.filter(file_path=path_input).first()
-
-                # 2. 如果找不到，尝试通过文件名查找
-                if not script_file:
-                    filename = os.path.basename(path_input)
-                    script_file = ScriptFile.objects.filter(filename=filename).first()
-
-                # 3. 如果还是找不到，尝试通过相对路径查找
-                if not script_file:
-                    relative_path = os.path.relpath(path_input, TESTCASE_DIR)
-                    script_file = ScriptFile.objects.filter(file_path__endswith=relative_path).first()
-
-                # 4. 最后尝试模糊匹配文件名（不包含扩展名）
-                if not script_file:
-                    base_filename = os.path.splitext(filename)[0]
-                    script_file = ScriptFile.objects.filter(filename__startswith=base_filename).first()
-
-                if script_file:
-                    config['script_id'] = script_file.pk
-                    config['category'] = script_file.category.name if script_file.category else None
-                    logger.info(f"✅ 找到脚本记录: ID={script_file.pk}, 分类={config['category']}, 文件={script_file.filename}")
+                # 调用现有的账号管理器接口
+                allocated_account = account_manager.allocate_account(device_serial)
+                if allocated_account:
+                    device_accounts[device_serial] = {
+                        'username': allocated_account[0],
+                        'password': allocated_account[1]
+                    }
                 else:
-                    config['script_id'] = None
-                    config['category'] = None
-                    # 尝试自动创建脚本记录
+                    account_allocation_errors.append(f"设备 {device_serial} 账号分配失败")
+            except Exception as e:
+                account_allocation_errors.append(f"设备 {device_serial} 账号分配异常: {str(e)}")
+
+        # 如果有账号分配失败，取消任务并返回错误
+        if account_allocation_errors:
+            task_manager.update_task_status(task_id, TaskStatus.FAILED,
+                                          error_message="账号分配失败")
+            return JsonResponse({
+                "success": False,
+                "task_id": task_id,
+                "error": "账号分配失败",
+                "details": account_allocation_errors
+            }, status=400)
+
+        # 6. 构造每个设备的任务参数
+        device_tasks = {}
+        for device_serial in devices:
+            account_info = device_accounts[device_serial]
+            script_args = []
+
+            # 添加脚本参数
+            for config in script_configs:
+                script_args.extend(['--script', config['path']])
+
+                # 添加循环次数
+                loop_count = config.get('loop_count')
+                if loop_count:
+                    script_args.extend(['--loop-count', str(loop_count)])
+
+                # 添加最大持续时间
+                max_duration = config.get('max_duration')
+                if max_duration:
+                    script_args.extend(['--max-duration', str(max_duration)])
+
+            # 添加账号信息
+            script_args.extend(['--account-user', account_info['username']])
+            script_args.extend(['--account-pass', account_info['password']])
+
+            # 添加显示屏幕参数
+            if data.get('show_screens'):
+                script_args.append('--show-screens')
+
+            device_tasks[device_serial] = script_args
+
+        # 7. 动态计算最佳并发数
+        cpu_count = os.cpu_count() or 4
+        try:
+            memory_gb = psutil.virtual_memory().total / (1024**3)
+            # 基于系统资源计算合理并发数
+            cpu_based_limit = cpu_count * 2  # CPU核心数的2倍
+            memory_based_limit = int(memory_gb / 0.5)  # 每个任务预估占用500MB内存
+            system_based_limit = min(cpu_based_limit, memory_based_limit, 32)  # 系统限制最大32
+        except ImportError:
+            # 如果无法获取psutil，使用保守估计
+            system_based_limit = min(cpu_count * 2, 16)
+
+        max_concurrent = min(system_based_limit, len(devices), data.get('max_concurrent', system_based_limit))
+        logger.info(f"计算得出最大并发数: {max_concurrent} (设备数: {len(devices)})")
+
+        # 8. 并发执行回放任务
+        results = {}
+        completed_count = 0
+
+        try:
+            with ThreadPoolExecutor(max_workers=max_concurrent) as executor:
+                # 提交所有任务
+                futures = {
+                    executor.submit(run_single_replay, device, args, log_dir): device
+                    for device, args in device_tasks.items()
+                }
+
+                # 等待任务完成并收集结果
+                for future in as_completed(futures):
+                    device = futures[future]
+                    completed_count += 1
                     try:
-                        # 读取脚本内容获取步骤数
-                        step_count = 0
-                        try:
-                            with open(path_input, 'r', encoding='utf-8') as f:
-                                script_content = json.load(f)
-                                step_count = len(script_content.get('steps', []))
-                        except:
-                            step_count = 0
+                        result_data = future.result()
+                        results[device] = result_data
+                        logger.info(f"设备 {device} 回放完成 ({completed_count}/{len(devices)}): {result_data.get('exit_code', 'unknown')}")
+                    except Exception as e:
+                        error_msg = f"执行异常: {str(e)}"
+                        logger.error(f"设备 {device} 回放任务失败: {error_msg}")
+                        results[device] = {
+                            "error": error_msg,
+                            "exit_code": -1,
+                            "report_url": "",
+                            "device": device
+                        }
 
-                        # 创建新的脚本记录
-                        script_file = ScriptFile.objects.create(
-                            filename=os.path.basename(path_input),
-                            file_path=path_input,
-                            file_size=os.path.getsize(path_input) if os.path.exists(path_input) else 0,
-                            step_count=step_count,
-                            type='manual',
-                            description=f'自动创建于脚本回放: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}'
-                        )
-                        config['script_id'] = script_file.pk
-                        config['category'] = None
-                        logger.info(f"✅ 自动创建脚本记录: ID={script_file.pk}, 文件={script_file.filename}")
-                    except Exception as create_error:
-                        logger.warning(f"⚠️ 未找到脚本文件的数据库记录，且自动创建失败: {path_input}, 错误: {create_error}")
+        finally:
+            # 9. 资源清理：释放账号
+            for device_serial in devices:
+                if device_serial in device_accounts:
+                    try:
+                        account_manager.release_account(device_serial)
+                        logger.info(f"已释放设备 {device_serial} 的账号")
+                    except Exception as e:
+                        logger.warning(f"设备 {device_serial} 账号释放失败: {e}")
 
-            except Exception as e:
-                logger.error(f"❌ 查询脚本分类时出错: {e}")
-                config['script_id'] = None
-                config['category'] = None
+        # 10. 确保所有设备都有结果记录
+        for device in devices:
+            if device not in results:
+                results[device] = {
+                    "error": "任务未执行或丢失",
+                    "exit_code": -1,
+                    "report_url": "",
+                    "device": device,
+                    "log_url": f"/static/reports/{log_dir_name}/{device}.log"
+                }
 
-        # 获取Python解释器路径
-        python_exec = get_persistent_python_path()
-        logger.info(f"使用Python环境: {python_exec}")
+        # 11. 构建响应数据，使用先前创建的 task_id
+        response_data = {
+            "success": True,
+            "task_id": task_id,
+            "message": f"多设备并发回放完成，共处理 {len(devices)} 台设备",
+            "log_dir": log_dir,
+            "results": []
+        }
 
-        # 获取replay_script.py的绝对路径
-        replay_script_path = find_script_path("replay_script.py")        # 组装命令
-        cmd = [
-            python_exec,
-            "-u",  # 强制 Python 使用无缓冲输出，确保实时日志显示
-            replay_script_path
-        ]
+        # 转换结果格式
+        for device, result in results.items():
+            device_result = {
+                "device": device,
+                "status": "completed" if result.get("exit_code") == 0 else "failed",
+                "exit_code": result.get("exit_code", -1),
+                "report_url": result.get("report_url", ""),
+                "log_url": f"/static/reports/{log_dir_name}/{device}.log",
+                "error": result.get("error", "")
+            }
+            response_data["results"].append(device_result)
 
-        # 添加显示屏幕参数
-        if data.get('show_screens'):
-            cmd.append("--show-screens")
+        logger.info(f"多设备并发回放任务完成: {len(devices)} 台设备，成功: {sum(1 for r in results.values() if r.get('exit_code') == 0)}")
+        return JsonResponse(response_data)
 
-        # 添加脚本参数
-        for config in script_configs:
-            script_path = config.get('path')
-            cmd.extend(["--script", script_path])
-            # 添加脚本ID和分类信息
-            script_id = config.get('script_id')
-            if script_id:
-                cmd.extend(["--script-id", str(script_id)])
-
-            # 添加循环次数
-            loop_count = config.get('loop_count')
-            if loop_count:
-                cmd.extend(["--loop-count", str(loop_count)])
-
-            # 添加最大持续时间
-            max_duration = config.get('max_duration')
-            if max_duration:
-                cmd.extend(["--max-duration", str(max_duration)])
-
-        # 日志输出
-        logger.info(f"执行回放命令: {' '.join(cmd)}")        # 启动回放进程
-        process = subprocess.Popen(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            cwd=SCRIPTS_DIR,  # 使用配置中的项目根目录
-            text=True,
-            encoding='utf-8',
-            errors='replace',
-            bufsize=1,  # 行缓冲，提高实时性
-            env=dict(os.environ, PYTHONIOENCODING='utf-8')  # 确保Python进程使用UTF-8编码
-        )
-
-        # 存储进程对象，以便后续管理
-        CHILD_PROCESSES[process.pid] = process
-
-        # 创建线程读取输出，避免缓冲区满
-        def read_output(stream, log_func):
-            try:
-                for line in iter(stream.readline, ''):
-                    if line:
-                        # 确保正确处理中文字符
-                        line_str = line.strip()
-                        # 尝试处理可能的编码问题
-                        try:
-                            # 如果是字节类型，解码为字符串
-                            if isinstance(line_str, bytes):
-                                line_str = line_str.decode('utf-8', errors='replace')
-                            log_func(line_str)
-                        except UnicodeDecodeError:
-                            # 如果解码失败，使用替换错误处理
-                            log_func(repr(line_str))
-            except Exception as e:
-                logger.error(f"读取输出流时出错: {e}")
-            finally:
-                stream.close()# 创建进程监控线程（不再生成重复报告）
-        def monitor_process_and_generate_report(proc, pid):
-            """监控进程完成 - 报告生成已由replay_script.py统一处理"""
-            try:
-                # 等待进程完成
-                proc.wait()
-                logger.info(f"[PID:{pid}] 脚本执行完成")
-
-                # 注意：报告生成现在由replay_script.py内的统一报告系统处理
-                # 避免在这里重复生成报告，以防止新旧时间戳格式的报告同时存在
-                logger.info(f"[PID:{pid}] 报告生成已由replay_script.py内的统一系统处理")
-
-            except Exception as e:
-                logger.error(f"[PID:{pid}] 进程监控异常: {e}")
-            finally:
-                # 清理进程记录
-                CHILD_PROCESSES.pop(pid, None)
-                logger.info(f"[PID:{pid}] 进程已完成并清理")
-
-        # 启动输出读取线程
-        stdout_thread = threading.Thread(target=read_output, args=(process.stdout, logger.info))
-        stderr_thread = threading.Thread(target=read_output, args=(process.stderr, logger.error))
-        stdout_thread.daemon = True
-        stderr_thread.daemon = True
-        stdout_thread.start()
-        stderr_thread.start()
-
-        # 启动进程监控线程
-        monitor_thread = threading.Thread(target=monitor_process_and_generate_report, args=(process, process.pid))
-        monitor_thread.daemon = True
-        monitor_thread.start()
-
-        # 等待进程完成，设置超时避免无限等待
-        try:
-            process.wait(timeout=1)  # 短暂等待，不阻塞响应
-        except subprocess.TimeoutExpired:
-            # 进程仍在运行，这是正常的
-            pass
-
-        # 获取最新生成的报告URL
-        report_url = ""
-        try:
-            # 查找最新的报告目录
-            report_dirs = []
-            for device_dir in os.listdir(UI_REPORTS_DIR):
-                device_path = os.path.join(UI_REPORTS_DIR, device_dir)
-                if os.path.isdir(device_path):
-                    for report_dir in os.listdir(device_path):
-                        report_path = os.path.join(device_path, report_dir)
-                        if os.path.isdir(report_path):
-                            report_dirs.append((report_path, os.path.getmtime(report_path)))
-
-            # 按修改时间排序，获取最新的报告
-            if report_dirs:
-                report_dirs.sort(key=lambda x: x[1], reverse=True)
-                latest_report_dir = report_dirs[0][0]
-
-                # 构建报告URL
-                relative_path = os.path.relpath(latest_report_dir, os.path.dirname(SCRIPTS_DIR))
-                report_url = f"/static/{relative_path.replace(os.path.sep, '/')}/index.html"
-        except Exception as e:
-            logger.error(f"获取报告URL失败: {e}")
-
-        # 返回播放成功响应
-        return JsonResponse({
-            'success': True,
-            'message': '成功启动脚本回放',
-            'process_id': process.pid,
-            'command': ' '.join(cmd),  # 添加命令行
-            'report_url': report_url
-        })
     except Exception as e:
         error_msg = str(e)
-        logger.error(f"回放脚本时出错: {error_msg}")
+        logger.error(f"多设备并发回放失败: {error_msg}")
+        logger.error(f"详细错误信息: {traceback.format_exc()}")
 
         return JsonResponse({
             'success': False,
-            'message': f'回放脚本失败: {error_msg}'
+            'message': f'多设备并发回放失败: {error_msg}'
         }, status=500)
 
 @api_view(['POST'])
@@ -1885,6 +2079,8 @@ class ImportScriptView(views.APIView):
             try:
                 script_data = json.load(uploaded_file)
 
+
+
                 # 创建新脚本
                 script = Script.objects.create(
                     name=script_data.get('name', f'导入脚本_{uuid.uuid4().hex[:8]}'),
@@ -1915,6 +2111,7 @@ class RollbackScriptView(views.APIView):
 
     def post(self, request, pk, version):
         script = get_object_or_404(Script, pk=pk)
+
         version_obj = get_object_or_404(ScriptVersion, script=script, version=version)
 
         # 更新当前脚本为指定版本的内容
@@ -1968,413 +2165,322 @@ class ScriptExecutionViewSet(viewsets.ReadOnlyModelViewSet):
 
         return queryset
 
-@api_view(['POST'])
-@csrf_exempt
-@permission_classes([permissions.AllowAny])
-def edit_script(request, script_path=None):
-    """
-    获取和更新脚本内容 - 统一使用POST请求
-    操作类型由请求体中的operation字段决定：
-    - 'read': 读取脚本内容
-    - 'write': 更新脚本内容
-    """
-    try:
-        # 从POST请求体中获取参数
-        data = json.loads(request.body)
-        logger.info(f"Edit script request - data: {data}")
-        operation = data.get('operation', 'read')  # 默认为读取操作
-        filename = data.get('filename')  # 从请求体中获取文件名
+# =====================
+# 任务管理系统
+# =====================
 
-        if not filename:
-            return JsonResponse({'success': False, 'message': '未提供文件名'}, status=400)
+import uuid
+from enum import Enum
+from typing import Dict, Any, Optional
+import threading
+from dataclasses import dataclass
+from datetime import datetime, timedelta
 
-        logger.info(f"Edit script request - filename: {filename}")
+class TaskStatus(Enum):
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    CANCELLED = "cancelled"
+    FAILED = "failed"
 
-        # 构建完整路径 - 确保路径安全
-        # 只使用文件名，忽略任何路径信息，并限制在测试用例目录内
-        safe_filename = os.path.basename(filename)  # 提取文件名，移除任何路径
-        final_absolute_path = os.path.join(TESTCASE_DIR, safe_filename)
+@dataclass
+class TaskInfo:
+    task_id: str
+    devices: list
+    scripts: list
+    status: TaskStatus
+    created_at: datetime
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    error_message: Optional[str] = None
+    log_dir: Optional[str] = None
+    results: Dict[str, Any] = None
+    executor_future: Any = None
 
-        logger.info(f"Final absolute path: {final_absolute_path}")
+class TaskManager:
+    """任务管理器 - 负责任务创建、状态跟踪、取消等功能"""
 
-        # 根据操作类型处理请求
-        if operation == 'read':
-            # 读取文件
-            try:
-                # 尝试以UTF-8读取
-                try:
-                    with open(final_absolute_path, 'r', encoding='utf-8') as file:
-                        content = file.read()
-                except UnicodeDecodeError:
-                    # 如果UTF-8解码失败，尝试以二进制方式读取
-                    with open(final_absolute_path, 'rb') as file:
-                        content_bytes = file.read()
-                        # 尝试检测编码
-                        encodings = ['utf-8', 'latin1', 'gbk', 'gb2312', 'big5']
-                        content = None
-                        for encoding in encodings:
-                            try:
-                                content = content_bytes.decode(encoding)
-                                logger.info(f"成功使用{encoding}解码")
-                                break
-                            except UnicodeDecodeError:
-                                continue
+    def __init__(self):
+        self.tasks: Dict[str, TaskInfo] = {}
+        self.running_processes: Dict[str, Any] = {}
+        self._lock = threading.RLock()
 
-                        # 如果所有编码都失败，将其作为latin1（能处理任何字节）
-                        if content is None:
-                            content = content_bytes.decode('latin1')
-                            logger.warning(f"使用latin1作为回退编码")
+    def create_task(self, devices: list, scripts: list, log_dir: str) -> str:
+        """创建新任务并返回任务ID"""
+        task_id = str(uuid.uuid4())
 
-                    script_json_data = {}
-                    try:
-                        script_json_data = json.loads(content)
-                        formatted_content = json.dumps(script_json_data, indent=2, ensure_ascii=False)
-                    except json.JSONDecodeError:
-                        formatted_content = content
-                        logger.warning(f"Content of '{final_absolute_path}' is not valid JSON. Serving raw.")
-
-                    created_time = datetime.fromtimestamp(os.path.getctime(final_absolute_path))
-                    modified_time = datetime.fromtimestamp(os.path.getmtime(final_absolute_path))
-                    step_count = len(script_json_data.get('steps', [])) if isinstance(script_json_data, dict) else 0
-
-                    return JsonResponse({
-                    'success': True,
-                    'filename': safe_filename,
-                    'path': final_absolute_path,
-                    'content': formatted_content,
-                    'created': created_time.strftime('%Y-%m-%d %H:%M:%S'),
-                    'modified': modified_time.strftime('%Y-%m-%d %H:%M:%S'),
-                    'step_count': step_count
-                    })
-                except FileNotFoundError:
-                    logger.error(f"File not found: {final_absolute_path}")
-                    return JsonResponse({'success': False, 'message': f'脚本文件不存在: {safe_filename}'}, status=404)
-            except Exception as e_read:
-                logger.error(f"Error reading script file '{final_absolute_path}': {str(e_read)}")
-                return JsonResponse({'success': False, 'message': f'读取脚本文件失败: {str(e_read)}'}, status=500)
-
-        elif operation == 'write':
-            # 更新文件内容
-                new_content_str = data.get('content')
-                if new_content_str is None:
-                    return JsonResponse({'success': False, 'message': '未提供新的脚本内容'}, status=400)
-
-            # 验证JSON格式
-                try:
-                    json.loads(new_content_str)
-                except json.JSONDecodeError as e_json:
-                    logger.error(f"Invalid JSON content: {str(e_json)}")
-                    return JsonResponse({'success': False, 'message': f'无效的JSON格式: {str(e_json)}'}, status=400)
-
-            # 确保目录存在
-                os.makedirs(os.path.dirname(final_absolute_path), exist_ok=True)
-
-                # 写入文件
-                with open(final_absolute_path, 'w', encoding='utf-8') as file:
-                        file.write(new_content_str)
-                logger.info(f"Script updated successfully: {final_absolute_path}")
-
-                return JsonResponse({
-                'success': True,
-                'message': '脚本已成功更新',
-                        'modified': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                    })
-        else:
-            # 不支持的操作类型
-            return JsonResponse({'success': False, 'message': f'不支持的操作类型: {operation}'}, status=400)
-
-    except Exception as e:
-        logger.error(f"Error processing script edit request: {str(e)}")
-        return JsonResponse({'success': False, 'message': f'处理脚本编辑请求失败: {str(e)}'}, status=500)
-
-@api_view(['POST'])
-@csrf_exempt
-@permission_classes([permissions.AllowAny])
-def edit_script_view(request, script_path=None):
-    """
-    获取和更新脚本内容 - 统一使用POST请求
-    操作类型由请求体中的operation字段决定：
-    - 'read': 读取脚本内容
-    - 'write': 更新脚本内容
-
-    采用了兼容Django Rest Framework的装饰器，并确保返回正确的Response对象。
-    """
-    try:
-        # 记录请求信息，帮助诊断
-        logger.info(f"Edit script request received - method: {request.method}, path: {script_path}")
-        logger.info(f"Request body: {request.body}")
-
-        # 从POST请求体中获取参数
-        data = json.loads(request.body)
-        logger.info(f"Edit script request - parsed data: {data}")
-        operation = data.get('operation', 'read')  # 默认为读取操作
-        filename = data.get('filename')  # 从请求体中获取文件名
-
-        if not filename:
-            logger.error("Filename not provided")
-            return Response({'success': False, 'message': '未提供文件名'}, status=400)
-
-        logger.info(f"Edit script request - operation: {operation}, filename: {filename}")
-
-        # 构建完整路径 - 确保路径安全
-        # 只使用文件名，忽略任何路径信息，并限制在测试用例目录内
-        safe_filename = os.path.basename(filename)  # 提取文件名，移除任何路径
-        final_absolute_path = os.path.join(TESTCASE_DIR, safe_filename)
-
-        logger.info(f"Final absolute path: {final_absolute_path}")
-
-        # 根据操作类型处理请求
-        if operation == 'read':
-            # 读取文件
-            try:
-                # 尝试以UTF-8读取
-                try:
-                    with open(final_absolute_path, 'r', encoding='utf-8') as file:
-                        content = file.read()
-                except UnicodeDecodeError:
-                    # 如果UTF-8解码失败，尝试以二进制方式读取
-                    with open(final_absolute_path, 'rb') as file:
-                        content_bytes = file.read()
-                        # 尝试检测编码
-                        encodings = ['utf-8', 'latin1', 'gbk', 'gb2312', 'big5']
-                        content = None
-                        for encoding in encodings:
-                            try:
-                                content = content_bytes.decode(encoding)
-                                logger.info(f"成功使用{encoding}解码")
-                                break
-                            except UnicodeDecodeError:
-                                continue
-
-                        # 如果所有编码都失败，将其作为latin1（能处理任何字节）
-                        if content is None:
-                            content = content_bytes.decode('latin1')
-                            logger.warning(f"使用latin1作为回退编码")
-
-                script_json_data = {}
-                try:
-                    script_json_data = json.loads(content)
-                    formatted_content = json.dumps(script_json_data, indent=2, ensure_ascii=False)
-                except json.JSONDecodeError:
-                    formatted_content = content
-                    logger.warning(f"Content of '{final_absolute_path}' is not valid JSON. Serving raw.")
-
-                created_time = datetime.fromtimestamp(os.path.getctime(final_absolute_path))
-
-                modified_time = datetime.fromtimestamp(os.path.getmtime(final_absolute_path))
-
-
-
-                step_count = len(script_json_data.get('steps', [])) if isinstance(script_json_data, dict) else 0
-
-                response_data = {
-                    'success': True,
-                    'filename': safe_filename,
-                    'path': final_absolute_path,
-                    'content': formatted_content,
-                    'created': created_time.strftime('%Y-%m-%d %H:%M:%S'),
-                    'modified': modified_time.strftime('%Y-%m-%d %H:%M:%S'),
-                    'step_count': step_count
-                }
-
-                logger.info("Script read operation successful")
-                return Response(response_data)
-
-            except FileNotFoundError:
-                logger.error(f"File not found: {final_absolute_path}")
-                return Response(
-                    {'success': False, 'message': f'脚本文件不存在: {safe_filename}'},
-                    status=404
-                )
-            except Exception as e_read:
-                logger.error(f"Error reading script file '{final_absolute_path}': {str(e_read)}")
-                return Response(
-                    {'success': False, 'message': f'读取脚本文件失败: {str(e_read)}'},
-                    status=500
-                )
-
-        elif operation == 'write':
-            # 更新文件内容
-            new_content_str = data.get('content')
-            if new_content_str is None:
-                logger.error("No content provided for write operation")
-                return Response(
-                    {'success': False, 'message': '未提供新的脚本内容'},
-                    status=400
-                )
-
-            # 验证JSON格式
-            try:
-                json.loads(new_content_str)
-            except json.JSONDecodeError as e_json:
-                logger.error(f"Invalid JSON content: {str(e_json)}")
-                return Response(
-                    {'success': False, 'message': f'无效的JSON格式: {str(e_json)}'},
-                    status=400
-                )
-
-            # 确保目录存在
-            os.makedirs(os.path.dirname(final_absolute_path), exist_ok=True)
-
-            # 写入文件
-            with open(final_absolute_path, 'w', encoding='utf-8') as file:
-                file.write(new_content_str)
-            logger.info(f"Script updated successfully: {final_absolute_path}")
-
-            return Response({
-                'success': True,
-                'message': '脚本已成功更新',
-                'modified': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            })
-        else:
-            # 不支持的操作类型
-            logger.error(f"Unsupported operation: {operation}")
-            return Response(
-                {'success': False, 'message': f'不支持的操作类型: {operation}'},
-                status=400
+        with self._lock:
+            task_info = TaskInfo(
+                task_id=task_id,
+                devices=devices.copy(),
+                scripts=scripts.copy(),
+                status=TaskStatus.PENDING,
+                created_at=datetime.now(),
+                log_dir=log_dir,
+                results={}
             )
+            self.tasks[task_id] = task_info
+
+        return task_id
+
+    def update_task_status(self, task_id: str, status: TaskStatus,
+                          error_message: Optional[str] = None,
+                          results: Optional[Dict[str, Any]] = None):
+        """更新任务状态"""
+        with self._lock:
+            if task_id not in self.tasks:
+                return False
+
+            task = self.tasks[task_id]
+            task.status = status
+
+            if status == TaskStatus.RUNNING and not task.started_at:
+                task.started_at = datetime.now()
+            elif status in [TaskStatus.COMPLETED, TaskStatus.CANCELLED, TaskStatus.FAILED]:
+                task.completed_at = datetime.now()
+
+            if error_message:
+                task.error_message = error_message
+            if results:
+                task.results = results
+
+        return True
+
+    def get_task_info(self, task_id: str) -> Optional[TaskInfo]:
+        """获取任务信息"""
+        with self._lock:
+            return self.tasks.get(task_id)
+
+    def cancel_task(self, task_id: str) -> bool:
+        """取消任务"""
+        with self._lock:
+            if task_id not in self.tasks:
+                return False
+
+            task = self.tasks[task_id]
+            if task.status not in [TaskStatus.PENDING, TaskStatus.RUNNING]:
+                return False
+
+            # 取消正在运行的executor
+            if task.executor_future and not task.executor_future.done():
+                task.executor_future.cancel()
+
+            # 终止相关子进程
+            if task_id in self.running_processes:
+                processes = self.running_processes[task_id]
+                for proc in processes:
+                    try:
+                        if proc.poll() is None:  # 进程仍在运行
+                            if sys.platform == "win32":
+                                proc.terminate()
+                                time.sleep(2)
+                                if proc.poll() is None:
+                                    proc.kill()
+                            else:
+                                os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
+                                time.sleep(2)
+                                if proc.poll() is None:
+                                    os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+                    except Exception as e:
+                        logger.warning(f"终止进程失败: {e}")
+
+                del self.running_processes[task_id]
+
+            task.status = TaskStatus.CANCELLED
+            task.completed_at = datetime.now()
+
+        return True
+
+    def cleanup_old_tasks(self, max_age_hours: int = 24):
+        """清理过期任务"""
+        cutoff_time = datetime.now() - timedelta(hours=max_age_hours)
+
+        with self._lock:
+            expired_tasks = [
+                task_id for task_id, task in self.tasks.items()
+                if task.created_at < cutoff_time and
+                   task.status in [TaskStatus.COMPLETED, TaskStatus.CANCELLED, TaskStatus.FAILED]
+            ]
+
+            for task_id in expired_tasks:
+                del self.tasks[task_id]
+
+        return len(expired_tasks)
+
+# 全局任务管理器实例
+task_manager = TaskManager()
+
+# =====================
+# 任务管理API接口
+# =====================
+
+@api_view(['POST'])
+@csrf_exempt
+@permission_classes([permissions.AllowAny])
+def replay_status(request):
+    """查询任务执行状态"""
+    try:
+        data = json.loads(request.body)
+        task_id = data.get('task_id')
+
+        if not task_id:
+            return JsonResponse({
+                'success': False,
+                'message': '缺少task_id参数'
+            }, status=400)
+
+        task_info = task_manager.get_task_info(task_id)
+        if not task_info:
+            return JsonResponse({
+                'success': False,
+                'message': '任务不存在'
+            }, status=404)
+
+        # 计算执行时间
+        execution_time = None
+        if task_info.started_at:
+            end_time = task_info.completed_at or datetime.now()
+            execution_time = (end_time - task_info.started_at).total_seconds()
+
+        # 计算进度（基于完成的设备数量）
+        total_devices = len(task_info.devices)
+        completed_devices = len([
+            result for result in (task_info.results or {}).values()
+            if result.get('exit_code') is not None
+        ])
+        progress = int((completed_devices / total_devices) * 100) if total_devices > 0 else 0
+
+        response_data = {
+            'success': True,
+            'task_id': task_id,
+            'status': task_info.status.value,
+            'devices': task_info.devices,
+            'scripts': task_info.scripts,
+            'created_at': task_info.created_at.isoformat(),
+            'started_at': task_info.started_at.isoformat() if task_info.started_at else None,
+            'completed_at': task_info.completed_at.isoformat() if task_info.completed_at else None,
+            'execution_time': execution_time,
+            'progress': progress,
+            'total_devices': total_devices,
+            'completed_devices': completed_devices,
+            'error_message': task_info.error_message,
+            'results': task_info.results or {}
+        }
+
+        return JsonResponse(response_data)
 
     except Exception as e:
-        logger.error(f"Error processing script edit request: {str(e)}, traceback: {traceback.format_exc()}")
-        return Response(
-            {'success': False, 'message': f'处理脚本编辑请求失败: {str(e)}'},
-            status=500
-        )
+        logger.error(f"查询任务状态失败: {e}")
+        return JsonResponse({
+            'success': False,
+            'message': f'查询任务状态失败: {str(e)}'
+        }, status=500)
 
-def find_script_path(script_name):
-    """
-    查找脚本文件的实际路径，按优先级依次检查多个可能的位置
-
-    Args:
-        script_name (str): 脚本文件名
-
-    Returns:
-        str: 找到的脚本路径，如果未找到则返回 SCRIPTS_DIR 下的默认路径
-    """
-    # 移除路径前缀，只保留基本文件名
-    base_name = os.path.basename(script_name)
-
-    # 尝试多个位置查找脚本
-    possible_paths = [
-        # 1. 在当前apps/scripts目录中查找
-        os.path.join(os.path.dirname(__file__), base_name),
-        # 2. 在传统的SCRIPTS_DIR目录中查找
-        os.path.join(SCRIPTS_DIR, base_name),
-        # 3. 在项目根目录中查找
-        os.path.abspath(os.path.join(SCRIPTS_DIR, "..", base_name))
-    ]
-
-    # 查找首个存在的脚本路径
-    for path in possible_paths:
-        if os.path.exists(path):
-            logger.info(f"找到脚本: {path}")
-            return path
-
-    # 未找到脚本时，返回apps/scripts目录中的路径并记录警告
-    default_path = os.path.join(os.path.dirname(__file__), base_name)
-    logger.warning(f"找不到脚本 {base_name}，使用默认路径: {default_path}")
-    return default_path
-
-def copy_script(request):
-    """
-    复制脚本文件
-    """
+@api_view(['POST'])
+@csrf_exempt
+@permission_classes([permissions.AllowAny])
+def replay_cancel(request):
+    """取消正在执行的任务"""
     try:
-        # 从POST请求体中获取参数
         data = json.loads(request.body)
-        source_path = data.get('source_path')
-        new_name = data.get('new_name')
+        task_id = data.get('task_id')
 
-        if not source_path or not new_name:
-            return JsonResponse({'success': False, 'message': '未提供源文件路径或新文件名'}, status=400)
+        if not task_id:
+            return JsonResponse({
+                'success': False,
+                'message': '缺少task_id参数'
+            }, status=400)
 
-        # 确保新文件名只包含文件名，不包含路径
-        new_name = os.path.basename(new_name)
-
-        # 如果新文件名没有.json扩展名，添加该扩展名
-        if not new_name.endswith('.json'):
-            new_name += '.json'
-
-        # 获取源文件的完整路径
-        source_file = os.path.join(TESTCASE_DIR, os.path.basename(source_path))
-
-        # 创建目标文件的完整路径
-        target_file = os.path.join(TESTCASE_DIR, new_name)
-
-        # 检查源文件是否存在
-        if not os.path.exists(source_file):
-            return JsonResponse({'success': False, 'message': f'源文件不存在: {os.path.basename(source_path)}'}, status=404)
-
-        # 检查目标文件是否已存在
-        if os.path.exists(target_file):
-            return JsonResponse({'success': False, 'message': f'目标文件已存在: {new_name}'}, status=400)
-
-        # 复制文件
-        shutil.copy2(source_file, target_file)
-
-        # 修改文件内容中的名称（如果需要）
-        try:
-            with open(target_file, 'r', encoding='utf-8') as file:
-                content = file.read()
-
-            try:
-                script_data = json.loads(content)
-                # 如果脚本数据中有name字段，更新它
-                if isinstance(script_data, dict) and 'name' in script_data:
-                    original_name = script_data['name']
-                    script_data['name'] = f"复制 - {original_name}"
-
-                    # 写入更新后的内容
-                    with open(target_file, 'w', encoding='utf-8') as file:
-                        json.dump(script_data, file, indent=2, ensure_ascii=False)
-            except json.JSONDecodeError:
-                # 如果不是有效的JSON，跳过内容修改
-                logger.warning(f"无法解析复制后的脚本内容为JSON: {target_file}")
-        except Exception as e:
-            logger.warning(f"修改复制脚本内容时出错: {str(e)}")
-
-        logger.info(f"脚本复制成功: {source_file} -> {target_file}")
+        success = task_manager.cancel_task(task_id)
+        if not success:
+            return JsonResponse({
+                'success': False,
+                'message': '任务不存在或无法取消'
+            }, status=404)
 
         return JsonResponse({
             'success': True,
-            'message': '脚本复制成功',
-            'new_path': target_file,
-            'new_name': new_name
+            'message': '任务已成功取消',
+            'task_id': task_id
         })
 
     except Exception as e:
-        logger.error(f"复制脚本时出错: {str(e)}")
-        return JsonResponse({'success': False, 'message': f'复制脚本失败: {str(e)}'}, status=500)
+        logger.error(f"取消任务失败: {e}")
+        return JsonResponse({
+            'success': False,
+            'message': f'取消任务失败: {str(e)}'
+        }, status=500)
 
-def delete_script(request):
-    """
-    删除脚本文件
-    """
+# =====================
+# 存储管理API接口
+# =====================
+
+@api_view(['POST'])
+@csrf_exempt
+@permission_classes([permissions.AllowAny])
+def storage_status(request):
+    """获取存储状态信息"""
     try:
-        # 从POST请求体中获取参数
-        data = json.loads(request.body)
-        file_path = data.get('path')
-
-        if not file_path:
-            return JsonResponse({'success': False, 'message': '未提供文件路径'}, status=400)
-
-        # 确保只使用文件名，不使用完整路径，限制在指定目录内操作
-        safe_filename = os.path.basename(file_path)
-        full_path = os.path.join(TESTCASE_DIR, safe_filename)
-
-        # 检查文件是否存在
-        if not os.path.exists(full_path):
-            return JsonResponse({'success': False, 'message': f'文件不存在: {safe_filename}'}, status=404)
-
-        # 删除文件
-        os.remove(full_path)
-        logger.info(f"脚本删除成功: {full_path}")
+        from .storage_manager import get_storage_manager
+        storage_mgr = get_storage_manager()
+        status_info = storage_mgr.get_storage_status()
 
         return JsonResponse({
             'success': True,
-            'message': f'脚本已成功删除: {safe_filename}'
+            'data': status_info
         })
 
     except Exception as e:
-        logger.error(f"删除脚本时出错: {str(e)}")
-        return JsonResponse({'success': False, 'message': f'删除脚本失败: {str(e)}'}, status=500)
+        logger.error(f"获取存储状态失败: {e}")
+        return JsonResponse({
+            'success': False,
+            'message': f'获取存储状态失败: {str(e)}'
+        }, status=500)
+
+
+@api_view(['POST'])
+@csrf_exempt
+@permission_classes([permissions.AllowAny])
+def storage_cleanup(request):
+    """执行存储清理"""
+    try:
+        data = json.loads(request.body)
+        cleanup_type = data.get('type', 'auto')  # auto, emergency, logs, reports
+
+        from .storage_manager import get_storage_manager
+        storage_mgr = get_storage_manager()
+
+        if cleanup_type == 'emergency':
+            stats = storage_mgr.emergency_cleanup()
+        elif cleanup_type == 'logs':
+            days = data.get('days')
+            stats = storage_mgr.cleanup_old_logs(days)
+        elif cleanup_type == 'reports':
+            days = data.get('days')
+            stats = storage_mgr.cleanup_old_reports(days)
+        else:  # auto
+            stats = storage_mgr.auto_cleanup()
+            if stats is None:
+                return JsonResponse({
+                    'success': True,
+                    'message': '无需执行清理（距离上次清理时间过短）'
+                })
+
+        return JsonResponse({
+            'success': True,
+            'message': '清理完成',
+            'data': {
+                'files_deleted': stats.files_deleted,
+                'directories_deleted': stats.directories_deleted,
+                'space_freed_mb': round(stats.space_freed_mb, 2),
+                'errors': stats.errors
+            }
+        })
+
+    except Exception as e:
+        logger.error(f"执行存储清理失败: {e}")
+        return JsonResponse({
+            'success': False,
+            'message': f'执行存储清理失败: {str(e)}'
+        }, status=500)
+
