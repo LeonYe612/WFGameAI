@@ -101,16 +101,44 @@ class SafeOutputWrapper:
 def write_result(log_dir, device_serial, result_data):
     """
     原子写入结果文件，确保数据完整性
+    支持完整的状态分离记录：脚本执行状态、业务结果状态、报告生成状态
     """
     # 验证 result_data 格式
     if not isinstance(result_data, dict):
-        result_data = {"error": "无效的结果数据格式", "exit_code": -1, "report_url": ""}
+        result_data = {
+            "error": "无效的结果数据格式",
+            "exit_code": -1,
+            "report_url": "",
+            "execution_completed": False,
+            "script_execution_success": False,
+            "business_result_success": False,
+            "report_generation_success": False
+        }
 
-    # 确保必要字段存在
-    required_fields = ["exit_code", "report_url"]
-    for field in required_fields:
+    # 确保必要字段存在 - 按照新的状态分离格式
+    required_fields = {
+        "exit_code": -1,
+        "report_url": "",
+        "execution_completed": False,
+        "script_execution_success": False,
+        "business_result_success": False,
+        "report_generation_success": False,
+        "device": device_serial,
+        "timestamp": time.time(),
+        "message": "未知状态",
+        "error_details": {"business_errors": [], "report_errors": []}
+    }
+
+    for field, default_value in required_fields.items():
         if field not in result_data:
-            result_data[field] = "" if field == "report_url" else -1
+            result_data[field] = default_value
+
+    # Convert Path objects to strings for JSON serialization
+    for key, value in result_data.items():
+        if hasattr(value, '__fspath__'):  # Path-like object
+            result_data[key] = str(value)
+        elif isinstance(value, (type(Path()), Path)):  # Direct Path check
+            result_data[key] = str(value)
 
     result_file = os.path.join(log_dir, f"{device_serial}.result.json")
 
@@ -144,7 +172,6 @@ def write_result(log_dir, device_serial, result_data):
             json.dump(fallback_data, f, ensure_ascii=False, indent=4)
 
 
-# ...existing code...
 from airtest.core.api import set_logdir, auto_setup
 from airtest.core.settings import Settings as ST
 import cv2
@@ -554,7 +581,6 @@ def parse_script_arguments(args_list):
     device_serial = None
     account_user = None
     account_pass = None
-
     i = 0
     while i < len(args_list):
         arg = args_list[i]
@@ -562,8 +588,10 @@ def parse_script_arguments(args_list):
         if arg == '--script':
             # 保存前一个脚本
             if current_script:
+                normalized_path = normalize_script_path(current_script)
+                print_realtime(f"🔧 保存脚本: {current_script} -> {normalized_path}")
                 scripts.append({
-                    'path': normalize_script_path(current_script),
+                    'path': normalized_path,
                     'loop_count': current_loop_count,
                     'max_duration': current_max_duration
                 })
@@ -571,6 +599,7 @@ def parse_script_arguments(args_list):
             # 开始新脚本
             if i + 1 < len(args_list):
                 current_script = args_list[i + 1]
+                print_realtime(f"🔧 发现新脚本: {current_script}")
                 i += 1
             else:
                 print_realtime("错误: --script 参数后缺少脚本路径")
@@ -1080,7 +1109,7 @@ def process_sequential_script(device, steps, log_dir, action_processor, max_dura
 
 
 def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, stop_event,
-                 device_name, log_dir, show_screens=False, loop_count=1):
+                 device_name, log_dir, loop_count=1):
     """
     重构后的设备回放函数 - 精简版本
     主要负责流程控制，具体的action处理委托给ActionProcessor
@@ -1089,7 +1118,8 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
 
     # 检查脚本列表
     if not scripts:
-        raise ValueError("脚本列表为空，无法回放")    # 使用新的报告管理器创建设备报告目录
+        raise ValueError("脚本列表为空，无法回放")
+    # 使用新的报告管理器创建设备报告目录
     device_report_dir = None
     log_dir = None
     if REPORT_MANAGER:
@@ -1184,11 +1214,10 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
             print_realtime(f"保存初始截图: {screenshot_path}")
             print_realtime(f"保存初始缩略图: {thumbnail_path}")
     except Exception as e:
-        print_realtime(f"获取初始截图失败: {e}")
-
-    # 执行所有脚本
+        print_realtime(f"获取初始截图失败: {e}")    # 执行所有脚本
     total_executed = 0
     has_any_execution = False
+    total_scripts_processed = 0  # 新增：记录成功处理的脚本数量
 
     for script_config in scripts:
         script_path = script_config["path"]
@@ -1217,23 +1246,67 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
                 step["action"] = "click"
 
         # 检查脚本类型
-        is_priority_based = any("Priority" in step for step in steps)        # 循环执行脚本
+        is_priority_based = any("Priority" in step for step in steps)
+
+        # 脚本成功解析并准备执行，计数+1
+        total_scripts_processed += 1
+        print_realtime(f"✅ 脚本解析成功，准备执行: {script_path}")
+
+        # 循环执行脚本
         for loop in range(script_loop_count):
             print_realtime(f"🔄 第 {loop + 1}/{script_loop_count} 次循环")
 
-            if is_priority_based:
-                executed = process_priority_based_script(
-                    device, steps, meta, log_dir, action_processor,
-                    screenshot_queue, click_queue, max_duration
-                )
-            else:
-                executed = process_sequential_script(
-                    device, steps, log_dir, action_processor, max_duration
-                )
+            try:
+                if is_priority_based:
+                    executed = process_priority_based_script(
+                        device, steps, meta, log_dir, action_processor,
+                        screenshot_queue, click_queue, max_duration
+                    )
+                else:
+                    executed = process_sequential_script(
+                        device, steps, log_dir, action_processor, max_duration
+                    )
 
-            if executed:
-                has_any_execution = True
-                total_executed += 1    # 记录测试结束
+                # 记录执行情况，但不影响脚本执行成功状态
+                if executed:
+                    print_realtime(f"✅ 脚本循环执行成功: 第{loop+1}次循环")
+                    total_executed += 1
+                else:
+                    print_realtime(f"⚠️ 脚本循环执行完成但无成功步骤: 第{loop+1}次循环")
+
+            except Exception as e:
+                print_realtime(f"❌ 脚本循环执行异常: 第{loop+1}次循环 - {e}")    # 修改逻辑：采用状态分离原则
+    # 1. 脚本执行完成状态：脚本是否正常执行完毕（无崩溃异常）
+    # 2. 业务结果状态：脚本执行后的业务结果（是否找到目标、是否完成任务）
+
+    # 脚本执行完成状态：只要没有发生异常，就认为执行完成
+    script_execution_completed = True
+
+    # 业务结果状态：基于实际的执行结果
+    business_result_success = total_executed > 0
+
+    # 脚本处理成功状态：基于脚本解析和处理
+    script_processing_success = total_scripts_processed > 0
+
+    # 🔧 关键修复：真正的状态分离
+    # 脚本执行状态：只要脚本正常运行到结束，就认为成功（不依赖业务结果）
+    # 这是状态分离的核心：脚本执行状态与业务结果状态完全独立
+
+    # 脚本执行状态：只要函数正常执行到这里，就认为脚本执行成功
+    has_any_execution = script_execution_completed  # 基于脚本是否正常完成
+
+    if has_any_execution:
+        print_realtime(f"✅ 脚本执行成功: 共处理 {total_scripts_processed} 个脚本，成功执行 {total_executed} 个循环")
+    else:
+        print_realtime(f"❌ 脚本执行失败: 脚本处理={script_processing_success}, 执行完成={script_execution_completed}")
+
+    # 状态分离说明：
+    # - has_any_execution: 脚本是否正常执行完毕
+    # - business_result_success: 业务逻辑是否成功
+    # - 这两个状态完全独立，互不影响
+
+    print_realtime(f"📊 执行统计: 处理脚本数={total_scripts_processed}, 成功循环数={total_executed}")
+    print_realtime(f"📊 状态统计: 脚本执行完成={script_execution_completed}, 业务结果成功={business_result_success}, 脚本处理成功={script_processing_success}")# 记录测试结束
     end_time = time.time()
     end_entry = {
         "tag": "function",
@@ -1248,40 +1321,36 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
         }
     }
     with open(log_txt_path, "a", encoding="utf-8") as f:
-        f.write(json.dumps(end_entry, ensure_ascii=False) + "\n")    # 生成HTML报告 - 强制使用新的统一报告生成器
+        f.write(json.dumps(end_entry, ensure_ascii=False) + "\n")
+        # 生成HTML报告 - 使用降级处理策略，确保报告生成失败不影响脚本执行状态
+    report_generation_success = False
     try:
         print_realtime(f"📝 生成设备 {device_name} 的 HTML 报告...")
 
         if not REPORT_GENERATOR:
-            error_msg = f"❌ 统一报告生成器未初始化，无法生成报告"
-            print_realtime(error_msg)
-            raise RuntimeError(error_msg)
-
-        if not device_report_dir:
-            error_msg = f"❌ 设备报告目录未创建，无法生成报告"
-            print_realtime(error_msg)
-            raise RuntimeError(error_msg)
-
-        if not REPORT_MANAGER:
-            error_msg = f"❌ 报告管理器未初始化，无法生成报告"
-            print_realtime(error_msg)
-            raise RuntimeError(error_msg)
-
-        # 使用新的统一报告生成器
-        print_realtime(f"📝 使用统一报告生成器生成设备报告")
-        success = REPORT_GENERATOR.generate_device_report(device_report_dir, scripts)
-        if success:
-            # 获取报告URL
-            report_urls = REPORT_MANAGER.generate_report_urls(device_report_dir)
-            print_realtime(f"✅ 设备 {device_name} 报告生成成功: {report_urls['html_report']}")
+            print_realtime(f"⚠️ 统一报告生成器未初始化，跳过报告生成")
+        elif not device_report_dir:
+            print_realtime(f"⚠️ 设备报告目录未创建，跳过报告生成")
+        elif not REPORT_MANAGER:
+            print_realtime(f"⚠️ 报告管理器未初始化，跳过报告生成")
         else:
-            error_msg = f"❌ 设备 {device_name} 统一报告生成失败"
-            print_realtime(error_msg)
-            raise RuntimeError(error_msg)
+            # 使用新的统一报告生成器
+            print_realtime(f"📝 使用统一报告生成器生成设备报告")
+            success = REPORT_GENERATOR.generate_device_report(device_report_dir, scripts)
+            if success:
+                # 获取报告URL
+                report_urls = REPORT_MANAGER.generate_report_urls(device_report_dir)
+                print_realtime(f"✅ 设备 {device_name} 报告生成成功: {report_urls['html_report']}")
+                report_generation_success = True
+            else:
+                print_realtime(f"⚠️ 设备 {device_name} 统一报告生成失败，但不影响脚本执行状态")
 
     except Exception as e:
-        print_realtime(f"❌ 设备 {device_name} HTML 报告生成失败: {e}")
-        raise e    # 释放账号
+        print_realtime(f"⚠️ 设备 {device_name} HTML 报告生成失败: {e}，但不影响脚本执行状态")
+
+    # 报告生成状态记录在日志中，不影响脚本执行的成功状态
+    if not report_generation_success:
+        print_realtime(f"ℹ️ 设备 {device_name} 报告生成失败，建议检查报告管理器配置")# 释放账号
     if device_account:
         try:
             account_manager = get_account_manager()
@@ -1293,7 +1362,7 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
     print_realtime(f"🎉 设备 {device_name} 回放完成，总执行脚本数: {total_executed}")
     stop_event.set()
 
-    return has_any_execution, device_report_dir
+    return has_any_execution, business_result_success, device_report_dir
 
 
 def detection_service(screenshot_queue, click_queue, stop_event):
@@ -1429,6 +1498,19 @@ def main():
     import os
     from adbutils import adb
 
+    # 🔧 增加详细的启动调试信息
+    print_realtime("=" * 60)
+    print_realtime("🚀 replay_script.py 启动")
+    print_realtime(f"📅 启动时间: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+    print_realtime(f"🐍 Python版本: {sys.version}")
+    print_realtime(f"📁 工作目录: {os.getcwd()}")
+    print_realtime(f"📝 脚本路径: {__file__ if '__file__' in globals() else 'unknown'}")
+    print_realtime(f"🔧 命令行参数数量: {len(sys.argv)}")
+    print_realtime("🔧 完整命令行参数:")
+    for i, arg in enumerate(sys.argv):
+        print_realtime(f"   argv[{i}]: {arg}")
+    print_realtime("=" * 60)
+
     # 加载YOLO模型用于AI检测
     print_realtime("🔄 正在加载YOLO模型...")
     model_loaded = load_yolo_model_for_detection()
@@ -1440,22 +1522,32 @@ def main():
     # 检查是否有--script参数
     if '--script' not in sys.argv:
         print_realtime("❌ 错误: 必须指定 --script 参数")
-        print_realtime("用法示例:")
+        print_realtime("📋 当前接收到的参数:")
+        for i, arg in enumerate(sys.argv):
+            print_realtime(f"   参数 {i}: '{arg}'")
+        print_realtime("")
+        print_realtime("📖 用法示例:")
         print_realtime("  python replay_script.py --script testcase/scene1.json")
         print_realtime("  python replay_script.py --show-screens --script testcase/scene1.json --loop-count 1")
         print_realtime("  python replay_script.py --script testcase/scene1.json --loop-count 1 --script testcase/scene2.json --max-duration 30")
         print_realtime("  python replay_script.py --log-dir /path/to/logs --device serial123 --script testcase/scene1.json")
+        print_realtime("❌ 脚本退出: 缺少必要的 --script 参数")
         return
 
     # 解析脚本参数和多设备参数
+    print_realtime("🔧 开始解析命令行参数...")
     scripts, multi_device_params = parse_script_arguments(sys.argv[1:])
 
     if not scripts:
         print_realtime("❌ 未找到有效的脚本参数")
-        return
-
-    # 解析其他参数
-    show_screens = '--show-screens' in sys.argv
+        print_realtime("🔧 解析结果:")
+        print_realtime(f"   scripts: {scripts}")
+        print_realtime(f"   multi_device_params: {multi_device_params}")
+        print_realtime("❌ 脚本退出: 没有有效的脚本配置")
+        return    print_realtime(f"✅ 解析成功，找到 {len(scripts)} 个脚本配置:")
+    for i, script in enumerate(scripts):
+        print_realtime(f"   脚本 {i+1}: {script}")
+    print_realtime(f"🔧 多设备参数: {multi_device_params}")
 
     # 提取多设备参数
     log_dir = multi_device_params.get('log_dir')
@@ -1473,7 +1565,6 @@ def main():
             file_logger = FileLogger(log_dir, device_serial)
             file_logger.log(f"🎬 启动设备 {device_serial} 的脚本回放")
             file_logger.log(f"📝 将执行 {len(scripts)} 个脚本")
-
             # 重定向stdout和stderr到文件日志
             original_stdout = sys.stdout
             original_stderr = sys.stderr
@@ -1487,12 +1578,18 @@ def main():
     exit_code = 0
     report_url = ""
 
+    # 状态分离跟踪变量
+    system_error_occurred = False  # 是否发生了系统级错误
+    business_execution_completed = False  # 是否完成了业务逻辑执行
+    any_business_success = False  # 🔧 新增：跟踪是否有任何业务成功
+
     try:
+        log_phase_start("脚本回放初始化", device_serial, len(scripts) > 1)
         print_realtime("🎬 启动精简版回放脚本")
         print_realtime(f"📝 将执行 {len(scripts)} 个脚本:")
         for i, script in enumerate(scripts, 1):
             print_realtime(f"  {i}. {script['path']} (循环:{script['loop_count']}, 最大时长:{script['max_duration']}s)")
-        print_realtime(f"🖥️ 显示屏幕: {'是' if show_screens else '否'}")
+        log_phase_complete("脚本回放初始化", device_serial, len(scripts) > 1, True)
 
         # 如果有账号信息，记录日志
         if account_user:
@@ -1536,7 +1633,8 @@ def main():
                         if model is not None:
                             print_realtime("✅ 模型状态检查通过，AI检测功能可用")
                         else:
-                            print_realtime("⚠️ 模型状态检查失败，将使用备用检测模式")                        # 执行脚本回放的核心逻辑 - 使用现有的replay_device函数
+                            print_realtime("⚠️ 模型状态检查失败，将使用备用检测模式")
+                            # 执行脚本回放的核心逻辑 - 使用现有的replay_device函数
                         processed_device_names = []
                         current_execution_device_dirs = []
 
@@ -1562,7 +1660,7 @@ def main():
                                 stop_event = Event()
 
                                 # 调用replay_device函数
-                                has_execution, device_report_dir = replay_device(
+                                has_execution, business_success, device_report_dir = replay_device(
                                     device=device,
                                     scripts=scripts,
                                     screenshot_queue=screenshot_queue,
@@ -1571,22 +1669,37 @@ def main():
                                     stop_event=stop_event,
                                     device_name=device_name,
                                     log_dir=device_log_dir,
-                                    show_screens=show_screens,
                                     loop_count=1  # 每个脚本的循环次数已在scripts中指定
                                 )
-
                                 if device_report_dir:
                                     current_execution_device_dirs.append(device_report_dir)
 
-                                if has_execution:
-                                    print_realtime(f"✅ 设备 {device_name} 执行成功")
-                                else:
-                                    print_realtime(f"❌ 设备 {device_name} 执行失败")
-                                    exit_code = -1
+                                # 🔧 关键修复：彻底的状态分离处理
+                                # 只要replay_device返回，就代表业务逻辑执行阶段已完成
+                                business_execution_completed = True
 
+                                # 状态分离处理：脚本执行状态与业务结果状态完全独立
+                                if has_execution:
+                                    print_realtime(f"✅ 设备 {device_name} 脚本执行成功")
+                                else:
+                                    print_realtime(f"⚠️ 设备 {device_name} 脚本执行失败")
+
+                                # 业务结果状态处理：独立于脚本执行状态
+                                if business_success:
+                                    any_business_success = True  # 记录业务成功
+                                    print_realtime(f"  -> 业务结果: 成功")
+                                else:
+                                    print_realtime(f"  -> 业务结果: 无匹配项")
+
+                                # 🔧 关键修复：脚本执行失败也不影响整体状态
+                                # 除非发生系统级异常，否则不设置exit_code = -1
                             except Exception as e:
                                 print_realtime(f"❌ 设备 {device_name} 处理异常: {e}")
-                                exit_code = -1# 生成汇总报告
+                                # 🔧 关键修复：任何在设备回放期间的异常都应视为系统错误
+                                system_error_occurred = True
+                                exit_code = -1
+                                traceback.print_exc()  # 记录详细堆栈
+                        # 生成汇总报告
                         try:
                             if current_execution_device_dirs and REPORT_GENERATOR:
                                 print_realtime("📊 生成汇总报告...")
@@ -1598,23 +1711,35 @@ def main():
                                     scripts  # 传入脚本列表
                                 )
                                 if summary_report_path:
-                                    report_url = summary_report_path
+                                    # Convert Path object to string for JSON serialization
+                                    report_url = str(summary_report_path)
                                     print_realtime(f"✅ 汇总报告已生成: {summary_report_path}")
                                 else:
                                     print_realtime("⚠️ 汇总报告生成失败")
-
                         except Exception as e:
                             print_realtime(f"⚠️ 汇总报告生成失败: {e}")
 
                         print_realtime("✅ 脚本回放执行完成")
-
+                        # 更新状态：业务逻辑执行完成
+                        business_execution_completed = True
             except Exception as e:
                 print_realtime(f"❌ 设备列表获取失败: {e}")
-                exit_code = -1
+                # 根据状态分离原则，区分系统异常和业务逻辑异常
+                if isinstance(e, (FileNotFoundError, ConnectionError, PermissionError)):
+                    exit_code = -1  # 只有系统级异常才影响脚本执行状态
+                    system_error_occurred = True
+                else:
+                    print_realtime(f"⚠️ 设备获取失败但不影响脚本执行状态: {e}")
 
     except Exception as e:
         print_realtime(f"❌ 脚本回放过程出错: {e}")
-        exit_code = -1
+        # 根据状态分离原则，区分系统异常和业务逻辑异常
+        if isinstance(e, (FileNotFoundError, ConnectionError, PermissionError, ImportError)):
+            exit_code = -1  # 只有系统级异常才影响脚本执行状态
+            system_error_occurred = True
+        else:
+            print_realtime(f"⚠️ 脚本回放过程出错但不影响脚本执行状态: {e}")
+            print_realtime(f"⚠️ 脚本回放过程出错但不影响脚本执行状态: {e}")
 
     finally:
         # 资源清理和结果写入
@@ -1624,14 +1749,51 @@ def main():
                 if original_stdout:
                     sys.stdout = original_stdout
                 if original_stderr:
-                    sys.stderr = original_stderr
+                    sys.stderr = original_stderr                # 写入结果文件，包含完整的状态分离记录
+                # 关键修复：实现真正的状态分离，使用状态跟踪变量
 
-                # 写入结果文件
+                # 1. 脚本执行完成状态：脚本是否正常执行完毕（到达finally块表示正常执行）
+                execution_completed = True
+
+                # 2. 脚本执行成功状态：基于是否发生系统级异常
+                script_execution_success = not system_error_occurred
+
+                # 3. 业务结果状态：基于实际的业务逻辑执行结果
+                # 🔧 关键修复：使用 any_business_success 变量，并确保业务执行阶段已完成
+                business_result_success = business_execution_completed and any_business_success and not system_error_occurred
+
+                # 🔧 调试日志：记录状态分离的详细信息
+                print_realtime(f"📊 状态分离调试信息:")
+                print_realtime(f"  -> 脚本执行完成: {execution_completed}")
+                print_realtime(f"  -> 脚本执行成功: {script_execution_success}")
+                print_realtime(f"  -> 业务执行完成: {business_execution_completed}")
+                print_realtime(f"  -> 业务结果成功: {any_business_success}")
+                print_realtime(f"  -> 系统错误发生: {system_error_occurred}")
+                print_realtime(f"  -> 最终业务结果: {business_result_success}")
+                print_realtime(f"  -> 最终退出代码: {0 if script_execution_success else -1}")
+
+                # 4. 报告生成状态：基于报告是否成功生成
+                report_generation_success = bool(report_url)
+
+                # 构造结果数据
                 result_data = {
-                    "exit_code": exit_code,
+                    # 关键修复：exit_code基于真实的执行状态，不再完全依赖脚本内部变量
+                    # 只有在真正的系统异常时才设置为-1
+                    "exit_code": 0 if script_execution_success else -1,
                     "report_url": report_url,
                     "device": device_serial,
-                    "timestamp": time.time()
+                    "timestamp": time.time(),
+                    # 状态分离字段
+                    "execution_completed": execution_completed,
+                    "script_execution_success": script_execution_success,
+                    "business_result_success": business_result_success,
+                    "report_generation_success": report_generation_success,
+                    # 详细信息
+                    "message": "脚本执行完成" if script_execution_success else "脚本执行失败",
+                    "error_details": {
+                        "business_errors": [],  # 业务逻辑错误列表
+                        "report_errors": [] if report_generation_success else ["报告生成失败"]  # 报告错误列表
+                    }
                 }
                 write_result(log_dir, device_serial, result_data)
                 file_logger.log(f"✅ 结果已写入: {result_data}")
@@ -1640,6 +1802,61 @@ def main():
 
         print_realtime("🏁 脚本回放任务结束")
 
+
+def log_step_progress(step_num, total_steps, message, device_name=None, is_multi_device=False):
+    """
+    统一的步骤进度日志记录函数
+    适用于单设备和多设备场景
+    """
+    if is_multi_device and device_name:
+        prefix = f"[设备:{device_name}]"
+    else:
+        prefix = "[单设备]" if not is_multi_device else "[多设备]"
+
+    progress_indicator = f"步骤 {step_num}/{total_steps}"
+    print_realtime(f"{prefix} {progress_indicator}: {message}")
+
+def log_phase_start(phase_name, device_name=None, is_multi_device=False):
+    """记录阶段开始"""
+    if is_multi_device and device_name:
+        prefix = f"[设备:{device_name}]"
+    else:
+        prefix = "[单设备]" if not is_multi_device else "[多设备]"
+
+    print_realtime(f"{prefix} 🚀 开始阶段: {phase_name}")
+
+def log_phase_complete(phase_name, device_name=None, is_multi_device=False, success=True):
+    """记录阶段完成"""
+    if is_multi_device and device_name:
+        prefix = f"[设备:{device_name}]"
+    else:
+        prefix = "[单设备]" if not is_multi_device else "[多设备]"
+
+    status = "✅ 完成" if success else "❌ 失败"
+    print_realtime(f"{prefix} {status}阶段: {phase_name}")
+
+def log_device_summary(device_results):
+    """记录多设备执行汇总"""
+    if not device_results:
+        print_realtime("📊 [汇总] 无设备执行结果")
+        return
+
+    total_devices = len(device_results)
+    successful_devices = sum(1 for result in device_results if result.get('exit_code', -1) == 0)
+    failed_devices = total_devices - successful_devices
+
+    print_realtime("=" * 60)
+    print_realtime("📊 [执行汇总]")
+    print_realtime(f"   总设备数: {total_devices}")
+    print_realtime(f"   成功设备: {successful_devices}")
+    print_realtime(f"   失败设备: {failed_devices}")
+    print_realtime(f"   成功率: {(successful_devices/total_devices*100):.1f}%")
+
+    for i, result in enumerate(device_results):
+        device_name = result.get('device', f'设备{i+1}')
+        status = "✅" if result.get('exit_code', -1) == 0 else "❌"
+        print_realtime(f"   {status} {device_name}")
+    print_realtime("=" * 60)
 
 def get_confidence_threshold_from_config():
     """

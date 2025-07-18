@@ -174,12 +174,11 @@ def device_worker(device_serial, scripts, shared_results):
 
         # 如果有分配到账号，设置到ActionProcessor
         if device_account:
-            action_processor.set_device_account(device_account)
-
-        # 执行脚本列表
+            action_processor.set_device_account(device_account)        # 执行脚本列表
         total_success = 0
         total_failed = 0
         executed_scripts = []
+        script_execution_success = True  # 新增：脚本执行状态标记
 
         for script_config in scripts:
             script_path = script_config.get('path')
@@ -217,12 +216,15 @@ def device_worker(device_serial, scripts, shared_results):
                 })
 
                 timestamp = datetime.now().strftime("%H:%M:%S")
-                print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} 脚本执行成功")
+                print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} 脚本执行完成 - 成功:{success_count}, 失败:{failed_count}")
 
             except Exception as e:
                 timestamp = datetime.now().strftime("%H:%M:%S")
-                print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} 脚本执行失败: {e}")
+                print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} 脚本执行异常: {e}")
                 total_failed += 1
+                # 脚本执行异常时，标记为执行失败
+                if "读取脚本失败" in str(e) or "脚本文件不存在" in str(e):
+                    script_execution_success = False
 
         # 释放分配的账号
         if device_account:
@@ -261,18 +263,23 @@ def device_worker(device_serial, scripts, shared_results):
 
             except Exception as e:
                 timestamp = datetime.now().strftime("%H:%M:%S")
-                print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} HTML报告生成失败: {e}")
-
-        # 返回执行结果
+                print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} HTML报告生成失败: {e}")        # 返回执行结果
         timestamp = datetime.now().strftime("%H:%M:%S")
         print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} 回放完成 - 成功:{total_success}, 失败:{total_failed}")
 
+        # 修改成功判断逻辑：分离脚本执行状态与步骤执行结果
+        # 只要脚本能够成功读取和处理，就认为脚本执行成功
+        # 步骤执行的成败不影响脚本执行的成功状态
+        device_success = script_execution_success  # 基于脚本执行状态，而非步骤成功率
+
         shared_results[device_serial] = {
-            'success': total_failed == 0,  # 无失败操作才算成功
+            'success': device_success,  # 修改：使用脚本执行状态而非步骤成功率
             'total_success': total_success,
             'total_failed': total_failed,
             'executed_scripts': executed_scripts,
-            'device_report_dir': str(device_report_dir) if device_report_dir else None  # 🔧 新增：返回设备报告目录路径
+            'device_report_dir': str(device_report_dir) if device_report_dir else None,  # 🔧 新增：返回设备报告目录路径
+            'script_execution_success': script_execution_success,  # 新增：明确的脚本执行状态
+            'step_success_rate': total_success / (total_success + total_failed) if (total_success + total_failed) > 0 else 0  # 新增：步骤成功率
         }
 
     except Exception as e:

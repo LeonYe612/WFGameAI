@@ -271,7 +271,6 @@ def main():
     device_serial = multi_device_params.get('device_serial')
     account_user = multi_device_params.get('account_user')
     account_pass = multi_device_params.get('account_pass')
-    show_screens = '--show-screens' in sys.argv
 
     # 如果指定了log_dir和device_serial，则启用文件日志模式
     file_logger = None

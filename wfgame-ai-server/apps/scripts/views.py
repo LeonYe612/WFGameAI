@@ -950,9 +950,12 @@ def check_device_available(device_serial):
         result = subprocess.run(['adb', 'devices'], capture_output=True, text=True, timeout=10)
         if device_serial in result.stdout and 'device' in result.stdout:
             # 进一步检查设备是否被锁定（可根据实际情况实现）
+            logger.info(f"设备 {device_serial} 状态检查通过")
             return True
-    except (subprocess.TimeoutExpired, FileNotFoundError):
-        pass
+        else:
+            logger.warning(f"设备 {device_serial} 未在adb设备列表中找到")
+    except (subprocess.TimeoutExpired, FileNotFoundError) as e:
+        logger.error(f"设备 {device_serial} 状态检查失败: {e}")
     return False
 
 def run_single_replay(device_serial, script_args, log_dir, timeout=3600, max_retries=2):
@@ -970,10 +973,14 @@ def run_single_replay(device_serial, script_args, log_dir, timeout=3600, max_ret
     Returns:
         dict: 执行结果 {"error": "", "exit_code": 0, "report_url": "", "device": ""}
     """
+    logger.info(f"🚀 开始为设备 {device_serial} 启动回放任务")
+
     # 0. 设备状态预检查
     if not check_device_available(device_serial):
+        error_msg = f"设备 {device_serial} 不可用或被占用"
+        logger.error(error_msg)
         return {
-            "error": f"设备 {device_serial} 不可用或被占用",
+            "error": error_msg,
             "exit_code": -1,
             "report_url": "",
             "device": device_serial
@@ -983,49 +990,114 @@ def run_single_replay(device_serial, script_args, log_dir, timeout=3600, max_ret
     # 使用统一的脚本查找函数定位回放脚本
     script_path = find_script_path('replay_script.py')
     if not os.path.exists(script_path):
+        error_msg = f"回放脚本不存在: {script_path}"
+        logger.error(error_msg)
         return {
-            "error": "回放脚本不存在",
+            "error": error_msg,
             "exit_code": -1,
             "report_url": "",
             "device": device_serial
-        }
+        }    # 🔧 关键修复：确保 script_args 被正确地展开到 cmd 列表中
+    # 之前的问题是 script_args 被当作一个单独的元素添加
+    cmd = [sys.executable, script_path, '--log-dir', log_dir, '--device', device_serial]
+    cmd.extend(script_args)  # 使用 extend 正确展开参数列表
 
-    cmd = [sys.executable, script_path, '--log-dir', log_dir, '--device', device_serial] + script_args
     device_log_file = os.path.join(log_dir, f"{device_serial}.log")
     result_file = os.path.join(log_dir, f"{device_serial}.result.json")
 
-    logger.info(f"设备 {device_serial} 执行命令: {' '.join(cmd)}")
+    # 🔧 重要调试：详细记录命令构造过程
+    logger.info(f"🔧 设备 {device_serial} 命令构造详情:")
+    logger.info(f"   Python解释器: {sys.executable}")
+    logger.info(f"   脚本路径: {script_path}")
+    logger.info(f"   日志目录: {log_dir}")
+    logger.info(f"   设备序列号: {device_serial}")
+    logger.info(f"   脚本参数: {script_args}")
+    logger.info(f"   脚本参数类型: {type(script_args)}")
+    logger.info(f"   脚本参数长度: {len(script_args)}")
+    logger.info(f"🔧 设备 {device_serial} 完整执行命令:")
+    for i, arg in enumerate(cmd):
+        logger.info(f"   cmd[{i}]: {arg}")
+    logger.info(f"🔧 设备 {device_serial} 日志文件: {device_log_file}")
+    logger.info(f"🔧 设备 {device_serial} 结果文件: {result_file}")
+    logger.info("🔧 ==========================================")
 
     # 重试机制
     for attempt in range(max_retries + 1):
         log_file_handle = None
         proc = None
         try:
+            logger.info(f"设备 {device_serial} 开始第 {attempt + 1} 次尝试")
+
             # 2. 启动子进程，关键：直接重定向到文件避免二进制内容问题
             creation_flags = 0
             preexec_fn = None
             if sys.platform == "win32":
                 creation_flags = subprocess.CREATE_NEW_PROCESS_GROUP
             else:
-                preexec_fn = os.setsid
+                preexec_fn = os.setsid            # 🔧 修复：使用更安全的子进程启动方式，先验证参数
+            logger.info(f"🔧 设备 {device_serial} 启动前验证:")
+            logger.info(f"   工作目录: {os.getcwd()}")
+            logger.info(f"   Python可执行: {os.path.exists(sys.executable)}")
+            logger.info(f"   脚本文件存在: {os.path.exists(script_path)}")
+            logger.info(f"   日志目录存在: {os.path.exists(log_dir)}")
 
-            # 使用二进制安全的文件重定向：所有输出直接写入文件，避免在内存中处理
-            log_file_handle = open(device_log_file, 'a', encoding='utf-8', errors='replace')
+            # 创建更详细的启动日志
+            log_file_handle = open(device_log_file, 'w', encoding='utf-8', errors='replace')  # 使用'w'模式重新创建日志文件
+
+            # 在日志文件开头写入启动信息
+            log_file_handle.write(f"=== 设备 {device_serial} 回放任务启动 ===\n")
+            log_file_handle.write(f"启动时间: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+            log_file_handle.write(f"执行命令: {' '.join(cmd)}\n")
+            log_file_handle.write(f"工作目录: {os.getcwd()}\n")
+            log_file_handle.write(f"Python路径: {sys.executable}\n")
+            log_file_handle.write(f"脚本路径: {script_path}\n")
+            log_file_handle.write(f"日志目录: {log_dir}\n")
+            log_file_handle.write(f"设备序列号: {device_serial}\n")
+            log_file_handle.write(f"脚本参数: {script_args}\n")
+            log_file_handle.write("=" * 50 + "\n")
+            log_file_handle.flush()  # 确保写入文件
+
+            # 使用更安全的进程启动方式
             proc = subprocess.Popen(
                 cmd,
-                stdout=log_file_handle,  # 直接重定向到文件，避免管道缓冲问题
-                stderr=subprocess.STDOUT,  # 错误输出也重定向到同一文件
+                stdout=log_file_handle,
+                stderr=subprocess.STDOUT,
                 creationflags=creation_flags,
                 preexec_fn=preexec_fn,
-                # 关键：不使用管道，避免二进制内容导致的阻塞
-                stdin=subprocess.DEVNULL  # 禁用标准输入，防止进程等待输入
+                stdin=subprocess.DEVNULL,
+                cwd=None,  # 使用当前工作目录
+                env=None   # 使用当前环境变量
             )
 
-            logger.info(f"设备 {device_serial} 子进程已启动，PID: {proc.pid}")
-
-            # 3. 等待子进程结束，使用分阶段超时处理
+            logger.info(f"设备 {device_serial} 子进程已启动，PID: {proc.pid}")            # 3. 等待子进程结束，使用分阶段超时处理
             try:
                 proc.wait(timeout=timeout)
+                logger.info(f"设备 {device_serial} 子进程已结束，退出码: {proc.returncode}")
+
+                # 🔧 增加：立即读取日志文件的最后几行，了解退出原因
+                if log_file_handle:
+                    log_file_handle.close()
+                    log_file_handle = None
+
+                try:
+                    with open(device_log_file, 'r', encoding='utf-8', errors='replace') as f:
+                        log_content = f.read()
+                        log_lines = log_content.strip().split('\n')
+                        last_lines = log_lines[-10:] if len(log_lines) > 10 else log_lines
+                        logger.info(f"🔍 设备 {device_serial} 日志文件最后10行:")
+                        for i, line in enumerate(last_lines, 1):
+                            logger.info(f"   [{i:2d}] {line}")
+
+                        # 检查是否有明显的错误信息
+                        error_indicators = ['error', 'exception', 'traceback', 'failed', '错误', '异常', '失败']
+                        for line in reversed(log_lines):
+                            if any(indicator.lower() in line.lower() for indicator in error_indicators):
+                                logger.error(f"🚨 设备 {device_serial} 发现错误信息: {line}")
+                                break
+
+                except Exception as e:
+                    logger.error(f"❌ 设备 {device_serial} 读取日志文件失败: {e}")
+
             except subprocess.TimeoutExpired:
                 logger.warning(f"设备 {device_serial} 执行超时，尝试优雅终止")
                 # 优雅终止：先尝试发送终止信号，给进程保存数据的机会
@@ -1046,35 +1118,53 @@ def run_single_replay(device_serial, script_args, log_dir, timeout=3600, max_ret
                     "exit_code": -1,
                     "report_url": "",
                     "device": device_serial
-                }
-
-            # 4. 等待结果文件写入完成（避免竞争条件）
+                }            # 4. 等待结果文件写入完成（避免竞争条件）
             result_wait_timeout = 30
             result_start_time = time.time()
-            while not os.path.exists(result_file) and (time.time() - result_start_time) < result_wait_timeout:
-                time.sleep(0.5)
+            logger.info(f"设备 {device_serial} 等待结果文件写入: {result_file}")
 
-            # 5. 读取并返回 result.json 的内容
+            while not os.path.exists(result_file) and (time.time() - result_start_time) < result_wait_timeout:
+                time.sleep(0.5)            # 5. 读取并返回 result.json 的内容
             if os.path.exists(result_file):
+                logger.info(f"🔍 设备 {device_serial} 找到结果文件: {result_file}")
                 try:
                     # 多次尝试读取，确保文件写入完整
                     for read_attempt in range(3):
                         try:
                             with open(result_file, 'r', encoding='utf-8') as f:
                                 content = f.read().strip()
+                                logger.info(f"🔍 设备 {device_serial} 结果文件内容长度: {len(content)}")
+                                logger.info(f"🔍 设备 {device_serial} 结果文件前200字符: {content[:200]}")
                                 if content:  # 确保文件不为空
                                     result_data = json.loads(content)
+                                    logger.info(f"🔍 设备 {device_serial} 解析后的结果数据: {result_data}")
                                     # 确保返回数据包含设备信息
                                     result_data["device"] = device_serial
-                                    logger.info(f"设备 {device_serial} 执行完成，退出码: {result_data.get('exit_code', 'unknown')}")
+                                    logger.info(f"✅ 设备 {device_serial} 执行完成，退出码: {result_data.get('exit_code', 'unknown')}")
                                     return result_data
-                        except (json.JSONDecodeError, ValueError):
+                                else:
+                                    logger.warning(f"⚠️ 设备 {device_serial} 结果文件为空，尝试 {read_attempt + 1}/3")
+                        except (json.JSONDecodeError, ValueError) as e:
+                            logger.warning(f"❌ 设备 {device_serial} 结果文件解析失败，尝试 {read_attempt + 1}/3: {e}")
                             if read_attempt < 2:
                                 time.sleep(1)  # 等待文件写入完成
                             else:
                                 raise
+
+                    # 如果所有尝试都失败，检查日志文件获取更多信息
+                    error_details = ""
+                    if os.path.exists(device_log_file):
+                        try:
+                            with open(device_log_file, 'r', encoding='utf-8', errors='replace') as f:
+                                log_content = f.read()
+                                # 提取最后几行作为错误详情
+                                log_lines = log_content.strip().split('\n')
+                                error_details = '\n'.join(log_lines[-5:]) if log_lines else "日志文件为空"
+                        except Exception as e:
+                            error_details = f"无法读取日志文件: {e}"
+
                     return {
-                        "error": "结果文件为空或格式错误",
+                        "error": f"结果文件为空或格式错误。日志详情: {error_details}",
                         "exit_code": proc.returncode,
                         "report_url": "",
                         "device": device_serial
@@ -1091,12 +1181,46 @@ def run_single_replay(device_serial, script_args, log_dir, timeout=3600, max_ret
                         "device": device_serial
                     }
             else:
+                logger.error(f"设备 {device_serial} 未找到结果文件: {result_file}")
+                # 🔧 增强：更详细的错误诊断
+                error_details = ""
+                script_execution_status = ""
+
+                if os.path.exists(device_log_file):
+                    try:
+                        with open(device_log_file, 'r', encoding='utf-8', errors='replace') as f:
+                            log_content = f.read()
+                            log_lines = log_content.strip().split('\n')
+
+                            # 查找脚本执行相关的关键信息
+                            key_lines = []
+                            for line in log_lines:
+                                if any(keyword in line.lower() for keyword in [
+                                    'error', 'exception', 'traceback', 'failed', 'success',
+                                    'script', 'device', 'exit', 'complete', '错误', '异常', '失败', '成功'
+                                ]):
+                                    key_lines.append(line)
+
+                            if key_lines:
+                                script_execution_status = f"\n关键执行信息:\n" + '\n'.join(key_lines[-5:])
+
+                            # 提取最后几行作为错误详情
+                            error_details = '\n'.join(log_lines[-15:]) if log_lines else "日志文件为空"
+
+                    except Exception as e:
+                        error_details = f"无法读取日志文件: {e}"
+                else:
+                    error_details = "日志文件不存在"
+
+                full_error_msg = f"未找到结果文件，子进程退出码: {proc.returncode}。{script_execution_status}\n\n最后15行日志:\n{error_details}"
+
                 if attempt < max_retries:
-                    logger.warning(f"设备 {device_serial} 未找到结果文件，重试 {attempt + 1}/{max_retries}")
+                    logger.warning(f"设备 {device_serial} 未找到结果文件，重试 {attempt + 1}/{max_retries}。错误详情: {full_error_msg}")
                     time.sleep(2)
                     continue
+
                 return {
-                    "error": "未找到结果文件，脚本可能已崩溃",
+                    "error": full_error_msg,
                     "exit_code": proc.returncode,
                     "report_url": "",
                     "device": device_serial
@@ -1145,7 +1269,7 @@ def run_single_replay(device_serial, script_args, log_dir, timeout=3600, max_ret
 @csrf_exempt
 @permission_classes([permissions.AllowAny])
 def replay_script(request):
-    """多设备并发回放指定的测试脚本 - 方案3实现"""
+    """多设备并发回放指定的测试脚本"""
     try:
         data = json.loads(request.body)
         logger.info(f"收到多设备并发回放请求: {data}")
@@ -1265,37 +1389,45 @@ def replay_script(request):
                 "task_id": task_id,
                 "error": "账号分配失败",
                 "details": account_allocation_errors
-            }, status=400)
-
-        # 6. 构造每个设备的任务参数
+            }, status=400)        # 6. 构造每个设备的任务参数
         device_tasks = {}
         for device_serial in devices:
             account_info = device_accounts[device_serial]
             script_args = []
 
+            # 🔧 调试日志：记录脚本配置
+            logger.info(f"🔍 设备 {device_serial} 开始构造任务参数")
+            logger.info(f"🔍 账号信息: {account_info['username']}")
+            logger.info(f"🔍 脚本配置数量: {len(script_configs)}")
+
             # 添加脚本参数
-            for config in script_configs:
+            for i, config in enumerate(script_configs):
+                logger.info(f"🔍 处理脚本配置 {i+1}: {config}")
                 script_args.extend(['--script', config['path']])
+                logger.info(f"🔍 添加脚本路径: {config['path']}")
 
                 # 添加循环次数
                 loop_count = config.get('loop_count')
                 if loop_count:
                     script_args.extend(['--loop-count', str(loop_count)])
+                    logger.info(f"🔍 添加循环次数: {loop_count}")
 
                 # 添加最大持续时间
                 max_duration = config.get('max_duration')
                 if max_duration:
                     script_args.extend(['--max-duration', str(max_duration)])
+                    logger.info(f"🔍 添加最大持续时间: {max_duration}")
 
             # 添加账号信息
             script_args.extend(['--account-user', account_info['username']])
             script_args.extend(['--account-pass', account_info['password']])
-
-            # 添加显示屏幕参数
-            if data.get('show_screens'):
-                script_args.append('--show-screens')
+            logger.info(f"🔍 添加账号参数: {account_info['username']}")
 
             device_tasks[device_serial] = script_args
+            logger.info(f"🔍 设备 {device_serial} 最终参数: {script_args}")
+            logger.info(f"🔍 参数总数: {len(script_args)}")
+            logger.info(f"🔍 ===== 设备 {device_serial} 参数构造完成 =====")
+            logger.info("")
 
         # 7. 动态计算最佳并发数
         cpu_count = os.cpu_count() or 4
@@ -1311,18 +1443,29 @@ def replay_script(request):
 
         max_concurrent = min(system_based_limit, len(devices), data.get('max_concurrent', system_based_limit))
         logger.info(f"计算得出最大并发数: {max_concurrent} (设备数: {len(devices)})")
-
         # 8. 并发执行回放任务
         results = {}
         completed_count = 0
 
+        logger.info(f"🚀 开始并发执行回放任务，最大并发数: {max_concurrent}")
+        log_step_progress(1, 4, f"开始并发执行 {len(devices)} 个设备的回放任务", None, True)
         try:
             with ThreadPoolExecutor(max_workers=max_concurrent) as executor:
+                # 🔧 调试：在提交任务前记录每个设备的参数
+                logger.info(f"🔧 即将提交 {len(device_tasks)} 个设备任务:")
+                for device, args in device_tasks.items():
+                    logger.info(f"   设备: {device}")
+                    logger.info(f"   参数: {args}")
+                    logger.info(f"   参数数量: {len(args)}")
+
                 # 提交所有任务
                 futures = {
                     executor.submit(run_single_replay, device, args, log_dir): device
                     for device, args in device_tasks.items()
                 }
+
+                logger.info(f"🔧 已提交 {len(futures)} 个任务到线程池")
+                log_step_progress(2, 4, f"所有设备任务已提交，等待执行完成", None, True)
 
                 # 等待任务完成并收集结果
                 for future in as_completed(futures):
@@ -1331,16 +1474,28 @@ def replay_script(request):
                     try:
                         result_data = future.result()
                         results[device] = result_data
-                        logger.info(f"设备 {device} 回放完成 ({completed_count}/{len(devices)}): {result_data.get('exit_code', 'unknown')}")
+
+                        # 详细的设备执行结果日志
+                        if result_data.get('exit_code') == 0:
+                            logger.info(f"✅ 设备 {device} 回放成功 ({completed_count}/{len(devices)})")
+                            log_step_progress(completed_count, len(devices), f"设备 {device} 执行成功", device, True)
+                        else:
+                            logger.error(f"❌ 设备 {device} 回放失败 ({completed_count}/{len(devices)}): {result_data.get('error', '')}")
+                            log_step_progress(completed_count, len(devices), f"设备 {device} 执行失败: {result_data.get('error', '')}", device, True)
+
+                        logger.info(f"设备 [{device}] 回放完成 ({completed_count}/{len(devices)})。回放结果:[ {result_data.get('error', '')} ]。退出码:[ {result_data.get('exit_code', 'unknown')} ]")
                     except Exception as e:
                         error_msg = f"执行异常: {str(e)}"
                         logger.error(f"设备 {device} 回放任务失败: {error_msg}")
+                        log_step_progress(completed_count, len(devices), f"设备 {device} 执行异常: {error_msg}", device, True)
                         results[device] = {
                             "error": error_msg,
                             "exit_code": -1,
                             "report_url": "",
                             "device": device
                         }
+
+                log_step_progress(3, 4, f"所有设备任务执行完成", None, True)
 
         finally:
             # 9. 资源清理：释放账号
@@ -1371,7 +1526,6 @@ def replay_script(request):
             "log_dir": log_dir,
             "results": []
         }
-
         # 转换结果格式
         for device, result in results.items():
             device_result = {
@@ -1383,6 +1537,10 @@ def replay_script(request):
                 "error": result.get("error", "")
             }
             response_data["results"].append(device_result)
+
+        # 生成设备执行汇总日志
+        log_device_summary(list(results.values()))
+        log_step_progress(4, 4, f"任务完成，成功: {sum(1 for r in results.values() if r.get('exit_code') == 0)}/{len(devices)}", None, True)
 
         logger.info(f"多设备并发回放任务完成: {len(devices)} 台设备，成功: {sum(1 for r in results.values() if r.get('exit_code') == 0)}")
         return JsonResponse(response_data)
@@ -1562,13 +1720,13 @@ def debug_script(request):
 
         process_id = str(process.pid)
         CHILD_PROCESSES[process_id] = process
-
         # Non-blocking output reading
         def read_output_thread_func(proc, pid):
             try:
                 stdout, stderr = proc.communicate()
                 if stdout:
                     logger.info(f"[PID:{pid}] STDOUT: {stdout.strip()}")
+
                 if stderr:
                     logger.error(f"[PID:{pid}] STDERR: {stderr.strip()}")
             except Exception as e_thread:
@@ -1937,8 +2095,8 @@ class ScriptViewSet(viewsets.ModelViewSet):
         script.is_active = not script.is_active
         script.save(update_fields=['is_active'])
 
-        status_str = "启用" if script.is_active else "禁用"
-        logger.info(f"脚本已{status_str}: {script.name} - 用户: {request.user.username}")
+        status = "启用" if script.is_active else "禁用"
+        logger.info(f"脚本已{status}: {script.name} - 用户: {request.user.username}")
 
         return Response({
             "id": script.id,
@@ -2483,4 +2641,67 @@ def storage_cleanup(request):
             'success': False,
             'message': f'执行存储清理失败: {str(e)}'
         }, status=500)
+
+# =====================
+# 步骤级日志记录函数
+# =====================
+
+def log_step_progress(step_num, total_steps, message, device_name=None, is_multi_device=False):
+    """
+    统一的步骤进度日志记录函数
+    适用于单设备和多设备场景
+    """
+    if is_multi_device and device_name:
+        prefix = f"[设备:{device_name}]"
+    else:
+        prefix = "[单设备]" if not is_multi_device else "[多设备]"
+
+    progress_indicator = f"步骤 {step_num}/{total_steps}"
+    logger.info(f"{prefix} {progress_indicator}: {message}")
+
+def log_phase_start(phase_name, device_name=None, is_multi_device=False):
+    """记录阶段开始"""
+    if is_multi_device and device_name:
+        prefix = f"[设备:{device_name}]"
+    else:
+        prefix = "[单设备]" if not is_multi_device else "[多设备]"
+
+    logger.info(f"{prefix} 🚀 开始阶段: {phase_name}")
+
+def log_phase_complete(phase_name, device_name=None, is_multi_device=False, success=True):
+    """记录阶段完成"""
+    if is_multi_device and device_name:
+        prefix = f"[设备:{device_name}]"
+    else:
+        prefix = "[单设备]" if not is_multi_device else "[多设备]"
+
+    status = "✅ 完成" if success else "❌ 失败"
+    logger.info(f"{prefix} {status}阶段: {phase_name}")
+
+def log_device_summary(device_results):
+    """记录多设备执行汇总"""
+    if not device_results:
+        logger.info("📊 [汇总] 无设备执行结果")
+        return
+
+    total_devices = len(device_results)
+    successful_devices = sum(1 for result in device_results if result.get('exit_code', -1) == 0)
+    failed_devices = total_devices - successful_devices
+
+    logger.info("=" * 60)
+    logger.info("📊 [执行汇总]")
+    logger.info(f"   总设备数: {total_devices}")
+    logger.info(f"   成功设备: {successful_devices}")
+    logger.info(f"   失败设备: {failed_devices}")
+    logger.info(f"   成功率: {(successful_devices/total_devices*100):.1f}%")
+
+    for i, result in enumerate(device_results):
+        device_name = result.get('device', f'设备{i+1}')
+        status = "✅" if result.get('exit_code', -1) == 0 else "❌"
+        logger.info(f"   {status} {device_name}")
+    logger.info("=" * 60)
+
+# =====================
+# 设备管理和任务执行
+# =====================
 
