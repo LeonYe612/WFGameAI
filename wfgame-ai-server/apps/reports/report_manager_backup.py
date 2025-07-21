@@ -57,7 +57,7 @@ class ReportManager:
         self.setup_directories()
 
         # 记录初始化信息
-        logger.info(f"报告管理器初始化完成，基础目录: {self.base_dir}")
+        logger.info(f"报告管理器初始化完成，基础目录: {self.base_dir}")    
 
     def setup_directories(self):
         """设置报告目录结构"""
@@ -85,18 +85,12 @@ class ReportManager:
             # 从配置中获取相对于device_replay_reports_dir的路径
             single_relative = os.path.relpath(
                 self.config.single_device_reports_dir,
-                self.config.device_replay_reports_dir            ).replace('\\', '/')
+                self.config.device_replay_reports_dir
+            ).replace('\\', '/')
             self._single_device_web_path = f"{self._reports_web_base}/{single_relative}"
         except:
-            # 回退：动态计算而不是硬编码
-            try:
-                single_relative = os.path.relpath(
-                    self.config.single_device_reports_dir,
-                    self.config.device_replay_reports_dir
-                ).replace('\\', '/')
-                self._single_device_web_path = f"{self._reports_web_base}/{single_relative}"
-            except:
-                self._single_device_web_path = self._reports_web_base
+            # 回退到默认路径
+            self._single_device_web_path = f"{self._reports_web_base}/ui_run/WFGameAI.air/log"
 
         # 计算汇总报告的Web URL路径
         try:
@@ -106,15 +100,8 @@ class ReportManager:
             ).replace('\\', '/')
             self._summary_web_path = f"{self._reports_web_base}/{summary_relative}"
         except:
-            # 回退：动态计算而不是硬编码
-            try:
-                summary_relative = os.path.relpath(
-                    self.config.summary_reports_dir,
-                    self.config.device_replay_reports_dir
-                ).replace('\\', '/')
-                self._summary_web_path = f"{self._reports_web_base}/{summary_relative}"
-            except:
-                self._summary_web_path = self._reports_web_base
+            # 回退到默认路径
+            self._summary_web_path = f"{self._reports_web_base}/summary_reports"
 
         # 确保目录存在
         directories = [
@@ -178,10 +165,9 @@ class ReportManager:
             except Exception as e:
                 logger.error(f"创建设备报告目录失败: {device_name}, 错误: {e}")
                 raise
-
     def generate_report_urls(self, device_dir: Path) -> Dict[str, str]:
         """
-        生成报告URL（增强版本，全部使用 config 参数）
+        生成报告URL（增强版本，支持相对路径处理）
         Args:
             device_dir: 设备报告目录路径
         Returns:
@@ -190,53 +176,42 @@ class ReportManager:
         try:
             # 标准化路径
             device_dir = PathUtils.normalize_path(device_dir)
-            single_device_reports_dir = PathUtils.normalize_path(self.config.single_device_reports_dir)
-            summary_reports_dir = PathUtils.normalize_path(self.config.summary_reports_dir)
-            device_replay_reports_dir = PathUtils.normalize_path(self.config.device_replay_reports_dir)
+            single_device_reports_dir = PathUtils.normalize_path(self.single_device_reports_dir)
 
-            # 计算相对路径
+            # 计算从设备目录到单设备报告根目录的相对路径
             relative_path = PathUtils.make_relative_url(device_dir, single_device_reports_dir)
-            device_name = device_dir.name if hasattr(device_dir, 'name') else str(device_dir).split('/')[-1]
 
-            # 构建 Web 路径
-            base_url = self._single_device_web_path  # 设备报告web根目录
-            summary_url = self._summary_web_path     # 汇总报告web根目录
-
-            # 设备报告的绝对URL
-            html_report_url = f"{base_url}/{relative_path}/log.html"
-            log_file_url = f"{base_url}/{relative_path}/log.txt"
-            screenshots_url = f"{base_url}/{relative_path}/"
-            directory_url = f"{base_url}/{relative_path}/"
-
-            # 汇总报告到设备报告的相对路径（用于HTML链接）
-            # 例如: ../ui_run/WFGameAI.air/log/{device_name}/log.html
-            single_relative = os.path.relpath(device_dir, summary_reports_dir).replace('\\', '/')
-            html_report_relative = f"{single_relative}/log.html"
+            # 使用动态计算的Web路径而不是硬编码
+            base_url = self._single_device_web_path
 
             return {
-                'html_report': html_report_url,
-                'html_report_relative': html_report_relative,
-                'log_file': log_file_url,
-                'screenshots': screenshots_url,
-                'directory': directory_url
+                'html_report': f"{base_url}/{relative_path}/log.html",
+                'log_file': f"{base_url}/{relative_path}/log.txt",
+                'screenshots': f"{base_url}/{relative_path}/",
+                'directory': f"{base_url}/{relative_path}/"
             }
         except Exception as e:
             logger.warning(f"生成报告URL失败: {device_dir}, 错误: {e}")
             # 回退到简单的URL生成 - 确保使用配置路径而不是硬编码
             device_name = device_dir.name if hasattr(device_dir, 'name') else str(device_dir).split('/')[-1]
-            base_url = self._single_device_web_path
-            summary_url = self._summary_web_path
-            html_report_url = f"{base_url}/{device_name}/log.html"
-            log_file_url = f"{base_url}/{device_name}/log.txt"
-            screenshots_url = f"{base_url}/{device_name}/"
-            directory_url = f"{base_url}/{device_name}/"
-            html_report_relative = f"../ui_run/WFGameAI.air/log/{device_name}/log.html"
+            # 如果_single_device_web_path未初始化，动态计算而不是硬编码
+            if not hasattr(self, '_single_device_web_path') or not self._single_device_web_path:
+                try:
+                    single_relative = os.path.relpath(
+                        self.config.single_device_reports_dir,
+                        self.config.device_replay_reports_dir
+                    ).replace('\\', '/')
+                    base_url = f"/static/reports/{single_relative}"
+                except:
+                    base_url = "/static/reports"
+            else:
+                base_url = self._single_device_web_path
+
             return {
-                'html_report': html_report_url,
-                'html_report_relative': html_report_relative,
-                'log_file': log_file_url,
-                'screenshots': screenshots_url,
-                'directory': directory_url
+                'html_report': f"{base_url}/{device_name}/log.html",
+                'log_file': f"{base_url}/{device_name}/log.txt",
+                'screenshots': f"{base_url}/{device_name}/",
+                'directory': f"{base_url}/{device_name}/"
             }
 
     def copy_static_resources(self, target_dir: Path, max_retries: Optional[int] = None) -> bool:

@@ -16,14 +16,38 @@ import shutil
 from datetime import datetime
 from jinja2 import Template
 
-# 项目路径
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DEVICE_REPORTS_DIR = os.path.join(BASE_DIR, 'staticfiles', 'reports', 'ui_run', 'WFGameAI.air', 'log')
-SUMMARY_REPORTS_DIR = os.path.join(BASE_DIR, 'staticfiles', 'reports', 'summary_reports')
+# 导入报告配置
+try:
+    from apps.reports.report_config import get_report_config
+except ImportError:
+    # 兼容独立运行模式
+    import sys
+    sys.path.append(os.path.join(os.path.dirname(__file__), 'apps', 'reports'))
+    from report_config import get_report_config
+
+# 使用配置文件路径而不是硬编码
+config = get_report_config()
+
+# 从配置获取目录路径
+DEVICE_REPORTS_DIR = str(config.single_device_reports_dir)
+SUMMARY_REPORTS_DIR = str(config.summary_reports_dir)
 
 # 确保目录存在
 os.makedirs(DEVICE_REPORTS_DIR, exist_ok=True)
 os.makedirs(SUMMARY_REPORTS_DIR, exist_ok=True)
+
+def _get_device_report_url(device_name):
+    """动态计算设备报告URL - 避免硬编码"""
+    try:
+        # 计算相对于device_replay_reports_dir的路径
+        single_relative = os.path.relpath(
+            config.single_device_reports_dir,
+            config.device_replay_reports_dir
+        ).replace('\\', '/')
+        return f"/static/reports/{single_relative}/{device_name}/log.html"
+    except:
+        # 如果计算失败，返回基础路径
+        return f"/static/reports/{device_name}/log.html"
 
 def parse_device_log(device_dir):
     """解析设备日志文件"""
@@ -33,8 +57,7 @@ def parse_device_log(device_dir):
 
     device_name = os.path.basename(device_dir)
     device_info = {
-        'name': device_name,
-        'status': '失败',
+        'name': device_name,        'status': '失败',
         'start_time': '',
         'end_time': '',
         'executed_scripts': 0,

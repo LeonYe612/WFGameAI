@@ -99,8 +99,8 @@ class ReportGenerator:
             # 准备备用HTML内容
             html_content = self._build_fallback_summary_html(device_reports, scripts)
 
-            # 保存备用报告
-            summary_reports_dir = self.report_manager.reports_root / "summary_reports"
+            # 保存备用报告 - 使用配置的汇总报告目录
+            summary_reports_dir = self.report_manager.summary_reports_dir
             summary_reports_dir.mkdir(parents=True, exist_ok=True)
 
             timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
@@ -119,7 +119,7 @@ class ReportGenerator:
     def _build_fallback_summary_html(self, device_reports: List[Path], scripts: List[Dict]) -> str:
         """构建备用汇总报告HTML"""
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        static_url = self.config.STATIC_URL if hasattr(self.config, 'STATIC_URL') else '/static/reports/'
+        static_url = self.config.report_static_url
 
         # 统计信息
         total_devices = len(device_reports)
@@ -263,10 +263,10 @@ class ReportGenerator:
         try:
             print(f"📝 开始生成设备报告: {device_dir.name}")
 
-            # 1. 生成HTML报告
+            # 1. 生成HTML报告 (log.html)
             html_file = self.generate_device_html_report(device_dir.name, device_dir)
             if not html_file:
-                print(f"❌ HTML报告生成失败")
+                print(f"❌ 设备HTML报告生成失败")
                 return False
 
             # 2. 生成script.py文件
@@ -274,7 +274,7 @@ class ReportGenerator:
             if not script_file:
                 print(f"⚠️ script.py生成失败，但继续执行")
 
-            print(f"✅ 设备 {device_dir.name} 报告生成成功")
+            print(f"✅ 设备 {device_dir.name} 单设备报告(log.html)生成成功")
             return True
 
         except Exception as e:
@@ -361,7 +361,7 @@ class ReportGenerator:
                 "test_result": True,
                 "run_end": datetime.now().timestamp(),
                 "run_start": datetime.now().timestamp() - 60,
-                "static_root": self.config.STATIC_URL,
+                "static_root": self.config.report_static_url,
                 "lang": "en",
                 "records": [],
                 "info": {
@@ -384,7 +384,7 @@ class ReportGenerator:
             with open(html_file, 'w', encoding='utf-8') as f:
                 f.write(html_content)
 
-            print(f"✅ 设备 {device_name} HTML报告生成成功: {html_file}")
+            print(f"✅ 设备 {device_name} 单设备HTML报告(log.html)生成成功: {html_file}")
             return html_file
 
         except Exception as e:
@@ -396,12 +396,15 @@ class ReportGenerator:
     def _render_log_template(self, report_data: Dict) -> str:
         """使用Jinja2模板渲染设备日志报告"""
         try:
-            # 查找模板文件
-            template_path = find_template_path("log_template.html", self.report_manager)
-
-            if not template_path:
-                print(f"❌ 未找到log_template.html模板文件")
-                raise FileNotFoundError("未找到log_template.html模板文件")
+            # 优先使用配置文件指定的单设备报告模板路径
+            template_path = self.config.single_device_replay_template
+            if not isinstance(template_path, Path) or not template_path.exists():
+                # 回退到通用查找
+                template_path = find_template_path("log_template.html", self.report_manager)
+            if not template_path or not template_path.exists():
+                error_msg = f"❌ 未找到单设备报告模板文件: {template_path}"
+                print(error_msg)
+                raise FileNotFoundError(error_msg)
 
             print(f"✅ 使用模板文件: {template_path}")
 
@@ -414,7 +417,7 @@ class ReportGenerator:
                 'data': json.dumps(report_data, ensure_ascii=False),
                 'steps': report_data.get('steps', []),
                 'info': report_data.get('info', {}),
-                'static_root': report_data.get('static_root', self.config.STATIC_URL),
+                'static_root': report_data.get('static_root', self.config.report_static_url),
                 'lang': 'en',
                 'log': 'log.txt',
                 'console': report_data.get('console', ''),
@@ -565,22 +568,21 @@ class ReportGenerator:
 
             # 准备汇总报告数据
             summary_data = self._prepare_summary_data(device_report_dirs, scripts)            # 使用Jinja2模板渲染HTML
-            html_content = self._render_summary_template(summary_data)            # 创建summary_reports目录（如果不存在）
-            summary_reports_dir = self.report_manager.reports_root / "summary_reports"
+            html_content = self._render_summary_template(summary_data)            # 创建summary_reports目录（如果不存在），使用 ReportManager 配置的路径
+            summary_reports_dir = self.report_manager.summary_reports_dir
             summary_reports_dir.mkdir(parents=True, exist_ok=True)            # 保存汇总报告到指定目录，使用正确的命名格式
             timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
             summary_file = summary_reports_dir / f"summary_report_{timestamp}.html"
             with open(summary_file, 'w', encoding='utf-8') as f:
                 f.write(html_content)
 
-            print(f"✅ 汇总报告生成成功: {summary_file}")
+            print(f"✅ 多设备汇总报告生成成功: {summary_file}")
             return summary_file
 
         except Exception as e:
-            print(f"❌ 生成汇总报告失败: {e}")
-            import traceback
-            traceback.print_exc()
-            return None
+            print(f"⚠️ 生成汇总报告失败: {e}，使用备用方案")
+            # 尝试使用备用方法生成汇总报告
+            return self._generate_fallback_summary_report(device_report_dirs, scripts)
 
     def _prepare_summary_data(self, device_report_dirs: List[Path], scripts: List[Dict]) -> Dict:
         """准备汇总报告数据"""
@@ -594,6 +596,7 @@ class ReportGenerator:
 
             for device_dir in device_report_dirs:
                 device_name = device_dir.name
+                urls = self.report_manager.generate_report_urls(device_dir)
 
                 # 解析设备的log.txt文件
                 log_file = device_dir / "log.txt"
@@ -601,19 +604,18 @@ class ReportGenerator:
                 device_success = 0
                 device_failed = 0
                 device_passed = True
-
                 if log_file.exists():
                     steps = self._parse_log_file(device_dir)
                     device_steps = len(steps)
                     device_success = len([s for s in steps if s.get("status") == "success"])
                     device_failed = len([s for s in steps if s.get("status") == "fail"])
-                    device_passed = device_failed == 0                # 构建模板期望的设备数据结构
-                # 修复设备报告链接路径 - 从summary_reports/到ui_run/WFGameAI.air/log/的正确相对路径
+                    device_passed = device_failed == 0
+
                 device_data = {
                     "name": device_name,
-                    "passed": device_passed,           # 模板需要的字段
-                    "success": device_success > 0,     # 模板需要的字段
-                    "report": f"../ui_run/WFGameAI.air/log/{device_name}/log.html", # 修复后的正确相对路径
+                    "passed": device_passed,
+                    "success": device_success > 0,
+                    "report": urls.get('html_report_relative', urls.get('html_report', '')),  # 🔧 AI修复: 使用正确的key或回退
                     "steps": device_steps,
                     "success_count": device_success,
                     "failed_count": device_failed,
@@ -676,7 +678,7 @@ class ReportGenerator:
                 # 设备和脚本信息
                 "devices": devices,
                 "scripts": script_info,
-                "static_root": self.config.STATIC_URL
+                "static_root": self.config.report_static_url
             }
 
             return summary_data
@@ -688,25 +690,23 @@ class ReportGenerator:
     def _render_summary_template(self, summary_data: Dict) -> str:
         """使用Jinja2模板渲染汇总报告"""
         try:
-            # 使用指定的模板路径
-            template_path = self.report_manager.reports_root / "templates" / "summary_template.html"
-
-            if not template_path.exists():
-                error_msg = f"❌ 未找到summary模板文件: {template_path}"
+            # 优先使用配置文件指定的多设备汇总报告模板路径
+            template_path = self.config.multi_device_replay_template
+            if not isinstance(template_path, Path) or not template_path.exists():
+                # 回退到通用查找
+                template_path = find_template_path("summary_template.html", self.report_manager)
+            if not template_path or not template_path.exists():
+                error_msg = f"❌ 未找到汇总报告模板文件: {template_path}"
                 print(error_msg)
                 raise FileNotFoundError(error_msg)
 
-            print(f"✅ 使用汇总模板文件: {template_path}")            # 创建Jinja2环境
+            print(f"✅ 使用汇总报告模板文件: {template_path}")
+            # 创建Jinja2环境并渲染
             env = Environment(loader=FileSystemLoader(str(template_path.parent)))
-            template = env.get_template(template_path.name)            # 准备模板变量 - 适配模板期望的数据结构
-            template_vars = {
-                'data': summary_data  # 直接传递整个summary_data作为data对象
-            }
-
-            # 渲染模板
-            html_content = template.render(**template_vars)
+            template = env.get_template(template_path.name)
+            html_content = template.render(data=summary_data)
             return html_content
 
         except Exception as e:
             print(f"❌ 渲染汇总模板失败: {e}")
-            raise e  # 不再使用简易模板，直接抛出异常
+            raise e  # 直接抛出异常，不使用备用模板

@@ -22,14 +22,13 @@ class ReportGenerator:
         """
         初始化报告生成器
         Args:
-            report_manager: 报告管理器实例
-        """
+            report_manager: 报告管理器实例        """
         self.report_manager = report_manager
         self.config = get_report_config()
 
     def generate_html_template(self, device_name: str, data: Dict) -> str:
         """生成HTML报告模板，使用统一的静态资源URL"""
-        static_url = self.config.STATIC_URL
+        static_url = self.config.report_static_url
 
         template = f"""<!DOCTYPE html>
 <html>
@@ -144,10 +143,8 @@ class ReportGenerator:
                 return False
 
             # 2. 准备报告数据
-            report_data = self._prepare_report_data(device_dir, scripts)
-
-            # 3. 设置正确的静态资源路径
-            report_data["static_root"] = self.config.STATIC_URL
+            report_data = self._prepare_report_data(device_dir, scripts)            # 3. 设置正确的静态资源路径
+            report_data["static_root"] = self.config.report_static_url
 
             # 4. 使用新模板生成HTML
             device_name = device_dir.name
@@ -237,7 +234,7 @@ class ReportGenerator:
                 "test_result": True,
                 "run_end": datetime.now().timestamp() + 20,
                 "run_start": datetime.now().timestamp(),
-                "static_root": self.config.STATIC_URL,
+                "static_root": self.config.report_static_url,
                 "lang": "en",
                 "records": [],
                 "info": {
@@ -321,7 +318,7 @@ class ReportGenerator:
         Returns:
             HTML内容字符串
         """
-        static_url = self.config.STATIC_URL
+        static_url = self.config.report_static_url
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
         html_template = f"""<!DOCTYPE html>

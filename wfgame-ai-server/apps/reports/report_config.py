@@ -36,14 +36,6 @@ class ReportConfig:
         """静态资源根目录"""
         return 'staticfiles/reports/static'
 
-    @property
-    def STATIC_URL(self):
-        """静态资源URL前缀"""
-        # 计算从设备报告目录到静态资源目录的相对路径
-        # 设备报告在: staticfiles/reports/ui_run/WFGameAI.air/log/device_name/
-        # 静态资源在: staticfiles/reports/static/
-        # 相对路径为: ../../../../static/
-        return '../../../../static/'
 
     @property
     def DEVICE_REPORTS_DIR(self):
@@ -77,8 +69,8 @@ class ReportConfig:
         return str(config_path)
 
     def _load_config(self):
-        """加载配置文件"""
-        self.config = configparser.ConfigParser()
+        """加载配置文件"""        # 启用变量插值，支持 ${variable} 语法
+        self.config = configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation())
 
         # 设置默认值
         self._set_defaults()
@@ -169,6 +161,60 @@ class ReportConfig:
 
         # 默认使用项目根目录下的staticfiles/reports
         return str(self.BASE_DIR / 'staticfiles' / 'reports')
+
+    @property
+    def device_replay_reports_dir(self) -> Path:
+        """设备回放后生成报告根目录"""
+        try:
+            path = self.config.get('devices_report_paths', 'device_replay_reports_dir', fallback='')
+            return Path(path) if path else self.BASE_DIR / 'staticfiles' / 'reports'
+        except:
+            return self.BASE_DIR / 'staticfiles' / 'reports'
+
+    @property
+    def single_device_replay_template(self) -> Path:
+        """单设备报告模板路径"""
+        try:
+            template_dir = self.config.get('devices_report_paths', 'template_dir', fallback='')
+            return Path(template_dir) / 'log_template.html' if template_dir else self.BASE_DIR / 'staticfiles' / 'reports' / 'templates' / 'log_template.html'
+        except:
+            return self.BASE_DIR / 'staticfiles' / 'reports' / 'templates' / 'log_template.html'
+
+    @property
+    def multi_device_replay_template(self) -> Path:
+        """多设备汇总报告模板路径"""
+        try:
+            template_dir = self.config.get('devices_report_paths', 'template_dir', fallback='')
+            return Path(template_dir) / 'summary_template.html' if template_dir else self.BASE_DIR / 'staticfiles' / 'reports' / 'templates' / 'summary_template.html'
+        except:
+            return self.BASE_DIR / 'staticfiles' / 'reports' / 'templates' / 'summary_template.html'
+
+    @property
+    def single_device_reports_dir(self) -> Path:
+        """单设备报告存储目录"""
+        try:
+            path = self.config.get('devices_report_paths', 'single_device_reports_dir', fallback='')
+            return Path(path) if path else self.BASE_DIR / 'staticfiles' / 'reports' / 'ui_run' / 'WFGameAI.air' / 'log'
+        except:
+            return self.BASE_DIR / 'staticfiles' / 'reports' / 'ui_run' / 'WFGameAI.air' / 'log'
+
+    @property
+    def summary_reports_dir(self) -> Path:
+        """多设备汇总报告存储目录"""
+        try:
+            path = self.config.get('devices_report_paths', 'summary_reports_dir', fallback='')
+            return Path(path) if path else self.BASE_DIR / 'staticfiles' / 'reports' / 'summary_reports'
+        except:
+            return self.BASE_DIR / 'staticfiles' / 'reports' / 'summary_reports'
+
+    @property
+    def report_static_url(self) -> str:
+        """设备回放报告生成-静态资源目录"""
+        try:
+            path = self.config.get('devices_report_paths', 'report_static_url', fallback='')
+            return path if path else '../../../../static/'
+        except:
+            return '../../../../static/'
 
     def save_config(self):
         """保存配置到文件"""

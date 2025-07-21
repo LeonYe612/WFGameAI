@@ -318,15 +318,13 @@ if ReportManager and ReportGenerator:
         print_realtime(f"⚠️ 统一报告管理系统初始化失败: {e}")
 
 # 统一报告目录配置（向后兼容）
-if REPORT_MANAGER:
-    STATICFILES_REPORTS_DIR = str(REPORT_MANAGER.reports_root)
-    DEVICE_REPORTS_DIR = str(REPORT_MANAGER.device_reports_dir)
+try:
+    REPORTS_STATIC_DIR = str(REPORT_MANAGER.report_static_url)
+    DEVICE_REPORTS_DIR = str(REPORT_MANAGER.device_replay_reports_dir)
     SUMMARY_REPORTS_DIR = str(REPORT_MANAGER.summary_reports_dir)
-else:
-    # 回退到旧的配置
-    STATICFILES_REPORTS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "staticfiles", "reports")
-    DEVICE_REPORTS_DIR = os.path.join(STATICFILES_REPORTS_DIR, "ui_run", "WFGameAI.air", "log")
-    SUMMARY_REPORTS_DIR = os.path.join(STATICFILES_REPORTS_DIR, "summary_reports")
+except Exception as e:
+    print_realtime(f"⚠️ 无法获取统一报告管理系统配置 {e}")
+
 
 # 默认路径
 DEFAULT_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -820,9 +818,8 @@ def setup_log_directory(device_name):
     log_dir = os.path.join(DEVICE_REPORTS_DIR, f"{device_dir}_{timestamp}")
     os.makedirs(log_dir, exist_ok=True)
 
-    # 创建log子目录
-    log_images_dir = os.path.join(log_dir, "log")
-    os.makedirs(log_images_dir, exist_ok=True)
+    # 🔧 修复：不创建log子目录，直接在设备目录下存储所有文件
+    # 根据文档要求，截图和log.txt应该直接存放在设备目录下
 
     # 创建空的log.txt文件
     log_file = os.path.join(log_dir, "log.txt")
@@ -1118,35 +1115,37 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
 
     # 检查脚本列表
     if not scripts:
-        raise ValueError("脚本列表为空，无法回放")
-    # 使用新的报告管理器创建设备报告目录
+        raise ValueError("脚本列表为空，无法回放")    # 🔧 关键修复：分离方案3日志目录和报告系统目录
+    # log_dir: 方案3传入的共享工作目录，用于任务管理（.result.json, .log）
+    # device_report_dir: 报告系统的独立设备目录，用于HTML报告和截图
+
     device_report_dir = None
-    log_dir = None
     if REPORT_MANAGER:
         try:
             device_report_dir = REPORT_MANAGER.create_device_report_dir(device_name)
-            log_dir = str(device_report_dir)
-            print_realtime(f"✅ 使用统一报告管理器创建目录: {log_dir}")
+            print_realtime(f"✅ 报告系统目录创建成功: {device_report_dir}")
         except Exception as e:
-            print_realtime(f"⚠️ 统一报告管理器创建目录失败: {e}")
+            print_realtime(f"⚠️ 报告系统目录创建失败: {e}")
             device_report_dir = None
-            log_dir = None
 
-    # 如果统一报告系统失败，使用旧的目录结构
-    if not log_dir:
+    # 如果报告系统失败，使用fallback目录结构
+    if not device_report_dir:
         timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-        log_dir = os.path.join(DEVICE_REPORTS_DIR, f"{device_name}_{timestamp}")
-        os.makedirs(log_dir, exist_ok=True)
-        print_realtime(f"⚠️ 回退到旧目录结构: {log_dir}")
+        fallback_dir = os.path.join(DEVICE_REPORTS_DIR, f"{device_name}_{timestamp}")
+        os.makedirs(fallback_dir, exist_ok=True)
+        device_report_dir = Path(fallback_dir)
+        print_realtime(f"⚠️ 使用fallback报告目录: {device_report_dir}")
 
-    # 设置日志目录
+    print_realtime(f"📁 方案3日志目录: {log_dir}")
+    print_realtime(f"📁 报告系统目录: {device_report_dir}")    # 设置Airtest日志目录为报告系统目录
     try:
-        set_logdir(log_dir)
+        set_logdir(str(device_report_dir))
+        print_realtime(f"✅ 设置Airtest日志目录: {device_report_dir}")
     except Exception as e:
-        print_realtime(f"设置日志目录失败: {e}")
+        print_realtime(f"⚠️ 设置Airtest日志目录失败: {e}")
 
-    # 创建log.txt文件
-    log_txt_path = os.path.join(log_dir, "log.txt")
+    # 创建报告系统的log.txt文件（用于HTML报告生成）
+    log_txt_path = os.path.join(str(device_report_dir), "log.txt")
     with open(log_txt_path, "w", encoding="utf-8") as f:
         f.write("")
 
@@ -1202,17 +1201,18 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
             timestamp = time.time()
             screenshot_timestamp = int(timestamp * 1000)
             screenshot_filename = f"{screenshot_timestamp}.jpg"
-            screenshot_path = os.path.join(log_dir, screenshot_filename)
+            # 🔧 修复：截图保存到报告系统目录，而不是方案3目录
+            screenshot_path = os.path.join(str(device_report_dir), screenshot_filename)
             cv2.imwrite(screenshot_path, frame)
 
             # 创建缩略图
             thumbnail_filename = f"{screenshot_timestamp}_small.jpg"
-            thumbnail_path = os.path.join(log_dir, thumbnail_filename)
+            thumbnail_path = os.path.join(str(device_report_dir), thumbnail_filename)
             small_frame = cv2.resize(frame, (0, 0), fx=0.3, fy=0.3)
             cv2.imwrite(thumbnail_path, small_frame, [cv2.IMWRITE_JPEG_QUALITY, 60])
 
-            print_realtime(f"保存初始截图: {screenshot_path}")
-            print_realtime(f"保存初始缩略图: {thumbnail_path}")
+            print_realtime(f"保存初始截图到报告目录: {screenshot_path}")
+            print_realtime(f"保存初始缩略图到报告目录: {thumbnail_path}")
     except Exception as e:
         print_realtime(f"获取初始截图失败: {e}")    # 执行所有脚本
     total_executed = 0
@@ -1340,7 +1340,7 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
             if success:
                 # 获取报告URL
                 report_urls = REPORT_MANAGER.generate_report_urls(device_report_dir)
-                print_realtime(f"✅ 设备 {device_name} 报告生成成功: {report_urls['html_report']}")
+                print_realtime(f"✅ 设备 {device_name} 单设备报告生成成功: {report_urls['html_report']}")
                 report_generation_success = True
             else:
                 print_realtime(f"⚠️ 设备 {device_name} 统一报告生成失败，但不影响脚本执行状态")
@@ -1487,6 +1487,60 @@ def try_log_screen(device, log_dir, quality=60, max_size=None):
         print_realtime(f"try_log_screen失败: {e}")
         return None
 
+def log_step_progress(step_num, total_steps, message, device_name=None, is_multi_device=False):
+    """
+    统一的步骤进度日志记录函数
+    适用于单设备和多设备场景
+    """
+    if is_multi_device and device_name:
+        prefix = f"[设备:{device_name}]"
+    else:
+        prefix = "[单设备]" if not is_multi_device else "[多设备]"
+
+    progress_indicator = f"步骤 {step_num}/{total_steps}"
+    print_realtime(f"{prefix} {progress_indicator}: {message}")
+
+def log_phase_start(phase_name, device_name=None, is_multi_device=False):
+    """记录阶段开始"""
+    if is_multi_device and device_name:
+        prefix = f"[设备:{device_name}]"
+    else:
+        prefix = "[单设备]" if not is_multi_device else "[多设备]"
+
+    print_realtime(f"{prefix} 🚀 开始阶段: {phase_name}")
+
+def log_phase_complete(phase_name, device_name=None, is_multi_device=False, success=True):
+    """记录阶段完成"""
+    if is_multi_device and device_name:
+        prefix = f"[设备:{device_name}]"
+    else:
+        prefix = "[单设备]" if not is_multi_device else "[多设备]"
+
+    status = "✅ 完成" if success else "❌ 失败"
+    print_realtime(f"{prefix} {status}阶段: {phase_name}")
+
+def log_device_summary(device_results):
+    """记录多设备执行汇总"""
+    if not device_results:
+        print_realtime("📊 [汇总] 无设备执行结果")
+        return
+
+    total_devices = len(device_results)
+    successful_devices = sum(1 for result in device_results if result.get('exit_code', -1) == 0)
+    failed_devices = total_devices - successful_devices
+
+    print_realtime("=" * 60)
+    print_realtime("📊 [执行汇总]")
+    print_realtime(f"   总设备数: {total_devices}")
+    print_realtime(f"   成功设备: {successful_devices}")
+    print_realtime(f"   失败设备: {failed_devices}")
+    print_realtime(f"   成功率: {(successful_devices/total_devices*100):.1f}%")
+
+    for i, result in enumerate(device_results):
+        device_name = result.get('device', f'设备{i+1}')
+        status = "✅" if result.get('exit_code', -1) == 0 else "❌"
+        print_realtime(f"   {status} {device_name}")
+    print_realtime("=" * 60)
 
 # 只保留流程调度、日志、报告、设备管理、模型加载等工具方法
 # 所有action处理都通过ActionProcessor实现
@@ -1626,7 +1680,6 @@ def main():
                             print_realtime(f"✅ 使用指定设备: {device_serial}")
                             # 过滤设备列表，只使用指定设备
                             devices = [d for d in devices if d.serial == device_serial]
-
                     if exit_code == 0:
                         # 最终检查模型状态
                         global model
@@ -1634,14 +1687,65 @@ def main():
                             print_realtime("✅ 模型状态检查通过，AI检测功能可用")
                         else:
                             print_realtime("⚠️ 模型状态检查失败，将使用备用检测模式")
-                            # 执行脚本回放的核心逻辑 - 使用现有的replay_device函数
-                        processed_device_names = []
-                        current_execution_device_dirs = []
 
-                        # 为每个设备执行脚本
-                        for device in devices:
-                            device_name = device.serial
-                            processed_device_names.append(device_name)
+                        # 🔧 关键修复：区分单设备和多设备执行模式
+                        if len(devices) > 1:
+                            print_realtime(f"🔀 检测到多设备模式 ({len(devices)} 台设备)，使用多设备执行框架")
+
+                            # 使用多设备执行框架
+                            device_serials = [device.serial for device in devices]
+                            try:
+                                from multi_device_replayer import replay_scripts_on_devices
+
+                                print_realtime(f"📱 准备并发执行设备: {device_serials}")
+                                results, device_report_dirs = replay_scripts_on_devices(
+                                    device_serials=device_serials,
+                                    scripts=scripts,
+                                    max_workers=min(len(devices), 4),  # 最大4个并发
+                                    strategy="hybrid"
+                                )
+
+                                # 检查执行结果
+                                successful_devices = [device for device, result in results.items() if result.get('success', False)]
+                                failed_devices = [device for device, result in results.items() if not result.get('success', False)]
+
+                                print_realtime(f"📊 多设备执行完成: 成功 {len(successful_devices)}/{len(devices)} 台设备")
+                                if successful_devices:
+                                    any_business_success = True
+                                    business_execution_completed = True
+
+                                # 收集设备报告目录用于汇总报告
+                                current_execution_device_dirs = [str(path) for path in device_report_dirs if path]
+                                processed_device_names = list(results.keys())
+
+                                if failed_devices:
+                                    print_realtime(f"⚠️ 失败设备: {failed_devices}")
+                                    for device in failed_devices:
+                                        error = results[device].get('error', 'Unknown error')
+                                        print_realtime(f"  - {device}: {error}")
+
+                            except ImportError as e:
+                                print_realtime(f"❌ 多设备执行框架导入失败，回退到单设备模式: {e}")
+                                # 回退到原有的单设备循环处理
+                                processed_device_names = []
+                                current_execution_device_dirs = []
+                                for device in devices:
+                                    device_name = device.serial
+                                    processed_device_names.append(device_name)
+                            except Exception as e:
+                                print_realtime(f"❌ 多设备执行失败: {e}")
+                                system_error_occurred = True
+                                exit_code = -1
+                        else:
+                            print_realtime(f"📱 单设备模式，使用原有执行逻辑")
+                            # 执行脚本回放的核心逻辑 - 使用现有的replay_device函数
+                            processed_device_names = []
+                            current_execution_device_dirs = []
+
+                            # 为每个设备执行脚本
+                            for device in devices:
+                                device_name = device.serial
+                                processed_device_names.append(device_name)
 
                             try:
                                 print_realtime(f"🎯 开始处理设备: {device_name}")
@@ -1702,7 +1806,7 @@ def main():
                         # 生成汇总报告
                         try:
                             if current_execution_device_dirs and REPORT_GENERATOR:
-                                print_realtime("📊 生成汇总报告...")
+                                print_realtime("📊 生成多设备汇总报告...")
                                 # 转换字符串路径为Path对象
                                 from pathlib import Path
                                 device_report_paths = [Path(dir_path) for dir_path in current_execution_device_dirs]
@@ -1713,7 +1817,7 @@ def main():
                                 if summary_report_path:
                                     # Convert Path object to string for JSON serialization
                                     report_url = str(summary_report_path)
-                                    print_realtime(f"✅ 汇总报告已生成: {summary_report_path}")
+                                    print_realtime(f"✅ 多设备汇总报告已生成: {summary_report_path}")
                                 else:
                                     print_realtime("⚠️ 汇总报告生成失败")
                         except Exception as e:
@@ -1738,7 +1842,6 @@ def main():
             exit_code = -1  # 只有系统级异常才影响脚本执行状态
             system_error_occurred = True
         else:
-            print_realtime(f"⚠️ 脚本回放过程出错但不影响脚本执行状态: {e}")
             print_realtime(f"⚠️ 脚本回放过程出错但不影响脚本执行状态: {e}")
 
     finally:
@@ -1803,61 +1906,6 @@ def main():
         print_realtime("🏁 脚本回放任务结束")
 
 
-def log_step_progress(step_num, total_steps, message, device_name=None, is_multi_device=False):
-    """
-    统一的步骤进度日志记录函数
-    适用于单设备和多设备场景
-    """
-    if is_multi_device and device_name:
-        prefix = f"[设备:{device_name}]"
-    else:
-        prefix = "[单设备]" if not is_multi_device else "[多设备]"
-
-    progress_indicator = f"步骤 {step_num}/{total_steps}"
-    print_realtime(f"{prefix} {progress_indicator}: {message}")
-
-def log_phase_start(phase_name, device_name=None, is_multi_device=False):
-    """记录阶段开始"""
-    if is_multi_device and device_name:
-        prefix = f"[设备:{device_name}]"
-    else:
-        prefix = "[单设备]" if not is_multi_device else "[多设备]"
-
-    print_realtime(f"{prefix} 🚀 开始阶段: {phase_name}")
-
-def log_phase_complete(phase_name, device_name=None, is_multi_device=False, success=True):
-    """记录阶段完成"""
-    if is_multi_device and device_name:
-        prefix = f"[设备:{device_name}]"
-    else:
-        prefix = "[单设备]" if not is_multi_device else "[多设备]"
-
-    status = "✅ 完成" if success else "❌ 失败"
-    print_realtime(f"{prefix} {status}阶段: {phase_name}")
-
-def log_device_summary(device_results):
-    """记录多设备执行汇总"""
-    if not device_results:
-        print_realtime("📊 [汇总] 无设备执行结果")
-        return
-
-    total_devices = len(device_results)
-    successful_devices = sum(1 for result in device_results if result.get('exit_code', -1) == 0)
-    failed_devices = total_devices - successful_devices
-
-    print_realtime("=" * 60)
-    print_realtime("📊 [执行汇总]")
-    print_realtime(f"   总设备数: {total_devices}")
-    print_realtime(f"   成功设备: {successful_devices}")
-    print_realtime(f"   失败设备: {failed_devices}")
-    print_realtime(f"   成功率: {(successful_devices/total_devices*100):.1f}%")
-
-    for i, result in enumerate(device_results):
-        device_name = result.get('device', f'设备{i+1}')
-        status = "✅" if result.get('exit_code', -1) == 0 else "❌"
-        print_realtime(f"   {status} {device_name}")
-    print_realtime("=" * 60)
-
 def get_confidence_threshold_from_config():
     """
     从config.ini的[settings]节读取AI检测置信度阈值。
@@ -1876,3 +1924,4 @@ def get_confidence_threshold_from_config():
 
 if __name__ == "__main__":
     main()
+

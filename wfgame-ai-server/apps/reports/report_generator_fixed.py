@@ -78,7 +78,7 @@ class ReportGenerator:
                 "test_result": True,
                 "run_end": datetime.now().timestamp(),
                 "run_start": datetime.now().timestamp() - 60,
-                "static_root": self.config.STATIC_URL,
+                "static_root": self.config.report_static_url,
                 "lang": "en",
                 "records": [],
                 "info": {
@@ -131,7 +131,7 @@ class ReportGenerator:
                 'data': json.dumps(report_data, ensure_ascii=False),
                 'steps': report_data.get('steps', []),
                 'info': report_data.get('info', {}),
-                'static_root': report_data.get('static_root', self.config.STATIC_URL),
+                'static_root': report_data.get('static_root', self.config.report_static_url),
                 'lang': 'en',
                 'log': 'log.txt',
                 'console': report_data.get('console', ''),
@@ -154,7 +154,8 @@ class ReportGenerator:
             device_dir: 设备报告目录
         Returns:
             步骤列表，包含screen数据
-        """        try:
+        """
+        try:
             # 🔧 修复：尝试多个可能的log.txt路径
             log_file_candidates = [
                 device_dir / "log.txt",           # 直接在设备目录下

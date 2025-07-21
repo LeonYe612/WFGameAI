@@ -22,7 +22,7 @@ WFGameAI 报告生成系统是一个双层报告架构，包含设备级详细�
 
 ```
 wfgame-ai-server/
-└── staticfiles/reports/
+└── ${device_replay_reports_dir}/  # 报告根目录（config.ini 定义）
     ├── ui_run/                         # 设备报告根目录
     │   └── WFGameAI.air/
     │       └── log/                    # 设备报告存储目录
@@ -45,6 +45,26 @@ wfgame-ai-server/
 - ❌ 删除了 `log/` 子目录结构
 - ✅ 截图文件直接存放在设备目录下
 - ✅ 统一设备目录命名：`设备序列号_YYYY-MM-DD-HH-MM-SS`
+
+> ⚙️ **配置文件路径变量（config.ini [devices_report_paths] 节）**
+> ```ini
+# 设备回放后生成报告目录
+device_replay_reports_dir = ${server_dir}\staticfiles\reports
+
+# 设备回放报告生成-静态资源目录
+report_static_url = ${device_replay_reports_dir}\static
+
+# 设备回放报告模版
+template_dir = ${device_replay_reports_dir}\templates
+
+# 单设备报告目录
+single_device_reports_dir = ${device_replay_reports_dir}\ui_run\WFGameAI.air\log
+
+# 多设备汇总报告目录
+summary_reports_dir = ${device_replay_reports_dir}\summary_reports
+```
+
+
 
 ### 关键文件作用说明
 
@@ -75,11 +95,26 @@ graph TD
     H --> I[提取步骤和screen数据]
     I --> J[生成设备HTML报告]
 
-    J --> K[收集所有设备报告]
-    K --> L[_prepare_summary_data]
-    L --> M[计算统计数据]
-    M --> N[生成汇总HTML报告]
+    J --> K{多设备执行?}
+    K -->|是| L[等待所有设备完成]
+    K -->|否| M[生成单设备汇总]
+    L --> N[收集所有设备报告]
+    N --> O[_prepare_summary_data]
+    O --> P[计算统计数据]
+    P --> Q[生成**唯一**汇总HTML报告]
+    M --> R[生成单设备汇总报告]
 ```
+
+### 🚨 重要修正：汇总报告生成逻辑
+
+**当前错误行为**：
+- 每个设备独立生成汇总报告
+- 结果：多个 `summary_report_*.html` 文件
+
+**正确行为**：
+- 只在**最后一个设备完成后**生成**一个**汇总报告
+- 该报告包含**所有设备**的结果
+- 汇总报告生成时机：所有设备测试完成后
 
 ### 关键数据结构
 
@@ -363,7 +398,7 @@ def _prepare_summary_data(self, device_report_dirs: List[Path], scripts: List[Di
             # 设备和脚本信息
             "devices": devices,
             "scripts": scripts or [],
-            "static_root": self.config.STATIC_URL
+            "static_root": self.config.report_static_url
         }
 
     except Exception as e:
@@ -447,7 +482,7 @@ def _prepare_summary_data(self, device_report_dirs: List[Path], scripts: List[Di
         device_name = device_dir.name
 
         # ✅ 正确的相对路径
-        device_report_link = f"../ui_run/WFGameAI.air/log/{device_name}/log.html"
+        device_report_link = f"{single_device_reports_dir}/{device_name}/log.html"
 
         # ❌ 错误的路径格式
         # device_report_link = f"{device_name}/log.html"  # 缺少目录层级
@@ -506,7 +541,7 @@ def _prepare_summary_data(self, device_report_dirs: List[Path], scripts: List[Di
 def _render_summary_template(self, summary_data: Dict) -> str:
     try:
         # ✅ 使用正确的模板路径查找
-        template_path = self.report_manager.reports_root / "templates" / "summary_template.html"
+        template_path = f"{template_dir}/summary_template.html"
 
         if not template_path.exists():
             # 🎯 详细的错误信息
@@ -528,174 +563,3 @@ def _render_summary_template(self, summary_data: Dict) -> str:
 ```
 
 ---
-
-## 📋 AI 修改 Checklist
-
-### 修改前检查
-
-- [ ] 使用 `semantic_search` 收集相关代码上下文
-- [ ] 使用 `read_file` 完整理解目标文件
-- [ ] 确认问题根本原因而非表面症状
-- [ ] 理解数据流和文件依赖关系
-
-### 修改时要求
-
-- [ ] 在原文件原位置直接修改
-- [ ] 保持函数接口和返回值类型不变
-- [ ] 添加详细的修改注释 (`🔧 AI修改`)
-- [ ] 确保修改不破坏现有功能
-
-### 修改后验证
-
-- [ ] 使用 `get_errors` 检查语法错误
-- [ ] 运行 `final_end_to_end_verification.py` 验证功能
-- [ ] 检查生成的报告文件是否正确
-- [ ] 验证设备链接是否能正常访问
-- [ ] 确认截图是否正确显示
-
----
-
-## 🔄 测试与验证流程
-
-### 端到端验证脚本
-
-```python
-# 运行完整验证
-python final_end_to_end_verification.py
-
-# 检查结果应该显示:
-# ✅ ActionProcessor截图集成 - 通过
-# ✅ 设备报告生成 - 通过
-# ✅ 汇总报告生成 - 通过
-```
-
-### 手动验证步骤
-
-1. **检查设备报告生成**:
-
-   ```bash
-   # 查看设备报告目录
-   ls staticfiles/reports/ui_run/WFGameAI.air/log/
-
-   # 检查截图文件
-   ls staticfiles/reports/ui_run/WFGameAI.air/log/[设备名]/log/
-   ```
-
-2. **检查汇总报告生成**:
-
-   ```bash
-   # 查看汇总报告
-   ls staticfiles/reports/summary_reports/
-
-   # 验证最新报告
-   cat staticfiles/reports/summary_reports/summary_report_*.html | grep "设备名"
-   ```
-
-3. **验证链接正确性**:
-   - 打开汇总报告 HTML 文件
-   - 点击设备链接确认能正常访问
-   - 检查设备报告中的截图是否显示
-
----
-
-## 🚀 性能优化建议
-
-### 截图处理优化
-
-```python
-# 🔧 优化截图处理性能
-def _create_unified_screen_object(self, log_dir, pos_list=None, confidence=0.85, rect_info=None):
-    try:
-        # 🎯 异步处理缩略图生成
-        screenshot_success = self._capture_screenshot(screenshot_absolute)
-        if screenshot_success:
-            # 异步生成缩略图，不阻塞主流程
-            threading.Thread(
-                target=self._create_thumbnail,
-                args=(screenshot_absolute, thumbnail_absolute)
-            ).start()
-
-        return screen_object
-    except Exception as e:
-        # 错误处理...
-        pass
-```
-
-### 报告生成优化
-
-```python
-# 🔧 优化报告生成性能
-def generate_summary_report(self, device_report_dirs: List[Path], scripts: List[Dict]) -> Optional[Path]:
-    # 🎯 并行处理设备数据
-    with ThreadPoolExecutor(max_workers=4) as executor:
-        device_futures = [
-            executor.submit(self._parse_device_data, device_dir)
-            for device_dir in device_report_dirs
-        ]
-
-        device_results = [future.result() for future in device_futures]
-
-    # 继续报告生成...
-```
-
----
-
-## 📚 扩展资源
-
-### 相关文档
-
-- `WFGameAI_综合开发规范.md` - 完整开发标准
-- `AI_Development_Standards.md` - AI 工具使用规范
-- `config.ini` - 路径和配置管理
-
-### 关键配置
-
-```ini
-# config.ini 中的重要配置
-[reports]
-static_url = ../../../../static/
-template_dir = staticfiles/reports/templates/
-ui_run_dir = staticfiles/reports/ui_run/WFGameAI.air/log/
-summary_dir = staticfiles/reports/summary_reports/
-```
-
-### 调试技巧
-
-```python
-# 🔧 调试报告生成问题
-def debug_report_generation():
-    # 1. 检查目录权限
-    print(f"Reports root exists: {reports_root.exists()}")
-
-    # 2. 检查模板文件
-    print(f"Template exists: {template_path.exists()}")
-
-    # 3. 检查数据结构
-    print(f"Summary data keys: {summary_data.keys()}")
-
-    # 4. 检查设备数据
-    for device in devices:
-        print(f"Device: {device['name']}, Report: {device['report']}")
-```
-
----
-
-> 📝 **文档版本**: v2.1.0
-> 🗓️ **最后更新**: 2025-06-30
-> 👥 **维护者**: WFGameAI 开发团队
-> 🎯 **目标**: 为 AI 开发助手提供完整的报告系统指南
-
-**📋 v2.1.0 重大更新**:
-- ✅ **修复多设备AI检测报告生成**: 完全解决"0个步骤，0张截图"问题
-- ✅ **统一目录结构**: 删除log子目录，采用扁平化结构
-- ✅ **路径标准化**: ActionProcessor和ReportGenerator使用统一路径约定
-- ✅ **增强错误处理**: 多重截图方法fallback，确保截图成功
-- ✅ **完善日志格式**: 支持Priority模式AI检测操作的完整记录
-
-**🔧 关键修复项**:
-1. **ActionProcessor日志路径**: 从临时目录改为设备报告目录
-2. **截图保存逻辑**: 直接保存在设备目录下，无log子目录
-3. **多设备报告收集**: 修复设备报告目录返回机制
-4. **相对路径处理**: 统一HTML模板的截图引用格式
-
-**重要提醒**: 本文档专为 AI 工具优化，请严格按照指南进行修改和验证！

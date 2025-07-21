@@ -1350,12 +1350,14 @@ def replay_script(request):
                 }, status=404)
 
             # 更新配置中的路径
-            config['path'] = path_input        # 4. 创建日志目录
+            config['path'] = path_input
+
+        # 4. 创建日志目录
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         log_dir_name = f"multi_device_replay_{timestamp}"
         log_dir = os.path.join(DEVICE_REPORTS_DIR, log_dir_name)
         os.makedirs(log_dir, exist_ok=True)
-        logger.info(f"创建日志目录: {log_dir}")
+        # logger.info(f"创建日志目录: {log_dir}")
 
         # 5. 创建任务并获取任务ID
         task_id = task_manager.create_task(devices, script_configs, log_dir)

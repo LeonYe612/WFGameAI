@@ -157,7 +157,7 @@ class ReportGenerator:
             report_data = self._prepare_report_data(device_dir, scripts)
 
             # 3. 设置正确的静态资源路径
-            static_root = self.config.STATIC_URL
+            static_root = self.config.report_static_url
             report_data["static_root"] = static_root
 
             # 4. 使用Jinja2模板生成HTML
@@ -193,7 +193,8 @@ class ReportGenerator:
             print(f"📝 开始生成汇总报告: {summary_file.name}")
 
             # 汇总报告HTML内容
-            html_content = self._build_summary_html(device_reports, scripts)            with open(summary_file, 'w', encoding='utf-8') as f:
+            html_content = self._build_summary_html(device_reports, scripts)
+            with open(summary_file, 'w', encoding='utf-8') as f:
                 f.write(html_content)
 
             print(f"✅ 汇总报告生成成功: {summary_file}")

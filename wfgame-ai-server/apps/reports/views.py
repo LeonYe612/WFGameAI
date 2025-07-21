@@ -58,21 +58,20 @@ paths = config['paths']
 # Log loaded key paths
 logger.info(f'已加载配置文件: {CONFIG_PATH}')
 logger.info(f'REPORTS_DIR将被设置为: {paths["reports_dir"]}')
-logger.info(f'UI_REPORTS_DIR将被设置为: {paths["ui_reports_dir"]}')
+logger.info(f'REPORTS_DIR将被设置为: {paths["REPORTS_DIR"]}')
 logger.info(f'已加载YOLO模型: {paths["model_path"]}')
 # Get report paths from config.ini
 REPORTS_DIR = os.path.abspath(paths['reports_dir'])
 
 # Use the new unified report directory structure from ReportManager
-STATICFILES_REPORTS_DIR = str(report_manager.reports_root)
-DEVICE_REPORTS_DIR = str(report_manager.device_reports_dir)
+REPORTS_STATIC_DIR = str(report_manager.report_static_url)
+DEVICE_REPLAY_REPORTS_DIR = str(report_manager.device_replay_reports_dir)
 SUMMARY_REPORTS_DIR = str(report_manager.summary_reports_dir)
-# Keep UI_REPORTS_DIR for compatibility, but point to new device reports directory
-UI_REPORTS_DIR = DEVICE_REPORTS_DIR
+# Keep REPORTS_DIR for compatibility, but point to new device reports directory
 
-logger.info(f'统一报告目录: DEVICE_REPORTS_DIR={DEVICE_REPORTS_DIR}')
+logger.info(f'统一报告目录: REPORTS_DIR={REPORTS_DIR}')
 logger.info(f'汇总报告目录: SUMMARY_REPORTS_DIR={SUMMARY_REPORTS_DIR}')
-logger.info(f'报告管理器已初始化，根目录: {report_manager.reports_root}')
+logger.info(f'报告管理器已初始化，根目录REPORTS_DIR={REPORTS_DIR}')
 
 @api_view(['POST'])
 @csrf_exempt
@@ -81,14 +80,14 @@ def get_report_list(request):
     """获取已生成的测试报告列表"""
     try:
         # 确保目录存在
-        os.makedirs(UI_REPORTS_DIR, exist_ok=True)
+        os.makedirs(REPORTS_DIR, exist_ok=True)
 
         # 获取所有HTML报告文件
         reports = []
         report_id = 1
 
         # 检查两个可能的报告目录
-        report_dirs = [UI_REPORTS_DIR]
+        report_dirs = [REPORTS_DIR]
         logger.info(f"将在以下目录中查找报告: {report_dirs}")
 
         for reports_dir in report_dirs:
@@ -139,11 +138,9 @@ def get_report_list(request):
                 except Exception as e:
                     logger.error(f"读取报告内容失败: {e}")
 
-                # 生成报告URL (相对路径)
-                if reports_dir == UI_REPORTS_DIR:
-                    report_url = f"/static/WFGameAI-reports/ui_reports/{filename}"
-                else:
-                    report_url = f"/static/reports/summary_reports/{filename}"
+                # 使用报告管理器的汇总报告URL方法
+                report_url = report_manager.get_summary_report_url(filename)
+                logger.info(f"报告URL: {report_url}")
 
                 reports.append({
                     'id': str(report_id),
@@ -173,11 +170,11 @@ def report_detail(request, report_id):
     """获取指定报告的详细信息"""
     try:
         # 确保目录存在
-        os.makedirs(UI_REPORTS_DIR, exist_ok=True)
+        os.makedirs(REPORTS_DIR, exist_ok=True)
 
         # 获取所有HTML报告文件，检查两个可能的目录
         report_files = []
-        report_dirs = [UI_REPORTS_DIR]
+        report_dirs = [REPORTS_DIR]
 
         for reports_dir in report_dirs:
             if os.path.exists(reports_dir):
@@ -227,11 +224,11 @@ def report_delete(request, report_id):
     """删除指定的测试报告"""
     try:
         # 确保目录存在
-        os.makedirs(UI_REPORTS_DIR, exist_ok=True)
+        os.makedirs(REPORTS_DIR, exist_ok=True)
 
         # 获取所有HTML报告文件，检查两个可能的目录
         report_files = []
-        report_dirs = [UI_REPORTS_DIR]
+        report_dirs = [REPORTS_DIR]
 
         for reports_dir in report_dirs:
             if os.path.exists(reports_dir):
@@ -323,7 +320,7 @@ def summary_list(request):
         reports = []
 
         # 修改：优先使用新的统一目录结构，同时保留旧目录作为备用
-        report_dirs = [SUMMARY_REPORTS_DIR, UI_REPORTS_DIR]
+        report_dirs = [SUMMARY_REPORTS_DIR, REPORTS_DIR]
         logger.info(f"将在以下目录中查找报告: {report_dirs}")
 
         found_reports = False
@@ -425,22 +422,23 @@ def summary_list(request):
                                                 elif detail_link.startswith("./"):
                                                     path_suffix = detail_link[len("./"):]
                                                     if path_suffix.startswith("ui_run/WFGameAI.air/log/"):
-                                                         detail_link = f"/static/reports/summary_reports/{path_suffix}" # Path relative to summary_reports
-                                                         # This should actually be:
-                                                         detail_link = f"/static/reports/{path_suffix}" # Corrected: relative to static/reports/
+                                                         # 使用报告管理器的汇总报告路径
+                                                         detail_link = f"{report_manager._summary_web_path}/{path_suffix}"
+                                                         # 更正：应该是相对于静态报告根目录
+                                                         detail_link = f"{report_manager._reports_web_base}/{path_suffix}"
                                                     else:
                                                         logger.warning(f"Unexpected detail_link structure '{detail_link}' in {filename} after './'.")
-                                                        # Similar guess for ./
+                                                        # 使用报告管理器的汇总报告路径
                                                         if not path_suffix.startswith("/"):
-                                                            detail_link = f"/static/reports/summary_reports/{path_suffix}"
+                                                            detail_link = f"{report_manager._summary_web_path}/{path_suffix}"
                                                         else:
-                                                            detail_link = f"/static/reports/summary_reports{path_suffix}"
+                                                            detail_link = f"{report_manager._summary_web_path}{path_suffix}"
 
 
                                                 elif detail_link.startswith("ui_run/WFGameAI.air/log/"):
-                                                    # e.g., ui_run/WFGameAI.air/log/DEVICE/log.html
-                                                    # Assumed to be relative to /static/reports/
-                                                    detail_link = f"/static/reports/{detail_link}"
+                                                    # 例如: ui_run/WFGameAI.air/log/DEVICE/log.html
+                                                    # 假设相对于 /static/reports/
+                                                    detail_link = f"{report_manager._reports_web_base}/{detail_link}"
                                                 else:
                                                     # Other relative paths not matching the expected patterns
                                                     logger.warning(
@@ -487,14 +485,14 @@ def summary_list(request):
                             title = soup.find('h1')
                             title_text = title.text.strip() if title else 'WFGameAI 自动化测试报告'
 
-                            # 构建URL，确保URL路径正确
+                            # 构建URL，使用报告管理器动态计算而不是硬编码
                             # 修改：根据目录设置不同的基础URL
                             if reports_dir == SUMMARY_REPORTS_DIR:
-                                # 新的统一目录结构
-                                url_base = '/static/reports/summary_reports/'
-                            elif reports_dir == UI_REPORTS_DIR: # This is now DEVICE_REPORTS_DIR
-                                # 设备报告目录
-                                url_base = '/static/reports/ui_run/WFGameAI.air/log/' # Should be this for device logs if UI_REPORTS_DIR points to DEVICE_REPORTS_DIR
+                                # 汇总报告目录 - 使用报告管理器的配置
+                                url_base = report_manager._summary_web_path + '/'
+                            elif reports_dir == REPORTS_DIR: # This is now REPORTS_DIR
+                                # 设备报告目录 - 使用报告管理器的配置
+                                url_base = report_manager._single_device_web_path + '/'
                             # else: # Removed BACKUP_REPORTS_DIR case
                                 # # 备份目录
                                 # url_base = '/static/reports/'
@@ -512,13 +510,13 @@ def summary_list(request):
                         except Exception as e:
                             # 如果解析失败，添加基本信息
                             logger.error(f"解析报告内容失败: {e}")
-                            # 修改：根据报告来源目录设置正确的URL
+                            # 修改：根据报告来源目录设置正确的URL，使用报告管理器配置
                             if reports_dir == SUMMARY_REPORTS_DIR:
-                                # 新的统一目录结构
-                                url_base = '/static/reports/summary_reports/'
-                            elif reports_dir == UI_REPORTS_DIR: # This is now DEVICE_REPORTS_DIR
-                                # 设备报告目录
-                                url_base = '/static/reports/ui_run/WFGameAI.air/log/' # Should be this for device logs
+                                # 汇总报告目录 - 使用报告管理器的配置
+                                url_base = report_manager._summary_web_path + '/'
+                            elif reports_dir == REPORTS_DIR: # This is now REPORTS_DIR
+                                # 设备报告目录 - 使用报告管理器的配置
+                                url_base = report_manager._single_device_web_path + '/'
                             # else: # Removed BACKUP_REPORTS_DIR case
                                 # # 备份目录
                                 # url_base = '/static/reports/'
