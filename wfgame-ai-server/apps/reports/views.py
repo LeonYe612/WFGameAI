@@ -58,7 +58,6 @@ paths = config['paths']
 # Log loaded key paths
 logger.info(f'已加载配置文件: {CONFIG_PATH}')
 logger.info(f'REPORTS_DIR将被设置为: {paths["reports_dir"]}')
-logger.info(f'REPORTS_DIR将被设置为: {paths["REPORTS_DIR"]}')
 logger.info(f'已加载YOLO模型: {paths["model_path"]}')
 # Get report paths from config.ini
 REPORTS_DIR = os.path.abspath(paths['reports_dir'])
@@ -69,9 +68,8 @@ DEVICE_REPLAY_REPORTS_DIR = str(report_manager.device_replay_reports_dir)
 SUMMARY_REPORTS_DIR = str(report_manager.summary_reports_dir)
 # Keep REPORTS_DIR for compatibility, but point to new device reports directory
 
-logger.info(f'统一报告目录: REPORTS_DIR={REPORTS_DIR}')
-logger.info(f'汇总报告目录: SUMMARY_REPORTS_DIR={SUMMARY_REPORTS_DIR}')
-logger.info(f'报告管理器已初始化，根目录REPORTS_DIR={REPORTS_DIR}')
+logger.info(f'设备汇总报告目录: {SUMMARY_REPORTS_DIR}')
+logger.info(f'单设备回放报告目录:{DEVICE_REPLAY_REPORTS_DIR}')
 
 @api_view(['POST'])
 @csrf_exempt

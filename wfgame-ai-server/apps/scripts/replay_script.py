@@ -852,7 +852,8 @@ def check_device_status(device, device_name):
         return False
 
 
-def process_priority_based_script(device, steps, meta, log_dir, action_processor, screenshot_queue, click_queue, max_duration=None):
+def process_priority_based_script(device, steps, meta, device_report_dir, action_processor,
+                        screenshot_queue, click_queue, max_duration=None):
     """处理基于优先级的动态脚本 - 修复后版本"""
     print_realtime("🎯 开始执行优先级模式脚本")
 
@@ -915,9 +916,9 @@ def process_priority_based_script(device, steps, meta, log_dir, action_processor
             for step in special_steps:
                 print_realtime(f"🚧 Stagnation 特殊操作: {step.get('action')} P{step.get('Priority')} - {step.get('remark')}")
                 if step.get('action') == 'swipe':
-                    result = action_processor._handle_swipe_priority_mode(step, cycle_count, log_dir)
+                    result = action_processor._handle_swipe_priority_mode(step, cycle_count, device_report_dir)
                 elif step.get('action') == 'fallback_click':
-                    result = action_processor._handle_fallback_click_priority_mode(step, cycle_count, log_dir)
+                    result = action_processor._handle_fallback_click_priority_mode(step, cycle_count, device_report_dir)
                 else:
                     continue
                 # 执行后检测界面变化
@@ -958,7 +959,7 @@ def process_priority_based_script(device, steps, meta, log_dir, action_processor
                 detection_count += 1
                 if success and detection_result[0] is not None:
                     # 命中，执行点击和日志记录
-                    result = action_processor._handle_ai_detection_click_priority_mode(step, cycle_count, log_dir)
+                    result = action_processor._handle_ai_detection_click_priority_mode(step, cycle_count, device_report_dir)
                     if result.success and result.executed:
                         matched_any_target = True
                         hit_step = step
@@ -984,7 +985,7 @@ def process_priority_based_script(device, steps, meta, log_dir, action_processor
             print_realtime(f"  尝试滑动 P{priority}: {step_class}")
             try:
                 # 对于滑动，直接执行并记录
-                result = action_processor._handle_swipe_priority_mode(step, cycle_count, log_dir)
+                result = action_processor._handle_swipe_priority_mode(step, cycle_count, device_report_dir)
                 if result.success and result.executed:
                     matched_any_target = True
                     hit_step = step
@@ -1008,7 +1009,7 @@ def process_priority_based_script(device, steps, meta, log_dir, action_processor
             print_realtime(f"  尝试备选点击 P{priority}: {step_class}")
             try:
                 # 对于备选点击，直接执行并记录
-                result = action_processor._handle_fallback_click_priority_mode(step, cycle_count, log_dir)
+                result = action_processor._handle_fallback_click_priority_mode(step, cycle_count, device_report_dir)
                 if result.success and result.executed:
                     matched_any_target = True
                     hit_step = step
@@ -1033,7 +1034,7 @@ def process_priority_based_script(device, steps, meta, log_dir, action_processor
     return cycle_count > 0
 
 
-def process_sequential_script(device, steps, log_dir, action_processor, max_duration=None):
+def process_sequential_script(device, steps, device_report_dir, action_processor, max_duration=None):
     """处理顺序执行脚本"""
     print_realtime("📝 开始按顺序执行脚本")
 
@@ -1059,7 +1060,7 @@ def process_sequential_script(device, steps, log_dir, action_processor, max_dura
 
         # 使用ActionProcessor处理步骤
         try:
-            result = action_processor.process_action(step, step_idx, log_dir)
+            result = action_processor.process_action(step, step_idx, device_report_dir)
 
             # 处理新的ActionResult格式
             if hasattr(result, 'success'):
@@ -1108,7 +1109,7 @@ def process_sequential_script(device, steps, log_dir, action_processor, max_dura
 def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, stop_event,
                  device_name, log_dir, loop_count=1):
     """
-    重构后的设备回放函数 - 精简版本
+    重构后的设备回放函数
     主要负责流程控制，具体的action处理委托给ActionProcessor
     """
     print_realtime(f"🚀 开始回放设备: {device_name}, 脚本数量: {len(scripts)}")
@@ -1259,12 +1260,12 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
             try:
                 if is_priority_based:
                     executed = process_priority_based_script(
-                        device, steps, meta, log_dir, action_processor,
+                        device, steps, meta, device_report_dir, action_processor,
                         screenshot_queue, click_queue, max_duration
                     )
                 else:
                     executed = process_sequential_script(
-                        device, steps, log_dir, action_processor, max_duration
+                        device, steps, device_report_dir, action_processor, max_duration
                     )
 
                 # 记录执行情况，但不影响脚本执行成功状态
@@ -1289,10 +1290,10 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
     script_processing_success = total_scripts_processed > 0
 
     # 🔧 关键修复：真正的状态分离
-    # 脚本执行状态：只要脚本正常运行到结束，就认为成功（不依赖业务结果）
+    # 脚本执行状态：只要函数正常运行到结束，就认为成功（不依赖业务结果）
     # 这是状态分离的核心：脚本执行状态与业务结果状态完全独立
 
-    # 脚本执行状态：只要函数正常执行到这里，就认为脚本执行成功
+    # 脚本执行状态：只要到达这里，就认为脚本执行成功
     has_any_execution = script_execution_completed  # 基于脚本是否正常完成
 
     if has_any_execution:
@@ -1545,12 +1546,22 @@ def log_device_summary(device_results):
 # 只保留流程调度、日志、报告、设备管理、模型加载等工具方法
 # 所有action处理都通过ActionProcessor实现
 def main():
-    """主函数 - 支持多设备并发回放和文件日志"""
-    import sys
-    import json
-    import time
-    import os
-    from adbutils import adb
+    """主函数"""
+    # 解析命令行参数
+    parser = argparse.ArgumentParser(description='脚本回放工具')
+    parser.add_argument('--device', type=str, help='设备序列号')
+    parser.add_argument('--script', type=str, action='append', help='脚本路径')
+    parser.add_argument('--loop-count', type=int, action='append', help='循环次数')
+    parser.add_argument('--max-duration', type=int, action='append', help='最大执行时长(秒)')
+    parser.add_argument('--log-dir', type=str, help='日志目录')
+    parser.add_argument('--multi-device', action='store_true', help='多设备模式')
+    parser.add_argument('--account-user', type=str, help='账号用户名')
+    parser.add_argument('--account-pass', type=str, help='账号密码')
+    args = parser.parse_args()
+
+    # 初始化全局变量
+    global is_multi_device
+    is_multi_device = args.multi_device or False  # 初始化多设备模式标志
 
     # 🔧 增加详细的启动调试信息
     print_realtime("=" * 60)
@@ -1803,25 +1814,34 @@ def main():
                                 system_error_occurred = True
                                 exit_code = -1
                                 traceback.print_exc()  # 记录详细堆栈
-                        # 生成汇总报告
-                        try:
-                            if current_execution_device_dirs and REPORT_GENERATOR:
-                                print_realtime("📊 生成多设备汇总报告...")
-                                # 转换字符串路径为Path对象
-                                from pathlib import Path
-                                device_report_paths = [Path(dir_path) for dir_path in current_execution_device_dirs]
-                                summary_report_path = REPORT_GENERATOR.generate_summary_report(
-                                    device_report_paths,
-                                    scripts  # 传入脚本列表
-                                )
-                                if summary_report_path:
-                                    # Convert Path object to string for JSON serialization
-                                    report_url = str(summary_report_path)
-                                    print_realtime(f"✅ 多设备汇总报告已生成: {summary_report_path}")
-                                else:
-                                    print_realtime("⚠️ 汇总报告生成失败")
-                        except Exception as e:
-                            print_realtime(f"⚠️ 汇总报告生成失败: {e}")
+
+                        # 删除子进程中的汇总报告生成代码，改为仅记录设备报告目录
+                        # 子进程不应该生成汇总报告，只生成自己的设备报告
+                        if current_execution_device_dirs and is_multi_device:
+                            # 子进程只记录设备报告目录，不生成汇总报告
+                            print_realtime("📊 设备测试完成，已记录报告目录")
+                            # 只记录device_report_dir以供主进程使用
+                            device_report_dir = current_execution_device_dirs[0] if current_execution_device_dirs else None
+                            if device_report_dir:
+                                # 将设备报告目录作为report_url返回，供主进程汇总
+                                report_url = str(device_report_dir)
+                                print_realtime(f"📂 设备报告目录: {device_report_dir}")
+                        # 如果是单设备模式，则允许生成汇总报告
+                        elif current_execution_device_dirs and not is_multi_device and REPORT_GENERATOR:
+                            print_realtime("📊 单设备模式，生成汇总报告...")
+                            # 转换字符串路径为Path对象
+                            from pathlib import Path
+                            device_report_paths = [Path(dir_path) for dir_path in current_execution_device_dirs]
+                            summary_report_path = REPORT_GENERATOR.generate_summary_report(
+                                device_report_paths,
+                                scripts  # 传入脚本列表
+                            )
+                            if summary_report_path:
+                                # Convert Path object to string for JSON serialization
+                                report_url = str(summary_report_path)
+                                print_realtime(f"✅ 汇总报告已生成: {summary_report_path}")
+                            else:
+                                print_realtime("⚠️ 汇总报告生成失败")
 
                         print_realtime("✅ 脚本回放执行完成")
                         # 更新状态：业务逻辑执行完成

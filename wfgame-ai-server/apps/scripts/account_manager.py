@@ -121,7 +121,7 @@ class AccountManager:
             if device_serial in self.device_allocations:
                 username, password = self.device_allocations[device_serial]
                 del self.device_allocations[device_serial]
-                print(f"释放设备 {device_serial} 的账号分配: {username}")
+                print(f"释放设备: {device_serial} 的账号分配: {username}")
 
     def get_allocation_status(self) -> Dict[str, str]:
         """

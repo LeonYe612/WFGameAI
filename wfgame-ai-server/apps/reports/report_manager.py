@@ -154,7 +154,20 @@ class ReportManager:
             timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
 
         device_dir_name = f"{clean_name}_{timestamp}"
+
+        # 🔧 修复：确保使用正确的single_device_reports_dir路径
+        # 检查single_device_reports_dir是否存在，如果不存在则创建
+        if not self.single_device_reports_dir.exists():
+            logger.info(f"创建单设备报告目录: {self.single_device_reports_dir}")
+            PathUtils.ensure_dir(self.single_device_reports_dir)
+
+        # 确保设备目录创建在log目录下
         device_dir = PathUtils.safe_join(self.single_device_reports_dir, device_dir_name)
+
+        # 记录详细的目录信息，便于调试
+        logger.info(f"设备报告目录配置: {self.config.single_device_reports_dir}")
+        logger.info(f"实际使用的设备报告目录: {self.single_device_reports_dir}")
+        logger.info(f"将在此目录下创建设备目录: {device_dir}")
 
         # 使用设备锁确保并发安全
         with self.lock_manager.device_report_lock(clean_name):
@@ -164,7 +177,9 @@ class ReportManager:
                 original_dir = device_dir
                 while device_dir.exists():
                     device_dir = Path(f"{original_dir}_{counter}")
-                    counter += 1                # 创建设备目录
+                    counter += 1
+
+                # 创建设备目录
                 PathUtils.ensure_dir(device_dir)
 
                 # 创建空的log.txt文件
@@ -209,9 +224,23 @@ class ReportManager:
             directory_url = f"{base_url}/{relative_path}/"
 
             # 汇总报告到设备报告的相对路径（用于HTML链接）
-            # 例如: ../ui_run/WFGameAI.air/log/{device_name}/log.html
-            single_relative = os.path.relpath(device_dir, summary_reports_dir).replace('\\', '/')
-            html_report_relative = f"{single_relative}/log.html"
+            # 🔧 修复：使用正确的相对路径格式，不使用../前缀
+            # 计算从summary_reports_dir到single_device_reports_dir的相对路径
+            try:
+                # 计算从汇总报告目录到设备报告目录的相对路径
+                reports_to_single = os.path.relpath(
+                    self.config.device_replay_reports_dir,
+                    summary_reports_dir.parent
+                ).replace('\\', '/')
+
+                # 构建相对URL，使用ui_run/WFGameAI.air/log/{device_name}/log.html格式
+                html_report_relative = f"ui_run/WFGameAI.air/log/{device_name}/log.html"
+
+                logger.debug(f"计算的相对路径: {html_report_relative}")
+            except Exception as e:
+                logger.warning(f"计算相对路径失败: {e}")
+                # 回退方案：使用标准格式
+                html_report_relative = f"ui_run/WFGameAI.air/log/{device_name}/log.html"
 
             return {
                 'html_report': html_report_url,
@@ -230,7 +259,8 @@ class ReportManager:
             log_file_url = f"{base_url}/{device_name}/log.txt"
             screenshots_url = f"{base_url}/{device_name}/"
             directory_url = f"{base_url}/{device_name}/"
-            html_report_relative = f"../ui_run/WFGameAI.air/log/{device_name}/log.html"
+            # 🔧 修复：使用正确的相对路径格式，不使用../前缀
+            html_report_relative = f"ui_run/WFGameAI.air/log/{device_name}/log.html"
             return {
                 'html_report': html_report_url,
                 'html_report_relative': html_report_relative,
@@ -252,30 +282,105 @@ class ReportManager:
             max_retries = self.config.retry_count
 
         retry_delay = self.config.retry_delay_seconds
+        target_dir = PathUtils.normalize_path(target_dir)
 
+        # 注意：我们不再复制静态资源到设备目录，而是使用相对路径引用统一的静态资源
+        # 但保留此方法用于兼容旧代码，直接返回成功
+        logger.info(f"使用相对路径引用静态资源，无需复制资源到设备目录: {target_dir}")
+        return True
+
+        # 以下代码保留但不执行
         for attempt in range(max_retries + 1):
             try:
-                import airtest
-                airtest_static = Path(airtest.__file__).parent / "report" / "static"
+                # 方法1: 从airtest包获取静态资源
+                try:
+                    import airtest
+                    airtest_static = Path(airtest.__file__).parent / "report" / "static"
 
-                if airtest_static.exists():
-                    target_static = PathUtils.safe_join(target_dir, "static")
+                    if airtest_static.exists():
+                        target_static = PathUtils.safe_join(target_dir, "static")
 
-                    # 如果目标静态目录存在，先删除
-                    if target_static.exists():
-                        PathUtils.safe_remove(target_static)
+                        # 如果目标静态目录存在，先删除
+                        if target_static.exists():
+                            PathUtils.safe_remove(target_static)
 
-                    # 复制整个静态目录
-                    shutil.copytree(str(airtest_static), str(target_static))
-                    logger.debug(f"静态资源复制成功: {target_static}")
-                    return True
-                else:
-                    logger.warning(f"Airtest静态资源目录不存在: {airtest_static}")
-                    return False
+                        # 复制整个静态目录
+                        shutil.copytree(str(airtest_static), str(target_static))
+                        logger.debug(f"静态资源从airtest包复制成功: {target_static}")
+                        return True
+                    else:
+                        logger.warning(f"Airtest静态资源目录不存在: {airtest_static}")
+                        # 继续尝试其他方法
+                except ImportError:
+                    logger.warning("未找到Airtest模块，尝试其他方法")
 
-            except ImportError:
-                logger.warning("未找到Airtest模块，无法复制静态资源")
-                return False
+                # 方法2: 从配置的静态资源目录复制
+                try:
+                    static_src = PathUtils.normalize_path(self.report_static_url)
+                    if static_src.exists():
+                        target_static = PathUtils.safe_join(target_dir, "static")
+
+                        # 如果目标静态目录存在，先删除
+                        if target_static.exists():
+                            PathUtils.safe_remove(target_static)
+
+                        # 复制整个静态目录
+                        shutil.copytree(str(static_src), str(target_static))
+                        logger.debug(f"静态资源从配置目录复制成功: {target_static}")
+                        return True
+                    else:
+                        logger.warning(f"配置的静态资源目录不存在: {static_src}")
+                        # 继续尝试其他方法
+                except Exception as e:
+                    logger.warning(f"从配置目录复制静态资源失败: {e}")
+
+                # 方法3: 从项目中可能的静态资源目录复制
+                possible_static_dirs = [
+                    PathUtils.safe_join(self.base_dir, "staticfiles", "reports", "static"),
+                    PathUtils.safe_join(self.base_dir, "apps", "reports", "staticfiles", "static"),
+                    PathUtils.safe_join(Path(__file__).parent, "staticfiles", "static")
+                ]
+
+                for static_dir in possible_static_dirs:
+                    if static_dir.exists():
+                        target_static = PathUtils.safe_join(target_dir, "static")
+
+                        # 如果目标静态目录存在，先删除
+                        if target_static.exists():
+                            PathUtils.safe_remove(target_static)
+
+                        # 复制整个静态目录
+                        shutil.copytree(str(static_dir), str(target_static))
+                        logger.debug(f"静态资源从项目目录复制成功: {target_static}")
+                        return True
+
+                # 如果无法复制，尝试创建最小化静态资源目录
+                target_static = PathUtils.safe_join(target_dir, "static")
+
+                # 确保目录存在
+                os.makedirs(str(target_static), exist_ok=True)
+                os.makedirs(str(PathUtils.safe_join(target_static, "css")), exist_ok=True)
+                os.makedirs(str(PathUtils.safe_join(target_static, "js")), exist_ok=True)
+                os.makedirs(str(PathUtils.safe_join(target_static, "image")), exist_ok=True)
+
+                # 创建基本的CSS文件
+                with open(str(PathUtils.safe_join(target_static, "css", "report.css")), "w") as f:
+                    f.write("""
+                    body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+                    .container-fluid { padding: 20px; }
+                    .title { text-align: center; margin-bottom: 20px; }
+                    .step { margin-bottom: 20px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+                    .success { background-color: #dff0d8; }
+                    .fail { background-color: #f2dede; }
+                    """)
+
+                # 创建基本的JS文件
+                with open(str(PathUtils.safe_join(target_static, "js", "jquery-1.10.2.min.js")), "w") as f:
+                    f.write("// jQuery minimal placeholder")
+
+                logger.warning(f"使用最小化静态资源目录: {target_static}")
+                return True
+
             except Exception as e:
                 if attempt < max_retries:
                     logger.warning(f"复制静态资源失败（第{attempt + 1}次尝试）: {e}，{retry_delay}秒后重试")
@@ -576,6 +681,25 @@ class ReportManager:
         else:
             # 其他相对路径，假设相对于reports目录
             return f'{reports_base}/{url}'
+
+    def normalize_report_url(self, device_name: str, is_relative: bool = True) -> str:
+        """
+        生成标准化的设备报告URL
+
+        Args:
+            device_name: 设备名称
+            is_relative: 是否使用相对路径（相对于summary_reports目录）
+
+        Returns:
+            标准化的URL
+        """
+        try:
+            if is_relative:
+                # 从summary_reports目录到设备目录的相对路径
+                return f"../ui_run/WFGameAI.air/log/{device_name}/log.html"
+        except Exception as e:
+            logger.error(f"生成标准化设备报告URL失败: {e}")
+
 
     def get_report_statistics(self) -> Dict:
         """

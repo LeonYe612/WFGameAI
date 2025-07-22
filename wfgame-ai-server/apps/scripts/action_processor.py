@@ -1650,8 +1650,8 @@ class ActionProcessor:
                         "title": f"#{step_idx+1} {step_remark or '文本输入操作'}"
                     }
                 }
-                }
                    }
+                }
                 # 添加screen对象到日志条目（如果可用）
                 if screen_data:
                     input_entry["data"]["screen"] = screen_data
@@ -1812,9 +1812,10 @@ class ActionProcessor:
             if not log_dir:
                 print("⚠️ 警告: log_dir未设置，无法创建screen对象")
                 return None
-            # 🔧 修复：直接使用设备报告目录，不创建log子目录
-            log_images_dir = log_dir
-            os.makedirs(log_images_dir, exist_ok=True)
+
+            # 🔧 移除: 不再检查multi_device_replay和创建新目录，直接使用传入的log_dir
+            # 确保log_dir存在
+            os.makedirs(log_dir, exist_ok=True)
 
             # 生成时间戳文件名
             timestamp = time.time()
@@ -1822,9 +1823,13 @@ class ActionProcessor:
             screenshot_filename = f"{screenshot_timestamp}.jpg"
             thumbnail_filename = f"{screenshot_timestamp}_small.jpg"
 
-            # 设置路径
-            screenshot_path = os.path.join(log_images_dir, screenshot_filename)
-            thumbnail_path = os.path.join(log_images_dir, thumbnail_filename)
+            # 设置路径 - 直接在log_dir下
+            screenshot_path = os.path.join(log_dir, screenshot_filename)
+            thumbnail_path = os.path.join(log_dir, thumbnail_filename)
+
+            # 设置相对路径 - 直接使用文件名
+            screenshot_relative = screenshot_filename
+            thumbnail_relative = thumbnail_filename
 
             # 获取设备截图
             screenshot_success = False
@@ -1850,17 +1855,19 @@ class ActionProcessor:
                     resolution = [width, height]
                     screenshot_success = True
 
-                    print(f"✅ 截图保存成功: {screenshot_filename}")
+                    print(f"✅ 截图保存成功: {screenshot_path}")
 
                 else:
                     print("⚠️ 截图获取失败，使用默认screen对象")
 
             except Exception as e:
-                print(f"⚠️ 截图处理失败: {e}")            # 🔧 修复: 即使截图失败也创建screen对象，不使用log/前缀
+                print(f"⚠️ 截图处理失败: {e}")
+
+            # 🔧 修复: 即使截图失败也创建screen对象，直接使用文件名
             screen_object = {
-                "src": screenshot_filename,
+                "src": screenshot_relative,
                 "_filepath": screenshot_path,
-                "thumbnail": thumbnail_filename,
+                "thumbnail": thumbnail_relative,
                 "resolution": resolution,
                 "pos": pos_list or [],
                 "confidence": confidence,
@@ -1879,7 +1886,6 @@ class ActionProcessor:
                 "_filepath": "fallback_screenshot.jpg",
                 "thumbnail": "fallback_thumbnail.jpg",
                 "resolution": [1080, 2400],
-                "pos": pos_list or [],
                 "pos": pos_list or [],
                 "confidence": confidence,
                 "rect": rect_info or [],
