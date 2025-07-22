@@ -442,7 +442,7 @@ class ReportGenerator:
                 "test_result": True,
                 "run_end": datetime.now().timestamp(),
                 "run_start": datetime.now().timestamp() - 60,
-                "static_root": self.config.report_static_url,
+                "static_root": "/static/reports/static/",  # 使用Web相对路径
                 "lang": "en",
                 "records": [],
                 "info": {
@@ -505,18 +505,26 @@ class ReportGenerator:
             env = Environment(loader=FileSystemLoader(str(template_path.parent)))
             template = env.get_template(template_path.name)
 
+            # 修复：使用相对URL路径而不是绝对文件路径
+            # 使用Web访问的相对URL路径，确保在浏览器中能正确加载静态资源
+            web_static_root = '/static/reports/static/'
+
             # 准备模板变量
             template_vars = {
                 'data': json.dumps(report_data, ensure_ascii=False),
                 'steps': report_data.get('steps', []),
                 'info': report_data.get('info', {}),
-                'static_root': self.config.report_static_url,
+                'static_root': web_static_root,  # 使用Web相对路径
                 'lang': 'en',
                 'log': 'log.txt',
                 'console': report_data.get('console', ''),
                 'extra_block': '',
                 'records': report_data.get('records', [])
             }
+
+            # 同时修改report_data中的static_root，确保数据一致
+            if 'static_root' in report_data:
+                report_data['static_root'] = web_static_root
 
             # 渲染模板
             html_content = template.render(**template_vars)
@@ -633,11 +641,15 @@ class ReportGenerator:
                         # 处理screen数据 - 这是关键部分！
                         screen_data = data.get("screen")
                         if screen_data:
-                            # 🔧 修复：检查并修正截图路径，确保指向设备专属目录而非临时目录
+                            # 获取设备名称，用于构建相对路径
+                            device_name = device_dir.name
+
+                            # 获取原始路径
                             src = screen_data.get("src", "")
                             filepath = screen_data.get("_filepath", "")
                             thumbnail = screen_data.get("thumbnail", "")
 
+                            # 🔧 修复：检查并修正截图路径，确保指向设备专属目录而非临时目录
                             # 检查路径是否包含multi_device_replay
                             if filepath and "multi_device_replay" in filepath:
                                 # 提取文件名
@@ -688,10 +700,16 @@ class ReportGenerator:
                                 if thumbnail.startswith("log/"):
                                     thumbnail = thumbnail[4:]  # 移除log/前缀
 
+                            # 修复：使用相对URL路径构建最终的截图URL
+                            # 在Web环境中，截图应该通过/static/reports/ui_run/WFGameAI.air/log/{device_name}/访问
+                            web_src = src
+                            web_thumbnail = thumbnail
+
+                            # 构建最终的screen对象
                             step["screen"] = {
-                                "src": src,
-                                "_filepath": filepath,
-                                "thumbnail": thumbnail,
+                                "src": web_src,  # 使用相对路径
+                                "_filepath": filepath,  # 保留原始路径用于调试
+                                "thumbnail": web_thumbnail,  # 使用相对路径
                                 "resolution": screen_data.get("resolution", [1080, 2400]),
                                 "pos": screen_data.get("pos", []),
                                 "vector": screen_data.get("vector", []),

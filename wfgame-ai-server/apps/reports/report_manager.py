@@ -233,14 +233,14 @@ class ReportManager:
                     summary_reports_dir.parent
                 ).replace('\\', '/')
 
-                # 构建相对URL，使用ui_run/WFGameAI.air/log/{device_name}/log.html格式
-                html_report_relative = f"ui_run/WFGameAI.air/log/{device_name}/log.html"
+                # 修改：使用绝对URL路径而不是相对路径，确保在Web环境中能正确解析
+                html_report_relative = f"/static/reports/ui_run/WFGameAI.air/log/{device_name}/log.html"
 
                 logger.debug(f"计算的相对路径: {html_report_relative}")
             except Exception as e:
                 logger.warning(f"计算相对路径失败: {e}")
                 # 回退方案：使用标准格式
-                html_report_relative = f"ui_run/WFGameAI.air/log/{device_name}/log.html"
+                html_report_relative = f"/static/reports/ui_run/WFGameAI.air/log/{device_name}/log.html"
 
             return {
                 'html_report': html_report_url,
@@ -259,8 +259,8 @@ class ReportManager:
             log_file_url = f"{base_url}/{device_name}/log.txt"
             screenshots_url = f"{base_url}/{device_name}/"
             directory_url = f"{base_url}/{device_name}/"
-            # 🔧 修复：使用正确的相对路径格式，不使用../前缀
-            html_report_relative = f"ui_run/WFGameAI.air/log/{device_name}/log.html"
+            # 修改：使用绝对URL路径而不是相对路径
+            html_report_relative = f"/static/reports/ui_run/WFGameAI.air/log/{device_name}/log.html"
             return {
                 'html_report': html_report_url,
                 'html_report_relative': html_report_relative,
@@ -695,10 +695,14 @@ class ReportManager:
         """
         try:
             if is_relative:
-                # 从summary_reports目录到设备目录的相对路径
-                return f"../ui_run/WFGameAI.air/log/{device_name}/log.html"
+                # 使用绝对URL路径，确保在Web环境中能正确解析
+                return f"/static/reports/ui_run/WFGameAI.air/log/{device_name}/log.html"
+            else:
+                # 绝对URL路径
+                return f"/static/reports/ui_run/WFGameAI.air/log/{device_name}/log.html"
         except Exception as e:
             logger.error(f"生成标准化设备报告URL失败: {e}")
+            return f"/static/reports/ui_run/WFGameAI.air/log/{device_name}/log.html"
 
 
     def get_report_statistics(self) -> Dict:

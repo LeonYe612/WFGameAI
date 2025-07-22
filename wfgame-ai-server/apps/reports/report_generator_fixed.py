@@ -78,7 +78,7 @@ class ReportGenerator:
                 "test_result": True,
                 "run_end": datetime.now().timestamp(),
                 "run_start": datetime.now().timestamp() - 60,
-                "static_root": self.config.report_static_url,
+                "static_root": "/static/reports/static/",  # 使用Web相对路径
                 "lang": "en",
                 "records": [],
                 "info": {
@@ -126,18 +126,26 @@ class ReportGenerator:
             env = Environment(loader=FileSystemLoader(str(template_path.parent)))
             template = env.get_template(template_path.name)
 
+            # 修复：使用相对URL路径而不是绝对文件路径
+            # 使用Web访问的相对URL路径，确保在浏览器中能正确加载静态资源
+            web_static_root = '/static/reports/static/'
+
             # 准备模板变量
             template_vars = {
                 'data': json.dumps(report_data, ensure_ascii=False),
                 'steps': report_data.get('steps', []),
                 'info': report_data.get('info', {}),
-                'static_root': report_data.get('static_root', self.config.report_static_url),
+                'static_root': web_static_root,  # 使用Web相对路径
                 'lang': 'en',
                 'log': 'log.txt',
                 'console': report_data.get('console', ''),
                 'extra_block': '',
                 'records': report_data.get('records', [])
             }
+
+            # 同时修改report_data中的static_root，确保数据一致
+            if 'static_root' in report_data:
+                report_data['static_root'] = web_static_root
 
             # 渲染模板
             html_content = template.render(**template_vars)
@@ -172,7 +180,7 @@ class ReportGenerator:
                 print(f"⚠️ log.txt文件不存在，已尝试: {[str(c) for c in log_file_candidates]}")
                 return []
 
-            print(f"📝 找到log.txt文件: {log_file}")
+            # print(f"📝 找到log.txt文件: {log_file}")
 
             steps = []
             step_index = 0
@@ -236,7 +244,7 @@ class ReportGenerator:
                         print(f"⚠️ 处理log条目失败: {e}")
                         continue
 
-            print(f"✅ 成功解析log.txt，共{len(steps)}个步骤，其中{len([s for s in steps if s.get('screen')])}个包含截图")
+            # print(f"✅ 成功解析log.txt，共{len(steps)}个步骤，其中{len([s for s in steps if s.get('screen')])}个包含截图")
             return steps
 
         except Exception as e:
