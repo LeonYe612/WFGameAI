@@ -1009,6 +1009,10 @@ def run_single_replay(device_serial, script_args, log_dir, timeout=3600, max_ret
     # 🔧 关键修复：确保 script_args 被正确地展开到 cmd 列表中
     # 之前的问题是 script_args 被当作一个单独的元素添加
     cmd = [sys.executable, script_path, '--log-dir', log_dir, '--device', device_serial, '--multi-device']
+
+    # 添加账号信息参数 - 告诉子进程使用预分配的账号文件
+    cmd.append('--use-preassigned-accounts')
+
     cmd.extend(script_args)  # 使用 extend 正确展开参数列表
 
     device_log_file = os.path.join(log_dir, f"{device_serial}.log")
@@ -1372,9 +1376,37 @@ def replay_script(request):
         os.makedirs(log_dir, exist_ok=True)
         # logger.info(f"创建日志目录: {log_dir}")
 
-        # 5. 创建任务并获取任务ID
+        # 5. 预先为所有设备分配账号 - 在主进程中集中处理，避免子进程竞争
+        device_accounts = {}
+        try:
+            # 使用跨进程账号管理器
+            from apps.scripts.cross_process_account_manager import get_cross_process_account_manager
+            account_manager = get_cross_process_account_manager()
+
+            # 在主进程中为所有设备预分配账号
+            for device_serial in devices:
+                account = account_manager.allocate_account(device_serial)
+                if account:
+                    username, password = account
+                    device_accounts[device_serial] = (username, password)
+                    logger.info(f"为设备 {device_serial} 预分配账号: {username}")
+                else:
+                    logger.warning(f"设备 {device_serial} 账号预分配失败")
+        except Exception as e:
+            logger.error(f"账号预分配过程中出错: {e}")
+
+        # 将账号信息写入临时文件，供子进程读取
+        accounts_file = os.path.join(log_dir, "device_accounts.json")
+        try:
+            with open(accounts_file, 'w', encoding='utf-8') as f:
+                json.dump(device_accounts, f, ensure_ascii=False, indent=2)
+            logger.info(f"设备账号分配信息已写入: {accounts_file}")
+        except Exception as e:
+            logger.error(f"写入账号分配信息失败: {e}")
+
+        # 6. 启动设备任务
         task_id = task_manager.create_task(devices, script_configs, log_dir)
-        logger.info(f"创建任务: {task_id}")        # 6. 账号预分配（集成现有账号管理器）
+        logger.info(f"创建任务: {task_id}")        # 7. 账号预分配（集成现有账号管理器）
         from .account_manager import get_account_manager
         account_manager = get_account_manager()
 
@@ -1406,7 +1438,7 @@ def replay_script(request):
                 "details": account_allocation_errors
             }, status=400)
 
-        # 6. 构造每个设备的任务参数
+        # 7. 构造每个设备的任务参数
         device_tasks = {}
         for device_serial in devices:
             account_info = device_accounts[device_serial]
@@ -1436,8 +1468,8 @@ def replay_script(request):
                     logger.info(f"🔍 添加最大持续时间: {max_duration}")
 
             # 添加账号信息
-            script_args.extend(['--account-user', account_info['username']])
-            script_args.extend(['--account-pass', account_info['password']])
+            script_args.extend(['--account', account_info['username']])
+            script_args.extend(['--password', account_info['password']])
             logger.info(f"🔍 添加账号参数: {account_info['username']}")
 
             device_tasks[device_serial] = script_args
@@ -1446,7 +1478,7 @@ def replay_script(request):
             logger.info(f"🔍 ===== 设备 {device_serial} 参数构造完成 =====")
             logger.info("")
 
-        # 7. 动态计算最佳并发数
+        # 8. 动态计算最佳并发数
         cpu_count = os.cpu_count() or 4
         try:
             memory_gb = psutil.virtual_memory().total / (1024**3)
@@ -1461,7 +1493,7 @@ def replay_script(request):
         max_concurrent = min(system_based_limit, len(devices), data.get('max_concurrent', system_based_limit))
         logger.info(f"计算得出最大并发数: {max_concurrent} (设备数: {len(devices)})")
 
-       # 8. 并发执行回放任务
+       # 9. 并发执行回放任务
         results = {}
         completed_count = 0
 
@@ -1563,11 +1595,11 @@ def replay_script(request):
                     if device_name and device_name in device_accounts:
                         account_info = device_accounts.get(device_name)
                         username = account_info.get('username')
-                        print(f"释放设备 {device_name} 的账号分配: {username}")
+                        print(f"views 释放设备 {device_name} 的账号分配: {username}")
                         account_manager.release_account(device_name)
-                        logger.info(f"已释放设备 {device_name} 的账号")
+                        logger.info(f"views 已释放设备 {device_name} 的账号")
                 except Exception as e:
-                    logger.warning(f"释放设备账号时出错: {e}")
+                    logger.warning(f"views 释放设备账号时出错: {e}")
 
             # 生成汇总报告 - 在所有设备完成后由主进程统一生成
             if device_dirs and len(device_dirs) > 0:
@@ -1637,16 +1669,19 @@ def replay_script(request):
             logger.info("============================================================")
 
         finally:
-            # 9. 资源清理：释放账号
+            # 10. 资源清理：释放账号
             for device_serial in devices:
                 if device_serial in device_accounts:
                     try:
+                        account_info = device_accounts.get(device_serial)
+                        username = account_info.get('username')
+                        print(f"views 资源清理：释放账号 {device_serial} 的账号分配: [{username}], [{password}]")
                         account_manager.release_account(device_serial)
-                        logger.info(f"已释放设备 {device_serial} 的账号")
+                        logger.info(f"资源清理：释放账号 已释放设备 {device_serial} 的账号")
                     except Exception as e:
-                        logger.warning(f"设备 {device_serial} 账号释放失败: {e}")
+                        logger.warning(f"资源清理：释放账号 设备 {device_serial} 账号释放失败: {e}")
 
-        # 10. 确保所有设备都有结果记录
+        # 11. 确保所有设备都有结果记录
         for device in devices:
             if device not in results:
                 results[device] = {
@@ -1657,7 +1692,7 @@ def replay_script(request):
                     "log_url": f"/static/reports/{log_dir_name}/{device}.log"
                 }
 
-        # 11. 构建响应数据，使用先前创建的 task_id
+        # 12. 构建响应数据，使用先前创建的 task_id
         response_data = {
             "success": True,
             "task_id": task_id,

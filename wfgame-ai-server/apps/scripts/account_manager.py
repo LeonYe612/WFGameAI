@@ -121,7 +121,7 @@ class AccountManager:
             if device_serial in self.device_allocations:
                 username, password = self.device_allocations[device_serial]
                 del self.device_allocations[device_serial]
-                print(f"释放设备: {device_serial} 的账号分配: {username}")
+                print(f"account_manager 释放设备： {device_serial} 的账号分配: [{username}], [{password}]")
 
     def get_allocation_status(self) -> Dict[str, str]:
         """
@@ -154,24 +154,3 @@ def get_account_manager() -> AccountManager:
     if _global_account_manager is None:
         _global_account_manager = AccountManager()
     return _global_account_manager
-
-
-if __name__ == "__main__":
-    # 测试代码
-    manager = AccountManager()
-
-    print("=== 账号管理器测试 ===")
-    print(f"加载的账号数量: {len(manager.accounts)}")
-    print(f"可用账号数量: {manager.get_available_accounts_count()}")
-
-    # 模拟设备分配
-    devices = ["device1", "device2", "device3"]
-    for device in devices:
-        account = manager.allocate_account(device)
-        if account:
-            print(f"设备 {device} 分配到账号: {account[0]}")
-        else:
-            print(f"设备 {device} 分配失败")
-
-    print(f"\n当前分配状态: {manager.get_allocation_status()}")
-    print(f"剩余可用账号: {manager.get_available_accounts_count()}")

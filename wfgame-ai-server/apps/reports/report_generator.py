@@ -331,7 +331,7 @@ class ReportGenerator:
 
             # 不再复制静态资源到设备目录，使用相对路径引用
             # 静态资源保持在统一位置，减少冗余并保证一致性
-            print(f"📌 使用相对路径引用静态资源，无需复制资源到设备目录")
+            # print(f"📌 使用相对路径引用静态资源，无需复制资源到设备目录")
 
             print(f"✅ 设备 {device_dir.name} 单设备报告(log.html)生成成功")
             return True
@@ -483,7 +483,7 @@ class ReportGenerator:
 
             # 优先使用配置文件指定的单设备报告模板路径
             template_path = self.config.single_device_replay_template
-            print(f"🔍 配置的模板路径: {template_path}")
+            # print(f"🔍 配置的模板路径: {template_path}")
 
             if not isinstance(template_path, Path) or not template_path.exists():
                 # 回退到通用查找
@@ -494,9 +494,9 @@ class ReportGenerator:
                 error_msg = f"❌ 未找到单设备报告模板文件: {template_path}"
                 print(error_msg)
                 # 🔧 增强修复：输出更多调试信息
-                print(f"🔍 配置的模板路径: {self.config.single_device_replay_template}")
-                print(f"🔍 模板目录配置: {self.config.config.get('devices_report_paths', 'template_dir', fallback='未配置')}")
-                print(f"🔍 尝试查找模板: {os.path.join(os.path.dirname(os.path.dirname(__file__)), 'staticfiles', 'reports', 'templates', 'log_template.html')}")
+                # print(f"🔍 配置的模板路径: {self.config.single_device_replay_template}")
+                # print(f"🔍 模板目录配置: {self.config.config.get('devices_report_paths', 'template_dir', fallback='未配置')}")
+                # print(f"🔍 尝试查找模板: {os.path.join(os.path.dirname(os.path.dirname(__file__)), 'staticfiles', 'reports', 'templates', 'log_template.html')}")
                 raise FileNotFoundError(error_msg)
 
             print(f"✅ 使用模板文件: {template_path}")
@@ -592,7 +592,7 @@ class ReportGenerator:
                 ]
                 return default_steps
 
-            print(f"📝 找到log.txt文件: {log_file}")
+            # print(f"📝 找到log.txt文件: {log_file}")
 
             steps = []
             step_index = 0
@@ -731,7 +731,7 @@ class ReportGenerator:
                     "screen": None
                 })
 
-            print(f"✅ 成功解析log.txt，共{len(steps)}个步骤，其中{len([s for s in steps if s.get('screen')])}个包含截图")
+            # print(f"✅ 成功解析log.txt，共{len(steps)}个步骤，其中{len([s for s in steps if s.get('screen')])}个包含截图")
             return steps
 
         except Exception as e:
@@ -891,10 +891,10 @@ class ReportGenerator:
                 absolute_path = self.report_manager.device_replay_reports_dir / "ui_run/WFGameAI.air/log" / device_name / "log.html"
                 if not absolute_path.exists():
                     print(f"⚠️ 设备报告链接无效: {device_report_link}")
-                    print(f"⚠️ 绝对路径: {absolute_path}")
+                    # print(f"⚠️ 绝对路径: {absolute_path}")
                 else:
                     print(f"✅ 设备报告链接有效: {device_report_link}")
-                    print(f"✅ 绝对路径: {absolute_path}")
+                    # print(f"✅ 绝对路径: {absolute_path}")
 
                 devices.append({
                     "name": device_name,
@@ -960,9 +960,9 @@ class ReportGenerator:
                 error_msg = f"❌ 未找到汇总报告模板文件: {template_path}"
                 print(error_msg)
                 # 🔧 增强修复：输出更多调试信息
-                print(f"🔍 配置的模板路径: {self.config.multi_device_replay_template}")
-                print(f"🔍 模板目录配置: {self.config.config.get('devices_report_paths', 'template_dir', fallback='未配置')}")
-                print(f"🔍 尝试查找模板: {os.path.join(os.path.dirname(os.path.dirname(__file__)), 'staticfiles', 'reports', 'templates', 'summary_template.html')}")
+                # print(f"🔍 配置的模板路径: {self.config.multi_device_replay_template}")
+                # print(f"🔍 模板目录配置: {self.config.config.get('devices_report_paths', 'template_dir', fallback='未配置')}")
+                # print(f"🔍 尝试查找模板: {os.path.join(os.path.dirname(os.path.dirname(__file__)), 'staticfiles', 'reports', 'templates', 'summary_template.html')}")
                 raise FileNotFoundError(error_msg)
 
             print(f"✅ 使用汇总报告模板文件: {template_path}")

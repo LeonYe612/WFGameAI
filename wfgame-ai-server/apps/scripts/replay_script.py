@@ -638,19 +638,19 @@ def parse_script_arguments(args_list):
             else:
                 print_realtime("错误: --device 参数后缺少设备序列号")
 
-        elif arg == '--account-user':
+        elif arg == '--account':
             if i + 1 < len(args_list):
-                account_user = args_list[i + 1]
+                account = args_list[i + 1]
                 i += 1
             else:
-                print_realtime("错误: --account-user 参数后缺少用户名")
+                print_realtime("错误: --account 参数后缺少用户名")
 
-        elif arg == '--account-pass':
+        elif arg == '--password':
             if i + 1 < len(args_list):
-                account_pass = args_list[i + 1]
+                password = args_list[i + 1]
                 i += 1
             else:
-                print_realtime("错误: --account-pass 参数后缺少密码")
+                print_realtime("错误: --password 参数后缺少密码")
 
         i += 1
 
@@ -666,8 +666,8 @@ def parse_script_arguments(args_list):
     return scripts, {
         'log_dir': log_dir,
         'device_serial': device_serial,
-        'account_user': account_user,
-        'account_pass': account_pass
+        'account': account,
+        'password': password
     }
 
     return scripts
@@ -1107,7 +1107,7 @@ def process_sequential_script(device, steps, device_report_dir, action_processor
 
 
 def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, stop_event,
-                 device_name, log_dir, loop_count=1):
+                 device_name, log_dir, loop_count=1, cmd_account=None, cmd_password=None):
     """
     重构后的设备回放函数
     主要负责流程控制，具体的action处理委托给ActionProcessor
@@ -1150,19 +1150,42 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
     with open(log_txt_path, "w", encoding="utf-8") as f:
         f.write("")
 
-    # 分配账号给设备
+    # 分配账号给设备 - 优先使用命令行参数中的账号
     device_account = None
-    try:
-        account_manager = get_account_manager()
-        device_account = account_manager.allocate_account(device.serial)
 
-        if device_account:
-            username, password = device_account
-            print_realtime(f"✅ 为设备 {device_name} 分配账号: {username}")
-        else:
-            print_realtime(f"⚠️ 设备 {device_name} 账号分配失败")
-    except Exception as e:
-        print_realtime(f"❌ 账号分配过程中出错: {e}")    # 确保模型已加载，如果没有则尝试加载
+    # 1. 首先尝试使用命令行参数中的账号
+    if cmd_account and cmd_password:
+        device_account = (cmd_account, cmd_password)
+        print_realtime(f"✅ 使用命令行参数中的账号: {cmd_account}")
+
+    # 2. 如果没有命令行参数，尝试从预分配文件中读取
+    if not device_account:
+        try:
+            # 尝试从主进程预分配的账号文件中读取
+            accounts_file = os.path.join(log_dir, "device_accounts.json")
+            if os.path.exists(accounts_file):
+                try:
+                    with open(accounts_file, 'r', encoding='utf-8') as f:
+                        device_accounts = json.load(f)
+                        if device.serial in device_accounts:
+                            username, password = device_accounts[device.serial]
+                            device_account = (username, password)
+                            print_realtime(f"✅ 从预分配文件中获取设备 {device_name} 的账号: {username}")
+                except Exception as e:
+                    print_realtime(f"❌ 读取账号预分配文件失败: {e}")
+
+            # 3. 如果前两种方式都失败，尝试直接分配（备用方案）
+            if not device_account:
+                account_manager = get_account_manager()
+                device_account = account_manager.allocate_account(device.serial)
+                if device_account:
+                    username, password = device_account
+                    print_realtime(f"✅ 为设备 {device_name} 分配账号: {username} (备用方案)")
+                else:
+                    print_realtime(f"⚠️ 设备 {device_name} 账号分配失败")
+        except Exception as e:
+            print_realtime(f"❌ 账号分配过程中出错: {e}")
+
     global model
     if model is None:
         print_realtime("⚠️ 检测到模型未加载，尝试重新加载...")
@@ -1547,16 +1570,18 @@ def log_device_summary(device_results):
 # 所有action处理都通过ActionProcessor实现
 def main():
     """主函数"""
-    # 解析命令行参数
-    parser = argparse.ArgumentParser(description='脚本回放工具')
+    parser = argparse.ArgumentParser(description='WFGameAI回放脚本')
     parser.add_argument('--device', type=str, help='设备序列号')
-    parser.add_argument('--script', type=str, action='append', help='脚本路径')
-    parser.add_argument('--loop-count', type=int, action='append', help='循环次数')
-    parser.add_argument('--max-duration', type=int, action='append', help='最大执行时长(秒)')
     parser.add_argument('--log-dir', type=str, help='日志目录')
     parser.add_argument('--multi-device', action='store_true', help='多设备模式')
-    parser.add_argument('--account-user', type=str, help='账号用户名')
-    parser.add_argument('--account-pass', type=str, help='账号密码')
+    parser.add_argument('--use-preassigned-accounts', action='store_true', help='使用主进程预分配的账号')
+    parser.add_argument('--script', type=str, help='脚本路径')
+    parser.add_argument('--loop-count', type=int, default=1, help='循环次数')
+    parser.add_argument('--max-duration', type=int, help='最大执行时间(秒)')
+    parser.add_argument('--all', action='store_true', help='执行所有脚本')
+    parser.add_argument('--account', type=str, help='账号')
+    parser.add_argument('--password', type=str, help='密码')
+    parser.add_argument('--confidence', type=float, help='置信度阈值')
     args = parser.parse_args()
 
     # 初始化全局变量
@@ -1617,8 +1642,11 @@ def main():
     # 提取多设备参数
     log_dir = multi_device_params.get('log_dir')
     device_serial = multi_device_params.get('device_serial')
-    account_user = multi_device_params.get('account_user')
-    account_pass = multi_device_params.get('account_pass')
+    account = multi_device_params.get('account')
+    password = multi_device_params.get('password')
+
+    # 添加调试日志，显示解析到的账号参数
+    print_realtime(f"🔍 解析到的账号参数: account={account}, password={'*' * len(password) if password else 'None'}")
 
     # 如果指定了log_dir和device_serial，则启用文件日志模式
     file_logger = None
@@ -1657,8 +1685,8 @@ def main():
         log_phase_complete("脚本回放初始化", device_serial, len(scripts) > 1, True)
 
         # 如果有账号信息，记录日志
-        if account_user:
-            print_realtime(f"👤 使用账号: {account_user}")
+        if account:
+            print_realtime(f"�� 使用账号: {account}")
 
         # 验证脚本文件存在
         missing_scripts = []
@@ -1784,7 +1812,9 @@ def main():
                                     stop_event=stop_event,
                                     device_name=device_name,
                                     log_dir=device_log_dir,
-                                    loop_count=1  # 每个脚本的循环次数已在scripts中指定
+                                    loop_count=1,  # 每个脚本的循环次数已在scripts中指定
+                                    cmd_account=account,  # 传递命令行参数中的账号
+                                    cmd_password=password  # 传递命令行参数中的密码
                                 )
                                 if device_report_dir:
                                     current_execution_device_dirs.append(device_report_dir)

@@ -156,8 +156,8 @@ def parse_enhanced_arguments(args_list):
     # 多设备并发回放参数
     log_dir = None
     device_serial = None
-    account_user = None
-    account_pass = None
+    account = None
+    password = None
 
     i = 0
     while i < len(args_list):
@@ -215,19 +215,19 @@ def parse_enhanced_arguments(args_list):
             else:
                 print("错误: --device 参数后缺少设备序列号")
 
-        elif arg == '--account-user':
+        elif arg == '--account':
             if i + 1 < len(args_list):
-                account_user = args_list[i + 1]
+                account = args_list[i + 1]
                 i += 1
             else:
-                print("错误: --account-user 参数后缺少用户名")
+                print("错误: --account 参数后缺少用户名")
 
-        elif arg == '--account-pass':
+        elif arg == '--password':
             if i + 1 < len(args_list):
-                account_pass = args_list[i + 1]
+                password = args_list[i + 1]
                 i += 1
             else:
-                print("错误: --account-pass 参数后缺少密码")
+                print("错误: --password 参数后缺少密码")
 
         i += 1
 
@@ -243,8 +243,8 @@ def parse_enhanced_arguments(args_list):
     return scripts, {
         'log_dir': log_dir,
         'device_serial': device_serial,
-        'account_user': account_user,
-        'account_pass': account_pass
+        'account': account,
+        'password': password
     }
 
 
@@ -269,8 +269,8 @@ def main():
     # 提取多设备参数
     log_dir = multi_device_params.get('log_dir')
     device_serial = multi_device_params.get('device_serial')
-    account_user = multi_device_params.get('account_user')
-    account_pass = multi_device_params.get('account_pass')
+    account = multi_device_params.get('account')
+    password = multi_device_params.get('password')
 
     # 如果指定了log_dir和device_serial，则启用文件日志模式
     file_logger = None
@@ -296,8 +296,8 @@ def main():
         print("🎬 启动增强版脚本回放")
         print(f"📝 将执行 {len(scripts)} 个脚本")
 
-        if account_user:
-            print(f"👤 使用账号: {account_user}")
+        if account:
+            print(f"👤 使用账号: {account}")
         if device_serial:
             print(f"📱 目标设备: {device_serial}")
 

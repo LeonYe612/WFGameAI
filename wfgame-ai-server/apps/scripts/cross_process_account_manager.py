@@ -86,17 +86,28 @@ class CrossProcessAccountManager:
             with open(self.state_file, 'w', encoding='utf-8') as f:
                 json.dump(initial_state, f, indent=2, ensure_ascii=False)
 
-    def _acquire_lock(self, timeout: float = 10.0) -> Optional[object]:
-        """获取文件锁"""
-        start_time = time.time()
-        while time.time() - start_time < timeout:
+    def _acquire_lock(self, timeout: float = 0.5) -> Optional[object]:
+        """获取文件锁，使用非阻塞策略"""
+        try:
+            # 创建锁文件
+            lock_fd = os.open(self.lock_file, os.O_CREAT | os.O_WRONLY | os.O_TRUNC)
+
+            # 尝试立即获取锁，不阻塞
             try:
-                lock_fd = os.open(self.lock_file, os.O_CREAT | os.O_WRONLY | os.O_TRUNC)
                 fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                # 成功获取锁
                 return lock_fd
             except (OSError, IOError):
-                time.sleep(0.1)
-        return None
+                # 如果无法立即获取锁，关闭文件描述符并返回None
+                try:
+                    os.close(lock_fd)
+                except:
+                    pass
+                return None
+
+        except Exception as e:
+            print(f"❌ 创建锁文件失败: {e}")
+            return None
 
     def _release_lock(self, lock_fd):
         """释放文件锁"""
@@ -146,28 +157,39 @@ class CrossProcessAccountManager:
             # 读取当前状态
             state = self._read_state()
             device_allocations = state.get("device_allocations", {})
-            last_allocated_index = state.get("last_allocated_index", -1)
 
             # 如果设备已经分配过账号，静默返回
             if device_serial in device_allocations:
                 username, password = device_allocations[device_serial]
                 return username, password
 
-            # 寻找下一个可用账号
-            allocated_accounts = set(device_allocations.values())
-            available_accounts = [acc for acc in self.accounts if acc not in allocated_accounts]
-
-            if not available_accounts:
-                print(f"❌ 无账号可分配给设备 {device_serial}，当前已分配: {len(device_allocations)}")
+            # 确保有可用账号
+            if len(self.accounts) == 0:
+                print(f"❌ 账号列表为空，无法为设备 {device_serial} 分配账号")
                 return None
 
-            # 顺序分配：使用第一个可用账号
-            username, password = available_accounts[0]
+            # 基于设备序列号确定性分配账号
+            # 使用设备序列号的哈希值对账号数量取模，确保相同设备总是分配到同一个账号
+            device_hash = sum(ord(c) for c in device_serial)
+            account_index = device_hash % len(self.accounts)
+
+            # 获取对应账号
+            username, password = self.accounts[account_index]
+
+            # 检查该账号是否已被其他设备占用
+            for dev, acc in device_allocations.items():
+                if acc == (username, password):
+                    # 如果账号已被占用，尝试使用下一个可用账号
+                    available_accounts = [acc for acc in self.accounts if acc not in device_allocations.values()]
+                    if not available_accounts:
+                        print(f"❌ 无账号可分配给设备 {device_serial}，当前已分配: {len(device_allocations)}")
+                        return None
+                    username, password = available_accounts[0]
+                    break
 
             # 更新状态
             device_allocations[device_serial] = (username, password)
             state["device_allocations"] = device_allocations
-            state["last_allocated_index"] = self.accounts.index((username, password))
             state["last_update"] = datetime.now().isoformat()
 
             # 写入状态

@@ -286,7 +286,7 @@ class ReportManager:
 
         # 注意：我们不再复制静态资源到设备目录，而是使用相对路径引用统一的静态资源
         # 但保留此方法用于兼容旧代码，直接返回成功
-        logger.info(f"使用相对路径引用静态资源，无需复制资源到设备目录: {target_dir}")
+        # logger.info(f"使用相对路径引用静态资源，无需复制资源到设备目录: {target_dir}")
         return True
 
         # 以下代码保留但不执行
