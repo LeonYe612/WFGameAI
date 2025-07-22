@@ -1595,9 +1595,10 @@ def replay_script(request):
                     if device_name and device_name in device_accounts:
                         account_info = device_accounts.get(device_name)
                         username = account_info.get('username')
-                        print(f"views 释放设备 {device_name} 的账号分配: {username}")
+                        password = account_info.get('password')
+                        print(f"views 资源清理：释放账号 {device_name} 的账号分配: [{username}], [{password}]")
                         account_manager.release_account(device_name)
-                        logger.info(f"views 已释放设备 {device_name} 的账号")
+                        logger.info(f"资源清理：释放账号 已释放设备 {device_name} 的账号")
                 except Exception as e:
                     logger.warning(f"views 释放设备账号时出错: {e}")
 
@@ -1675,6 +1676,7 @@ def replay_script(request):
                     try:
                         account_info = device_accounts.get(device_serial)
                         username = account_info.get('username')
+                        password = account_info.get('password')
                         print(f"views 资源清理：释放账号 {device_serial} 的账号分配: [{username}], [{password}]")
                         account_manager.release_account(device_serial)
                         logger.info(f"资源清理：释放账号 已释放设备 {device_serial} 的账号")
