@@ -483,6 +483,17 @@
                                         <label for="repoBranch" class="form-label">默认分支</label>
                                         <input type="text" class="form-control" id="repoBranch" value="main">
                                     </div>
+                                    <div class="mb-3">
+                                        <label for="repoToken" class="form-label">访问令牌 (可选)</label>
+                                        <input type="password" class="form-control" id="repoToken"
+                                            placeholder="仓库访问令牌，用于身份验证">
+                                        <div class="form-text">如果仓库需要授权，请提供访问令牌而不是直接在URL中包含用户名和密码</div>
+                                    </div>
+                                    <div class="mb-3 form-check">
+                                        <input type="checkbox" class="form-check-input" id="skipSSLVerify">
+                                        <label class="form-check-label" for="skipSSLVerify">跳过SSL验证（内网环境）</label>
+                                        <div class="form-text text-danger">警告：这会禁用SSL证书验证，仅用于内网环境</div>
+                                    </div>
                                     <button class="btn btn-success" id="addRepoBtn" disabled>添加仓库</button>
                                 </div>
                             </div>

@@ -52,6 +52,29 @@ class OCRResultSerializer(serializers.ModelSerializer):
                  'has_match', 'confidence', 'processing_time', 'created_at']
 
 
+class OCRProcessGitSerializer(serializers.Serializer):
+    """Git仓库处理序列化器"""
+    project_id = serializers.IntegerField(required=True)
+    repo_id = serializers.IntegerField(required=True)
+    branch = serializers.CharField(required=False, default='main')
+    languages = serializers.ListField(
+        child=serializers.CharField(),
+        required=False,
+        default=['ch']
+    )
+    use_gpu = serializers.BooleanField(required=False, default=True)
+    gpu_id = serializers.IntegerField(required=False, default=0)
+    token = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+
+    def validate(self, data):
+        """验证处理参数"""
+        if not data.get('project_id'):
+            raise serializers.ValidationError("项目ID为必填项")
+        if not data.get('repo_id'):
+            raise serializers.ValidationError("仓库ID为必填项")
+        return data
+
+
 class TaskCreationSerializer(serializers.Serializer):
     """任务创建序列化器"""
     project_id = serializers.IntegerField(required=True)

@@ -136,6 +136,119 @@ def process_ocr_task(task_id):
         return {"success": False, "error": str(e)}
 
 
+@shared_task
+def process_git_ocr_task(task_id, task_config=None):
+    """
+    专门处理Git仓库OCR的异步Celery任务
+    支持使用令牌进行Git仓库认证
+
+    Args:
+        task_id: OCR任务ID
+        task_config: 任务配置，可能包含令牌
+
+    Returns:
+        Dict: 任务处理结果
+    """
+    try:
+        # 获取任务
+        logger.info(f"开始处理Git OCR任务: {task_id}")
+
+        try:
+            task = OCRTask.objects.get(id=task_id)
+        except OCRTask.DoesNotExist:
+            logger.error(f"任务不存在: {task_id}")
+            return {"success": False, "error": "任务不存在"}
+
+        # 更新任务状态
+        task.status = 'running'
+        task.start_time = timezone.now()
+        task.save()
+
+        # 获取配置
+        config = task_config or task.config
+        languages = config.get('languages', ['ch'])
+        image_formats = config.get('image_formats', ['jpg', 'jpeg', 'png', 'bmp', 'tiff', 'tif', 'webp'])
+        use_gpu = config.get('use_gpu', True)
+        gpu_id = config.get('gpu_id', 0)
+        token = config.get('token')  # 获取令牌
+        skip_ssl_verify = config.get('skip_ssl_verify', False)  # 获取是否跳过SSL验证
+
+        if skip_ssl_verify:
+            logger.warning("⚠️ 任务使用了跳过SSL验证选项，这可能存在安全风险")
+
+        # 分支
+        branch = config.get('branch', 'main')
+
+        # 确定GPU ID列表
+        gpu_ids = [gpu_id]
+
+        # 初始化多线程OCR服务
+        ocr_service = MultiThreadOCR(
+            use_gpu=use_gpu,
+            lang='ch',  # 基础语言模型
+            gpu_ids=gpu_ids,
+            max_workers=4  # 可从配置中获取
+        )
+
+        try:
+            if not task.git_repository:
+                raise Exception("任务未关联Git仓库")
+
+            # 克隆仓库，使用令牌
+            logger.info(f"开始克隆仓库，使用{'令牌' if token else '无令牌'}，{'禁用' if skip_ssl_verify else '启用'}SSL验证")
+            repo_path = GitService.clone_repository(
+                task.git_repository.url,
+                branch,
+                task.id,
+                token=token,
+                skip_ssl_verify=skip_ssl_verify
+            )
+            logger.info(f"仓库克隆成功: {repo_path}")
+
+            # 批量识别
+            logger.info(f"开始OCR识别，使用GPU: {use_gpu}, GPU ID: {gpu_id}")
+            results = ocr_service.recognize_batch(repo_path, image_formats=image_formats)
+            logger.info(f"识别完成，共 {len(results)} 个结果")
+
+            # 处理结果
+            _process_results(task, results, languages)
+
+            # 更新任务状态
+            task.status = 'completed'
+            task.end_time = timezone.now()
+            task.save()
+
+            logger.info(f"任务 {task_id} 处理完成，共处理 {task.total_images} 张图片，"
+                       f"匹配 {task.matched_images} 张，匹配率: {task.match_rate:.2f}%")
+
+            return {
+                "success": True,
+                "task_id": task_id,
+                "total_images": task.total_images,
+                "matched_images": task.matched_images,
+                "match_rate": task.match_rate
+            }
+
+        except Exception as e:
+            logger.error(f"Git任务处理失败: {str(e)}")
+            logger.error(traceback.format_exc())
+
+            # 更新任务状态
+            task.status = 'failed'
+            task.end_time = timezone.now()
+            task.save()
+
+            return {
+                "success": False,
+                "error": str(e)
+            }
+
+    except Exception as e:
+        logger.error(f"处理Git任务异常: {str(e)}")
+        logger.error(traceback.format_exc())
+        return {"success": False, "error": str(e)}
+
+
 def _process_results(task, results, target_languages):
     """
     处理OCR结果

@@ -19,6 +19,7 @@ docs/
 *.woff
 *.woff2
 *.svg
+*.md
 
 # 静态文件和报告
 wfgame-ai-server/logs/

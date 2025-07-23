@@ -40,12 +40,14 @@ const OCRAPI = {
                 project_id: projectId
             });
         },
-        create: async function (projectId, url, branch) {
+        create: async function (projectId, url, branch, token, skipSSLVerify) {
             return await sendRequest('/api/ocr/repositories/', {
                 action: 'create',
                 project: projectId,
                 url: url,
-                branch: branch || 'main'
+                branch: branch || 'main',
+                token: token,
+                skip_ssl_verify: skipSSLVerify
             });
         },
         delete: async function (id) {
@@ -54,10 +56,11 @@ const OCRAPI = {
                 id: id
             });
         },
-        getBranches: async function (id) {
+        getBranches: async function (id, skipSSLVerify) {
             return await sendRequest('/api/ocr/repositories/', {
                 action: 'get_branches',
-                id: id
+                id: id,
+                skip_ssl_verify: skipSSLVerify
             });
         }
     },
@@ -138,7 +141,7 @@ const OCRAPI = {
 
     // 处理API
     process: {
-        git: async function (projectId, repoId, branch, languages, useGpu, gpuId) {
+        git: async function (projectId, repoId, branch, languages, useGpu, gpuId, token, skipSSLVerify) {
             return await sendRequest('/api/ocr/process/', {
                 action: 'process_git',
                 project_id: projectId,
@@ -146,7 +149,9 @@ const OCRAPI = {
                 branch: branch || 'main',
                 languages: languages || ['ch'],
                 use_gpu: useGpu !== false,
-                gpu_id: gpuId || 0
+                gpu_id: gpuId || 0,
+                token: token,  // 添加token参数
+                skip_ssl_verify: skipSSLVerify  // 添加跳过SSL验证参数
             });
         }
     },
@@ -181,10 +186,34 @@ async function sendRequest(url, data) {
  */
 async function handleResponse(response) {
     if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || `状态码: ${response.status}`);
+        try {
+            // 尝试解析为JSON
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || `状态码: ${response.status}`);
+            } else {
+                // 非JSON响应（可能是HTML等）
+                const textContent = await response.text();
+                console.error('服务器返回非JSON响应:', textContent.substring(0, 200));
+                throw new Error(`服务器错误(${response.status})，请联系管理员检查服务器日志`);
+            }
+        } catch (parseError) {
+            if (parseError.message.includes('服务器错误')) {
+                throw parseError;
+            } else {
+                console.error('处理响应错误:', parseError);
+                throw new Error(`解析响应失败: ${response.status} ${response.statusText}`);
+            }
+        }
     }
-    return await response.json();
+
+    try {
+        return await response.json();
+    } catch (error) {
+        console.error('解析JSON响应失败:', error);
+        throw new Error('无法解析服务器响应');
+    }
 }
 
 // 导出API

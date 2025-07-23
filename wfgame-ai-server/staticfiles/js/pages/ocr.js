@@ -14,6 +14,9 @@ document.addEventListener('DOMContentLoaded', function () {
     // 初始化Git仓库功能
     initGitRepository();
 
+    // 初始化Git仓库识别功能
+    initGitOcrFunctions();
+
     // 初始化历史记录功能
     initHistoryRecords();
 
@@ -686,6 +689,9 @@ function loadRepositories(projectId) {
  * 添加仓库
  */
 function addRepository(projectId, url, branch) {
+    const token = document.getElementById('repoToken')?.value || '';
+    const skipSSLVerify = document.getElementById('skipSSLVerify')?.checked || false;
+
     fetch('/api/ocr/repositories/', {
         method: 'POST',
         headers: {
@@ -695,7 +701,9 @@ function addRepository(projectId, url, branch) {
             action: 'create',
             project: projectId,
             url: url,
-            branch: branch || 'main'
+            branch: branch || 'main',
+            token: token,  // 添加令牌字段
+            skip_ssl_verify: skipSSLVerify  // 添加跳过SSL验证字段
         })
     })
         .then(response => {
@@ -710,6 +718,12 @@ function addRepository(projectId, url, branch) {
             // 清空表单
             document.getElementById('repoUrl').value = '';
             document.getElementById('repoBranch').value = 'main';
+            if (document.getElementById('repoToken')) {
+                document.getElementById('repoToken').value = '';
+            }
+            if (document.getElementById('skipSSLVerify')) {
+                document.getElementById('skipSSLVerify').checked = false;
+            }
 
             // 重新加载仓库列表
             loadRepositories(projectId);
@@ -753,6 +767,351 @@ function deleteRepository(repoId) {
         .catch(error => {
             alert(`删除仓库失败: ${error.message}`);
         });
+}
+
+/**
+ * 初始化Git仓库识别功能
+ */
+function initGitOcrFunctions() {
+    // 项目选择器变化事件
+    const projectSelect = document.getElementById('projectSelect');
+    if (projectSelect) {
+        projectSelect.addEventListener('change', function () {
+            const projectId = this.value;
+            const repoSelect = document.getElementById('repoSelect');
+
+            if (!projectId) {
+                // 如果没有选择项目，禁用仓库下拉框
+                repoSelect.disabled = true;
+                repoSelect.innerHTML = '<option value="" selected>请先选择项目...</option>';
+
+                // 禁用分支下拉框
+                const branchSelect = document.getElementById('branchSelect');
+                branchSelect.disabled = true;
+                branchSelect.innerHTML = '<option value="" selected>请先选择仓库...</option>';
+
+                // 禁用开始识别按钮
+                document.getElementById('startGitOcrBtn').disabled = true;
+                return;
+            }
+
+            // 如果选择了项目，启用仓库下拉框，并加载仓库列表
+            repoSelect.disabled = false;
+            loadGitRepos(projectId);
+        });
+    }
+
+    // 仓库选择器变化事件
+    const repoSelect = document.getElementById('repoSelect');
+    if (repoSelect) {
+        repoSelect.addEventListener('change', function () {
+            const repoId = this.value;
+            const branchSelect = document.getElementById('branchSelect');
+
+            if (!repoId) {
+                // 如果没有选择仓库，禁用分支下拉框
+                branchSelect.disabled = true;
+                branchSelect.innerHTML = '<option value="" selected>请先选择仓库...</option>';
+
+                // 禁用开始识别按钮
+                document.getElementById('startGitOcrBtn').disabled = true;
+                return;
+            }
+
+            // 如果选择了仓库，启用分支下拉框，并加载分支列表
+            branchSelect.disabled = false;
+            loadGitBranches(repoId);
+        });
+    }
+
+    // 分支选择器变化事件
+    const branchSelect = document.getElementById('branchSelect');
+    if (branchSelect) {
+        branchSelect.addEventListener('change', function () {
+            // 如果选择了分支，启用开始识别按钮
+            document.getElementById('startGitOcrBtn').disabled = !this.value;
+        });
+    }
+
+    // 开始Git仓库识别按钮
+    const startGitOcrBtn = document.getElementById('startGitOcrBtn');
+    if (startGitOcrBtn) {
+        startGitOcrBtn.addEventListener('click', function () {
+            processGitRepository();
+        });
+    }
+}
+
+/**
+ * 加载Git仓库下拉框
+ */
+function loadGitRepos(projectId) {
+    const repoSelect = document.getElementById('repoSelect');
+    if (!repoSelect) return;
+
+    // 显示加载中提示
+    repoSelect.innerHTML = '<option value="" selected>加载中...</option>';
+
+    fetch('/api/ocr/repositories/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            action: 'list',
+            project_id: projectId
+        })
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.length === 0) {
+                repoSelect.innerHTML = '<option value="" selected>该项目下没有仓库...</option>';
+                return;
+            }
+
+            // 清空并添加新选项
+            repoSelect.innerHTML = '<option value="" selected>选择仓库...</option>';
+            data.forEach(repo => {
+                const option = document.createElement('option');
+                option.value = repo.id;
+                option.textContent = `${repo.url} (${repo.branch})`;
+                repoSelect.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('加载仓库列表失败:', error);
+            repoSelect.innerHTML = '<option value="" selected>加载失败，请重试...</option>';
+        });
+}
+
+/**
+ * 加载Git分支下拉框
+ */
+function loadGitBranches(repoId) {
+    const branchSelect = document.getElementById('branchSelect');
+    if (!branchSelect) return;
+
+    // 显示加载中提示
+    branchSelect.innerHTML = '<option value="" selected>加载中...</option>';
+
+    fetch('/api/ocr/repositories/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            action: 'get_branches',
+            id: repoId
+        })
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.branches || data.branches.length === 0) {
+                branchSelect.innerHTML = '<option value="" selected>未找到分支...</option>';
+                return;
+            }
+
+            // 清空并添加新选项
+            branchSelect.innerHTML = '<option value="" selected>选择分支...</option>';
+            data.branches.forEach(branch => {
+                const option = document.createElement('option');
+                option.value = branch;
+                option.textContent = branch;
+                branchSelect.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('加载分支列表失败:', error);
+            branchSelect.innerHTML = '<option value="" selected>加载失败，请重试...</option>';
+        });
+}
+
+/**
+ * 处理Git仓库识别
+ */
+function processGitRepository() {
+    // 获取选中的项目、仓库和分支
+    const projectId = document.getElementById('projectSelect').value;
+    const repoId = document.getElementById('repoSelect').value;
+    const branch = document.getElementById('branchSelect').value;
+
+    if (!projectId || !repoId || !branch) {
+        updateGitStatus('请选择项目、仓库和分支', true);
+        return;
+    }
+
+    // 获取选中的语言
+    const selectedLanguages = [];
+    document.querySelectorAll('input[id^="git-lang-"]:checked').forEach(function (checkbox) {
+        selectedLanguages.push(checkbox.value);
+    });
+
+    if (selectedLanguages.length === 0) {
+        updateGitStatus('请至少选择一种语言', true);
+        return;
+    }
+
+    // 获取GPU配置
+    const useGpu = document.getElementById('git-useGpu').checked;
+    const gpuId = document.getElementById('git-gpuId').value;
+
+    // 获取令牌（如果仓库管理页面有的话）
+    let token = '';
+    const repoToken = document.getElementById('repoToken');
+    if (repoToken) {
+        token = repoToken.value;
+    }
+
+    // 获取是否跳过SSL验证
+    let skipSSLVerify = false;
+    const skipSSLVerifyElem = document.getElementById('skipSSLVerify');
+    if (skipSSLVerifyElem) {
+        skipSSLVerify = skipSSLVerifyElem.checked;
+    }
+
+    // 显示进度条
+    document.getElementById('gitProgressContainer').style.display = 'block';
+    document.getElementById('gitProgressBar').style.width = '10%';
+    document.getElementById('gitProgressBar').textContent = '10%';
+
+    updateGitStatus('正在启动Git仓库识别任务，请稍候...');
+
+    // 调用API处理Git仓库
+    OCRAPI.process.git(projectId, repoId, branch, selectedLanguages, useGpu, gpuId, token, skipSSLVerify)
+        .then(data => {
+            updateGitStatus('Git仓库识别任务已启动，正在处理...');
+            document.getElementById('gitProgressBar').style.width = '20%';
+            document.getElementById('gitProgressBar').textContent = '20%';
+
+            // 轮询任务状态
+            pollGitTaskStatus(data.id);
+        })
+        .catch(error => {
+            updateGitStatus(`启动任务失败: ${error.message}`, true);
+            document.getElementById('gitProgressContainer').style.display = 'none';
+        });
+}
+
+/**
+ * 更新Git处理状态
+ */
+function updateGitStatus(message, isError = false) {
+    const statusDiv = document.getElementById('gitProcessStatus');
+    if (!statusDiv) return;
+
+    statusDiv.className = isError ? 'alert alert-danger' : 'alert alert-info';
+    statusDiv.textContent = message;
+}
+
+/**
+ * 轮询Git任务状态
+ */
+function pollGitTaskStatus(taskId) {
+    const intervalId = setInterval(function () {
+        fetch('/api/ocr/tasks/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                action: 'get',
+                id: taskId
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                const status = data.status;
+
+                if (status === 'completed') {
+                    clearInterval(intervalId);
+                    document.getElementById('gitProgressBar').style.width = '100%';
+                    document.getElementById('gitProgressBar').textContent = '100%';
+
+                    // 更新进度统计
+                    document.getElementById('gitProcessedCount').textContent = data.total_images;
+                    document.getElementById('gitTotalCount').textContent = data.total_images;
+                    document.getElementById('gitMatchRate').textContent = `${data.match_rate.toFixed(1)}%`;
+
+                    // 显示结果
+                    updateGitStatus('Git仓库识别完成！');
+                    showGitResults(data);
+
+                } else if (status === 'failed') {
+                    clearInterval(intervalId);
+                    updateGitStatus(`处理失败: ${data.error || '未知错误'}`, true);
+                    document.getElementById('gitProgressContainer').style.display = 'none';
+
+                } else if (status === 'running') {
+                    // 更新进度条
+                    const progress = data.progress || 50;
+                    document.getElementById('gitProgressBar').style.width = `${progress}%`;
+                    document.getElementById('gitProgressBar').textContent = `${progress}%`;
+
+                    // 更新进度统计
+                    if (data.processed_count && data.total_count) {
+                        document.getElementById('gitProcessedCount').textContent = data.processed_count;
+                        document.getElementById('gitTotalCount').textContent = data.total_count;
+                        const matchRate = data.matched_count / data.processed_count * 100 || 0;
+                        document.getElementById('gitMatchRate').textContent = `${matchRate.toFixed(1)}%`;
+                    }
+
+                    updateGitStatus('正在处理中，请稍候...');
+                }
+            })
+            .catch(error => {
+                console.error('轮询任务状态失败:', error);
+            });
+    }, 3000); // 每3秒检查一次
+}
+
+/**
+ * 显示Git仓库识别结果
+ */
+function showGitResults(data) {
+    // 显示结果摘要
+    const resultsDiv = document.getElementById('gitResultsContainer');
+    if (resultsDiv) {
+        resultsDiv.style.display = 'block';
+
+        const summaryDiv = document.getElementById('gitResultsSummary');
+        if (summaryDiv) {
+            summaryDiv.innerHTML = `
+                <h5>处理完成</h5>
+                <p>总图片数: ${data.total_images}</p>
+                <p>匹配图片: ${data.matched_images}</p>
+                <p>匹配率: ${data.match_rate.toFixed(1)}%</p>
+                <p>任务ID: ${data.id}</p>
+            `;
+        }
+
+        // 设置查看详细结果按钮
+        const viewDetailsBtn = document.getElementById('gitViewDetailsBtn');
+        if (viewDetailsBtn) {
+            viewDetailsBtn.onclick = function () {
+                showDetailedResults(data.id);
+            };
+        }
+
+        // 设置导出按钮
+        setupGitExportButtons(data.id);
+    }
+}
+
+/**
+ * 设置Git导出按钮
+ */
+function setupGitExportButtons(taskId) {
+    const formats = ['json', 'csv', 'txt'];
+
+    formats.forEach(format => {
+        const exportBtn = document.getElementById(`gitExport${format.charAt(0).toUpperCase() + format.slice(1)}`);
+        if (exportBtn) {
+            exportBtn.onclick = function (e) {
+                e.preventDefault();
+                window.location.href = `/api/ocr/tasks/?action=export&id=${taskId}&format=${format}`;
+            };
+        }
+    });
 }
 
 /**

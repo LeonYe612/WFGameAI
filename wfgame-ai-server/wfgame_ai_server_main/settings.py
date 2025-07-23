@@ -54,6 +54,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'wfgame_ai_server.middleware.JsonErrorHandlerMiddleware',  # 添加自定义中间件，确保API错误返回JSON
 ]
 
 ROOT_URLCONF = 'wfgame_ai_server_main.urls'

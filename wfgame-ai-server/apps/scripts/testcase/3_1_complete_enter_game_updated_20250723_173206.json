@@ -1,0 +1,156 @@
+{
+    "meta": {
+        "name": "完整进入游戏流程 - 更新版",
+        "description": "使用新的3个关键功能和标准化参数的游戏进入脚本",
+        "version": "3.0",
+        "updated_date": "2025-01-10",
+        "author": "WFGameAI开发团队",
+        "tags": [
+            "游戏进入",
+            "3个关键功能",
+            "标准化"
+        ]
+    },
+    "steps": [
+        {
+            "step": 1,
+            "detection_method": "ai",
+            "action": "click",
+            "yolo_class": "navigation-main",
+            "remark": "点击地栏主城按钮"
+        },
+        {
+            "step": 2,
+            "detection_method": "ai",
+            "action": "click",
+            "yolo_class": "navigation-juntuan-on",
+            "remark": "点击进入军团"
+        },
+		{
+            "step": 3,
+            "detection_method": "ai",
+            "action": "click",
+            "yolo_class": "operation-back",
+            "remark": "点击返回键"
+        },
+		{
+            "step": 4,
+            "detection_method": "ai",
+            "action": "click",
+            "yolo_class": "navigation-station-on",
+            "remark": "点击驻地"
+        },
+		{
+            "step": 5,
+            "detection_method": "ai",
+            "action": "click",
+            "yolo_class": "operation-station-build",
+            "remark": "点击建造"
+        },
+		{
+            "step": 6,
+            "detection_method": "ai",
+            "action": "click",
+            "yolo_class": "operation-close",
+            "remark": "点击关闭"
+        },
+		{
+            "step": 7,
+            "detection_method": "ai",
+            "action": "click",
+            "yolo_class": "operation-station-buildRewards",
+            "remark": "点击建造奖励"
+        },
+		{
+            "step": 8,
+            "detection_method": "ai",
+            "action": "click",
+            "yolo_class": "operation-close",
+            "remark": "点击关闭"
+        },
+		{
+            "step": 9,
+            "detection_method": "ai",
+            "action": "click",
+            "yolo_class": "operation-station-flags",
+            "remark": "点击旗帜"
+        },
+		{
+            "step": 3,
+            "detection_method": "ai",
+            "action": "click",
+            "yolo_class": "operation-back",
+            "remark": "点击返回键"
+        },
+		{
+            "step": 10,
+            "detection_method": "ai",
+            "action": "click",
+            "yolo_class": "navigation-main",
+            "remark": "点击地栏主城按钮"
+        },
+		{
+            "step": 11,
+            "detection_method": "ai",
+            "action": "click",
+            "yolo_class": "navigation-shop-on",
+            "remark": "点击商铺"
+        },
+		{
+            "step": 12,
+            "detection_method": "ai",
+            "action": "click",
+            "yolo_class": "operation-prointshops",
+            "remark": "点击积分商铺"
+        },
+		{
+            "step": 13,
+            "detection_method": "ai",
+            "action": "click",
+            "yolo_class": "operation-sportsshops",
+            "remark": "点击竞技商铺"
+        },
+		{
+            "step": 14,
+            "detection_method": "ai",
+            "action": "click",
+            "yolo_class": "operation-campshops",
+            "remark": "点击阵营商铺"
+        },
+		{
+            "step": 15,
+            "detection_method": "ai",
+            "action": "click",
+            "yolo_class": "operation-treasureshops",
+            "remark": "点击珍宝商铺"
+        },
+		{
+            "step": 16,
+            "detection_method": "ai",
+            "action": "click",
+            "yolo_class": "operation-treasureshops-hero",
+            "remark": "珍宝商铺-武将"
+        },
+		{
+            "step": 17,
+            "detection_method": "ai",
+            "action": "click",
+            "yolo_class": "operation-treasureshops-equipment",
+            "remark": "珍宝商铺-装备"
+        },
+		{
+            "step": 18,
+            "detection_method": "ai",
+            "action": "click",
+            "yolo_class": "operation-treasureshops-treasure",
+            "remark": "珍宝商铺-珍宝"
+        },
+		{
+            "step": 3,
+            "detection_method": "ai",
+            "action": "click",
+            "yolo_class": "operation-back",
+            "remark": "点击返回键"
+        }
+    ]
+}

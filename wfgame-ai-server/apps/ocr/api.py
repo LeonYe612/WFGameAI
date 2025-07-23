@@ -1,6 +1,5 @@
 """
-OCR API视图
-提供OCR识别相关API
+OCR模块API视图
 """
 import os
 import json
@@ -27,11 +26,11 @@ from .models import OCRProject, OCRGitRepository, OCRTask, OCRResult
 from .serializers import (
     OCRProjectSerializer, OCRGitRepositorySerializer, OCRTaskSerializer,
     OCRResultSerializer, FileUploadSerializer, OCRTaskCreateSerializer,
-    OCRHistoryQuerySerializer, OCRTaskWithResultsSerializer
+    OCRHistoryQuerySerializer, OCRTaskWithResultsSerializer, OCRProcessGitSerializer
 )
 from .services.ocr_service import OCRService
 from .services.git_service import GitService
-from .tasks import process_ocr_task
+from .tasks import process_ocr_task, process_git_ocr_task
 
 # 配置日志
 logger = logging.getLogger(__name__)
@@ -99,16 +98,34 @@ class OCRGitRepositoryAPIView(APIView):
             return Response(serializer.data)
 
         elif action == 'create':
-            serializer = OCRGitRepositorySerializer(data=request.data)
-            if serializer.is_valid():
-                # 验证Git仓库URL
-                url = serializer.validated_data.get('url')
-                if not GitService.validate_repository_url(url):
-                    return Response({'detail': 'Git仓库URL无效'}, status=status.HTTP_400_BAD_REQUEST)
+            try:
+                serializer = OCRGitRepositorySerializer(data=request.data)
+                if serializer.is_valid():
+                    # 获取访问令牌（如果提供）
+                    token = request.data.get('token')
 
-                serializer.save()
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                    # 获取是否跳过SSL验证的标志
+                    skip_ssl_verify = request.data.get('skip_ssl_verify', False)
+                    if skip_ssl_verify:
+                        logger.warning("⚠️ 用户请求跳过SSL验证，这可能存在安全风险")
+
+                    # 验证Git仓库URL
+                    url = serializer.validated_data.get('url')
+                    try:
+                        if not GitService.validate_repo_url(url, token=token, skip_ssl_verify=skip_ssl_verify):
+                            return Response({'detail': 'Git仓库URL无效或无法访问'}, status=status.HTTP_400_BAD_REQUEST)
+                    except Exception as e:
+                        logger.error(f"验证仓库URL失败: {str(e)}")
+                        return Response({'detail': f'验证仓库URL失败: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+
+                    # 保存仓库信息，但不存储令牌
+                    serializer.save()
+
+                    return Response(serializer.data, status=status.HTTP_201_CREATED)
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            except Exception as e:
+                logger.error(f"创建仓库异常: {str(e)}")
+                return Response({'detail': f'创建仓库失败: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         elif action == 'get':
             repo_id = request.data.get('id')
@@ -132,7 +149,12 @@ class OCRGitRepositoryAPIView(APIView):
             repo_id = request.data.get('id')
             try:
                 repo = OCRGitRepository.objects.get(id=repo_id)
-                branches = GitService.get_repository_branches(repo.url)
+                # 获取是否跳过SSL验证的标志
+                skip_ssl_verify = request.data.get('skip_ssl_verify', False)
+                if skip_ssl_verify:
+                    logger.warning("⚠️ 用户请求跳过SSL验证获取分支，这可能存在安全风险")
+
+                branches = GitService.get_repository_branches(repo.url, skip_ssl_verify=skip_ssl_verify)
                 return Response({'branches': branches})
             except OCRGitRepository.DoesNotExist:
                 return Response({'detail': 'Git仓库不存在'}, status=status.HTTP_404_NOT_FOUND)
@@ -483,56 +505,68 @@ class OCRProcessAPIView(APIView):
     http_method_names = ['post']
 
     def post(self, request):
+        """处理OCR请求"""
         action = request.data.get('action', '')
 
         if action == 'process_git':
-            # 处理Git仓库
-            repo_id = request.data.get('repo_id')
-            project_id = request.data.get('project_id')
-            branch = request.data.get('branch', 'main')
-            languages = request.data.get('languages', ['ch'])
-            use_gpu = request.data.get('use_gpu', True)
-            gpu_id = request.data.get('gpu_id', 0)
+            # 处理Git仓库源OCR
+            serializer = OCRProcessGitSerializer(data=request.data)
+            if serializer.is_valid():
+                # 获取参数
+                project_id = serializer.validated_data.get('project_id')
+                repo_id = serializer.validated_data.get('repo_id')
+                branch = serializer.validated_data.get('branch', 'main')
+                languages = serializer.validated_data.get('languages', ['ch'])
+                use_gpu = serializer.validated_data.get('use_gpu', True)
+                gpu_id = serializer.validated_data.get('gpu_id', 0)
 
-            try:
-                # 确保项目存在
+                # 获取令牌（如果提供）
+                token = request.data.get('token')
+
+                # 获取是否跳过SSL验证的标志
+                skip_ssl_verify = request.data.get('skip_ssl_verify', False)
+                if skip_ssl_verify:
+                    logger.warning("⚠️ 用户请求跳过SSL验证进行OCR处理，这可能存在安全风险")
+
                 try:
+                    # 获取项目和仓库
                     project = OCRProject.objects.get(id=project_id)
+                    git_repo = OCRGitRepository.objects.get(id=repo_id, project=project)
+
+                    # 创建OCR任务
+                    task = OCRTask.objects.create(
+                        project=project,
+                        git_repository=git_repo,
+                        source_type='git',
+                        status='pending',
+                        config={
+                            'branch': branch,
+                            'languages': languages,
+                            'use_gpu': use_gpu,
+                            'gpu_id': gpu_id
+                        }
+                    )
+
+                    # 提交Celery任务，传递令牌
+                    task_config = task.config.copy()
+                    if token:
+                        task_config['token'] = token
+                    if skip_ssl_verify:
+                        task_config['skip_ssl_verify'] = True
+                    process_git_ocr_task.delay(task.id, task_config)
+
+                    # 返回任务信息
+                    serializer = OCRTaskSerializer(task)
+                    return Response(serializer.data)
+
                 except OCRProject.DoesNotExist:
                     return Response({'detail': '项目不存在'}, status=status.HTTP_404_NOT_FOUND)
-
-                # 确保仓库存在
-                try:
-                    repo = OCRGitRepository.objects.get(id=repo_id)
                 except OCRGitRepository.DoesNotExist:
-                    return Response({'detail': 'Git仓库不存在'}, status=status.HTTP_404_NOT_FOUND)
+                    return Response({'detail': '仓库不存在'}, status=status.HTTP_404_NOT_FOUND)
+                except Exception as e:
+                    return Response({'detail': f'处理失败: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
 
-                # 创建OCR任务
-                task = OCRTask.objects.create(
-                    project=project,
-                    git_repository=repo,
-                    source_type='git',
-                    name=f"Git仓库识别_{repo.url.split('/')[-1].split('.')[0]}_{branch}",
-                    status='pending',
-                    config={
-                        'branch': branch,
-                        'target_languages': languages,
-                        'use_gpu': use_gpu,
-                        'gpu_id': gpu_id
-                    }
-                )
-
-                # 提交Celery任务
-                process_ocr_task.delay(task.id)
-
-                serializer = OCRTaskSerializer(task)
-                return Response({
-                    'detail': '任务创建成功，开始OCR处理',
-                    'task': serializer.data
-                }, status=status.HTTP_201_CREATED)
-
-            except Exception as e:
-                return Response({'detail': f'处理失败: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({'detail': f'不支持的操作: {action}'}, status=status.HTTP_400_BAD_REQUEST)
 
