@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'apps.tasks',
     'apps.reports',
     'apps.data_source',
+    'apps.ocr',  # OCR模块
 ]
 
 MIDDLEWARE = [
@@ -197,6 +198,11 @@ LOGGING = {
             'propagate': False,
         },
         'devices': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'ocr': {
             'handlers': ['console', 'file'],
             'level': 'INFO',
             'propagate': False,

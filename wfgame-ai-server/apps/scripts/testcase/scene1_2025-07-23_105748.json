@@ -1,0 +1,20 @@
+{
+    "steps": [
+        {
+            "step": 1,
+            "action": "click",
+            "class": "operation-Vip",
+            "confidence": 0.403564453125,
+            "timestamp": "2025-07-23 10:58:22.325013",
+            "remark": "待命名"
+        },
+        {
+            "step": 2,
+            "action": "click",
+            "class": "operation-Vip",
+            "confidence": 0.556640625,
+            "timestamp": "2025-07-23 10:58:26.788759",
+            "remark": "待命名"
+        }
+    ]
+}

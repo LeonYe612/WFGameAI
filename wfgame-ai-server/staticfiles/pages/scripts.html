@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,25 +13,30 @@
             padding-top: 20px;
             background-color: #f5f5f5;
         }
+
         .container {
             max-width: 1200px;
         }
+
         .navbar {
             margin-bottom: 20px;
             border-radius: 5px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
+
         .card {
             border: none;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             margin-bottom: 20px;
         }
+
         .footer {
             margin-top: 30px;
             padding: 20px 0;
             text-align: center;
             color: #666;
         }
+
         .dropzone {
             border: 2px dashed #ccc;
             border-radius: 5px;
@@ -40,15 +46,18 @@
             background-color: #f8f9fa;
             transition: all 0.3s;
         }
+
         .dropzone:hover {
             border-color: #0d6efd;
             background-color: #e9ecef;
         }
+
         .file-input {
             display: none;
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <nav class="navbar navbar-expand-lg navbar-light bg-light">
@@ -60,7 +69,8 @@
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <ul class="navbar-nav">
                         <li class="nav-item">
-                            <a class="nav-link" href="/pages/dashboard_template.html"><i class="fas fa-tachometer-alt"></i> 控制台</a>
+                            <a class="nav-link" href="/pages/dashboard_template.html"><i
+                                    class="fas fa-tachometer-alt"></i> 控制台</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="/pages/devices.html"><i class="fas fa-mobile-alt"></i> 设备管理</a>
@@ -69,13 +79,19 @@
                             <a class="nav-link active" href="/pages/scripts.html"><i class="fas fa-code"></i> 脚本管理</a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link" href="/pages/ocr_template.html"><i class="fas fa-file-alt"></i>
+                                OCR识别</a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link" href="/pages/tasks_template.html"><i class="fas fa-tasks"></i> 任务管理</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="/pages/reports_template.html"><i class="fas fa-chart-bar"></i> 测试报告</a>
+                            <a class="nav-link" href="/pages/reports_template.html"><i class="fas fa-chart-bar"></i>
+                                测试报告</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="/pages/data_template.html"><i class="fas fa-database"></i> 数据管理</a>
+                            <a class="nav-link" href="/pages/data_template.html"><i class="fas fa-database"></i>
+                                数据管理</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="/pages/settings_template.html"><i class="fas fa-cog"></i> 系统设置</a>
@@ -94,18 +110,22 @@
                 <div>
                     <button class="btn btn-secondary me-2" id="debugBtn"><i class="fas fa-bug"></i> 调试</button>
                     <button class="btn btn-danger me-2" id="recordBtn"><i class="fas fa-circle"></i> 开始录制</button>
-                    <button class="btn btn-primary me-2" id="replayBtn" data-bs-toggle="modal" data-bs-target="#replayModal"><i class="fas fa-play"></i> 回放脚本</button>
-                    <button class="btn btn-success me-2" id="newScriptBtn" data-bs-toggle="modal" data-bs-target="#importModal"><i class="fas fa-plus"></i> 新建脚本</button>
-                    <button class="btn btn-info" id="settingsBtn" data-bs-toggle="modal" data-bs-target="#settingsModal"><i class="fas fa-cog"></i> 设置</button>
+                    <button class="btn btn-primary me-2" id="replayBtn" data-bs-toggle="modal"
+                        data-bs-target="#replayModal"><i class="fas fa-play"></i> 回放脚本</button>
+                    <button class="btn btn-success me-2" id="newScriptBtn" data-bs-toggle="modal"
+                        data-bs-target="#importModal"><i class="fas fa-plus"></i> 新建脚本</button>
+                    <button class="btn btn-info" id="settingsBtn" data-bs-toggle="modal"
+                        data-bs-target="#settingsModal"><i class="fas fa-cog"></i> 设置</button>
                 </div>
             </div>
             <div class="col-12">
                 <hr>
             </div>
-        </div>        <!-- 演示横幅 -->
+        </div> <!-- 演示横幅 -->
         <div class="alert alert-info alert-dismissible fade show" role="alert">
             <i class="fas fa-info-circle"></i>
-            <strong>功能演示：</strong> "加入日志"功能已启用。start_app1.json 和 stop_app1.json 显示为"未加入日志"（不会出现在测试报告中），其他脚本显示为"已加入日志"（会出现在测试报告中）。
+            <strong>功能演示：</strong> "加入日志"功能已启用。start_app1.json 和 stop_app1.json
+            显示为"未加入日志"（不会出现在测试报告中），其他脚本显示为"已加入日志"（会出现在测试报告中）。
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
 
@@ -153,7 +173,8 @@
         </div>
 
         <div class="card">
-            <div class="card-body">                <table class="table table-hover">
+            <div class="card-body">
+                <table class="table table-hover">
                     <thead>
                         <tr>
                             <th scope="col">名称</th>
@@ -164,7 +185,8 @@
                             <th scope="col">创建日期</th>
                             <th scope="col">操作</th>
                         </tr>
-                    </thead>                    <tbody id="scriptsList">
+                    </thead>
+                    <tbody id="scriptsList">
                         <!-- 脚本列表将通过JavaScript动态加载 -->
                         <tr>
                             <td colspan="7" class="text-center">加载中...</td>
@@ -190,14 +212,19 @@
                 <div class="modal-body">
                     <ul class="nav nav-tabs mb-3" id="importTab" role="tablist">
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="import-tab" data-bs-toggle="tab" data-bs-target="#import-content" type="button" role="tab" aria-controls="import-content" aria-selected="true">导入JSON</button>
+                            <button class="nav-link active" id="import-tab" data-bs-toggle="tab"
+                                data-bs-target="#import-content" type="button" role="tab" aria-controls="import-content"
+                                aria-selected="true">导入JSON</button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="create-tab" data-bs-toggle="tab" data-bs-target="#create-content" type="button" role="tab" aria-controls="create-content" aria-selected="false">手动创建</button>
+                            <button class="nav-link" id="create-tab" data-bs-toggle="tab"
+                                data-bs-target="#create-content" type="button" role="tab" aria-controls="create-content"
+                                aria-selected="false">手动创建</button>
                         </li>
                     </ul>
                     <div class="tab-content" id="importTabContent">
-                        <div class="tab-pane fade show active" id="import-content" role="tabpanel" aria-labelledby="import-tab">
+                        <div class="tab-pane fade show active" id="import-content" role="tabpanel"
+                            aria-labelledby="import-tab">
                             <form id="importForm" enctype="multipart/form-data">
                                 <div class="dropzone" id="dropzone">
                                     <i class="fas fa-file-upload fa-3x mb-3"></i>
@@ -228,7 +255,8 @@
 
                                 <div class="mb-3">
                                     <label for="importScriptDescription" class="form-label">脚本描述</label>
-                                    <textarea class="form-control" id="importScriptDescription" name="description" rows="3" placeholder="请输入脚本描述"></textarea>
+                                    <textarea class="form-control" id="importScriptDescription" name="description"
+                                        rows="3" placeholder="请输入脚本描述"></textarea>
                                 </div>
                             </form>
                         </div>
@@ -248,11 +276,13 @@
                             </div>
                             <div class="mb-3">
                                 <label for="scriptDescription" class="form-label">脚本描述</label>
-                                <textarea class="form-control" id="scriptDescription" rows="3" placeholder="请输入脚本描述"></textarea>
+                                <textarea class="form-control" id="scriptDescription" rows="3"
+                                    placeholder="请输入脚本描述"></textarea>
                             </div>
                             <div class="mb-3">
                                 <label for="scriptContent" class="form-label">脚本内容 (JSON)</label>
-                                <textarea class="form-control" id="scriptContent" rows="15" placeholder='{"steps":[]}' style="font-family: monospace;"></textarea>
+                                <textarea class="form-control" id="scriptContent" rows="15" placeholder='{"steps":[]}'
+                                    style="font-family: monospace;"></textarea>
                             </div>
                         </div>
                     </div>
@@ -276,9 +306,11 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="pythonPath" class="form-label">Python路径</label>
-                        <input type="text" class="form-control" id="pythonPath" value="F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe" readonly>
+                        <input type="text" class="form-control" id="pythonPath"
+                            value="F:\QA\Software\anaconda3\envs\py39_yolov10\python.exe" readonly>
                         <div class="form-text text-danger">系统已锁定使用py39_yolov10环境，无法修改</div>
-                    </div>                    <div class="mb-3">
+                    </div>
+                    <div class="mb-3">
                         <label for="debugCmd" class="form-label">调试命令</label>
                         <input type="text" class="form-control" id="debugCmd" value="apps/scripts/record_script.py">
                         <div class="form-text">默认为"apps/scripts/record_script.py"</div>
@@ -286,13 +318,15 @@
 
                     <div class="mb-3">
                         <label for="recordCmd" class="form-label">录制命令</label>
-                        <input type="text" class="form-control" id="recordCmd" value="apps/scripts/record_script.py --record">
+                        <input type="text" class="form-control" id="recordCmd"
+                            value="apps/scripts/record_script.py --record">
                         <div class="form-text">默认为"apps/scripts/record_script.py --record"</div>
                     </div>
 
                     <div class="mb-3">
                         <label for="replayCmd" class="form-label">回放基础命令</label>
-                        <input type="text" class="form-control" id="replayCmd" value="apps/scripts/replay_script.py --show-screens">
+                        <input type="text" class="form-control" id="replayCmd"
+                            value="apps/scripts/replay_script.py --show-screens">
                         <div class="form-text">默认为"replay_script.py --show-screens"</div>
                     </div>
                 </div>
@@ -327,7 +361,8 @@
                         <div class="card mb-3 script-config">
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <h6 class="mb-0">脚本 #1</h6>
-                                <button type="button" class="btn btn-sm btn-danger remove-script" style="display: none;"><i class="fas fa-times"></i></button>
+                                <button type="button" class="btn btn-sm btn-danger remove-script"
+                                    style="display: none;"><i class="fas fa-times"></i></button>
                             </div>
                             <div class="card-body">
                                 <div class="mb-3">
@@ -345,7 +380,8 @@
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">最大执行时间(秒)</label>
-                                        <input type="number" class="form-control max-duration" value="" min="1" placeholder="不限制">
+                                        <input type="number" class="form-control max-duration" value="" min="1"
+                                            placeholder="不限制">
                                         <div class="form-text">设置脚本最大执行时间(秒)</div>
                                     </div>
                                 </div>
@@ -381,7 +417,8 @@
     </div>
 
     <!-- 编辑脚本模态框 -->
-    <div class="modal fade" id="editScriptModal" tabindex="-1" aria-labelledby="editScriptModalLabel" aria-hidden="true">
+    <div class="modal fade" id="editScriptModal" tabindex="-1" aria-labelledby="editScriptModalLabel"
+        aria-hidden="true">
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
                 <div class="modal-header">
@@ -403,7 +440,8 @@
                     </div>
                     <div class="mb-3">
                         <label for="scriptEditor" class="form-label">脚本内容 (JSON)</label>
-                        <textarea class="form-control" id="scriptEditor" rows="20" style="font-family: monospace; font-size: 14px;"></textarea>
+                        <textarea class="form-control" id="scriptEditor" rows="20"
+                            style="font-family: monospace; font-size: 14px;"></textarea>
                     </div>
                     <div id="editError" class="alert alert-danger d-none"></div>
                     <div id="editSuccess" class="alert alert-success d-none"></div>
@@ -418,11 +456,11 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>        document.addEventListener('DOMContentLoaded', function() {
+    <script>        document.addEventListener('DOMContentLoaded', function () {
             // 添加模态框显示事件
             const replayModalEl = document.getElementById('replayModal');
             if (replayModalEl) {
-                replayModalEl.addEventListener('shown.bs.modal', function() {
+                replayModalEl.addEventListener('shown.bs.modal', function () {
                     // 延迟执行以确保模态框中的元素已完全加载
                     setTimeout(() => {
                         updateCommandPreview();
@@ -514,15 +552,15 @@
 
                 updateScriptsTable(filteredScripts);
             }// 调试按钮 - 执行 python record_script.py
-            debugBtn.addEventListener('click', function() {
+            debugBtn.addEventListener('click', function () {
                 executeCommand(globalSettings.pythonPath + ' ' + globalSettings.debugCmd);
             });
 
             // 录制按钮 - 执行 python record_script.py --record
-            recordBtn.addEventListener('click', function() {
+            recordBtn.addEventListener('click', function () {
                 executeCommand(globalSettings.pythonPath + ' ' + globalSettings.recordCmd);
             });            // 保存设置
-            saveSettings.addEventListener('click', function() {
+            saveSettings.addEventListener('click', function () {
                 // 获取Python路径但强制使用正确的路径格式
                 const pythonPath = document.getElementById('pythonPath').value.trim();                // 更新全局设置
                 globalSettings.pythonPath = pythonPath;
@@ -543,7 +581,7 @@
 
                 showToast('设置已保存', 'success');
             });            // 添加脚本配置
-            addScriptConfig.addEventListener('click', function() {
+            addScriptConfig.addEventListener('click', function () {
                 const scriptConfigs = document.querySelectorAll('.script-config');
                 const newIndex = scriptConfigs.length + 1;
 
@@ -609,7 +647,7 @@
             });
 
             // 开始回放按钮
-            startReplay.addEventListener('click', function() {
+            startReplay.addEventListener('click', function () {
                 const scriptConfigs = [];
                 const scriptConfigElements = document.querySelectorAll('.script-config');
 
@@ -656,42 +694,42 @@
                     },
                     body: JSON.stringify(data)
                 })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // 关闭模态框
-                        const modal = bootstrap.Modal.getInstance(document.getElementById('replayModal'));
-                        modal.hide();
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // 关闭模态框
+                            const modal = bootstrap.Modal.getInstance(document.getElementById('replayModal'));
+                            modal.hide();
 
-                        alert('回放已启动，请查看命令行窗口');
-                    } else {
-                        alert('回放启动失败: ' + data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('回放启动错误:', error);
-                    alert('回放启动失败，请检查网络连接');
-                });
+                            alert('回放已启动，请查看命令行窗口');
+                        } else {
+                            alert('回放启动失败: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('回放启动错误:', error);
+                        alert('回放启动失败，请检查网络连接');
+                    });
             });
 
             // 点击拖放区域触发文件选择
-            dropzone.addEventListener('click', function() {
+            dropzone.addEventListener('click', function () {
                 fileInput.click();
             });
 
             // 处理拖放文件
-            dropzone.addEventListener('dragover', function(e) {
+            dropzone.addEventListener('dragover', function (e) {
                 e.preventDefault();
                 dropzone.style.borderColor = '#0d6efd';
                 dropzone.style.backgroundColor = '#e9ecef';
             });
 
-            dropzone.addEventListener('dragleave', function() {
+            dropzone.addEventListener('dragleave', function () {
                 dropzone.style.borderColor = '#ccc';
                 dropzone.style.backgroundColor = '#f8f9fa';
             });
 
-            dropzone.addEventListener('drop', function(e) {
+            dropzone.addEventListener('drop', function (e) {
                 e.preventDefault();
                 dropzone.style.borderColor = '#ccc';
                 dropzone.style.backgroundColor = '#f8f9fa';
@@ -702,14 +740,14 @@
             });
 
             // 文件选择处理
-            fileInput.addEventListener('change', function() {
+            fileInput.addEventListener('change', function () {
                 if (fileInput.files.length) {
                     handleFiles(fileInput.files);
                 }
             });
 
             // 移除已选文件
-            removeFile.addEventListener('click', function() {
+            removeFile.addEventListener('click', function () {
                 fileInput.value = '';
                 fileInfo.classList.add('d-none');
                 importError.classList.add('d-none');
@@ -717,7 +755,7 @@
             });
 
             // 保存按钮处理
-            saveScript.addEventListener('click', function() {
+            saveScript.addEventListener('click', function () {
                 const activeTab = document.querySelector('.tab-pane.show.active');
 
                 if (activeTab.id === 'import-content') {
@@ -743,31 +781,31 @@
                         method: 'POST',
                         body: formData
                     })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            importSuccess.textContent = data.message;
-                            importSuccess.classList.remove('d-none');
-                            importError.classList.add('d-none');
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                importSuccess.textContent = data.message;
+                                importSuccess.classList.remove('d-none');
+                                importError.classList.add('d-none');
 
-                            // 2秒后关闭模态框并刷新脚本列表
-                            setTimeout(() => {
-                                const modal = bootstrap.Modal.getInstance(document.getElementById('importModal'));
-                                modal.hide();
-                                // 刷新脚本列表
-                                fetchScripts();
-                            }, 2000);
-                        } else {
-                            importError.textContent = data.message;
+                                // 2秒后关闭模态框并刷新脚本列表
+                                setTimeout(() => {
+                                    const modal = bootstrap.Modal.getInstance(document.getElementById('importModal'));
+                                    modal.hide();
+                                    // 刷新脚本列表
+                                    fetchScripts();
+                                }, 2000);
+                            } else {
+                                importError.textContent = data.message;
+                                importError.classList.remove('d-none');
+                                importSuccess.classList.add('d-none');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('导入错误:', error);
+                            importError.textContent = '导入文件时发生错误，请重试';
                             importError.classList.remove('d-none');
-                            importSuccess.classList.add('d-none');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('导入错误:', error);
-                        importError.textContent = '导入文件时发生错误，请重试';
-                        importError.classList.remove('d-none');
-                    });
+                        });
                 } else {
                     // 处理手动创建脚本
                     const scriptName = document.getElementById('scriptName').value.trim();
@@ -859,33 +897,33 @@
                     },
                     body: JSON.stringify({ command })
                 })
-                .then(response => response.json())
-                .then(data => {
-                    hideLoading();
-                    if (data.success) {
-                        showToast('命令已启动: ' + command + '\n请查看命令行窗口获取输出', 'success');
-                    } else {
-                        // 增强错误提示
-                        const errorMessage = data.message || '未知错误';
-                        let enhancedMessage = '命令启动失败: ' + errorMessage;
+                    .then(response => response.json())
+                    .then(data => {
+                        hideLoading();
+                        if (data.success) {
+                            showToast('命令已启动: ' + command + '\n请查看命令行窗口获取输出', 'success');
+                        } else {
+                            // 增强错误提示
+                            const errorMessage = data.message || '未知错误';
+                            let enhancedMessage = '命令启动失败: ' + errorMessage;
 
-                        // 检查是否为路径问题
-                        if (errorMessage.includes('FileNotFoundError') ||
-                            errorMessage.includes('找不到文件') ||
-                            errorMessage.includes('未找到')) {
-                            enhancedMessage += '\n\n可能原因: 脚本文件路径错误。请确保所有脚本都位于正确的目录: apps/scripts/';
+                            // 检查是否为路径问题
+                            if (errorMessage.includes('FileNotFoundError') ||
+                                errorMessage.includes('找不到文件') ||
+                                errorMessage.includes('未找到')) {
+                                enhancedMessage += '\n\n可能原因: 脚本文件路径错误。请确保所有脚本都位于正确的目录: apps/scripts/';
+                            }
+
+                            showToast(enhancedMessage, 'error');
                         }
-
-                        showToast(enhancedMessage, 'error');
-                    }
-                })
-                .catch(error => {
-                    hideLoading();
-                    console.error('命令启动错误:', error);
-                    showToast('命令启动失败，请检查网络连接: ' + error, 'error');
-                });
+                    })
+                    .catch(error => {
+                        hideLoading();
+                        console.error('命令启动错误:', error);
+                        showToast('命令启动失败，请检查网络连接: ' + error, 'error');
+                    });
             }
-              // 加载设置            // 加载设置
+            // 加载设置            // 加载设置
             function loadSettings() {
                 let storedSettings = localStorage.getItem('scriptSettings');
 
@@ -936,32 +974,32 @@
                         'Content-Type': 'application/json',
                     }
                 })
-                .then(response => response.json())
-                .then(data => {
-                    hideLoading();
-                    if (data.scripts && Array.isArray(data.scripts)) {                        // 为每个脚本添加include_in_log属性
-                        scripts = data.scripts.map(script => {
-                            // start_app1.json 和 stop_app1.json 设置为 false（未加入日志）
-                            if (script.filename === 'start_app1.json' || script.filename === 'stop_app1.json') {
-                                script.include_in_log = false;
-                            } else {
-                                // 其他脚本全部设置为 true（已加入日志）
-                                script.include_in_log = true;
-                            }
-                            return script;
-                        });
+                    .then(response => response.json())
+                    .then(data => {
+                        hideLoading();
+                        if (data.scripts && Array.isArray(data.scripts)) {                        // 为每个脚本添加include_in_log属性
+                            scripts = data.scripts.map(script => {
+                                // start_app1.json 和 stop_app1.json 设置为 false（未加入日志）
+                                if (script.filename === 'start_app1.json' || script.filename === 'stop_app1.json') {
+                                    script.include_in_log = false;
+                                } else {
+                                    // 其他脚本全部设置为 true（已加入日志）
+                                    script.include_in_log = true;
+                                }
+                                return script;
+                            });
 
-                        updateScriptsTable(scripts);
-                        updateScriptDropdowns(scripts);
-                    } else {
-                        showToast('获取脚本列表失败', 'error');
-                    }
-                })
-                .catch(error => {
-                    hideLoading();
-                    console.error('Error:', error);
-                    showToast('获取脚本列表失败: ' + error, 'error');
-                });
+                            updateScriptsTable(scripts);
+                            updateScriptDropdowns(scripts);
+                        } else {
+                            showToast('获取脚本列表失败', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        hideLoading();
+                        console.error('Error:', error);
+                        showToast('获取脚本列表失败: ' + error, 'error');
+                    });
             }// 更新脚本表格
             function updateScriptsTable(scriptsToShow) {
                 if (!scriptsToShow || scriptsToShow.length === 0) {
@@ -1072,7 +1110,7 @@
                 const removeButtons = document.querySelectorAll('.remove-script');
 
                 removeButtons.forEach(button => {
-                    button.addEventListener('click', function() {
+                    button.addEventListener('click', function () {
                         const scriptConfig = this.closest('.script-config');
                         scriptConfig.remove();
 
@@ -1289,7 +1327,7 @@
             const editSuccess = document.getElementById('editSuccess');
 
             // 格式化JSON按钮事件
-            formatJsonBtn.addEventListener('click', function() {
+            formatJsonBtn.addEventListener('click', function () {
                 try {
                     const jsonObj = JSON.parse(scriptEditor.value);
                     scriptEditor.value = JSON.stringify(jsonObj, null, 2);
@@ -1301,7 +1339,7 @@
             });
 
             // 保存编辑按钮事件
-            saveEditBtn.addEventListener('click', function() {
+            saveEditBtn.addEventListener('click', function () {
                 try {
                     // 验证JSON格式
                     const jsonObj = JSON.parse(scriptEditor.value);
@@ -1321,33 +1359,33 @@
                             content: scriptEditor.value
                         })
                     })
-                    .then(response => response.json())
-                    .then(data => {
-                        hideLoading();
+                        .then(response => response.json())
+                        .then(data => {
+                            hideLoading();
 
-                        if (data.success) {
-                            editSuccess.textContent = data.message;
-                            editSuccess.classList.remove('d-none');
-                            editError.classList.add('d-none');
+                            if (data.success) {
+                                editSuccess.textContent = data.message;
+                                editSuccess.classList.remove('d-none');
+                                editError.classList.add('d-none');
 
-                            // 2秒后关闭模态框并刷新脚本列表
-                            setTimeout(() => {
-                                modal.hide();
-                                // 刷新脚本列表
-                                fetchScripts();
-                            }, 2000);
-                        } else {
-                            editError.textContent = data.message;
+                                // 2秒后关闭模态框并刷新脚本列表
+                                setTimeout(() => {
+                                    modal.hide();
+                                    // 刷新脚本列表
+                                    fetchScripts();
+                                }, 2000);
+                            } else {
+                                editError.textContent = data.message;
+                                editError.classList.remove('d-none');
+                                editSuccess.classList.add('d-none');
+                            }
+                        })
+                        .catch(error => {
+                            hideLoading();
+                            console.error('保存脚本错误:', error);
+                            editError.textContent = '保存脚本失败，请检查网络连接';
                             editError.classList.remove('d-none');
-                            editSuccess.classList.add('d-none');
-                        }
-                    })
-                    .catch(error => {
-                        hideLoading();
-                        console.error('保存脚本错误:', error);
-                        editError.textContent = '保存脚本失败，请检查网络连接';
-                        editError.classList.remove('d-none');
-                    });
+                        });
                 } catch (e) {
                     editError.textContent = '无效的JSON格式: ' + e.message;
                     editError.classList.remove('d-none');
@@ -1458,22 +1496,22 @@
                     new_name: newName
                 })
             })
-            .then(response => response.json())
-            .then(data => {
-                hideLoading();
-                if (data.success) {
-                    showToast('脚本复制成功: ' + data.new_name, 'success');
-                    // 刷新脚本列表
-                    fetchScripts();
-                } else {
-                    showToast('复制失败: ' + data.message, 'error');
-                }
-            })
-            .catch(error => {
-                hideLoading();
-                console.error('复制脚本错误:', error);
-                showToast('复制失败，请检查网络连接', 'error');
-            });
+                .then(response => response.json())
+                .then(data => {
+                    hideLoading();
+                    if (data.success) {
+                        showToast('脚本复制成功: ' + data.new_name, 'success');
+                        // 刷新脚本列表
+                        fetchScripts();
+                    } else {
+                        showToast('复制失败: ' + data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    hideLoading();
+                    console.error('复制脚本错误:', error);
+                    showToast('复制失败，请检查网络连接', 'error');
+                });
         }
 
         // 删除脚本
@@ -1492,24 +1530,25 @@
                         path: path
                     })
                 })
-                .then(response => response.json())
-                .then(data => {
-                    hideLoading();
-                    if (data.success) {
-                        showToast('脚本已成功删除', 'success');
-                        // 刷新脚本列表
-                        fetchScripts();
-                    } else {
-                        showToast('删除失败: ' + data.message, 'error');
-                    }
-                })
-                .catch(error => {
-                    hideLoading();
-                    console.error('删除脚本错误:', error);
-                    showToast('删除失败，请检查网络连接', 'error');
-                });
+                    .then(response => response.json())
+                    .then(data => {
+                        hideLoading();
+                        if (data.success) {
+                            showToast('脚本已成功删除', 'success');
+                            // 刷新脚本列表
+                            fetchScripts();
+                        } else {
+                            showToast('删除失败: ' + data.message, 'error');
+                        }
+                    })
+                    .catch(error => {
+                        hideLoading();
+                        console.error('删除脚本错误:', error);
+                        showToast('删除失败，请检查网络连接', 'error');
+                    });
             }
         }
     </script>
 </body>
+
 </html>

@@ -888,78 +888,71 @@ def capture_and_analyze_device(device, screenshot_queue):
             # 检测屏幕变化和UI状态
             has_changed = detect_screen_change(device.serial, frame)
 
-            # 只有在屏幕变化或没有之前的帧时才执行完整分析
-            if has_changed or device.serial not in prev_frames:                # 使用YOLO模型预测 - 修复检测问题
-                # 不再使用cv2.resize，直接保存原始图像让YOLO自己处理
-                import tempfile
-                with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as temp_file:
-                    temp_path = temp_file.name
-                    cv2.imwrite(temp_path, frame)
+            # 使用YOLO模型预测 - 修复检测问题
+            # 不再使用cv2.resize，直接保存原始图像让YOLO自己处理
+            import tempfile
+            with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as temp_file:
+                temp_path = temp_file.name
+                cv2.imwrite(temp_path, frame)
 
-                try:
-                    if model and hasattr(model, 'predict'):                        # 导入ThresholdConfig以使用统一的阈值管理
-                        try:
-                            sys.path.append(os.path.join(get_project_root(), 'train_model'))
-                            from infer import ThresholdConfig
-                            conf_threshold = ThresholdConfig.get_conf_threshold("default")
-                        except:
-                            conf_threshold = 0.5  # 备用阈值
+            try:
+                if model and hasattr(model, 'predict'):                        # 导入ThresholdConfig以使用统一的阈值管理
+                    try:
+                        sys.path.append(os.path.join(get_project_root(), 'train_model'))
+                        from infer import ThresholdConfig
+                        conf_threshold = ThresholdConfig.get_conf_threshold("default")
+                    except:
+                        conf_threshold = 0.3  # 降低默认置信度阈值，以便检测到更多目标
 
-                        results_for_detection = model.predict(
-                            source=temp_path,  # 传入图像路径而不是numpy数组
-                            device=DEVICE,
-                            imgsz=640,
-                            conf=conf_threshold,  # 使用统一的置信度阈值
-                            iou=0.6,   # 添加NMS IoU阈值
-                            half=True if DEVICE == "cuda" else False,  # 半精度推理
-                            max_det=300,  # 最大检测数量
-                            verbose=False
-                        )
-                    else:
-                        results_for_detection = None
-                except Exception as model_err:
-                    print(f"模型预测失败: {model_err}")
+                    results_for_detection = model.predict(
+                        source=temp_path,  # 传入图像路径而不是numpy数组
+                        device=DEVICE,
+                        imgsz=640,
+                        conf=conf_threshold,  # 使用统一的置信度阈值
+                        iou=0.6,   # 添加NMS IoU阈值
+                        half=True if DEVICE == "cuda" else False,  # 半精度推理
+                        max_det=300,  # 最大检测数量
+                        verbose=False
+                    )
+                else:
                     results_for_detection = None
-                finally:
-                    # 清理临时文件
-                    try:
-                        os.unlink(temp_path)
-                    except:
-                        pass
-
-                # 分析界面状态
-                current_state = analyze_ui_state(device.serial, frame, results_for_detection)
-
-                # 提取界面元素
-                elements = extract_ui_elements(frame, results_for_detection)
-
-                # 更新设备状态
-                if device.serial in device_states:
-                    device_states[device.serial]["elements"] = elements
-
-                # 决定自动操作
-                if AUTO_INTERACTION:
-                    action = decide_auto_action(device.serial, elements, current_state)
-                    if action:
-                        # 将动作放入设备的动作队列
-                        device_states[device.serial]["action_queue"].put(action)
-
-                # 将带有分析结果的帧放入队列
+            except Exception as model_err:
+                print(f"模型预测失败: {model_err}")
+                results_for_detection = None
+            finally:
+                # 清理临时文件
                 try:
+                    os.unlink(temp_path)
+                except:
+                    pass
+
+            # 分析界面状态
+            current_state = analyze_ui_state(device.serial, frame, results_for_detection)
+
+            # 提取界面元素
+            elements = extract_ui_elements(frame, results_for_detection)
+
+            # 更新设备状态
+            if device.serial in device_states:
+                device_states[device.serial]["elements"] = elements
+
+            # 决定自动操作
+            if AUTO_INTERACTION:
+                action = decide_auto_action(device.serial, elements, current_state)
+                if action:
+                    # 将动作放入设备的动作队列
+                    device_states[device.serial]["action_queue"].put(action)
+
+            # 将带有分析结果的帧放入队列
+            try:
+                screenshot_queue.put((device.serial, frame, results_for_detection), block=False)
+            except queue.Full:
+                # 队列满了，尝试再次清理后添加
+                try:
+                    screenshot_queue.get_nowait()
                     screenshot_queue.put((device.serial, frame, results_for_detection), block=False)
-                except queue.Full:
-                    # 队列满了，尝试再次清理后添加
-                    try:
-                        screenshot_queue.get_nowait()
-                        screenshot_queue.put((device.serial, frame, results_for_detection), block=False)
-                    except:
-                        pass  # 如果仍然失败，放弃这一帧
-            else:
-                # 如果屏幕没有变化，只传递帧，不包含分析结果
-                try:
-                    screenshot_queue.put((device.serial, frame, None), block=False)
-                except queue.Full:
-                    pass  # 队列满了，放弃这一帧
+                except:
+                    pass  # 如果仍然失败，放弃这一帧
 
             # 处理设备的动作队列
             if device.serial in device_states and not device_states[device.serial]["action_queue"].empty():
@@ -1280,30 +1273,36 @@ while not exit_flag:
             cv2.imwrite(temp_path, frame)
 
         try:
-            # 导入ThresholdConfig以使用统一的阈值管理
-            try:
-                import sys
-                import os
-                sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'train_model'))
-                from infer import ThresholdConfig
-                conf_threshold = ThresholdConfig.get_conf_threshold("default")
-            except ImportError:
-                conf_threshold = 0.5  # 后备默认值
+            # 如果results为None（表示屏幕没有变化），则重新进行检测
+            # 这确保每一帧都能显示检测结果
+            if results is None:
+                # 导入ThresholdConfig以使用统一的阈值管理
+                try:
+                    import sys
+                    import os
+                    sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'train_model'))
+                    from infer import ThresholdConfig
+                    conf_threshold = ThresholdConfig.get_conf_threshold("default")
+                except ImportError:
+                    conf_threshold = 0.3  # 降低默认置信度阈值，以便检测到更多目标
 
-            # 使用优化的YOLO参数进行检测
-            if model and hasattr(model, 'predict'):
-                results_for_detection = model.predict(
-                    source=temp_path,  # 传入图像路径
-                    device=DEVICE,
-                    imgsz=640,
-                    conf=conf_threshold,  # 使用统一配置的置信度阈值
-                    iou=0.6,   # NMS IoU阈值
-                    half=True if DEVICE == "cuda" else False,
-                    max_det=300,
-                    verbose=False
-                )
+                # 使用优化的YOLO参数进行检测
+                if model and hasattr(model, 'predict'):
+                    results_for_detection = model.predict(
+                        source=temp_path,  # 传入图像路径
+                        device=DEVICE,
+                        imgsz=640,
+                        conf=conf_threshold,  # 使用统一配置的置信度阈值
+                        iou=0.6,   # NMS IoU阈值
+                        half=True if DEVICE == "cuda" else False,
+                        max_det=300,
+                        verbose=False
+                    )
+                else:
+                    results_for_detection = None
             else:
-                results_for_detection = None
+                # 使用已有的检测结果
+                results_for_detection = results
         except Exception as model_err:
             print(f"模型预测失败: {model_err}")
             results_for_detection = None
@@ -1313,7 +1312,6 @@ while not exit_flag:
                 os.unlink(temp_path)
             except:
                 pass
-            # 继续执行，使用空结果
 
         # 检查并更新窗口大小
         window_name = windows[serial]
@@ -1336,30 +1334,65 @@ while not exit_flag:
         try:
             annotated_frame = display_frame.copy()
             if results_for_detection:
-                # 使用当前显示尺寸计算检测框
-                display_w, display_h = USER_WINDOW_SIZES[serial]
+                # 获取原始图像和显示图像的尺寸
+                orig_h, orig_w = frame.shape[:2]
+                display_h, display_w = annotated_frame.shape[:2]
+
+                # 计算缩放比例
+                scale_x = display_w / orig_w
+                scale_y = display_h / orig_h
 
                 for box in results_for_detection[0].boxes:
-                    x, y, w, h = box.xywh[0].tolist()                    # 转换检测框坐标到显示尺寸
-                    x = x * display_w/640
-                    y = y * display_h/640
-                    w = w * display_w/640
-                    h = h * display_h/640
+                    # 获取原始坐标 (YOLO格式是中心点坐标和宽高)
+                    x, y, w, h = box.xywh[0].tolist()
+
+                    # 转换坐标到原始图像尺寸
+                    x = x * orig_w / 640
+                    y = y * orig_h / 640
+                    w = w * orig_w / 640
+                    h = h * orig_h / 640
+
+                    # 转换到显示尺寸
+                    display_x = x * scale_x
+                    display_y = y * scale_y
+                    display_w_box = w * scale_x
+                    display_h_box = h * scale_y
+
+                    # 计算左上角和右下角坐标
+                    x1 = int(display_x - display_w_box/2)
+                    y1 = int(display_y - display_h_box/2)
+                    x2 = int(display_x + display_w_box/2)
+                    y2 = int(display_y + display_h_box/2)
 
                     cls_id = int(box.cls.item())
                     conf = box.conf.item()
-                    cv2.rectangle(annotated_frame,
-                                (int(x - w/2), int(y - h/2)),
-                                (int(x + w/2), int(y + h/2)),
-                                (0, 255, 0), 2)
+
+                    # 绘制边界框
+                    cv2.rectangle(annotated_frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+
+                    # 绘制标签
                     if model and hasattr(model, 'names') and model.names is not None and cls_id < len(model.names):
-                        cv2.putText(annotated_frame, f"{model.names[cls_id]} {conf:.2f}",
-                                    (int(x - w/2), int(y - h/2 - 10)),
-                                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                        class_name = model.names[cls_id]
+                        label = f"{class_name} {conf:.2f}"
+
+                        # 计算标签背景大小
+                        (label_width, label_height), _ = cv2.getTextSize(
+                            label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
+
+                        # 绘制标签背景
+                        cv2.rectangle(annotated_frame,
+                                     (x1, y1 - label_height - 10),
+                                     (x1 + label_width + 5, y1),
+                                     (0, 255, 0), -1)
+
+                        # 绘制标签文字
+                        cv2.putText(annotated_frame, label,
+                                   (x1, y1 - 5),
+                                   cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
                     else:
                         cv2.putText(annotated_frame, f"Unknown {conf:.2f}",
-                                    (int(x - w/2), int(y - h/2 - 10)),
-                                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                                   (x1, y1 - 5),
+                                   cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
         except Exception as annotate_err:
             print(f"标注图像失败: {annotate_err}")
             # 使用未标注的帧
