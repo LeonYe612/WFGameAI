@@ -1,0 +1,33 @@
+{
+    "meta": {
+        "name": "完整进入游戏流程 - 更新版",
+        "description": "使用新的3个关键功能和标准化参数的游戏进入脚本",
+        "version": "3.0",
+        "updated_date": "2025-01-10",
+        "author": "WFGameAI开发团队",
+        "tags": [
+            "游戏进入",
+            "3个关键功能",
+            "标准化"
+        ]
+    },
+    "steps": [
+        {
+            "step": 1,
+            "detection_method": "ai",
+            "action": "wait_for_appearance",
+            "execute_action": "click",
+            "yolo_class": "operation-close",
+            "timeout": 15,
+            "remark": "等待启动游戏后的公告弹窗出现"
+        },
+        {
+            "step": 3,
+            "detection_method": "ai",
+            "action": "retry_until_success",
+            "execute_action": "click",
+            "yolo_class": "operation-confirm",
+            "remark": "重试点击确认按钮"
+        }
+    ]
+}

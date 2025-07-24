@@ -1,0 +1,100 @@
+{
+    "name": "Test wait_if_exists with yolo_class parameter only",
+    "description": "",
+    "steps": [
+        {
+            "step": 1,
+            "detection_method": "ai",
+            "action": "wait_for_stable",
+            "duration": 3,
+            "max_wait": 6,
+            "remark": "等待应用启动后界面稳定"
+        },
+        {
+            "step": 2,
+            "detection_method": "ai",
+            "action": "click",
+            "yolo_class": "operation-confirm",
+            "remark": "如果发现【权限弹窗】，点击【确定】按钮"
+        },
+        {
+            "step": 2,
+            "detection_method": "ai",
+            "action": "wait_for_stable",
+            "duration": 3,
+            "max_wait": 6,
+            "remark": "等待应用启动后界面稳定"
+        },
+        {
+            "step": 2,
+            "detection_method": "ai",
+            "action": "wait_if_exists",
+            "yolo_class": "system-newResources",
+            "polling_interval": 5,
+            "max_duration": 300,
+            "remark": "判断启动APP后是否出现热更资源图标，如果存在则需要等待新资源加载完成"
+        },
+        {
+            "step": 3,
+            "detection_method": "ai",
+            "action": "wait_for_appearance",
+            "execute_action": "click",
+            "yolo_class": "operation-sdk-login",
+            "remark": "通过等待并点击[进入游戏]按钮出现，来判断已成功完成“热更”进入“加载界面”"
+        },
+		{
+            "step": 4,
+            "detection_method": "ai",
+			"action": "wait_if_exists",
+            "execute_action": "click",
+            "yolo_class": "system-Switchaccounts",
+            "remark": "判断是否是自动登录，如果存在自动登录则点击【切换账号】"
+        },
+		{
+            "step": 5,
+            "detection_method": "ai",
+            "action": "click",
+            "yolo_class": "operation-sdk-login",
+            "remark": "选择使用【账号登录】"
+        },
+        {
+            "step": 6,
+            "detection_method": "ai",
+            "action": "click",
+            "execute_action": "input",
+            "text": "djtest2024",
+            "yolo_class": "operation-sdk-account-input",
+            "remark": "点击账号输入框。输入【账号】"
+        },
+        {
+            "step": 9,
+            "detection_method": "ai",
+            "action": "click",
+            "execute_action": "input",
+            "text": "123456",
+            "yolo_class": "operation-sdk-password-input",
+            "remark": "点击密码框，输入密码"
+        },
+        {
+            "step": 10,
+            "detection_method": "ai",
+            "action": "click",
+            "yolo_class": "system-protocol-box",
+            "remark": "点击系统协议框，确保协议已同意"
+        },
+        {
+            "step": 11,
+            "detection_method": "ai",
+            "action": "click",
+            "yolo_class": "operation-sdk-enter",
+            "remark": "点击登录按钮"
+        },
+        {
+            "step": 12,
+            "detection_method": "ai",
+            "action": "click",
+            "yolo_class": "operation-confirm",
+            "remark": "再次点击登录按钮，确保登录成功"
+        }
+    ]
+}

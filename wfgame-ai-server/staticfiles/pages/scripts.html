@@ -5,8 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>脚本管理 - WFGame AI自动化测试平台</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.1.3/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         body {
             font-family: "stheitimedium", "Microsoft YaHei", "微软雅黑", sans-serif;
@@ -229,8 +229,8 @@
                                 <div class="dropzone" id="dropzone">
                                     <i class="fas fa-file-upload fa-3x mb-3"></i>
                                     <p>拖拽JSON文件到此处，或点击选择文件</p>
-                                    <p class="text-muted">支持JSON格式脚本文件</p>
-                                    <input type="file" id="fileInput" class="file-input" accept=".json">
+                                    <p class="text-muted">支持多个JSON格式脚本文件</p>
+                                    <input type="file" id="fileInput" class="file-input" accept=".json" multiple>
                                 </div>
                                 <div id="fileInfo" class="d-none alert alert-info">
                                     <i class="fas fa-info-circle"></i>
@@ -294,6 +294,8 @@
             </div>
         </div>
     </div>
+
+
 
     <!-- 设置模态框 -->
     <div class="modal fade" id="settingsModal" tabindex="-1" aria-labelledby="settingsModalLabel" aria-hidden="true">
@@ -455,29 +457,218 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>        document.addEventListener('DOMContentLoaded', function () {
-            // 添加模态框显示事件
-            const replayModalEl = document.getElementById('replayModal');
-            if (replayModalEl) {
-                replayModalEl.addEventListener('shown.bs.modal', function () {
-                    // 延迟执行以确保模态框中的元素已完全加载
-                    setTimeout(() => {
-                        updateCommandPreview();
-                    }, 100);
-                });
+
+
+    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 全局设置
+        const globalSettings = {
+            pythonPath: 'python',  // 默认Python路径
+            debugCmd: 'record_script.py',
+            recordCmd: 'record_script.py --record',
+            replayCmd: 'replay_script.py --show-screens'
+        };
+
+        // 全局变量
+        let scripts = []; // 存储脚本列表
+        let scriptCategories = [];
+        let filteredScripts = [];
+
+        // 确保核心函数在使用前已定义
+        function updateScriptsTable(scriptsToShow) {
+            try {
+                const scriptsList = document.getElementById('scriptsList');
+
+                if (!scriptsList) {
+                    console.error('找不到scriptsList元素');
+                    return;
+                }
+
+                if (!scriptsToShow || scriptsToShow.length === 0) {
+                    scriptsList.innerHTML = `
+                        <tr>
+                            <td colspan="7" class="text-center">暂无脚本</td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                const rows = scriptsToShow.map(script => {
+                    let badgeClass = 'bg-secondary';
+                    if (script.type === '录制') {
+                        badgeClass = 'bg-danger';
+                    } else if (script.type === '手动') {
+                        badgeClass = 'bg-success';
+                    } else if (script.type === '自动生成') {
+                        badgeClass = 'bg-info';
+                    }
+
+                    const includeInLogBadge = script.include_in_log
+                        ? '<span class="badge bg-success"><i class="fas fa-check"></i> 已加入</span>'
+                        : '<span class="badge bg-secondary"><i class="fas fa-times"></i> 未加入</span>';
+
+                    return `
+                        <tr>
+                            <td>${script.filename}</td>
+                            <td><span class="badge ${badgeClass}">${script.type || '未知'}</span></td>
+                            <td>${script.category || '未分类'}</td>
+                            <td>${script.step_count || 0}</td>
+                            <td>${includeInLogBadge}</td>
+                            <td>${script.created}</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary me-1" onclick="replayScript('${script.path}')">
+                                    <i class="fas fa-play"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary me-1" onclick="editScript('${script.path}')">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-info me-1" onclick="copyScript('${script.path}')">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteScript('${script.path}')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+                scriptsList.innerHTML = rows;
+            } catch (error) {
+                console.error('更新脚本表格出错:', error);
+                showToast('更新脚本表格出错: ' + error.message, 'error');
             }
+        }
 
-            // 定义全局变量
-            let scripts = [];
-            // 定义全局设置变量
-            let globalSettings = {
-                pythonPath: 'F:\\QA\\Software\\anaconda3\\envs\\py39_yolov10\\python.exe',
-                debugCmd: 'record_script.py',
-                recordCmd: 'record_script.py --record',
-                replayCmd: 'replay_script.py --show-screens'
-            };
+        function updateScriptDropdowns(scripts) {
+            try {
+                const scriptSelects = document.querySelectorAll('.script-select');
 
+                scriptSelects.forEach(select => {
+                    // 保存当前选中的值
+                    const currentValue = select.value;
+
+                    // 清空现有选项
+                    select.innerHTML = '<option value="">请选择脚本...</option>';
+
+                    // 添加新选项
+                    scripts.forEach(script => {
+                        const option = document.createElement('option');
+                        option.value = script.path;
+                        option.textContent = `${script.filename} (${script.step_count || 0}步)`;
+                        select.appendChild(option);
+                    });
+
+                    // 如果之前有选中值，尝试恢复
+                    if (currentValue) {
+                        select.value = currentValue;
+                    }
+                });
+            } catch (error) {
+                console.error('更新脚本下拉列表出错:', error);
+            }
+        }
+
+        // 获取脚本列表 - 全局函数
+        function fetchScripts() {
+            console.log('开始获取脚本列表...');
+            showLoading('正在加载脚本列表...');
+
+            fetch('/api/scripts/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP状态错误: ${response.status}`);
+                    }
+                    return response.text();
+                })
+                .then(text => {
+                    try {
+                        // 尝试解析响应文本为JSON
+                        return text ? JSON.parse(text) : {};
+                    } catch (e) {
+                        console.error('JSON解析错误:', e, '原始文本:', text);
+                        throw new Error('返回数据格式错误: ' + e.message);
+                    }
+                })
+                .then(data => {
+                    hideLoading();
+                    console.log('获取脚本列表成功，返回数据:', data);
+
+                    try {
+                        // 适应多种可能的返回格式
+                        let scriptsList = [];
+
+                        if (data.scripts && Array.isArray(data.scripts)) {
+                            // 格式1: {scripts: [...]}
+                            scriptsList = data.scripts;
+                        } else if (Array.isArray(data)) {
+                            // 格式2: [...]
+                            scriptsList = data;
+                        } else {
+                            console.warn('未知的脚本列表格式，尝试处理:', data);
+                            // 尝试从数据中提取可能的脚本列表
+                            for (let key in data) {
+                                if (Array.isArray(data[key])) {
+                                    scriptsList = data[key];
+                                    console.log(`从键 "${key}" 中找到数组数据`);
+                                    break;
+                                }
+                            }
+
+                            if (scriptsList.length === 0) {
+                                throw new Error('无法识别的数据格式');
+                            }
+                        }
+
+                        // 统一处理脚本列表
+                        scripts = scriptsList.map(script => {
+                            // 为每个脚本添加或确认include_in_log属性
+                            if (script.include_in_log === undefined) {
+                                script.include_in_log = true;
+                            }
+
+                            // start_app1.json 和 stop_app1.json 设置为 false（未加入日志）
+                            if (script.filename === 'start_app1.json' || script.filename === 'stop_app1.json') {
+                                script.include_in_log = false;
+                            }
+
+                            return script;
+                        });
+
+                        console.log(`成功解析 ${scripts.length} 个脚本`);
+
+                        // 确保函数已定义
+                        if (typeof updateScriptsTable === 'function') {
+                            updateScriptsTable(scripts);
+                        } else {
+                            throw new Error('updateScriptsTable 函数未定义');
+                        }
+
+                        if (typeof updateScriptDropdowns === 'function') {
+                            updateScriptDropdowns(scripts);
+                        } else {
+                            console.warn('updateScriptDropdowns 函数未定义');
+                        }
+                    } catch (error) {
+                        console.error('处理脚本列表数据时出错:', error);
+                        showToast('处理脚本列表数据时出错: ' + error.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    hideLoading();
+                    console.error('获取脚本列表错误:', error);
+                    showToast('加载脚本列表失败: ' + error.message, 'error');
+                });
+        }
+
+        // 文档加载完成后执行
+        document.addEventListener('DOMContentLoaded', function () {
             const debugBtn = document.getElementById('debugBtn');
             const recordBtn = document.getElementById('recordBtn');
             const replayBtn = document.getElementById('replayBtn');
@@ -498,7 +689,9 @@
             const commandPreview = document.getElementById('commandPreview');
             const importScriptCategory = document.getElementById('importScriptCategory');
             const importScriptDescription = document.getElementById('importScriptDescription');
-            const scriptsList = document.getElementById('scriptsList');            // 加载设置
+            const scriptsList = document.getElementById('scriptsList');
+
+            // 加载设置
             loadSettings();
 
             // 获取脚本列表
@@ -551,7 +744,9 @@
                 });
 
                 updateScriptsTable(filteredScripts);
-            }// 调试按钮 - 执行 python record_script.py
+            }
+
+            // 调试按钮 - 执行 python record_script.py
             debugBtn.addEventListener('click', function () {
                 executeCommand(globalSettings.pythonPath + ' ' + globalSettings.debugCmd);
             });
@@ -735,7 +930,15 @@
                 dropzone.style.backgroundColor = '#f8f9fa';
 
                 if (e.dataTransfer.files.length) {
-                    handleFiles(e.dataTransfer.files);
+                    // 记录原始拖拽的文件
+                    const droppedFiles = e.dataTransfer.files;
+                    console.log('拖放的文件数量:', droppedFiles.length);
+
+                    // 手动处理文件，不尝试将文件赋值给fileInput
+                    handleFiles(droppedFiles);
+
+                    // 在提交导入请求时直接使用这些文件
+                    window.droppedFiles = droppedFiles;
                 }
             });
 
@@ -760,51 +963,82 @@
 
                 if (activeTab.id === 'import-content') {
                     // 处理导入JSON
-                    if (!fileInput.files.length) {
+                    // 检查是否有文件 - 优先使用拖放的文件，如果没有则检查文件输入框
+                    const files = window.droppedFiles || fileInput.files;
+                    if (!files || files.length === 0) {
                         importError.textContent = '请先选择一个文件';
                         importError.classList.remove('d-none');
                         return;
                     }
 
+                    // 获取分类和描述
+                    const category = importScriptCategory.value;
+                    const description = importScriptDescription.value;
+
+                    // 显示进度信息
+                    importSuccess.textContent = '文件上传中，请稍候...';
+                    importSuccess.classList.remove('d-none');
+                    importError.classList.add('d-none');
+
+                    // 创建FormData对象，一次性添加多个文件
                     const formData = new FormData();
-                    formData.append('file', fileInput.files[0]);
+
+                    // 添加所有选择的文件
+                    for (let i = 0; i < files.length; i++) {
+                        // 使用序号作为key，便于后端识别多文件
+                        formData.append(`file${i}`, files[i]);
+                    }
 
                     // 添加分类和描述
-                    if (importScriptCategory.value) {
-                        formData.append('category', importScriptCategory.value);
+                    if (category) {
+                        formData.append('category', category);
                     }
-                    if (importScriptDescription.value) {
-                        formData.append('description', importScriptDescription.value);
+                    if (description) {
+                        formData.append('description', description);
                     }
 
+                    // 发送批量上传请求
                     fetch('/api/scripts/import/', {
                         method: 'POST',
                         body: formData
                     })
                         .then(response => response.json())
                         .then(data => {
-                            if (data.success) {
-                                importSuccess.textContent = data.message;
-                                importSuccess.classList.remove('d-none');
-                                importError.classList.add('d-none');
+                            console.log('导入响应:', data);
 
-                                // 2秒后关闭模态框并刷新脚本列表
-                                setTimeout(() => {
-                                    const modal = bootstrap.Modal.getInstance(document.getElementById('importModal'));
-                                    modal.hide();
-                                    // 刷新脚本列表
-                                    fetchScripts();
-                                }, 2000);
+                            // 处理新的API响应格式
+                            if (data.success) {
+                                // 如果results字段存在，使用新的结果处理逻辑
+                                if (data.results && Array.isArray(data.results)) {
+                                    finishImport(data.results,
+                                        data.results.filter(r => r.success).length,
+                                        data.results.length);
+                                } else {
+                                    // 兼容旧格式
+                                    finishImport([{
+                                        file: data.filename || '未知文件',
+                                        success: data.success,
+                                        message: data.message
+                                    }], data.success ? 1 : 0, 1);
+                                }
                             } else {
-                                importError.textContent = data.message;
+                                // 处理整体错误情况
+                                importError.innerHTML = `导入失败: ${data.message}`;
                                 importError.classList.remove('d-none');
                                 importSuccess.classList.add('d-none');
                             }
+
+                            // 清除拖放的文件记录
+                            window.droppedFiles = null;
                         })
                         .catch(error => {
-                            console.error('导入错误:', error);
-                            importError.textContent = '导入文件时发生错误，请重试';
+                            console.error('导入请求错误:', error);
+                            importError.innerHTML = `请求错误: ${error.message}`;
                             importError.classList.remove('d-none');
+                            importSuccess.classList.add('d-none');
+
+                            // 清除拖放的文件记录
+                            window.droppedFiles = null;
                         });
                 } else {
                     // 处理手动创建脚本
@@ -830,9 +1064,53 @@
                 }
             });
 
+            // 完成导入
+            function finishImport(results, successCount, totalFiles) {
+                // 构建结果消息
+                let resultMessage = '';
+
+                if (successCount > 0) {
+                    const successRate = Math.round((successCount / totalFiles) * 100);
+                    resultMessage = `成功导入 ${successCount} 个脚本，共 ${totalFiles} 个文件 (${successRate}%)<br>`;
+
+                    if (successCount < totalFiles) {
+                        resultMessage += '部分导入失败:<br>';
+                        results.filter(r => !r.success).forEach(result => {
+                            // 适配新旧格式：新格式使用filename，旧格式使用file
+                            const fileName = result.filename || result.file || '未知文件';
+                            resultMessage += `<strong>${fileName}</strong>: ${result.message}<br>`;
+                        });
+                    }
+
+                    importSuccess.innerHTML = resultMessage;
+                    importSuccess.classList.remove('d-none');
+                    importError.classList.add('d-none');
+
+                    // 2秒后关闭模态框并刷新脚本列表
+                    setTimeout(() => {
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('importModal'));
+                        modal.hide();
+                        // 刷新脚本列表
+                        fetchScripts();
+                    }, 2000);
+                } else {
+                    resultMessage = '所有文件导入失败:<br>';
+                    results.forEach(result => {
+                        // 适配新旧格式
+                        const fileName = result.filename || result.file || '未知文件';
+                        resultMessage += `<strong>${fileName}</strong>: ${result.message}<br>`;
+                    });
+
+                    importError.innerHTML = resultMessage;
+                    importError.classList.remove('d-none');
+                    importSuccess.classList.add('d-none');
+                }
+            }
+
             // 处理文件函数
             function handleFiles(files) {
-                const file = files[0];
+                const file = files[0]; // 保留对第一个文件的引用用于显示
+                const filesCount = files.length;
 
                 // 检查文件类型
                 if (!file.name.endsWith('.json')) {
@@ -841,8 +1119,14 @@
                     return;
                 }
 
+                // 设置文件到fileInput (不需要改变，因为fileInput.files已经包含了选择的文件)
+
                 // 显示文件信息
-                fileName.textContent = file.name + ' (' + formatFileSize(file.size) + ')';
+                let displayText = file.name + ' (' + formatFileSize(file.size) + ')';
+                if (filesCount > 1) {
+                    displayText += ` 和其他 ${filesCount - 1} 个文件`;
+                }
+                fileName.textContent = displayText;
                 fileInfo.classList.remove('d-none');
                 importError.classList.add('d-none');
                 importSuccess.classList.add('d-none');
@@ -964,125 +1248,7 @@
             function getSettings() {
                 // 直接返回全局设置
                 return globalSettings;
-            }            // 获取脚本列表
-            function fetchScripts() {
-                showLoading('正在加载脚本列表...');
-
-                fetch('/api/scripts/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    }
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        hideLoading();
-                        if (data.scripts && Array.isArray(data.scripts)) {                        // 为每个脚本添加include_in_log属性
-                            scripts = data.scripts.map(script => {
-                                // start_app1.json 和 stop_app1.json 设置为 false（未加入日志）
-                                if (script.filename === 'start_app1.json' || script.filename === 'stop_app1.json') {
-                                    script.include_in_log = false;
-                                } else {
-                                    // 其他脚本全部设置为 true（已加入日志）
-                                    script.include_in_log = true;
-                                }
-                                return script;
-                            });
-
-                            updateScriptsTable(scripts);
-                            updateScriptDropdowns(scripts);
-                        } else {
-                            showToast('获取脚本列表失败', 'error');
-                        }
-                    })
-                    .catch(error => {
-                        hideLoading();
-                        console.error('Error:', error);
-                        showToast('获取脚本列表失败: ' + error, 'error');
-                    });
-            }// 更新脚本表格
-            function updateScriptsTable(scriptsToShow) {
-                if (!scriptsToShow || scriptsToShow.length === 0) {
-                    scriptsList.innerHTML = `
-                        <tr>
-                            <td colspan="7" class="text-center">暂无脚本</td>
-                        </tr>
-                    `;
-                    return;
-                }
-
-                const rows = scriptsToShow.map(script => {
-                    // 构建不同类型的徽章颜色
-                    let badgeClass = 'bg-secondary';
-                    if (script.type === '录制') {
-                        badgeClass = 'bg-danger';
-                    } else if (script.type === '手动') {
-                        badgeClass = 'bg-success';
-                    } else if (script.type === '自动生成') {
-                        badgeClass = 'bg-info';
-                    }
-
-                    // 构建"加入日志"状态徽章
-                    const includeInLogBadge = script.include_in_log
-                        ? '<span class="badge bg-success"><i class="fas fa-check"></i> 已加入</span>'
-                        : '<span class="badge bg-secondary"><i class="fas fa-times"></i> 未加入</span>';
-
-                    return `
-                        <tr>
-                            <td>${script.filename}</td>
-                            <td><span class="badge ${badgeClass}">${script.type || '未知'}</span></td>
-                            <td>${script.category || '未分类'}</td>
-                            <td>${script.step_count || 0}</td>
-                            <td>${includeInLogBadge}</td>
-                            <td>${script.created}</td>
-                            <td>
-                                <button class="btn btn-sm btn-outline-primary me-1" onclick="replayScript('${script.path}')">
-                                    <i class="fas fa-play"></i>
-                                </button>
-                                <button class="btn btn-sm btn-outline-secondary me-1" onclick="editScript('${script.path}')">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="btn btn-sm btn-outline-info me-1" onclick="copyScript('${script.path}')">
-                                    <i class="fas fa-copy"></i>
-                                </button>
-                                <button class="btn btn-sm btn-outline-danger" onclick="deleteScript('${script.path}')">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    `;
-                }).join('');
-
-                scriptsList.innerHTML = rows;
-            }
-
-            // 更新脚本下拉选择列表
-            function updateScriptDropdowns(scripts) {
-                const scriptSelects = document.querySelectorAll('.script-select');
-
-                scriptSelects.forEach(select => {
-                    // 保存当前选中的值
-                    const currentValue = select.value;
-
-                    // 清空现有选项
-                    select.innerHTML = '<option value="">请选择脚本...</option>';
-
-                    // 添加新选项
-                    scripts.forEach(script => {
-                        const option = document.createElement('option');
-                        option.value = script.path;
-                        option.textContent = `${script.filename} (${script.step_count || 0}步)`;
-                        select.appendChild(option);
-                    });
-
-                    // 如果之前有选中值，尝试恢复
-                    if (currentValue) {
-                        select.value = currentValue;
-                    }
-                });
-            }
-
-            // 添加脚本选择事件监听
+            }            // 添加脚本选择事件监听
             function addScriptSelectListeners() {
                 const scriptSelects = document.querySelectorAll('.script-select');
 
@@ -1520,6 +1686,19 @@
                 // 显示加载提示
                 showLoading('正在删除脚本...');
 
+                // 只提取文件名，避免路径分隔符问题
+                let filename;
+                if (path.includes('/')) {
+                    filename = path.split('/').pop(); // 处理正斜杠
+                } else if (path.includes('\\')) {
+                    filename = path.split('\\').pop(); // 处理反斜杠
+                } else {
+                    filename = path; // 已经是文件名
+                }
+
+                console.log('删除文件，原始路径:', path);
+                console.log('处理后的文件名:', filename);
+
                 // 发送删除请求
                 fetch('/api/scripts/delete/', {
                     method: 'POST',
@@ -1527,27 +1706,336 @@
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        path: path
+                        filename: filename // 只发送文件名
                     })
                 })
-                    .then(response => response.json())
+                    .then(response => {
+                        console.log('删除响应状态:', response.status);
+                        if (!response.ok) {
+                            throw new Error(`HTTP错误! 状态: ${response.status}`);
+                        }
+                        return response.text().then(text => {
+                            // 尝试解析为JSON，如果失败则返回原始文本
+                            try {
+                                return text ? JSON.parse(text) : {};
+                            } catch (e) {
+                                console.log('响应不是有效的JSON:', text);
+                                return { success: response.ok, rawText: text };
+                            }
+                        });
+                    })
                     .then(data => {
+                        console.log('删除响应数据:', data);
                         hideLoading();
+
+                        // 检查响应中的success字段，或者使用HTTP状态作为备选判断
                         if (data.success) {
                             showToast('脚本已成功删除', 'success');
                             // 刷新脚本列表
                             fetchScripts();
                         } else {
-                            showToast('删除失败: ' + data.message, 'error');
+                            showToast('删除失败: ' + (data.message || '未知错误'), 'error');
                         }
                     })
                     .catch(error => {
                         hideLoading();
                         console.error('删除脚本错误:', error);
-                        showToast('删除失败，请检查网络连接', 'error');
+                        showToast('删除失败: ' + error.message, 'error');
                     });
             }
         }
+
+        // 批量导入变量初始化
+
+        // 批量导入功能
+        const batchDropzone = document.getElementById('batchDropzone');
+        const batchFileInput = document.getElementById('batchFileInput');
+        const batchFileList = document.getElementById('batchFileList');
+        const batchFiles = document.getElementById('batchFiles');
+        const batchRemoveFiles = document.getElementById('batchRemoveFiles');
+        const batchSaveScripts = document.getElementById('batchSaveScripts');
+        const batchImportError = document.getElementById('batchImportError');
+        const batchImportSuccess = document.getElementById('batchImportSuccess');
+        const batchProgress = document.getElementById('batchProgress');
+        const batchProgressContainer = document.getElementById('batchProgressContainer');
+
+        // 拖放区域初始化
+        function initBatchDropzone() {
+            console.log('初始化批量导入拖放区域');
+
+            // 阻止浏览器默认拖放行为
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                batchDropzone.addEventListener(eventName, preventDefaults, false);
+                document.body.addEventListener(eventName, preventDefaults, false);
+            });
+
+            // 高亮拖放区域
+            ['dragenter', 'dragover'].forEach(eventName => {
+                batchDropzone.addEventListener(eventName, highlight, false);
+            });
+
+            // 取消高亮
+            ['dragleave', 'drop'].forEach(eventName => {
+                batchDropzone.addEventListener(eventName, unhighlight, false);
+            });
+
+            // 处理拖放的文件
+            batchDropzone.addEventListener('drop', handleDrop, false);
+
+            // 点击拖放区域时打开文件选择对话框
+            batchDropzone.addEventListener('click', () => {
+                batchFileInput.click();
+            });
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            function highlight() {
+                batchDropzone.style.borderColor = '#0d6efd';
+                batchDropzone.style.backgroundColor = '#e9ecef';
+            }
+
+            function unhighlight() {
+                batchDropzone.style.borderColor = '#ccc';
+                batchDropzone.style.backgroundColor = '#f8f9fa';
+            }
+
+            function handleDrop(e) {
+                console.log('文件拖放事件触发，文件数量:', e.dataTransfer.files.length);
+                const dt = e.dataTransfer;
+                const files = dt.files;
+
+                if (files.length > 0) {
+                    // 显示批量导入模态框 (确保模态框DOM已经加载)
+                    $('#batchImportModal').modal('show');
+
+                    // 延迟处理文件，确保模态框完全显示
+                    setTimeout(() => {
+                        handleFiles(files);
+                    }, 300);
+                }
+            }
+        }
+
+        // 处理批量文件
+        function handleFiles(files) {
+            console.log('处理批量文件，数量:', files.length);
+
+            // 清除之前的文件列表
+            batchFiles.innerHTML = '';
+
+            // 创建一个数组来存储有效文件
+            let validFiles = Array.from(files).filter(file => {
+                return file.name.endsWith('.json');
+            });
+
+            console.log('有效JSON文件数量:', validFiles.length);
+
+            // 显示有效文件
+            validFiles.forEach(file => {
+                // 创建文件项
+                const fileItem = document.createElement('div');
+                fileItem.className = 'list-group-item d-flex justify-content-between align-items-center';
+                fileItem.innerHTML = `
+                    <div>
+                        <i class="fas fa-file-code text-primary me-2"></i>
+                        <span>${file.name}</span>
+                    </div>
+                    <span class="badge bg-secondary">${formatFileSize(file.size)}</span>
+                `;
+
+                batchFiles.appendChild(fileItem);
+            });
+
+            // 存储有效文件供后续使用
+            window.batchValidFiles = validFiles;
+
+            if (validFiles.length > 0) {
+                batchFileList.classList.remove('d-none');
+                batchRemoveFiles.disabled = false;
+                batchSaveScripts.disabled = false;
+                batchImportError.classList.add('d-none');
+                batchImportSuccess.classList.add('d-none');
+            } else {
+                batchImportError.textContent = '未选择有效的JSON文件';
+                batchImportError.classList.remove('d-none');
+                batchFileList.classList.add('d-none');
+                batchRemoveFiles.disabled = true;
+                batchSaveScripts.disabled = true;
+            }
+        }
+
+        // 初始化批量导入区域
+        initBatchDropzone();
+
+        // 移除批量文件
+        batchRemoveFiles.addEventListener('click', function () {
+            // 清空文件输入框
+            batchFileInput.value = '';
+            // 清空文件数组
+            window.batchValidFiles = [];
+            // 清空文件列表
+            batchFiles.innerHTML = '';
+            batchFileList.classList.add('d-none');
+            batchImportError.classList.add('d-none');
+            batchImportSuccess.classList.add('d-none');
+            batchRemoveFiles.disabled = true;
+            batchSaveScripts.disabled = true;
+            batchProgressContainer.classList.add('d-none');
+            console.log('已清除所有批量文件');
+        });
+
+        // 批量保存脚本
+        batchSaveScripts.addEventListener('click', function () {
+            // 使用我们之前存储的有效文件数组
+            const validFiles = window.batchValidFiles || [];
+
+            console.log('开始批量保存脚本，有效文件数:', validFiles.length);
+
+            if (!validFiles.length) {
+                batchImportError.textContent = '请先选择有效的JSON文件';
+                batchImportError.classList.remove('d-none');
+                return;
+            }
+
+            // 获取分类
+            const category = document.getElementById('batchScriptCategory').value;
+
+            // 显示进度条
+            batchProgressContainer.classList.remove('d-none');
+            batchProgress.style.width = '0%';
+            batchProgress.textContent = '0%';
+
+            // 禁用按钮避免重复提交
+            batchSaveScripts.disabled = true;
+            batchRemoveFiles.disabled = true;
+
+            // 清空结果提示
+            batchImportError.classList.add('d-none');
+            batchImportSuccess.classList.add('d-none');
+
+            // 创建FormData对象，一次性添加所有文件
+            const formData = new FormData();
+            const totalFiles = validFiles.length;
+
+            // 添加所有文件
+            for (let i = 0; i < totalFiles; i++) {
+                formData.append(`file${i}`, validFiles[i]);
+            }
+
+            // 添加分类
+            if (category) {
+                formData.append('category', category);
+            }
+
+            // 发送批量导入请求
+            fetch('/api/scripts/import/', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('批量导入响应:', data);
+
+                    // 更新进度条
+                    batchProgress.style.width = '100%';
+                    batchProgress.textContent = '100%';
+
+                    // 处理响应
+                    if (data.success) {
+                        // 使用新的结果格式
+                        if (data.results && Array.isArray(data.results)) {
+                            const successCount = data.results.filter(r => r.success).length;
+                            finalizeBatchImport(data.results, successCount, totalFiles);
+                        } else {
+                            // 兼容旧格式
+                            finalizeBatchImport([{
+                                file: data.filename || '未知文件',
+                                success: data.success,
+                                message: data.message
+                            }], data.success ? 1 : 0, 1);
+                        }
+                    } else {
+                        // 处理整体错误
+                        batchImportError.innerHTML = `导入失败: ${data.message}`;
+                        batchImportError.classList.remove('d-none');
+
+                        // 重新启用按钮
+                        batchRemoveFiles.disabled = false;
+                        batchSaveScripts.disabled = false;
+                    }
+                })
+                .catch(error => {
+                    console.error('批量导入请求错误:', error);
+                    batchImportError.innerHTML = `请求错误: ${error.message}`;
+                    batchImportError.classList.remove('d-none');
+
+                    batchProgress.style.width = '100%';
+                    batchProgress.textContent = '失败';
+                    batchProgress.classList.remove('bg-success');
+                    batchProgress.classList.add('bg-danger');
+
+                    // 重新启用按钮
+                    batchRemoveFiles.disabled = false;
+                    batchSaveScripts.disabled = false;
+                });
+        });
+
+        // 完成批量导入处理
+        function finalizeBatchImport(results, success, total) {
+            // 重新启用按钮
+            batchRemoveFiles.disabled = false;
+            batchSaveScripts.disabled = false;
+
+            // 构建结果消息
+            if (success > 0) {
+                const successRate = Math.round((success / total) * 100);
+                batchImportSuccess.innerHTML = `成功导入 ${success} 个脚本，共 ${total} 个文件 (${successRate}%)<br>`;
+
+                if (success < total) {
+                    batchImportSuccess.innerHTML += '部分文件导入失败，详细信息如下:<br>';
+                    results.filter(r => !r.success).forEach(result => {
+                        const fileName = result.filename || result.file || '未知文件';
+                        batchImportSuccess.innerHTML += `<strong>${fileName}</strong>: ${result.message}<br>`;
+                    });
+                }
+
+                batchImportSuccess.classList.remove('d-none');
+
+                // 刷新脚本列表
+                setTimeout(() => {
+                    fetchScripts();
+                }, 1000);
+            } else {
+                batchImportError.innerHTML = '所有文件导入失败，详细信息如下:<br>';
+                results.forEach(result => {
+                    const fileName = result.filename || result.file || '未知文件';
+                    batchImportError.innerHTML += `<strong>${fileName}</strong>: ${result.message}<br>`;
+                });
+
+                batchImportError.classList.remove('d-none');
+            }
+        }
+
+
+
+        // 新建脚本按钮事件
+        newScriptBtn.addEventListener('click', function () {
+            // 显示导入模态框
+            $('#importModal').modal('show');
+
+            // 重置表单
+            document.getElementById('importForm').reset();
+            fileInfo.classList.add('d-none');
+            importError.classList.add('d-none');
+            importSuccess.classList.add('d-none');
+        });
+
+
+
+
     </script>
 </body>
 

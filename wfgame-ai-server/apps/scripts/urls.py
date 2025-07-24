@@ -5,7 +5,7 @@
 Description:
 脚本管理应用的URL配置
 Author: WFGame AI Team
-CreateDate: 2024-05-15
+CreateDate: 2025-05-15
 Version: 1.0
 ===============================
 """
@@ -31,7 +31,9 @@ from .views import (
     get_python_envs,
     switch_python_env,
     storage_status,
-    storage_cleanup
+    storage_cleanup,
+    edit_script,  # 添加编辑脚本视图函数
+    delete_script  # 添加删除脚本视图函数
 )
 
 # 应用生命周期管理API
@@ -56,8 +58,8 @@ router.register(r'executions', ScriptExecutionViewSet)
 
 # API URL配置
 urlpatterns = [
-    # 只允许POST的主路由
-    path('', ScriptViewSet.as_view({'post': 'create'})),
+    # 只允许POST的主路由，修改为list而非create
+    path('', ScriptViewSet.as_view({'post': 'list'})),
     # 包含路由器生成的其他URL
     path('', include(router.urls)),
 
@@ -71,9 +73,12 @@ urlpatterns = [
     path('replay/status/', replay_status, name='replay-status'),
     path('replay/cancel/', replay_cancel, name='replay-cancel'),
     path('storage/status/', storage_status, name='storage-status'),
-    path('storage/cleanup/', storage_cleanup, name='storage-cleanup'),    path('debug/', debug_script, name='debug-script'),
+    path('storage/cleanup/', storage_cleanup, name='storage-cleanup'),
+    path('debug/', debug_script, name='debug-script'),
     path('start-record/', start_record, name='start-record'),
     path('import/', import_script, name='import-script'),
+    path('edit/', edit_script, name='edit-script'),  # 添加编辑脚本路由
+    path('delete/', delete_script, name='delete-script'),  # 添加删除脚本路由
 
     # Python环境管理
     path('python-envs/', get_python_envs, name='get-python-envs'),

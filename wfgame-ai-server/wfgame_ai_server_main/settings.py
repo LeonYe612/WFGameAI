@@ -5,7 +5,7 @@
 Description:
 Django主配置文件
 Author: WFGame AI Team
-CreateDate: 2024-05-15
+CreateDate: 2025-05-15
 Version: 1.0
 ===============================
 """

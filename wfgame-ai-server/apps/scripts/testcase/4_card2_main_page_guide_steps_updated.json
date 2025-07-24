@@ -1,0 +1,68 @@
+{
+    "meta": {
+        "name": "主页引导步骤 - Priority 动态检测自动执行模式",
+        "description": "完全符合Priority执行模式的主界面引导处理脚本，使用动态循环检测",
+        "updated_date": "2025-06-30",
+        "author": "WFGameAI开发团队",
+        "stagnation_threshold": 2,
+        "stagnation_tolerance": 0.05,
+        "tags": [
+            "主界面",
+            "引导",
+            "Priority模式",
+            "动态检测",
+            "自动执行"
+        ]
+    },
+    "steps": [
+        {
+            "Priority": 1,
+            "detection_method": "ai",
+            "action": "ai_detection_click",
+            "yolo_class": "operation-close",
+            "remark": "检测并点击【关闭】按钮"
+        },
+        {
+            "Priority": 2,
+            "detection_method": "ai",
+            "action": "ai_detection_click",
+            "yolo_class": "system-skip",
+            "remark": "检测并点击【跳过】按钮"
+        },
+        {
+            "Priority": 3,
+            "detection_method": "ai",
+            "action": "ai_detection_click",
+            "yolo_class": "hint-guide",
+            "remark": "检测并点击【引导】弹窗"
+        },
+        {
+            "Priority": 4,
+            "detection_method": "ai",
+            "action": "ai_detection_click",
+            "yolo_class": "operation-confirm",
+            "remark": "检测并点击【确定】按钮"
+        },
+        {
+            "Priority": 5,
+            "detection_method": "ai",
+            "action": "ai_detection_click",
+            "yolo_class": "operation-challenge",
+            "remark": "检测并点击【挑战】按钮"
+        },
+        {
+            "Priority": 6,
+            "detection_method": "ai",
+            "action": "ai_detection_click",
+            "yolo_class": "navigation-fight",
+            "remark": "检测并点击【战斗】按钮"
+        },
+        {
+            "Priority": 7,
+            "detection_method": "ai",
+            "action": "ai_detection_click",
+            "yolo_class": "operation-back",
+            "remark": "检测并点击【返回】按钮"
+        }
+    ]
+}

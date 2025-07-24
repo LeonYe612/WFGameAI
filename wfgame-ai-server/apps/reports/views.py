@@ -5,7 +5,7 @@
 Description:
 报告管理应用的视图函数
 Author: WFGame AI Team
-CreateDate: 2024-05-15
+CreateDate: 2025-05-15
 Version: 1.0
 ===============================
 """
