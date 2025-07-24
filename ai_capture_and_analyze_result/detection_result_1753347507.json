@@ -1,0 +1,37 @@
+{
+  "timestamp": 1753347507,
+  "device_id": "5c41023b",
+  "screen_resolution": [
+    1080,
+    2400
+  ],
+  "image_size": [
+    1080,
+    2400
+  ],
+  "screenshot_path": "screenshot_1753347507.png",
+  "labeled_image_path": "labeled_1753347507.png",
+  "detection_count": 1,
+  "detections": [
+    {
+      "id": 1,
+      "class": "system-cleanUpCache",
+      "confidence": 0.8447591662406921,
+      "yolo_coords": [
+        989.3150634765625,
+        368.6900634765625
+      ],
+      "screen_coords": [
+        1079.0,
+        1382.5877380371094
+      ],
+      "y_percentage": 57.6078224182129,
+      "box_xyxy": [
+        915.1204833984375,
+        302.31072998046875,
+        1063.5096435546875,
+        435.06939697265625
+      ]
+    }
+  ]
+}

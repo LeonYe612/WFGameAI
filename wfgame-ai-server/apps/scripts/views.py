@@ -34,6 +34,7 @@ from dataclasses import dataclass
 from enum import Enum, auto
 from threading import Thread, Lock
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import concurrent.futures
 
 import django
 from django.conf import settings
@@ -68,6 +69,15 @@ logger = logging.getLogger(__name__)
 
 # 设置默认语言为中文
 translation.activate('zh-hans')
+
+# 定义全局变量
+# 测试用例目录路径
+TESTCASE_DIR = os.path.join(settings.BASE_DIR, 'apps', 'scripts', 'testcase')
+# 设备报告目录
+DEVICE_REPORTS_DIR = os.path.join(settings.BASE_DIR, 'staticfiles', 'reports')
+# 确保目录存在
+os.makedirs(TESTCASE_DIR, exist_ok=True)
+os.makedirs(DEVICE_REPORTS_DIR, exist_ok=True)
 
 
 # 辅助函数：生成标准格式的API响应
@@ -164,6 +174,7 @@ def edit_script(request):
     try:
         # 从请求中获取脚本数据
         script_data = request.data
+        logger.error(f"收到编辑脚本请求: {script_data}")
         if not script_data:
             return Response({'success': False, 'message': '请求数据为空'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -174,10 +185,116 @@ def edit_script(request):
         if not filename:
             return Response({'success': False, 'message': '文件名不能为空'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # 构建脚本文件路径
-        script_path = find_script_path(filename)
-        if not script_path or not os.path.exists(script_path):
-            return Response({'success': False, 'message': f'A找不到脚本文件: {filename}'}, status=status.HTTP_404_NOT_FOUND)
+        # 文件名清理 - 处理特殊情况
+        logger.error(f"原始文件名: '{filename}'")
+
+        # 首先检查文件是否存在
+        script_dirs = [
+            os.path.join(settings.BASE_DIR, 'apps', 'scripts', 'testcase'),
+            os.path.join(settings.BASE_DIR, 'apps', 'scripts'),
+        ]
+
+        script_path = None
+
+        # 直接尝试查找完全匹配的文件
+        for script_dir in script_dirs:
+            temp_path = os.path.join(script_dir, filename)
+            logger.error(f"检查文件路径: '{temp_path}'")
+            if os.path.exists(temp_path):
+                script_path = temp_path
+                logger.error(f"找到文件: '{script_path}'")
+                break
+
+        # 如果没有找到完全匹配，尝试处理数字前缀的情况
+        if script_path is None:
+            # 提取文件名的核心部分（去除数字前缀）
+            file_parts = filename.split('_', 1)
+            core_filename = None
+
+            # 检查是否是类似 "card2_game_function_20250723_190349.json" 格式
+            if len(file_parts) > 1:
+                # 如果第一部分不是数字，可能是 "card2_game_function_..." 格式
+                if not file_parts[0].isdigit():
+                    core_filename = filename
+                    logger.error(f"检测到核心文件名(无数字前缀): '{core_filename}'")
+
+            # 如果找到了核心文件名，尝试查找带数字前缀的匹配文件
+            if core_filename:
+                for script_dir in script_dirs:
+                    if os.path.exists(script_dir):
+                        # 列出目录中的所有文件
+                        for file in os.listdir(script_dir):
+                            if file.lower().endswith('.json'):
+                                # 检查文件是否是 "数字_核心文件名" 格式
+                                if re.match(r'^\d+_', file) and core_filename in file:
+                                    temp_path = os.path.join(script_dir, file)
+                                    logger.error(f"找到带数字前缀的匹配文件: '{temp_path}'")
+                                    script_path = temp_path
+                                    break
+                    if script_path:
+                        break
+
+        # 如果仍然没有找到，尝试模糊匹配
+        if script_path is None:
+            # 尝试在testcase目录中模糊匹配文件
+            testcase_dir = os.path.join(settings.BASE_DIR, 'apps', 'scripts', 'testcase')
+            possible_matches = []
+
+            if os.path.exists(testcase_dir):
+                for file in os.listdir(testcase_dir):
+                    if file.lower().endswith('.json'):
+                        # 计算文件名相似度
+                        file_lower = file.lower()
+                        filename_lower = filename.lower()
+
+                        # 特殊处理数字开头的文件名 (如 5_card2_game...)
+                        if re.match(r'^\d+_', file):
+                            # 提取数字后的部分
+                            file_core = file.split('_', 1)[1] if '_' in file else file
+
+                            # 如果文件名核心部分包含在请求的文件名中，或反之
+                            if file_core.lower() in filename_lower or filename_lower in file_core.lower():
+                                similarity = 1000 + len(file)  # 给予高优先级
+                                logger.error(f"数字前缀文件高匹配度: '{file}' 与 '{filename}'")
+                            else:
+                                # 标准字符匹配评分
+                                similarity = sum(1 for a, b in zip(file_lower, filename_lower) if a == b)
+                        else:
+                            # 标准字符匹配评分
+                            similarity = sum(1 for a, b in zip(file_lower, filename_lower) if a == b)
+
+                        # 如果文件名是另一个的子字符串，增加相似度
+                        if filename_lower in file_lower or file_lower in filename_lower:
+                            similarity += 50
+
+                        # 特殊处理：如果请求的是不带数字前缀的文件名，但实际文件有数字前缀
+                        if not re.match(r'^\d+_', filename) and re.match(r'^\d+_', file):
+                            # 比较不带数字前缀的部分
+                            file_without_prefix = file.split('_', 1)[1] if '_' in file else file
+                            if file_without_prefix.lower() == filename_lower:
+                                similarity += 200  # 给予极高优先级
+                                logger.error(f"完美匹配(忽略数字前缀): '{file}' 匹配 '{filename}'")
+
+                        possible_matches.append((file, similarity))
+
+            # 按相似度排序并取前5个最匹配的文件
+            possible_matches.sort(key=lambda x: x[1], reverse=True)
+            top_matches = possible_matches[:5]
+
+            # 如果第一个匹配的相似度特别高，直接使用它
+            if top_matches and top_matches[0][1] > 1000:
+                best_match = top_matches[0][0]
+                script_path = os.path.join(testcase_dir, best_match)
+                logger.error(f"使用最佳匹配文件: '{script_path}'")
+            else:
+                matches_info = ", ".join([f"'{match[0]}'" for match in top_matches]) if top_matches else "无匹配文件"
+                logger.error(f"找不到脚本文件: '{filename}'，可能的匹配项: {matches_info}")
+
+                return Response({
+                    'success': False,
+                    'message': f'找不到脚本文件: {filename}',
+                    'possible_matches': [match[0] for match in top_matches]
+                }, status=status.HTTP_404_NOT_FOUND)
 
         # 根据操作类型执行不同的操作
         if operation == 'read':
@@ -195,9 +312,12 @@ def edit_script(request):
                 created = datetime.fromtimestamp(file_stat.st_ctime).strftime('%Y-%m-%d %H:%M:%S')
                 modified = datetime.fromtimestamp(file_stat.st_mtime).strftime('%Y-%m-%d %H:%M:%S')
 
+                # 记录成功读取的信息
+                logger.info(f"成功读取脚本: {script_path}")
+
                 return Response({
                     'success': True,
-                    'filename': filename,
+                    'filename': os.path.basename(script_path),  # 使用实际找到的文件名
                     'path': os.path.relpath(script_path, os.path.join(settings.BASE_DIR, 'apps', 'scripts')),
                     'content': content,
                     'step_count': len(steps),
@@ -406,7 +526,7 @@ def get_scripts(request):
 
                         scripts.append({
                             'filename': filename,
-                            'path': os.path.join('testcase', filename),
+                            'path': filename,  # 只返回文件名，不拼接任何前缀
                             'type': script_type,
                             'category': script_category,
                             'step_count': len(steps),
@@ -745,91 +865,690 @@ def debug_script(request):
             'success': False,
             'message': f"执行命令时出错: {str(e)}"
         }, status=500)
+# =====================
+# 任务管理系统
+# =====================
 
+import uuid
+from enum import Enum
+from typing import Dict, Any, Optional
+import threading
+from dataclasses import dataclass
+from datetime import datetime, timedelta
+
+class TaskStatus(Enum):
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    CANCELLED = "cancelled"
+    FAILED = "failed"
+
+@dataclass
+class TaskInfo:
+    task_id: str
+    devices: list
+    scripts: list
+    status: TaskStatus
+    created_at: datetime
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    error_message: Optional[str] = None
+    log_dir: Optional[str] = None
+    results: Dict[str, Any] = None
+    executor_future: Any = None
+
+class TaskManager:
+    """任务管理器 - 负责任务创建、状态跟踪、取消等功能"""
+
+    def __init__(self):
+        self.tasks: Dict[str, TaskInfo] = {}
+        self.running_processes: Dict[str, Any] = {}
+        self._lock = threading.RLock()
+
+    def create_task(self, devices: list, scripts: list, log_dir: str) -> str:
+        """创建新任务并返回任务ID"""
+        task_id = str(uuid.uuid4())
+
+        with self._lock:
+            task_info = TaskInfo(
+                task_id=task_id,
+                devices=devices.copy(),
+                scripts=scripts.copy(),
+                status=TaskStatus.PENDING,
+                created_at=datetime.now(),
+                log_dir=log_dir,
+                results={}
+            )
+            self.tasks[task_id] = task_info
+
+        return task_id
+
+    def update_task_status(self, task_id: str, status: TaskStatus,
+                          error_message: Optional[str] = None,
+                          results: Optional[Dict[str, Any]] = None):
+        """更新任务状态"""
+        with self._lock:
+            if task_id not in self.tasks:
+                return False
+
+            task = self.tasks[task_id]
+            task.status = status
+
+            if status == TaskStatus.RUNNING and not task.started_at:
+                task.started_at = datetime.now()
+            elif status in [TaskStatus.COMPLETED, TaskStatus.CANCELLED, TaskStatus.FAILED]:
+                task.completed_at = datetime.now()
+
+            if error_message:
+                task.error_message = error_message
+            if results:
+                task.results = results
+
+        return True
+
+    def get_task_info(self, task_id: str) -> Optional[TaskInfo]:
+        """获取任务信息"""
+        with self._lock:
+            return self.tasks.get(task_id)
+
+    def cancel_task(self, task_id: str) -> bool:
+        """取消任务"""
+        with self._lock:
+            if task_id not in self.tasks:
+                return False
+
+            task = self.tasks[task_id]
+            if task.status not in [TaskStatus.PENDING, TaskStatus.RUNNING]:
+                return False
+
+            # 取消正在运行的executor
+            if task.executor_future and not task.executor_future.done():
+                task.executor_future.cancel()
+
+            # 终止相关子进程
+            if task_id in self.running_processes:
+                processes = self.running_processes[task_id]
+                for proc in processes:
+                    try:
+                        if proc.poll() is None:  # 进程仍在运行
+                            if sys.platform == "win32":
+                                proc.terminate()
+                                time.sleep(2)
+                                if proc.poll() is None:
+                                    proc.kill()
+                            else:
+                                os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
+                                time.sleep(2)
+                                if proc.poll() is None:
+                                    os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+                    except Exception as e:
+                        logger.warning(f"终止进程失败: {e}")
+
+                del self.running_processes[task_id]
+
+            task.status = TaskStatus.CANCELLED
+            task.completed_at = datetime.now()
+
+        return True
+
+    def cleanup_old_tasks(self, max_age_hours: int = 24):
+        """清理过期任务"""
+        cutoff_time = datetime.now() - timedelta(hours=max_age_hours)
+
+        with self._lock:
+            expired_tasks = [
+                task_id for task_id, task in self.tasks.items()
+                if task.created_at < cutoff_time and
+                   task.status in [TaskStatus.COMPLETED, TaskStatus.CANCELLED, TaskStatus.FAILED]
+            ]
+
+            for task_id in expired_tasks:
+                del self.tasks[task_id]
+
+        return len(expired_tasks)
+
+# 全局任务管理器实例
+task_manager = TaskManager()
+
+# =====================
+# 多设备并发回放主API
+# =====================
 
 @api_view(['POST'])
 @csrf_exempt
 @permission_classes([permissions.AllowAny])
 def replay_script(request):
-    """
-    回放脚本
-
-    接收脚本配置列表，启动回放过程
-    """
+    """多设备并发回放指定的测试脚本"""
     try:
-        scripts = request.data.get('scripts', [])
-        show_screens = request.data.get('show_screens', False)
+        import traceback
+        data = json.loads(request.body)
+        logger.info(f"收到多设备并发回放请求: {data}")
 
-        if not scripts:
-            return Response({'success': False, 'message': '请提供至少一个脚本'}, status=400)
+        # 1. 检查或获取设备参数
+        devices = data.get('devices')
+        if not devices:
+            # 自动获取已连接设备列表
+            try:
+                result = run_subprocess_utf8(['adb', 'devices'], capture_output=True, check=True)
+                lines = result.stdout.strip().split('\n')[1:]
+                devices = [line.split()[0] for line in lines if line.strip() and 'device' in line]
+            except Exception as e:
+                return JsonResponse({'success': False, 'message': f'获取设备列表失败: {e}'}, status=500)
+            if not devices:
+                return JsonResponse({'success': False, 'message': '未检测到可用设备'}, status=400)
 
-        # 构建回放命令
-        command = f"python replay_script.py"
+        # 2. 检查脚本参数，兼容scripts数组和script_path参数
+        script_configs = data.get('scripts', [])
+        if not script_configs and data.get('script_path'):
+            # 兼容旧版API，将script_path转换为scripts数组
+            script_configs = [{
+                'path': data.get('script_path'),
+                'loop_count': data.get('loop_count'),
+                'max_duration': data.get('max_duration')
+            }]
 
-        # 添加显示屏幕参数
-        if show_screens:
-            command += " --show-screens"
+        # 检查是否指定了脚本
+        if not script_configs:
+            return JsonResponse({
+                'success': False,
+                'message': '未提供脚本路径'
+            }, status=400)
 
-        # 添加脚本路径
-        for script in scripts:
-            script_path = script.get('path')
-            loop_count = script.get('loop_count', 1)
-            max_duration = script.get('max_duration')
-
+        # 3. 脚本路径规范化处理
+        for config in script_configs:
+            script_path = config.get('path')
             if not script_path:
-                continue
+                return JsonResponse({
+                    'success': False,
+                    'message': '脚本配置中缺少path参数'
+                }, status=400)
 
-            # 添加脚本路径参数
-            command += f" --script \"{script_path}\""
+            # 规范化脚本路径
+            path_input = script_path.strip()
 
-            # 添加循环次数
-            if loop_count > 1:
-                command += f" --loop {loop_count}"
+            # 处理相对路径
+            if not os.path.isabs(path_input):
+                # 简单文件名直接放入测试用例目录
+                if os.sep not in path_input and '/' not in path_input:
+                    path_input = os.path.join(TESTCASE_DIR, path_input)
+                elif path_input.lower().startswith(('testcase', 'testcase\\', 'testcase/')):
+                    # 去掉"testcase"前缀
+                    if path_input.lower() == 'testcase':
+                        path_input = TESTCASE_DIR
+                    else:
+                        subpath = path_input[len('testcase'):].lstrip('\\/') if path_input.lower().startswith('testcase') else path_input[len('testcase\\'):] if path_input.lower().startswith('testcase\\') else path_input[len('testcase/'):]
+                        path_input = os.path.join(TESTCASE_DIR, subpath)
+                else:
+                    # 其他相对路径，视为相对于测试用例目录的路径
+                    path_input = os.path.join(TESTCASE_DIR, path_input)
 
-            # 添加最大执行时间
-            if max_duration:
-                command += f" --max-duration {max_duration}"
+            # 绝对路径但是JSON文件，则确保在标准测试用例目录中
+            elif path_input.lower().endswith('.json'):
+                filename = os.path.basename(path_input)
+                # 如果不在标准测试用例目录中，则使用文件名并放入标准目录
+                if not path_input.startswith(TESTCASE_DIR):
+                    path_input = os.path.join(TESTCASE_DIR, filename)
 
-        # 记录请求信息
-        logger.info(f"收到回放命令: {command}")
+            # 规范化路径
+            path_input = os.path.normpath(path_input)
 
-        # 启动子进程执行命令
-        process = subprocess.Popen(
-            command,
-            shell=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            encoding='utf-8'
-        )
+            # 检查文件是否存在
+            if not os.path.exists(path_input):
+                return JsonResponse({
+                    'success': False,
+                    'message': f'脚本文件不存在: {path_input}'
+                }, status=404)
 
-        # 等待一段时间，检查进程是否立即失败
+            # 更新配置中的路径
+            config['path'] = path_input
+
+        # 4. 创建日志目录
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        log_dir_name = f"multi_device_replay_{timestamp}"
+        log_dir = os.path.join(DEVICE_REPORTS_DIR, log_dir_name)
+        os.makedirs(log_dir, exist_ok=True)
+        # logger.info(f"创建日志目录: {log_dir}")
+
+        # 5. 预先为所有设备分配账号 - 在主进程中集中处理，避免子进程竞争
+        device_accounts = {}
         try:
-            process.wait(timeout=0.5)
-            stdout, stderr = process.communicate()
-            success = process.returncode == 0
-            message = stdout or stderr
-            if not success:
-                logger.error(f"回放脚本执行失败: {stderr}")
-        except subprocess.TimeoutExpired:
-            # 进程还在运行，认为启动成功
-            success = True
-            message = "回放已启动，请在命令行窗口查看输出"
-            logger.info("回放已启动，进程在后台运行")
+            # 使用跨进程账号管理器
+            try:
+                # 检查是否为Windows系统，Windows系统不支持fcntl模块
+                if platform.system() == 'Windows':
+                    # Windows系统下使用普通账号管理器
+                    from apps.scripts.account_manager import get_account_manager
+                    account_manager = get_account_manager()
+                else:
+                    # Linux/Mac系统下使用跨进程账号管理器
+                    from apps.scripts.cross_process_account_manager import get_cross_process_account_manager
+                    account_manager = get_cross_process_account_manager()
+            except ImportError as e:
+                logger.error(f"导入账号管理器失败: {e}，使用备用账号管理器")
+                # 导入失败时使用普通账号管理器作为备用
+                from apps.scripts.account_manager import get_account_manager
+                account_manager = get_account_manager()
 
-        return Response({
-            'success': success,
-            'message': message,
-            'pid': process.pid
-        })
+            # 在主进程中为所有设备预分配账号
+            for device_serial in devices:
+                account = account_manager.allocate_account(device_serial)
+                if account:
+                    username, password = account
+                    device_accounts[device_serial] = (username, password)
+                    logger.info(f"为设备 {device_serial} 预分配账号: {username}")
+                else:
+                    logger.warning(f"设备 {device_serial} 账号预分配失败")
+        except Exception as e:
+            logger.error(f"账号预分配过程中出错: {e}")
+            logger.error(traceback.format_exc())
+            # 发生错误时，使用备用账号管理器
+            try:
+                from apps.scripts.account_manager import get_account_manager
+                account_manager = get_account_manager()
+
+                for device_serial in devices:
+                    account = account_manager.allocate_account(device_serial)
+                    if account:
+                        username, password = account
+                        device_accounts[device_serial] = (username, password)
+                        logger.info(f"备用管理器: 为设备 {device_serial} 预分配账号: {username}")
+            except Exception as backup_error:
+                logger.error(f"备用账号管理器也失败: {backup_error}")
+
+        # 将账号信息写入临时文件，供子进程读取
+        accounts_file = os.path.join(log_dir, "device_accounts.json")
+        try:
+            with open(accounts_file, 'w', encoding='utf-8') as f:
+                json.dump(device_accounts, f, ensure_ascii=False, indent=2)
+            logger.info(f"设备账号分配信息已写入: {accounts_file}")
+        except Exception as e:
+            logger.error(f"写入账号分配信息失败: {e}")
+
+        # 6. 启动设备任务
+        task_id = task_manager.create_task(devices, script_configs, log_dir)
+        logger.info(f"创建任务: {task_id}")        # 7. 账号预分配（集成现有账号管理器）
+        from .account_manager import get_account_manager
+        account_manager = get_account_manager()
+
+        device_accounts = {}
+        account_allocation_errors = []
+
+        for device_serial in devices:
+            try:
+                # 调用现有的账号管理器接口
+                allocated_account = account_manager.allocate_account(device_serial)
+                if allocated_account:
+                    device_accounts[device_serial] = {
+                        'username': allocated_account[0],
+                        'password': allocated_account[1]
+                    }
+                else:
+                    account_allocation_errors.append(f"设备 {device_serial} 账号分配失败")
+            except Exception as e:
+                account_allocation_errors.append(f"设备 {device_serial} 账号分配异常: {str(e)}")
+
+        # 如果有账号分配失败，取消任务并返回错误
+        if account_allocation_errors:
+            task_manager.update_task_status(task_id, TaskStatus.FAILED,
+                                          error_message="账号分配失败")
+            return JsonResponse({
+                "success": False,
+                "task_id": task_id,
+                "error": "账号分配失败",
+                "details": account_allocation_errors
+            }, status=400)
+
+        # 7. 构造每个设备的任务参数
+        device_tasks = {}
+        for device_serial in devices:
+            account_info = device_accounts[device_serial]
+            script_args = []
+
+            # 🔧 调试日志：记录脚本配置
+            logger.info(f"🔍 设备 {device_serial} 开始构造任务参数")
+            logger.info(f"🔍 账号信息: {account_info['username']}")
+            logger.info(f"🔍 脚本配置数量: {len(script_configs)}")
+
+            # 添加脚本参数
+            for i, config in enumerate(script_configs):
+                logger.info(f"🔍 处理脚本配置 {i+1}: {config}")
+                script_args.extend(['--script', config['path']])
+                logger.info(f"🔍 添加脚本路径: {config['path']}")
+
+                # 添加循环次数
+                loop_count = config.get('loop_count')
+                if loop_count:
+                    script_args.extend(['--loop-count', str(loop_count)])
+                    logger.info(f"🔍 添加循环次数: {loop_count}")
+
+                # 添加最大持续时间
+                max_duration = config.get('max_duration')
+                if max_duration:
+                    script_args.extend(['--max-duration', str(max_duration)])
+                    logger.info(f"🔍 添加最大持续时间: {max_duration}")
+
+            # 添加账号信息
+            script_args.extend(['--account', account_info['username']])
+            script_args.extend(['--password', account_info['password']])
+            logger.info(f"🔍 添加账号参数: {account_info['username']}")
+
+            device_tasks[device_serial] = script_args
+            logger.info(f"🔍 设备 {device_serial} 最终参数: {script_args}")
+            logger.info(f"🔍 参数总数: {len(script_args)}")
+            logger.info(f"🔍 ===== 设备 {device_serial} 参数构造完成 =====")
+            logger.info("")
+
+        # 8. 动态计算最佳并发数
+        cpu_count = os.cpu_count() or 4
+        try:
+            memory_gb = psutil.virtual_memory().total / (1024**3)
+            # 基于系统资源计算合理并发数
+            cpu_based_limit = cpu_count * 2  # CPU核心数的2倍
+            memory_based_limit = int(memory_gb / 0.5)  # 每个任务预估占用500MB内存
+            system_based_limit = min(cpu_based_limit, memory_based_limit, 32)  # 系统限制最大32
+        except ImportError:
+            # 如果无法获取psutil，使用保守估计
+            system_based_limit = min(cpu_count * 2, 16)
+
+        max_concurrent = min(system_based_limit, len(devices), data.get('max_concurrent', system_based_limit))
+        logger.info(f"计算得出最大并发数: {max_concurrent} (设备数: {len(devices)})")
+
+       # 9. 并发执行回放任务
+        results = {}
+        completed_count = 0
+
+        logger.info(f"🚀 开始并发执行回放任务，最大并发数: {max_concurrent}")
+        log_step_progress(1, 4, f"开始并发执行 {len(devices)} 个设备的回放任务", None, True)
+        try:
+            with ThreadPoolExecutor(max_workers=max_concurrent) as executor:
+                # 🔧 调试：在提交任务前记录每个设备的参数
+                logger.info(f"🔧 即将提交 {len(device_tasks)} 个设备任务:")
+                for device, args in device_tasks.items():
+                    logger.info(f"   设备: {device}")
+                    logger.info(f"   参数: {args}")
+                    logger.info(f"   参数数量: {len(args)}")
+
+                # 提交所有任务
+                futures = {
+                    executor.submit(run_single_replay, device, args, log_dir): device
+                    for device, args in device_tasks.items()
+                }
+
+                logger.info(f"🔧 已提交 {len(futures)} 个任务到线程池")
+                log_step_progress(2, 4, f"所有设备任务已提交，等待执行完成", None, True)
+
+                # 等待任务完成并收集结果
+                pending_count = len(futures)
+                successful_devices = []
+                failed_devices = []
+                device_results = {}
+                device_dirs = []  # 收集设备报告目录用于汇总报告
+
+                # 收集设备结果
+                for future in concurrent.futures.as_completed(futures):
+                    device = futures[future]
+                    try:
+                        result = future.result()
+                        results[device] = result
+                        completed_count += 1
+
+                        # 从结果中获取设备报告目录
+                        device_dir = result.get('device_report_dir')
+                        if device_dir:
+                            # 收集有效的设备报告目录
+                            if os.path.exists(device_dir):
+                                device_dirs.append(device_dir)
+                                logger.info(f"收集到设备 {device} 的报告目录: {device_dir}")
+                            else:
+                                logger.warning(f"设备 {device} 的报告目录不存在: {device_dir}")
+
+                        # 如果没有获取到设备目录，尝试从report_url中获取
+                        elif result.get('report_url'):
+                            report_url = result.get('report_url')
+                            # 如果report_url包含路径信息
+                            if isinstance(report_url, str) and os.path.exists(report_url):
+                                device_dirs.append(report_url)
+                                logger.info(f"从report_url收集到设备 {device} 的报告目录: {report_url}")
+
+                        # 记录退出码
+                        exit_code = result.get('exit_code')
+                        success = (exit_code == 0)
+                        status_text = "成功" if success else "失败"
+                        logger.info(f"✅ 设备 {device} 回放{status_text} ({completed_count}/{len(devices)})")
+
+                        # 添加到结果数据结构
+                        device_results[device] = {
+                            'exit_code': exit_code,
+                            'status': "success" if success else "failed",
+                            'report_url': result.get('report_url')
+                        }
+
+                        # 记录设备统计信息
+                        log_step_progress(len(devices) - pending_count + 1, len(devices) + 2,
+                                          f"设备 {device} 执行{status_text}", device, True)
+
+                        # 更新成功/失败设备计数
+                        if success:
+                            successful_devices.append(device)
+                        else:
+                            failed_devices.append(device)
+                    except Exception as e:
+                        logger.error(f"❌ 设备 {device} 执行异常: {e}")
+                        device_results[device] = {
+                            'exit_code': -1,
+                            'status': 'error',
+                            'error': str(e)
+                        }
+                        failed_devices.append(device)
+                        completed_count += 1
+
+                    # 减少待处理计数
+                    pending_count -= 1
+
+            # 记录日志和统计
+            logger.info(f"[多设备] 步骤 3/4: 所有设备任务执行完成")
+
+            # 释放所有设备的账号分配
+            for device in devices:
+                try:
+                    device_name = device if isinstance(device, str) else device.get('serial')
+                    if device_name and device_name in device_accounts:
+                        account_info = device_accounts.get(device_name)
+                        username = account_info.get('username')
+                        password = account_info.get('password')
+                        print(f"views 资源清理：释放账号 {device_name} 的账号分配: [{username}], [{password}]")
+                        account_manager.release_account(device_name)
+                        logger.info(f"资源清理：释放账号 已释放设备 {device_name} 的账号")
+                except Exception as e:
+                    logger.warning(f"views 释放设备账号时出错: {e}")
+
+            # 生成汇总报告 - 在所有设备完成后由主进程统一生成
+            if device_dirs and len(device_dirs) > 0:
+                try:
+                    # 导入报告生成器
+                    from apps.reports.report_generator import ReportGenerator
+                    from apps.reports.report_manager import ReportManager
+
+                    # 初始化报告管理器
+                    report_manager = ReportManager()
+                    report_generator = ReportGenerator(report_manager)
+
+                    logger.info(f"📊 所有设备测试完成，开始生成统一汇总报告...")
+
+                    # 将字符串路径转换为Path对象
+                    from pathlib import Path
+                    device_report_paths = []
+
+                    # 验证设备目录是否存在
+                    for dir_path in device_dirs:
+                        path = Path(dir_path)
+                        if path.exists():
+                            device_report_paths.append(path)
+                            logger.info(f"✅ 设备目录存在: {path}")
+                        else:
+                            logger.warning(f"⚠️ 设备目录不存在: {path}")
+
+                    # 如果没有有效的设备目录，尝试查找最新的设备目录
+                    if not device_report_paths:
+                        logger.warning("⚠️ 没有有效的设备目录，尝试查找最新的设备目录...")
+                        base_dir = report_manager.single_device_reports_dir
+                        if base_dir.exists():
+                            # 查找所有设备目录
+                            all_device_dirs = [d for d in base_dir.iterdir() if d.is_dir()]
+                            if all_device_dirs:
+                                # 按修改时间排序，选择最近的目录
+                                device_report_paths = sorted(all_device_dirs, key=lambda x: x.stat().st_mtime, reverse=True)[:len(devices)]
+                                logger.info(f"✅ 找到 {len(device_report_paths)} 个最新设备目录")
+
+                    # 准备脚本配置
+                    script_info_list = []
+                    for config in script_configs:
+                        script_info_list.append({
+                            "path": config.get("path", ""),
+                            "loop_count": config.get("loop_count", 1),
+                            "max_duration": config.get("max_duration")
+                        })
+
+                    # 1. 首先为每个设备目录生成设备报告
+                    for device_dir in device_report_paths:
+                        logger.info(f"🔄 为设备 {device_dir.name} 生成设备报告...")
+                        report_generator.generate_device_report(device_dir, script_info_list)
+
+                    # 2. 然后生成汇总报告
+                    summary_report_path = report_generator.generate_summary_report(device_report_paths, script_info_list)
+
+                    if summary_report_path:
+                        logger.info(f"✅ 统一汇总报告生成成功: {summary_report_path}")
+                    else:
+                        logger.error("❌ 统一汇总报告生成失败")
+                except Exception as e:
+                    logger.error(f"❌ 生成统一汇总报告失败: {e}")
+
+                    traceback.print_exc()
+
+            # 生成设备执行摘要
+            logger.info("============================================================")
+
+        finally:
+            # 11. 资源清理：释放账号
+            for device_serial in devices:
+                if device_serial in device_accounts:
+                    try:
+                        account_info = device_accounts.get(device_serial)
+                        username = account_info.get('username')
+                        password = account_info.get('password')
+                        print(f"views 资源清理：释放账号 {device_serial} 的账号分配: [{username}], [{password}]")
+                        account_manager.release_account(device_serial)
+                        logger.info(f"资源清理：释放账号 已释放设备 {device_serial} 的账号")
+                    except Exception as e:
+                        logger.warning(f"资源清理：释放账号 设备 {device_serial} 账号释放失败: {e}")
+
+        # 11. 确保所有设备都有结果记录
+        for device in devices:
+            if device not in results:
+                results[device] = {
+                    "error": "任务未执行或丢失",
+                    "exit_code": -1,
+                    "report_url": "",
+                    "device": device,
+                    "log_url": f"/static/reports/{log_dir_name}/{device}.log"
+                }
+
+        # 12. 构建响应数据，使用先前创建的 task_id
+        response_data = {
+            "success": True,
+            "task_id": task_id,
+            "message": f"多设备并发回放完成，共处理 {len(devices)} 台设备",
+            "log_dir": log_dir,
+            "results": []
+        }
+        # 转换结果格式
+        for device, result in results.items():
+            device_result = {
+                "device": device,
+                "status": "completed" if result.get("exit_code") == 0 else "failed",
+                "exit_code": result.get("exit_code", -1),
+                "report_url": result.get("report_url", ""),
+                "log_url": f"/static/reports/{log_dir_name}/{device}.log",
+                "error": result.get("error", "")
+            }
+            response_data["results"].append(device_result)
+
+        # 生成设备执行汇总日志
+        log_device_summary(list(results.values()))
+        log_step_progress(4, 4, f"任务完成，成功: {sum(1 for r in results.values() if r.get('exit_code') == 0)}/{len(devices)}", None, True)
+
+        logger.info(f"多设备并发回放任务完成: {len(devices)} 台设备，成功: {sum(1 for r in results.values() if r.get('exit_code') == 0)}")
+        return JsonResponse(response_data)
 
     except Exception as e:
-        logger.error(f"执行回放命令时出错: {str(e)}")
-        logger.error(traceback.format_exc())
-        return Response({
+        error_msg = str(e)
+        logger.error(f"多设备并发回放失败: {error_msg}")
+        logger.error(f"详细错误信息: {traceback.format_exc()}")
+
+        return JsonResponse({
             'success': False,
-            'message': f"执行回放命令时出错: {str(e)}"
+            'message': f'多设备并发回放失败: {error_msg}'
         }, status=500)
+
+# =====================
+# 步骤级日志记录函数
+# =====================
+
+def log_step_progress(step_num, total_steps, message, device_name=None, is_multi_device=False):
+    """
+    统一的步骤进度日志记录函数
+    适用于单设备和多设备场景
+    """
+    if is_multi_device and device_name:
+        prefix = f"[设备:{device_name}]"
+    else:
+        prefix = "[单设备]" if not is_multi_device else "[多设备]"
+
+    progress_indicator = f"步骤 {step_num}/{total_steps}"
+    logger.info(f"{prefix} {progress_indicator}: {message}")
+
+def log_phase_start(phase_name, device_name=None, is_multi_device=False):
+    """记录阶段开始"""
+    if is_multi_device and device_name:
+        prefix = f"[设备:{device_name}]"
+    else:
+        prefix = "[单设备]" if not is_multi_device else "[多设备]"
+
+    logger.info(f"{prefix} 🚀 开始阶段: {phase_name}")
+
+def log_phase_complete(phase_name, device_name=None, is_multi_device=False, success=True):
+    """记录阶段完成"""
+    if is_multi_device and device_name:
+        prefix = f"[设备:{device_name}]"
+    else:
+        prefix = "[单设备]" if not is_multi_device else "[多设备]"
+
+    status = "✅ 完成" if success else "❌ 失败"
+    logger.info(f"{prefix} {status}阶段: {phase_name}")
+
+def log_device_summary(device_results):
+    """记录多设备执行汇总"""
+    if not device_results:
+        logger.info("📊 [汇总] 无设备执行结果")
+        return
+
+    total_devices = len(device_results)
+    successful_devices = sum(1 for result in device_results if result.get('exit_code', -1) == 0)
+    failed_devices = total_devices - successful_devices
+
+    logger.info("=" * 60)
+    logger.info("📊 [执行汇总]")
+    logger.info(f"   总设备数: {total_devices}")
+    logger.info(f"   成功设备: {successful_devices}")
+    logger.info(f"   失败设备: {failed_devices}")
+    logger.info(f"   成功率: {(successful_devices/total_devices*100):.1f}%")
+
+    for i, result in enumerate(device_results):
+        device_name = result.get('device', f'设备{i+1}')
+        status = "✅" if result.get('exit_code', -1) == 0 else "❌"
+        logger.info(f"   {status} {device_name}")
+    logger.info("=" * 60)
 
 
 @api_view(['POST'])
@@ -1669,4 +2388,390 @@ def delete_script(request):
             message=f"删除失败: {str(e)}",
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
+
+# =====================
+# UTF-8 subprocess 封装函数
+# =====================
+def run_subprocess_utf8(cmd, **kwargs):
+    """
+    统一的UTF-8 subprocess封装函数
+    确保所有子进程调用都使用正确的UTF-8编码
+    """
+    # 强制设置UTF-8相关参数
+    utf8_kwargs = {
+        'encoding': 'utf-8',
+        'errors': 'replace',
+        'text': True,
+        'env': dict(os.environ, PYTHONIOENCODING='utf-8', PYTHONUTF8='1')
+    }
+
+    # 合并用户提供的参数，但UTF-8设置优先
+    final_kwargs = {**kwargs, **utf8_kwargs}
+
+    try:
+        return subprocess.run(cmd, **final_kwargs)
+    except Exception as e:
+        logger.error(f"subprocess执行失败: {cmd}, 错误: {e}")
+        raise
+
+def create_subprocess_utf8(cmd, **kwargs):
+    """
+    统一的UTF-8 subprocess.Popen封装函数
+    确保所有子进程创建都使用正确的UTF-8编码
+    """
+    # 强制设置UTF-8相关参数
+    utf8_kwargs = {
+        'encoding': 'utf-8',
+        'errors': 'replace',
+        'text': True,
+        'env': dict(os.environ, PYTHONIOENCODING='utf-8', PYTHONUTF8='1')
+    }
+
+    # 合并用户提供的参数，但UTF-8设置优先
+    final_kwargs = {**kwargs, **utf8_kwargs}
+
+    try:
+        return subprocess.Popen(cmd, **final_kwargs)
+    except Exception as e:
+        logger.error(f"subprocess.Popen创建失败: {cmd}, 错误: {e}")
+        raise
+
+# 获取当前python解释器路径（仅返回sys.executable）
+def get_persistent_python_path():
+    """
+    获取当前python解释器路径，已静态化
+    """
+    return sys.executable
+
+# =====================
+# 方案3实现 - run_single_replay 函数
+# =====================
+
+def check_device_available(device_serial):
+    """检查设备是否可用且未被占用"""
+    try:
+        # 检查 adb 设备状态
+        result = subprocess.run(['adb', 'devices'], capture_output=True, text=True, timeout=10)
+        if device_serial in result.stdout and 'device' in result.stdout:
+            # 进一步检查设备是否被锁定（可根据实际情况实现）
+            logger.info(f"设备 {device_serial} 状态检查通过")
+            return True
+        else:
+            logger.warning(f"设备 {device_serial} 未在adb设备列表中找到")
+    except (subprocess.TimeoutExpired, FileNotFoundError) as e:
+        logger.error(f"设备 {device_serial} 状态检查失败: {e}")
+    return False
+
+def run_single_replay(device_serial, script_args, log_dir, timeout=3600, max_retries=2):
+    """
+    为单个设备启动回放脚本子进程，并监控其执行。
+    包含完整的错误处理、重试机制和资源清理。
+
+    Args:
+        device_serial: 设备序列号
+        script_args: 脚本参数列表
+        log_dir: 日志目录
+        timeout: 超时时间（秒）
+        max_retries: 最大重试次数
+
+    Returns:
+        dict: 执行结果 {"error": "", "exit_code": 0, "report_url": "", "device": ""}
+    """
+    logger.info(f"🚀 开始为设备 {device_serial} 启动回放任务")
+
+    # 0. 设备状态预检查
+    if not check_device_available(device_serial):
+        error_msg = f"设备 {device_serial} 不可用或被占用"
+        logger.error(error_msg)
+        return {
+            "error": error_msg,
+            "exit_code": -1,
+            "report_url": "",
+            "device": device_serial
+        }
+
+    # 1. 构造子进程启动命令（使用动态路径避免硬编码）
+    # 使用统一的脚本查找函数定位回放脚本
+    script_path = find_script_path('replay_script.py')
+    if not os.path.exists(script_path):
+        error_msg = f"回放脚本不存在: {script_path}"
+        logger.error(error_msg)
+        return {
+            "error": error_msg,
+            "exit_code": -1,
+            "report_url": "",
+            "device": device_serial
+        }
+
+    # 🔧 关键修复：确保 script_args 被正确地展开到 cmd 列表中
+    # 之前的问题是 script_args 被当作一个单独的元素添加
+    cmd = [sys.executable, script_path, '--log-dir', log_dir, '--device', device_serial, '--multi-device']
+
+    # 添加账号信息参数 - 告诉子进程使用预分配的账号文件
+    cmd.append('--use-preassigned-accounts')
+
+    cmd.extend(script_args)  # 使用 extend 正确展开参数列表
+
+    device_log_file = os.path.join(log_dir, f"{device_serial}.log")
+    result_file = os.path.join(log_dir, f"{device_serial}.result.json")
+
+    # 🔧 重要调试：详细记录命令构造过程
+    logger.info(f"🔧 设备 {device_serial} 命令构造详情:")
+    logger.info(f"   Python解释器: {sys.executable}")
+    logger.info(f"   脚本路径: {script_path}")
+    logger.info(f"   日志目录: {log_dir}")
+    logger.info(f"   设备序列号: {device_serial}")
+    logger.info(f"   脚本参数: {script_args}")
+    logger.info(f"   脚本参数类型: {type(script_args)}")
+    logger.info(f"   脚本参数长度: {len(script_args)}")
+
+    logger.info(f"🔧 设备 {device_serial} 完整执行命令:")
+
+    # 打印完整命令
+    # logger.info(f"🔧 设备 {device_serial} 完整执行命令:")
+    # for i, arg in enumerate(cmd):
+    #     logger.info(f"   cmd[{i}]: {arg}")
+    logger.info(f"🔧 设备 {device_serial} 日志文件: {device_log_file}")
+    logger.info(f"🔧 设备 {device_serial} 结果文件: {result_file}")
+    logger.info("🔧 ==========================================")
+
+    # 重试机制
+    for attempt in range(max_retries + 1):
+        log_file_handle = None
+        proc = None
+        try:
+            logger.info(f"设备 {device_serial} 开始第 {attempt + 1} 次尝试")
+
+            # 2. 启动子进程，关键：直接重定向到文件避免二进制内容问题
+            creation_flags = 0
+            preexec_fn = None
+            if sys.platform == "win32":
+                creation_flags = subprocess.CREATE_NEW_PROCESS_GROUP
+            else:
+                preexec_fn = os.setsid            # 🔧 修复：使用更安全的子进程启动方式，先验证参数
+            logger.info(f"🔧 设备 {device_serial} 启动前验证:")
+            logger.info(f"   工作目录: {os.getcwd()}")
+            logger.info(f"   Python可执行: {os.path.exists(sys.executable)}")
+            logger.info(f"   脚本文件存在: {os.path.exists(script_path)}")
+            logger.info(f"   日志目录存在: {os.path.exists(log_dir)}")
+
+            # 创建更详细的启动日志
+            log_file_handle = open(device_log_file, 'w', encoding='utf-8', errors='replace')  # 使用'w'模式重新创建日志文件
+
+            # 在日志文件开头写入启动信息
+            log_file_handle.write(f"=== 设备 {device_serial} 回放任务启动 ===\n")
+            log_file_handle.write(f"启动时间: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+            log_file_handle.write(f"执行命令: {' '.join(cmd)}\n")
+            log_file_handle.write(f"工作目录: {os.getcwd()}\n")
+            log_file_handle.write(f"Python路径: {sys.executable}\n")
+            log_file_handle.write(f"脚本路径: {script_path}\n")
+            log_file_handle.write(f"日志目录: {log_dir}\n")
+            log_file_handle.write(f"设备序列号: {device_serial}\n")
+            log_file_handle.write(f"脚本参数: {script_args}\n")
+            log_file_handle.write("=" * 50 + "\n")
+            log_file_handle.flush()  # 确保写入文件
+
+            # 使用更安全的进程启动方式
+            proc = subprocess.Popen(
+                cmd,
+                stdout=log_file_handle,
+                stderr=subprocess.STDOUT,
+                creationflags=creation_flags,
+                preexec_fn=preexec_fn,
+                stdin=subprocess.DEVNULL,
+                cwd=None,  # 使用当前工作目录
+                env=None   # 使用当前环境变量
+            )
+
+            logger.info(f"设备 {device_serial} 子进程已启动，PID: {proc.pid}")
+
+            # 3. 等待子进程结束，使用分阶段超时处理
+            try:
+                proc.wait(timeout=timeout)
+                logger.info(f"设备 {device_serial} 子进程已结束，退出码: {proc.returncode}")
+
+                # 🔧 增加：立即读取日志文件的最后几行，了解退出原因
+                if log_file_handle:
+                    log_file_handle.close()
+                    log_file_handle = None
+
+                try:
+                    # 读取最近的日志内容
+                    with open(device_log_file, 'r', encoding='utf-8', errors='ignore') as f:
+                        log_content = f.read()
+
+                    # 获取最后10行
+                    log_lines = log_content.strip().split('\n')
+                    last_lines = log_lines[-10:] if len(log_lines) > 10 else log_lines
+                    logger.info(f"🔍 设备 {device_serial} 日志文件最后10行:")
+                    for i, line in enumerate(last_lines, 1):
+                        logger.info(f"   [{i:2d}] {line}")
+                except Exception as log_e:
+                    logger.warning(f"读取日志文件失败: {log_e}")
+
+                # 检查是否有明显的错误信息
+                error_indicators = ['error', 'exception', 'traceback', 'failed', '错误', '异常', '失败']
+                for line in reversed(log_lines):
+                    if any(indicator.lower() in line.lower() for indicator in error_indicators):
+                        logger.error(f"🚨 设备 {device_serial} 发现错误信息: {line}")
+                        break
+
+            except subprocess.TimeoutExpired:
+                logger.warning(f"设备 {device_serial} 执行超时，尝试优雅终止")
+                # 优雅终止：先尝试发送终止信号，给进程保存数据的机会
+                if sys.platform == "win32":
+                    proc.send_signal(signal.CTRL_BREAK_EVENT)
+                    try:
+                        proc.wait(timeout=10)  # 给10秒优雅退出时间
+                    except subprocess.TimeoutExpired:
+                        proc.kill()  # 强制终止
+                else:
+                    os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
+                    try:
+                        proc.wait(timeout=10)
+                    except subprocess.TimeoutExpired:
+                        os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+                return {
+                    "error": "执行超时",
+                    "exit_code": -1,
+                    "report_url": "",
+                    "device": device_serial
+                }            # 4. 等待结果文件写入完成（避免竞争条件）
+            result_wait_timeout = 30
+            result_start_time = time.time()
+            logger.info(f"设备 {device_serial} 等待结果文件写入: {result_file}")
+
+            while not os.path.exists(result_file) and (time.time() - result_start_time) < result_wait_timeout:
+                time.sleep(0.5)
+
+            # 5. 读取并返回 result.json 的内容
+            if os.path.exists(result_file):
+                logger.info(f"🔍 设备 {device_serial} 找到结果文件: {result_file}")
+                try:
+                    # 多次尝试读取，确保文件写入完整
+                    for read_attempt in range(3):
+                        try:
+                            with open(result_file, 'r', encoding='utf-8') as f:
+                                content = f.read().strip()
+                                logger.info(f"🔍 设备 {device_serial} 结果文件内容长度: {len(content)}")
+                                logger.info(f"🔍 设备 {device_serial} 结果文件前200字符: {content[:200]}")
+                                if content:  # 确保文件不为空
+                                    result_data = json.loads(content)
+                                    logger.info(f"🔍 设备 {device_serial} 解析后的结果数据: {result_data}")
+                                    # 确保返回数据包含设备信息
+                                    result_data["device"] = device_serial
+                                    logger.info(f"✅ 设备 {device_serial} 执行完成，退出码: {result_data.get('exit_code', 'unknown')}")
+                                    return result_data
+                                else:
+                                    logger.warning(f"⚠️ 设备 {device_serial} 结果文件为空，尝试 {read_attempt + 1}/3")
+                        except (json.JSONDecodeError, ValueError) as e:
+                            logger.warning(f"❌ 设备 {device_serial} 结果文件解析失败，尝试 {read_attempt + 1}/3: {e}")
+                            if read_attempt < 2:
+                                time.sleep(1)  # 等待文件写入完成
+                            else:
+                                raise
+
+                    # 如果所有尝试都失败，检查日志文件获取更多信息
+                    error_details = ""
+                    if os.path.exists(device_log_file):
+                        try:
+                            with open(device_log_file, 'r', encoding='utf-8', errors='replace') as f:
+                                log_content = f.read()
+                                # 提取最后几行作为错误详情
+                                log_lines = log_content.strip().split('\n')
+                                error_details = '\n'.join(log_lines[-5:]) if log_lines else "日志文件为空"
+                        except Exception as e:
+                            error_details = f"无法读取日志文件: {e}"
+
+                    return {
+                        "error": f"结果文件为空或格式错误。日志详情: {error_details}",
+                        "exit_code": proc.returncode,
+                        "report_url": "",
+                        "device": device_serial
+                    }
+                except (json.JSONDecodeError, ValueError) as e:
+                    if attempt < max_retries:
+                        logger.warning(f"设备 {device_serial} 结果文件格式错误，重试 {attempt + 1}/{max_retries}: {e}")
+                        time.sleep(2)  # 重试前等待
+                        continue
+                    return {
+                        "error": f"结果文件格式错误: {str(e)}",
+                        "exit_code": proc.returncode,
+                        "report_url": "",
+                        "device": device_serial
+                    }
+            else:
+                logger.error(f"设备 {device_serial} 未找到结果文件: {result_file}")
+                # 🔧 增强：更详细的错误诊断
+                error_details = ""
+                script_execution_status = ""
+
+                if os.path.exists(device_log_file):
+                    try:
+                        with open(device_log_file, 'r', encoding='utf-8', errors='replace') as f:
+                            log_content = f.read()
+                            log_lines = log_content.strip().split('\n')
+
+                            # 查找脚本执行相关的关键信息
+                            key_lines = []
+                            for line in log_lines:
+                                if any(keyword in line.lower() for keyword in [
+                                    'error', 'exception', 'traceback', 'failed', 'success',
+                                    'script', 'device', 'exit', 'complete', '错误', '异常', '失败', '成功'
+                                ]):
+                                    key_lines.append(line)
+
+                            if key_lines:
+                                script_execution_status = f"\n关键执行信息:\n" + '\n'.join(key_lines[-5:])
+
+                            # 提取最后几行作为错误详情
+                            error_details = '\n'.join(log_lines[-15:]) if log_lines else "日志文件为空"
+
+                    except Exception as e:
+                        error_details = f"无法读取日志文件: {e}"
+                else:
+                    error_details = "日志文件不存在"
+
+                full_error_msg = f"未找到结果文件，子进程退出码: {proc.returncode}。{script_execution_status}\n\n最后15行日志:\n{error_details}"
+
+                if attempt < max_retries:
+                    logger.warning(f"设备 {device_serial} 未找到结果文件，重试 {attempt + 1}/{max_retries}。错误详情: {full_error_msg}")
+                    time.sleep(2)
+                    continue
+
+                return {
+                    "error": full_error_msg,
+                    "exit_code": proc.returncode,
+                    "report_url": "",
+                    "device": device_serial
+                }
+
+        except Exception as e:
+            if attempt < max_retries:
+                logger.warning(f"设备 {device_serial} 执行异常，重试 {attempt + 1}/{max_retries}: {e}")
+                time.sleep(2)
+                continue
+            logger.error(f"设备 {device_serial} 执行失败: {e}")
+            return {
+                "error": f"执行异常: {str(e)}",
+                "exit_code": -1,
+                "report_url": "",
+                "device": device_serial
+            }
+        finally:
+            # 确保资源清理
+            if log_file_handle:
+                try:
+                    log_file_handle.close()
+                except:
+                    pass
+            if proc and proc.poll() is None:
+                try:
+                    if sys.platform == "win32":
+                        proc.kill()
+                    else:
+                        os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+                except:
+                    pass
 

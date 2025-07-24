@@ -465,9 +465,9 @@
         // 全局设置
         const globalSettings = {
             pythonPath: 'python',  // 默认Python路径
-            debugCmd: 'record_script.py',
-            recordCmd: 'record_script.py --record',
-            replayCmd: 'replay_script.py --show-screens'
+            debugCmd: 'apps/scripts/record_script.py',
+            recordCmd: 'apps/scripts/record_script.py --record',
+            replayCmd: 'apps/scripts/replay_script.py --show-screens'
         };
 
         // 全局变量
@@ -517,16 +517,16 @@
                             <td>${includeInLogBadge}</td>
                             <td>${script.created}</td>
                             <td>
-                                <button class="btn btn-sm btn-outline-primary me-1" onclick="replayScript('${script.path}')">
+                                <button class="btn btn-sm btn-outline-primary me-1" onclick="replayScript('${script.filename}')">
                                     <i class="fas fa-play"></i>
                                 </button>
-                                <button class="btn btn-sm btn-outline-secondary me-1" onclick="editScript('${script.path}')">
+                                <button class="btn btn-sm btn-outline-secondary me-1" onclick="editScript('${script.filename}')">
                                     <i class="fas fa-edit"></i>
                                 </button>
-                                <button class="btn btn-sm btn-outline-info me-1" onclick="copyScript('${script.path}')">
+                                <button class="btn btn-sm btn-outline-info me-1" onclick="copyScript('${script.filename}')">
                                     <i class="fas fa-copy"></i>
                                 </button>
-                                <button class="btn btn-sm btn-outline-danger" onclick="deleteScript('${script.path}')">
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteScript('${script.filename}')">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </td>
@@ -555,7 +555,7 @@
                     // 添加新选项
                     scripts.forEach(script => {
                         const option = document.createElement('option');
-                        option.value = script.path;
+                        option.value = script.filename;
                         option.textContent = `${script.filename} (${script.step_count || 0}步)`;
                         select.appendChild(option);
                     });
@@ -822,7 +822,7 @@
                     // 添加脚本选项
                     scripts.forEach(script => {
                         const option = document.createElement('option');
-                        option.value = script.path;
+                        option.value = script.filename;
                         option.textContent = `${script.filename} (${script.step_count || 0}步)`;
                         scriptSelect.appendChild(option);
                     });
@@ -1348,7 +1348,7 @@
                 }
             }
         });        // 回放脚本
-        function replayScript(path) {
+        function replayScript(filename) {
             const modal = new bootstrap.Modal(document.getElementById('replayModal'));
 
             // 先更新脚本下拉列表，确保脚本列表已加载
@@ -1362,18 +1362,18 @@
             // 选择第一个脚本选择器并设置选中项
             const scriptSelect = document.querySelector('.script-select');
             if (scriptSelect) {
-                console.log("将选择脚本:", path);
+                console.log("将选择脚本:", filename);
 
                 // 延迟执行以确保模态框已完全显示且DOM已更新
                 setTimeout(() => {
                     // 设置选中值
-                    scriptSelect.value = path;
+                    scriptSelect.value = filename;
 
                     // 如果没有找到匹配的选项，尝试通过文件名匹配
-                    if (scriptSelect.value !== path) {
+                    if (scriptSelect.value !== filename) {
                         // 查找包含此路径结尾的选项
                         const options = Array.from(scriptSelect.options);
-                        const filename = path.split('/').pop().split('\\').pop();
+                        const filename = filename.split('/').pop().split('\\').pop();
 
                         for (const option of options) {
                             if (option.text.includes(filename)) {
@@ -1398,14 +1398,51 @@
         }
 
         // 编辑脚本
-        function editScript(path) {
-            // 提取文件名，忽略路径
-            const filename = path.split('\\').pop().split('/').pop();
-
-            // 显示加载中
+        function editScript(filename) {
             showLoading('加载脚本内容中...');
+            fetch(`/api/scripts/edit/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    operation: 'read',
+                    filename: filename
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    hideLoading();
+                    if (data.success) {
+                        createEditModal(data);
+                    } else if (data.possible_matches && data.possible_matches.length > 0) {
+                        // 选择推荐文件
+                        showFileSelectModal(data.possible_matches, editScript);
+                    } else {
+                        showToast(`加载脚本失败: ${data.message}`, 'error');
+                    }
+                })
+                .catch(error => {
+                    hideLoading();
+                    showToast(`加载脚本失败: ${error.message}`, 'error');
+                });
+        }
 
-            // 获取脚本内容 - 使用POST请求，传递文件名
+        // 处理选定的文件
+        function editSelectedFile(filename) {
+            // 显示加载中
+            showLoading('加载所选脚本中...');
+
+            console.log(`准备加载选定文件: '${filename}'`);
+
+            // 确保文件名不包含任何路径或前缀
+            if (filename.includes('/')) {
+                filename = filename.split('/').pop();
+            } else if (filename.includes('\\')) {
+                filename = filename.split('\\').pop();
+            }
+
+            console.log(`清理后的文件名: '${filename}'`);
+
+            // 使用简洁的文件名调用API
             fetch(`/api/scripts/edit/`, {
                 method: 'POST',
                 headers: {
@@ -1424,13 +1461,13 @@
                         // 创建编辑模态框
                         createEditModal(data);
                     } else {
-                        alert('加载脚本失败: ' + data.message);
+                        showToast(`加载所选脚本失败: ${data.message}`, 'error');
                     }
                 })
                 .catch(error => {
                     hideLoading();
-                    console.error('加载脚本错误:', error);
-                    alert('加载脚本失败，请检查网络连接');
+                    console.error(`加载所选脚本出错:`, error);
+                    showToast(`加载所选脚本失败: ${error.message}`, 'error');
                 });
         }
 
@@ -1640,10 +1677,9 @@
                 }
             }, 3000);
         }        // 复制脚本
-        function copyScript(path) {
+        function copyScript(filename) {
             // 提示用户输入新文件名
-            const fileName = path.split('/').pop();
-            const defaultNewName = '复制_' + fileName;
+            const defaultNewName = '复制_' + filename;
             const newName = prompt('请输入新脚本名称:', defaultNewName);
 
             if (!newName) return; // 用户取消输入
@@ -1658,7 +1694,7 @@
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    source_path: path,
+                    source_path: filename,
                     new_name: newName
                 })
             })
@@ -1681,23 +1717,10 @@
         }
 
         // 删除脚本
-        function deleteScript(path) {
+        function deleteScript(filename) {
             if (confirm('确定要删除该脚本吗？此操作不可恢复。')) {
                 // 显示加载提示
                 showLoading('正在删除脚本...');
-
-                // 只提取文件名，避免路径分隔符问题
-                let filename;
-                if (path.includes('/')) {
-                    filename = path.split('/').pop(); // 处理正斜杠
-                } else if (path.includes('\\')) {
-                    filename = path.split('\\').pop(); // 处理反斜杠
-                } else {
-                    filename = path; // 已经是文件名
-                }
-
-                console.log('删除文件，原始路径:', path);
-                console.log('处理后的文件名:', filename);
 
                 // 发送删除请求
                 fetch('/api/scripts/delete/', {
@@ -2032,6 +2055,54 @@
             importError.classList.add('d-none');
             importSuccess.classList.add('d-none');
         });
+
+        // 选择推荐文件的通用模态框
+        function showFileSelectModal(possibleFiles, callback) {
+            let fileSelectHTML = `
+                <div class="modal fade" id="fileSelectModal" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">找不到文件</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p>未找到指定文件，但找到了以下可能的匹配项。请选择一个文件：</p>
+                                <div class="list-group">
+            `;
+            possibleFiles.forEach(file => {
+                fileSelectHTML += `
+                    <button type="button" class="list-group-item list-group-item-action possible-file"
+                           data-file="${file}">${file}</button>
+                `;
+            });
+            fileSelectHTML += `
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', fileSelectHTML);
+            const fileSelectModal = new bootstrap.Modal(document.getElementById('fileSelectModal'));
+            fileSelectModal.show();
+            document.querySelectorAll('.possible-file').forEach(button => {
+                button.addEventListener('click', function () {
+                    const selectedFile = this.getAttribute('data-file');
+                    fileSelectModal.hide();
+                    setTimeout(() => {
+                        document.getElementById('fileSelectModal').remove();
+                        callback(selectedFile);
+                    }, 300);
+                });
+            });
+            document.getElementById('fileSelectModal').addEventListener('hidden.bs.modal', function () {
+                this.remove();
+            });
+        }
 
 
 

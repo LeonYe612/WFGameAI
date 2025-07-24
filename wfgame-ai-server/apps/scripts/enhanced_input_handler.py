@@ -19,7 +19,7 @@ try:
     if project_root not in sys.path:
         sys.path.insert(0, project_root)
 
-    from universal_ui_detector import UniversalUIDetector
+    from universal_ui_dom_detector import UniversalUIDetector
     UNIVERSAL_UI_DETECTOR_AVAILABLE = True
 except ImportError:
     print("警告: universal_ui_detector 未找到，使用基础UI检测")
