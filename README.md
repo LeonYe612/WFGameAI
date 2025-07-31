@@ -8,7 +8,7 @@ WFGame AI 自动化测试框架是一个基于**计算机视觉 AI 技术**的�
 
 - **🤖 AI 驱动的 UI 识别**：使用 YOLO11m 自定义模型进行实时 UI 元素检测，替代传统图像对比方法
 - **🌐 B/S 架构平台**：基于 Django+Vue3 的现代化 Web 界面，提供完整的测试管理平台
-- **📱 多设备并行测试**：支持大规模（1-100 台）Android 设备同时执行测试用例
+- **📱 多设备并行测试**：支持大规模（1-100 台）Android 设备同时执行测试用例，具备智能混合执行策略
 - **📊 数据驱动测试**：支持数据与脚本分离，通过 Excel/数据库导入测试数据
 - **🔄 完整的测试流程**：包含连接设备、录制脚本、调试设备、脚本管理、回放执行、查看报告等全流程功能
 - **📋 智能报告系统**：生成详细的 HTML 测试报告，支持多设备汇总和历史趋势分析
@@ -16,10 +16,9 @@ WFGame AI 自动化测试框架是一个基于**计算机视觉 AI 技术**的�
   - **点击操作**：精准的 UI 元素点击识别和执行
   - **滑动手势**：支持上下左右滑动，可自定义起止坐标、距离和持续时间
   - **多点触控**：支持复杂的手势操作（规划中）
-- **🎮 三种测试模式**：
-  - 固定场景模式：预设流程自动化遍历
-  - UI 深度遍历模式：智能探索未知界面
-  - 路径全量遍历模式：自动验证所有可能路径
+- **🎮 双模式测试执行**：
+  - **Step模式**：线性顺序执行预设流程
+  - **Priority模式**：动态循环检测，智能应对UI变化
 
 ## 🛠️ 环境要求
 
@@ -720,66 +719,99 @@ cleanup_large_files.bat
 3. 帮助从暂存区移除大文件
 4. 提供清理 Git 历史中大文件的方案
 
-## 项目结构（详细分层说明，2025 年 5 月最新）
+## 项目结构（详细分层说明，2025 年 7 月最新）
 
 ```
 WFGameAI/
 ├── config.ini                    # 【全局路径配置，所有后端路径引用的唯一入口】
-├── requirements.txt             # Python依赖列表
-├── start_wfgame_ai.py          # 项目启动脚本（后端）
-├── utils.py                    # 项目配置管理工具
-├── test_swipe.json             # 滑动功能测试用例
-├── yolo11m.pt / yolo11n.pt     # AI视觉识别模型文件
-├── datasets/                   # 数据集目录（config.ini: datasets_dir）
+├── requirements.txt              # Python依赖列表
+├── start_wfgame_ai.py           # 项目启动脚本（后端）
+├── utils.py                      # 项目配置管理工具
+├── test_swipe.json              # 滑动功能测试用例
+├── yolo11m.pt / yolo11n.pt      # AI视觉识别模型文件
+├── config_validator.py          # 配置文件验证工具
+├── value_formatter.py           # 数据格式化工具
+├── usb_connection_checker.py    # USB连接测试工具
+├── update_device_db.py          # 设备数据库更新工具
+├── device_preparation.bat       # 设备准备批处理脚本
+├── generate_commit_message.py   # 提交信息生成工具
+├── ai_capture_and_analyze_result/ # AI截图分析工具目录
+│   └── ai_capture_and_analyze_real_screen.py # 实时屏幕分析工具
+├── datasets/                    # 数据集目录（config.ini: datasets_dir）
 │   ├── My First Project.v7i.yolov11/  # YOLO训练数据集
-│   ├── preprocessed/           # 预处理后的数据
-│   │   └── cache_gen/          # 缓存生成目录
-│   └── templates/              # 报告模板
+│   ├── preprocessed/            # 预处理后的数据
+│   │   └── cache_gen/           # 缓存生成目录
+│   └── templates/               # 报告模板
 │       ├── report_tpl.html.useless
 │       └── summary_template.html
-├── docs/                       # 完整项目文档目录
-│   ├── swipe_implementation.md # 滑动功能实现文档
-│   ├── WFGameAI_实施进度跟踪.md # 实施进度跟踪文档
-│   ├── WFGameAI_开发文档.md    # 开发文档
-│   ├── AI 自动化测试框架实施路线图.md
-│   ├── README_honeydou.md      # honeydou平台文档
-│   └── Web服务+本地轻量组件混合模式详细设计.md
-├── external/                   # 外部集成组件
-│   └── honeydou/               # honeydou平台集成
-├── templates/                  # 全局报告/页面模板目录
+├── docs/                        # 完整项目文档目录
+│   ├── swipe_implementation.md  # 滑动功能实现文档
+│   ├── WFGameAI_实施进度跟踪.md  # 实施进度跟踪文档
+│   ├── WFGameAI回放系统双模式深度解析.md # 回放系统详细文档
+│   ├── WFGameAI_报告生成系统详细文档_AI优化版.md # 报告系统文档
+│   ├── WFGameAI_Action_使用手册.md # Action API使用手册
+│   ├── AI 自动化测试框架实施路线图 -【详细】.md # 实施路线图
+│   └── Web服务+本地轻量组件混合模式详细设计.md # 架构设计文档
+├── external/                    # 外部集成组件
+│   └── honeydou/                # honeydou平台集成
+├── templates/                   # 全局报告/页面模板目录
 │   └── summary_template.html
-├── train_results/              # AI模型训练结果
+├── train_results/               # AI模型训练结果
 │   └── train/
-├── wfgame-ai-server/          # 服务器端主目录（config.ini: server_dir）
-│   ├── manage.py               # Django管理脚本
-│   ├── db.sqlite3              # SQLite开发数据库
-│   ├── apps/                   # 各业务App目录
-│   │   ├── scripts/            # 【核心】脚本管理App（config.ini: scripts_dir）
-│   │   │   ├── record_script.py    # 录制脚本（支持点击+滑动）
-│   │   │   ├── replay_script.py    # 回放脚本（支持点击+滑动）
-│   │   │   ├── views.py            # 脚本API主视图
-│   │   │   ├── models.py           # 脚本数据模型
-│   │   │   ├── model_loader.py     # AI模型加载适配器
+├── train_model/                 # AI模型训练工具
+├── models/                      # 模型存储目录
+├── diagnosis_detector.py        # 诊断检测器
+├── detection_diagnosis_tool.py  # 检测诊断工具
+├── universal_ui_dom_detector.py # 通用UI元素检测器
+├── comprehensive_detection_check.py # 全面检测验证工具
+├── implement_dataset_restructure.py # 数据集重构工具
+├── aggressive_class_optimization.py # 类别优化工具
+├── class_analysis.py            # 类别分析工具
+├── optimize_classes.py          # 类别优化执行器
+├── wfgame-ai-server/            # 服务器端主目录（config.ini: server_dir）
+│   ├── manage.py                # Django管理脚本
+│   ├── apps/                    # 各业务App目录
+│   │   ├── scripts/             # 【核心】脚本管理App（config.ini: scripts_dir）
+│   │   │   ├── record_script.py      # 录制脚本（支持点击+滑动）
+│   │   │   ├── replay_script.py      # 回放脚本（支持点击+滑动）
+│   │   │   ├── action_processor.py   # 操作处理器
+│   │   │   ├── optimized_hybrid_executor.py # 智能混合执行器
+│   │   │   ├── adaptive_threshold_manager.py # 自适应阈值管理器
+│   │   │   ├── mysql_account_manager.py # 数据库账号管理器
+│   │   │   ├── multi_device_replayer.py # 多设备并发回放器
+│   │   │   ├── enhanced_device_preparation_manager.py # 增强设备准备管理器
 │   │   │   ├── app_lifecycle_manager.py # 应用生命周期管理
-│   │   │   ├── testcase/           # 测试用例保存目录
-│   │   │   ├── datasets/           # 脚本相关数据集
-│   │   │   └── app_templates/      # 脚本模板
-│   │   ├── devices/            # 设备管理App
-│   │   ├── reports/            # 测试报告管理App
-│   │   │   ├── views.py            # 报告API
-│   │   │   ├── staticfiles/        # 报告静态资源
-│   │   │   └── fix_static_*.py     # 静态资源修复工具
-│   │   ├── tasks/              # 任务管理App
-│   │   ├── users/              # 用户管理App
-│   │   ├── data_source/        # 数据源管理App
-│   │   └── logs/               # 日志管理App
-│   ├── generate_summary_from_logs.py   # 报告生成脚本
-│   ├── staticfiles/            # 静态文件总目录
-│   │   ├── pages/              # 前端页面文件
-│   │   ├── reports/            # 测试报告静态资源
-│   │   │   ├── ui_run/         # 设备级别报告目录
+│   │   │   ├── detection_manager.py # 检测管理器
+│   │   │   ├── enhanced_input_handler.py # 增强输入处理器
+│   │   │   ├── storage_manager.py   # 存储管理器
+│   │   │   ├── views.py             # 脚本API主视图
+│   │   │   ├── models.py            # 脚本数据模型
+│   │   │   ├── urls.py              # URL路由配置
+│   │   │   ├── serializers.py       # 序列化器
+│   │   │   ├── testcase/            # 测试用例保存目录
+│   │   │   ├── datasets/            # 脚本相关数据集
+│   │   │   └── app_templates/       # 脚本模板
+│   │   ├── devices/             # 设备管理App
+│   │   ├── reports/             # 测试报告管理App
+│   │   │   ├── views.py             # 报告API
+│   │   │   ├── report_generator.py  # 报告生成器
+│   │   │   ├── staticfiles/         # 报告静态资源
+│   │   │   └── fix_static_*.py      # 静态资源修复工具
+│   │   ├── tasks/               # 任务管理App
+│   │   ├── users/               # 用户管理App
+│   │   ├── data_source/         # 数据源管理App
+│   │   ├── project_monitor/     # 项目监控App
+│   │   └── logs/                # 日志管理App
+│   │       └── app_lifecycle/   # 应用生命周期日志
+│   ├── generate_summary_from_logs.py # 报告生成脚本
+│   ├── create_integrated_reports.py  # 集成报告生成工具
+│   ├── check_projects.py         # 项目检查工具
+│   ├── staticfiles/             # 静态文件总目录
+│   │   ├── pages/               # 前端页面文件
+│   │   ├── reports/             # 测试报告静态资源
+│   │   │   ├── ui_run/          # 设备级别报告目录
 │   │   │   │   └── WFGameAI.air/
-│   │   │   │       └── log/    # 设备报告目录
+│   │   │   │       └── log/     # 设备报告目录
 │   │   │   │           └── {device}_{timestamp}/ # 设备执行记录
 │   │   │   │               ├── log.html    # 设备详细报告
 │   │   │   │               ├── log.txt     # 设备日志文件
@@ -790,20 +822,34 @@ WFGameAI/
 │   │   │       └── latest_report.html # 最新报告快捷方式
 │   │   ├── admin/              # Django管理界面
 │   │   └── rest_framework/     # REST API界面
+│   ├── wfgame_ai_server/       # Django配置目录
+│   │   ├── settings.py         # 项目配置
+│   │   ├── urls.py             # 路由配置
+│   │   └── middleware.py       # 中间件
 │   ├── wfgame_ai_server_main/  # Django主项目目录
 │   │   ├── settings.py         # 项目配置
 │   │   ├── urls.py             # 路由配置
 │   │   ├── wsgi.py             # WSGI入口
-│   │   └── asgi.py             # ASGI入口
+│   │   ├── asgi.py             # ASGI入口
+│   │   └── celery.py           # Celery配置
 │   └── logs/                   # 服务器日志目录
 ├── wfgame-ai-web/             # 前端Web界面（Vue3+Element Plus）
 │   ├── package.json            # 前端依赖配置
 │   ├── vite.config.js          # Vite构建配置
 │   ├── src/                    # Vue源码目录
+│   │   ├── api/                # API接口
+│   │   ├── assets/             # 静态资源
+│   │   ├── components/         # 组件
+│   │   ├── router/             # 路由
+│   │   ├── stores/             # 状态管理
+│   │   ├── utils/              # 工具函数
+│   │   └── views/              # 视图
 │   ├── pages/                  # 页面组件
 │   ├── css/                    # 样式文件
 │   ├── js/                     # JavaScript文件
 │   └── lib/                    # 前端库文件
+├── dependencies/               # 依赖目录
+│   └── apks/                   # APK文件
 └── git_hooks/                 # Git钩子脚本
 ```
 
@@ -811,21 +857,21 @@ WFGameAI/
 
 - **所有后端目录引用（如脚本、用例、报告等）必须严格通过 config.ini 统一管理和获取，禁止硬编码和静态拼接。**
 - **config.ini 是全局唯一的路径配置入口，所有 API 和后端逻辑均以其为准。**
-- **wfgame-ai-server/apps/scripts/** 目录下的 record_script.py、replay_script.py 等脚本，必须通过 config.ini 的 scripts_dir 路径引用。\*\*
-- **wfgame-ai-server/testcase/**、**outputs/WFGameAI-reports/**、**outputs/WFGameAI-reports/ui_reports/** 等目录，均通过 config.ini 的 testcase_dir、reports_dir、ui_reports_dir 管理。\*\*
+- **核心逻辑与功能组件说明**:
+  - **action_processor.py**: 操作处理器，负责执行各类动作（点击、滑动、等待等）
+  - **optimized_hybrid_executor.py**: 智能混合执行器，根据设备数量和系统资源智能选择执行策略
+  - **adaptive_threshold_manager.py**: 自适应阈值管理，根据执行结果动态优化检测阈值
+  - **mysql_account_manager.py**: 数据库账号管理，处理多设备并行执行时的账号分配
+  - **enhanced_device_preparation_manager.py**: 设备准备管理器，处理设备连接、预处理等
 - **如需新增目录或调整结构，必须先修改 config.ini 并同步后端所有路径引用。**
 
-### 滑动功能详细文档
+### 核心文档说明
 
-详细的滑动功能实现文档：[滑动实现文档](docs/swipe_implementation.md)
-
-该文档包含：
-
-- 滑动功能技术实现细节
-- JSON 数据结构说明
-- 代码实现示例
-- 使用方法指南
-- 测试验证步骤
+- **滑动功能实现文档**: [滑动实现文档](docs/swipe_implementation.md)
+- **回放系统双模式文档**: [回放系统双模式深度解析](docs/WFGameAI回放系统双模式深度解析.md)
+- **报告系统文档**: [报告生成系统详细文档](docs/WFGameAI_报告生成系统详细文档_AI优化版.md)
+- **Action API使用手册**: [Action使用手册](docs/WFGameAI_Action_使用手册.md)
+- **实施进度跟踪**: [实施进度跟踪文档](docs/WFGameAI_实施进度跟踪.md)
 
 ## 数据库配置
 

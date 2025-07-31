@@ -174,7 +174,7 @@ def edit_script(request):
     try:
         # 从请求中获取脚本数据
         script_data = request.data
-        logger.error(f"收到编辑脚本请求: {script_data}")
+        logger.info(f"收到编辑脚本请求: {script_data}")
         if not script_data:
             return Response({'success': False, 'message': '请求数据为空'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -186,7 +186,7 @@ def edit_script(request):
             return Response({'success': False, 'message': '文件名不能为空'}, status=status.HTTP_400_BAD_REQUEST)
 
         # 文件名清理 - 处理特殊情况
-        logger.error(f"原始文件名: '{filename}'")
+        logger.info(f"原始文件名: '{filename}'")
 
         # 首先检查文件是否存在
         script_dirs = [
@@ -199,10 +199,10 @@ def edit_script(request):
         # 直接尝试查找完全匹配的文件
         for script_dir in script_dirs:
             temp_path = os.path.join(script_dir, filename)
-            logger.error(f"检查文件路径: '{temp_path}'")
+            logger.info(f"检查文件路径: '{temp_path}'")
             if os.path.exists(temp_path):
                 script_path = temp_path
-                logger.error(f"找到文件: '{script_path}'")
+                logger.info(f"找到文件: '{script_path}'")
                 break
 
         # 如果没有找到完全匹配，尝试处理数字前缀的情况
@@ -216,7 +216,7 @@ def edit_script(request):
                 # 如果第一部分不是数字，可能是 "card2_game_function_..." 格式
                 if not file_parts[0].isdigit():
                     core_filename = filename
-                    logger.error(f"检测到核心文件名(无数字前缀): '{core_filename}'")
+                    logger.info(f"检测到核心文件名(无数字前缀): '{core_filename}'")
 
             # 如果找到了核心文件名，尝试查找带数字前缀的匹配文件
             if core_filename:
@@ -228,7 +228,7 @@ def edit_script(request):
                                 # 检查文件是否是 "数字_核心文件名" 格式
                                 if re.match(r'^\d+_', file) and core_filename in file:
                                     temp_path = os.path.join(script_dir, file)
-                                    logger.error(f"找到带数字前缀的匹配文件: '{temp_path}'")
+                                    logger.info(f"找到带数字前缀的匹配文件: '{temp_path}'")
                                     script_path = temp_path
                                     break
                     if script_path:
@@ -255,7 +255,7 @@ def edit_script(request):
                             # 如果文件名核心部分包含在请求的文件名中，或反之
                             if file_core.lower() in filename_lower or filename_lower in file_core.lower():
                                 similarity = 1000 + len(file)  # 给予高优先级
-                                logger.error(f"数字前缀文件高匹配度: '{file}' 与 '{filename}'")
+                                logger.info(f"数字前缀文件高匹配度: '{file}' 与 '{filename}'")
                             else:
                                 # 标准字符匹配评分
                                 similarity = sum(1 for a, b in zip(file_lower, filename_lower) if a == b)

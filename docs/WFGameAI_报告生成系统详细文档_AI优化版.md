@@ -16,36 +16,6 @@ WFGameAI 报告生成系统是一个双层报告架构，包含设备级详细�
 
 ---
 
-## 🗂️ 目录结构与文件关系
-
-### 完整目录树（2025-06-30修复后）
-
-```
-wfgame-ai-server/
-└── ${device_replay_reports_dir}/  # 报告根目录（config.ini 定义）
-    ├── ui_run/                         # 设备报告根目录
-    │   └── WFGameAI.air/
-    │       └── log/                    # 设备报告存储目录
-    │           └── [设备序列号_时间戳]/  # 🔧 修复：统一命名格式
-    │               ├── log.html        # 🎯 设备HTML报告
-    │               ├── log.txt         # 🎯 原始JSON日志
-    │               ├── script.py       # 执行脚本备份
-    │               ├── [时间戳].jpg      # 🔧 修复：截图直接存放
-    │               └── [时间戳]_small.jpg # 🔧 修复：缩略图直接存放
-    │
-    ├── summary_reports/                # 汇总报告存储目录
-    │   └── summary_report_[时间戳].html # 🎯 汇总HTML报告
-    │
-    └── templates/                      # 报告模板目录
-        ├── log_template.html           # 设备报告模板
-        └── summary_template.html       # 汇总报告模板
-```
-
-⚠️ **重要变更（v2.1.0）**：
-- ❌ 删除了 `log/` 子目录结构
-- ✅ 截图文件直接存放在设备目录下
-- ✅ 统一设备目录命名：`设备序列号_YYYY-MM-DD-HH-MM-SS`
-
 > ⚙️ **配置文件路径变量（config.ini [devices_report_paths] 节）**
 > ```ini
 # 设备回放后生成报告目录
@@ -66,15 +36,75 @@ summary_reports_dir = ${device_replay_reports_dir}\summary_reports
 
 
 
+## 🗂️ 目录结构与文件关系
+
+### 完整目录树（2025-07更新版）
+
+```
+wfgame-ai-server/
+└── ${device_replay_reports_dir}/  # 报告根目录（config.ini 定义）
+    ├── ui_run/                    # 设备报告根目录
+    │   └── WFGameAI.air/          # Airtest项目目录
+    │       └── log/               # 设备报告存储目录（必须保留）
+    │           ├── [设备序列号_时间戳]/  # 设备专属目录（每个设备，每次运行，只创建一个）
+    │           │   ├── log.html   # 设备HTML报告，必须存在。使用 log_template.html 模板渲染
+    │           │   ├── log.txt    # 原始JSON日志，必须存在
+    │           │   ├── script.py  # 执行脚本（json文件）备份，必须存在
+    │           │   ├── [时间戳].jpg      # 截图文件，直接存放，多张
+    │           │   └── [时间戳]_small.jpg # 缩略图文件，直接存放，多张
+    │           │
+    │           └── multi_device_replay_[时间戳]/  # 多设备临时目录
+    │               ├── [设备序列号].result.json   # 设备执行结果
+    │               └── [其他临时文件]             # 执行过程中的临时文件
+    │
+    ├── summary_reports/                # 汇总报告存储目录
+    │   └── summary_report_[时间戳].html # 汇总HTML报告，每批次只生成一份。使用 summary_template.html 模板渲染
+    │
+    └── templates/                 # 报告模板目录
+        ├── log_template.html      # 单设备报告模板
+        └── summary_template.html  # 汇总报告模板
+```
+
+### 报告生成系统核心文件
+
+```
+wfgame-ai-server/
+├── apps/
+│   ├── reports/                    # 报告管理应用
+│   │   ├── views.py                # 报告Web API接口
+│   │   ├── report_generator.py     # 报告生成器核心类
+│   │   ├── report_hooks.py         # 报告生成钩子
+│   │   ├── report_config.py        # 报告配置管理
+│   │   └── staticfiles/            # 报告静态资源
+│   │
+│   └── scripts/
+│       ├── action_processor.py     # 操作处理器（包含截图生成）
+│       ├── replay_script.py        # 回放脚本（触发报告生成）
+│       └── multi_device_replayer.py # 多设备回放器
+│
+├── create_integrated_reports.py    # 集成报告生成工具
+└── generate_summary_from_logs.py   # 报告汇总生成工具
+```
+
+⚠️ **重要说明**：
+- ✅ 必须保留 `log/` 子目录结构
+- ✅ 每个设备，每次运行只创建一个专属目录，所有文件（截图、log.html等）直接存放在此目录下
+- ✅ 设备目录命名格式：`设备序列号_YYYY-MM-DD-HH-MM-SS`
+- ✅ `multi_device_replay_[时间戳]`是临时目录，不应存放最终报告文件
+- ✅ 相对路径引用使用直接文件名：`[时间戳].jpg`（无log/前缀）
+- ✅ 报告生成由`report_generator.py`中的ReportGenerator类负责核心逻辑
+- ✅ 集成报告生成功能由`create_integrated_reports.py`提供
+
+
 ### 关键文件作用说明
 
-| 文件/目录               | 作用                         | AI 修改频率 | 常见问题                   | v2.1.0状态 |
-| ----------------------- | ---------------------------- | ----------- | -------------------------- | ----------- |
-| `log.txt`               | 存储设备执行的原始 JSON 日志 | 低          | 格式错误、缺失 screen 字段 | ✅ 已修复 |
-| `log.html`              | 设备测试的可视化报告         | 中          | 截图不显示、模板渲染失败   | ✅ 已修复 |
-| `summary_report_*.html` | 所有设备的汇总报告           | 高          | 链接错误、统计数据错误     | ✅ 已修复 |
-| `[时间戳].jpg`          | 操作步骤的截图               | 低          | 文件不存在、路径错误       | ✅ 已修复 |
-| `[时间戳]_small.jpg`    | 缩略图用于快速导航           | 低          | 生成失败、尺寸问题         | ✅ 已修复 |
+| 文件/目录               | 作用                         | AI 修改频率 | 常见问题                   |
+| ----------------------- | ---------------------------- | ----------- | -------------------------- |
+| `log.txt`               | 存储设备执行的原始 JSON 日志 | 低          | 格式错误、缺失 screen 字段 |
+| `log.html`              | 设备测试的可视化报告         | 中          | 截图不显示、模板渲染失败   |
+| `summary_report_*.html` | 所有设备的汇总报告           | 高          | 链接错误、统计数据错误     |
+| `[时间戳].jpg`          | 操作步骤的截图               | 低          | 文件不存在、路径错误       |
+| `[时间戳]_small.jpg`    | 缩略图用于快速导航           | 低          | 生成失败、尺寸问题         |
 
 ---
 
@@ -105,16 +135,30 @@ graph TD
     M --> R[生成单设备汇总报告]
 ```
 
-### 🚨 重要修正：汇总报告生成逻辑
+### 多设备执行流程
 
-**当前错误行为**：
-- 每个设备独立生成汇总报告
-- 结果：多个 `summary_report_*.html` 文件
+```mermaid
+graph TD
+    A[启动多设备测试] --> B[创建临时目录multi_device_replay_时间戳]
+    B --> C[为每个设备启动子进程]
+    C --> D[子进程执行测试]
+    D --> E[检测到临时目录]
+    E --> F[创建设备专属目录]
+    F --> G[保存截图到设备专属目录]
+    G --> H[生成设备HTML报告]
+    H --> I[写入设备执行结果到临时目录]
+    I --> J[主进程等待所有设备完成]
+    J --> K[主进程收集所有设备报告]
+    K --> L[生成唯一汇总报告]
+```
+
+### 🚨 汇总报告生成逻辑
 
 **正确行为**：
 - 只在**最后一个设备完成后**生成**一个**汇总报告
 - 该报告包含**所有设备**的结果
 - 汇总报告生成时机：所有设备测试完成后
+
 
 ### 关键数据结构
 
@@ -132,9 +176,9 @@ graph TD
     "ret": true,
     "end_time": 1750313446.97594,
     "screen": {
-      "src": "log/screenshot_001.png", // 🎯 HTML模板使用的相对路径
+      "src": "1750313445975.png", // 🎯 HTML模板使用的相对路径
       "_filepath": "/full/path/to/screenshot", // 🎯 文件系统绝对路径
-      "thumbnail": "log/thumbnail_001.png", // 🎯 缩略图相对路径
+      "thumbnail": "1750313445975_small.png", // 🎯 缩略图相对路径
       "resolution": [1080, 2400], // 设备分辨率
       "pos": [540, 1200], // 点击位置坐标
       "vector": [0, 0], // 移动向量
@@ -164,8 +208,8 @@ data = {
       },
       screen: {
         // 🎯 截图信息
-        src: "log/screenshot_001.png", // 主截图路径
-        thumbnail: "log/thumbnail_001.png", // 缩略图路径
+        src: "1750313445975.jpg", // 主截图路径
+        thumbnail: "1750313445975_small.jpg", // 缩略图路径
         resolution: [1080, 2400], // 分辨率
         pos: [540, 1200], // 点击位置
         confidence: 0.95, // 置信度
@@ -234,40 +278,53 @@ def _create_unified_screen_object(self, log_dir, pos_list=None, confidence=0.85,
     2. 相对路径格式必须与HTML模板匹配
     3. screen对象必须包含所有必需字段
     4. 缩略图生成不能失败
+    5. 多设备模式下需要将截图保存到设备专属目录
     """
     try:
+        # 检查是否为多设备临时目录
+        if "multi_device_replay" in str(log_dir):
+            # 获取设备序列号
+            device_serial = getattr(self.device, 'serial', self.device_name)
+
+            # 构建设备专属目录
+            device_dir = os.path.join(
+                os.path.dirname(os.path.dirname(log_dir)),  # 上两级目录
+                f"{device_serial}_{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}"
+            )
+
+            # 确保设备目录存在
+            os.makedirs(device_dir, exist_ok=True)
+
+            # 更新log_dir为设备专属目录
+            log_dir = device_dir
+
         # 生成时间戳文件名
         timestamp = time.time()
         screenshot_filename = f"{int(timestamp * 1000)}.jpg"
         thumbnail_filename = f"{int(timestamp * 1000)}_small.jpg"
 
-        # 🎯 关键: 相对路径用于HTML，绝对路径用于文件操作
-        screenshot_relative = f"log/{screenshot_filename}"
-        thumbnail_relative = f"log/{thumbnail_filename}"
-        screenshot_absolute = os.path.join(log_dir, "log", screenshot_filename)
-        thumbnail_absolute = os.path.join(log_dir, "log", thumbnail_filename)
-
-        # 🎯 关键: 确保目录存在
-        os.makedirs(os.path.dirname(screenshot_absolute), exist_ok=True)
+        # 🎯 关键: 设置文件路径
+        screenshot_path = os.path.join(log_dir, screenshot_filename)
+        thumbnail_path = os.path.join(log_dir, thumbnail_filename)
 
         # 截图捕获逻辑
-        screenshot_success = self._capture_screenshot(screenshot_absolute)
-        thumbnail_success = self._create_thumbnail(screenshot_absolute, thumbnail_absolute)
+        screenshot_success = self._capture_screenshot(screenshot_path)
+        thumbnail_success = self._create_thumbnail(screenshot_path, thumbnail_path)
 
         if not screenshot_success:
-            print(f"❌ 截图保存失败: {screenshot_absolute}")
+            print(f"❌ 截图保存失败: {screenshot_path}")
             return None
 
         # 🎯 返回完整的screen对象
         return {
-            "src": screenshot_relative,        # HTML模板使用
-            "_filepath": screenshot_absolute,  # 文件系统路径
-            "thumbnail": thumbnail_relative,   # 缩略图路径
-            "resolution": [1080, 2400],       # 设备分辨率
-            "pos": pos_list or [],            # 点击位置
-            "vector": [0, 0],                 # 移动向量
-            "confidence": confidence,          # 检测置信度
-            "rect": rect_info or []           # 检测区域
+            "src": screenshot_filename,      # HTML模板使用的相对路径
+            "_filepath": screenshot_path,    # 文件系统绝对路径
+            "thumbnail": thumbnail_filename, # 缩略图相对路径
+            "resolution": [1080, 2400],      # 设备分辨率
+            "pos": pos_list or [],           # 点击位置
+            "vector": [0, 0],                # 移动向量
+            "confidence": confidence,        # 检测置信度
+            "rect": rect_info or []          # 检测区域
         }
 
     except Exception as e:
@@ -446,23 +503,83 @@ class ReportManager:
 - screen 对象的 src 字段路径格式错误
 - 截图文件没有实际保存成功
 - 相对路径与 HTML 模板期望不匹配
+- 截图错误保存到多设备临时目录而非设备专属目录
 
-**AI 修复方案**:
+**解决方案**:
 
 ```python
-# 🔧 在 action_processor.py 中修复
+# 在 action_processor.py 中修复
 def _create_unified_screen_object(self, log_dir, pos_list=None, confidence=0.85, rect_info=None):
+    # 检查是否为多设备临时目录
+    if "multi_device_replay" in str(log_dir):
+        # 获取设备序列号
+        device_serial = getattr(self.device, 'serial', self.device_name)
+
+        # 构建设备专属目录
+        device_dir = os.path.join(
+            os.path.dirname(os.path.dirname(log_dir)),  # 上两级目录
+            f"{device_serial}_{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}"
+        )
+
+        # 更新log_dir为设备专属目录
+        log_dir = device_dir
+
     # 确保使用正确的相对路径格式
-    screenshot_relative = f"log/{screenshot_filename}"  # ✅ 正确格式
-    # 而不是
-    screenshot_relative = f"\\log\\{screenshot_filename}"  # ❌ 错误格式
+    screenshot_filename = f"{int(time.time() * 1000)}.jpg"  # ✅ 正确格式
 
     # 确保文件实际保存
-    screenshot_success = self._capture_screenshot(screenshot_absolute)
+    screenshot_path = os.path.join(log_dir, screenshot_filename)
+    screenshot_success = self._capture_screenshot(screenshot_path)
     if not screenshot_success:
-        print(f"❌ 截图保存失败: {screenshot_absolute}")
-        return None  # 🎯 必须返回None而不是空对象
+        print(f"❌ 截图保存失败: {screenshot_path}")
+        return None  # 必须返回None而不是空对象
 ```
+
+### 5. 截图保存位置错误
+
+**症状**: 设备报告中的图片链接无效，显示"image not found"
+
+**根本原因**:
+- 截图被错误地保存到了多设备临时目录(`multi_device_replay_[timestamp]`)中
+- 而不是保存到各设备的专属报告目录(`[device_serial]_[timestamp]`)中
+- 导致单设备报告HTML中引用的图片路径指向错误位置
+
+**解决方案**:
+- 在`action_processor.py`中的`_create_unified_screen_object`方法中添加检测和修正逻辑
+- 检查log_dir是否包含"multi_device_replay"，如果是则修正为设备专属目录
+- 确保截图保存到正确的设备目录中
+
+**代码实现**:
+```python
+# 在_create_unified_screen_object方法中
+if "multi_device_replay" in str(log_dir):
+    # 获取设备序列号
+    device_serial = getattr(self.device, 'serial', self.device_name)
+
+    # 构建正确的设备专属目录路径
+    device_dir = os.path.join(
+        os.path.dirname(os.path.dirname(log_dir)),  # 上两级目录
+        f"{device_serial}_{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}"
+    )
+
+    # 确保设备专属目录存在
+    os.makedirs(device_dir, exist_ok=True)
+
+    # 更新log_dir为设备专属目录
+    log_dir = device_dir
+```
+
+### 6. 单设备报告路径问题
+
+**症状**: 单设备报告URL使用硬编码路径，而不是从配置中获取
+
+**根本原因**:
+- 在`report_manager.py`中生成的报告URL没有正确使用配置中的`single_device_reports_dir`
+- 导致报告URL使用硬编码路径，不符合配置要求
+
+**解决方案**:
+- 修改`report_manager.generate_report_urls`方法，确保使用配置中的路径
+- 在`replay_script.py`中使用`REPORT_MANAGER.generate_report_urls`获取正确的URL
 
 ### 2. 汇总报告设备链接错误
 
