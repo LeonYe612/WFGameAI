@@ -23,6 +23,7 @@ docs/
 
 # 静态文件和报告
 wfgame-ai-server/logs/
+wfgame-ai-server/staticfiles/reports/
 wfgame-ai-server/staticfiles/reports/summary_reports/
 wfgame-ai-server/staticfiles/reports/ui_run/
 wfgame-ai-server/apps/scripts/screen_analysis_results/screen_analysis_results/

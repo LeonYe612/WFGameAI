@@ -57,6 +57,7 @@ class OCRTask(models.Model):
     )
 
     id = models.CharField(primary_key=True, max_length=50, default=generate_task_id)
+    name = models.CharField(max_length=255, verbose_name='任务名称', blank=True, null=True)
     project = models.ForeignKey(OCRProject, on_delete=models.CASCADE, related_name='tasks', verbose_name='所属项目')
     source_type = models.CharField(max_length=10, choices=SOURCE_CHOICES, verbose_name='来源类型')
     git_repository = models.ForeignKey(OCRGitRepository, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Git仓库')

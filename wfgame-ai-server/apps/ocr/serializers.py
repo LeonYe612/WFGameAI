@@ -31,8 +31,9 @@ class OCRTaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = OCRTask
         fields = ['id', 'project', 'project_name', 'source_type', 'git_repository',
-                 'git_repository_url', 'name', 'status', 'config', 'start_time', 'end_time',
+                 'git_repository_url', 'status', 'config', 'start_time', 'end_time',
                  'total_images', 'matched_images', 'match_rate', 'created_at', 'duration']
+        # name 字段已从数据库模型中移除
 
     def get_duration(self, obj):
         """计算任务执行时长"""
@@ -126,7 +127,7 @@ class OCRTaskCreateSerializer(serializers.ModelSerializer):
     """OCR任务创建序列化器"""
     class Meta:
         model = OCRTask
-        fields = ['id', 'project', 'git_repository', 'source_type', 'name', 'status', 'config']
+        fields = ['id', 'project', 'git_repository', 'source_type', 'status', 'config']
         read_only_fields = ['id', 'status']
 
     def create(self, validated_data):
@@ -134,13 +135,7 @@ class OCRTaskCreateSerializer(serializers.ModelSerializer):
         # 设置任务状态为待处理
         validated_data['status'] = 'pending'
 
-        # 如果没有提供任务名称，则自动生成
-        if 'name' not in validated_data or not validated_data['name']:
-            source_type = validated_data.get('source_type', 'unknown')
-            project_name = validated_data['project'].name
-            timestamp = timezone.now().strftime("%Y%m%d-%H%M%S")
-            validated_data['name'] = f"{project_name}-{source_type}-{timestamp}"
-
+        # 不再需要处理 name 字段，因为它已从模型中移除
         return super().create(validated_data)
 
 
@@ -163,9 +158,11 @@ class OCRTaskWithResultsSerializer(serializers.ModelSerializer):
     class Meta:
         model = OCRTask
         fields = ['id', 'project', 'project_name', 'source_type', 'git_repository',
-                 'git_repository_url', 'name', 'status', 'config', 'start_time', 'end_time',
+                 'git_repository_url', 'status', 'config', 'start_time', 'end_time',
                  'total_images', 'matched_images', 'match_rate', 'created_at', 'duration',
                  'results_count']
+        # 排除 name 字段，直到数据库迁移完成
+        # fields 中已经不包含 name，这里明确排除以确保安全
 
     def get_duration(self, obj):
         """计算任务执行时长"""
