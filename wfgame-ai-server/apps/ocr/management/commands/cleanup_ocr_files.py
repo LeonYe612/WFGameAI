@@ -1,6 +1,7 @@
 """
 清理OCR模块的临时文件和过期数据
 """
+
 import os
 import shutil
 import logging
@@ -13,40 +14,41 @@ from django.utils import timezone
 from django.core.management.base import BaseCommand
 
 from apps.ocr.models import OCRTask
-from apps.ocr.services.git_service import GitService
+from apps.ocr.services.git_service import GitServiceV2 as GitService
 
 # 配置日志
 logger = logging.getLogger(__name__)
 
 # 读取配置
 config = configparser.ConfigParser()
-config.read(settings.BASE_DIR.parent / 'config.ini', encoding='utf-8')
+config.read(settings.BASE_DIR.parent / "config.ini", encoding="utf-8")
 
 # 相关路径
-REPOS_DIR = config.get('paths', 'ocr_repos_dir', fallback='media/ocr/repositories')
-UPLOADS_DIR = config.get('paths', 'ocr_uploads_dir', fallback='media/ocr/uploads')
-RESULTS_DIR = config.get('paths', 'ocr_results_dir', fallback='output/ocr/results')
+REPOS_DIR = config.get("paths", "ocr_repos_dir", fallback="media/ocr/repositories")
+UPLOADS_DIR = config.get("paths", "ocr_uploads_dir", fallback="media/ocr/uploads")
+RESULTS_DIR = config.get("paths", "ocr_results_dir", fallback="output/ocr/results")
 
 # 保留天数
-RETENTION_DAYS = config.getint('ocr', 'results_retention_days', fallback=30)
+RETENTION_DAYS = config.getint("ocr", "results_retention_days", fallback=30)
 
 
 class Command(BaseCommand):
     """清理OCR临时文件和过期数据的命令"""
-    help = '清理OCR模块的临时文件和过期数据'
+
+    help = "清理OCR模块的临时文件和过期数据"
 
     def add_arguments(self, parser):
         """添加命令参数"""
         parser.add_argument(
-            '--days',
+            "--days",
             type=int,
             default=RETENTION_DAYS,
-            help=f'保留天数 (默认 {RETENTION_DAYS} 天)'
+            help=f"保留天数 (默认 {RETENTION_DAYS} 天)",
         )
 
     def handle(self, *args, **options):
         """命令处理函数"""
-        days = options['days']
+        days = options["days"]
         self.stdout.write(f"开始清理 {days} 天前的OCR文件和数据...")
 
         # 清理仓库文件

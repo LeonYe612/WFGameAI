@@ -1175,7 +1175,7 @@ function loadHistoryRecords() {
                 <td>${formattedDate}</td>
                 <td>${task.total_images}</td>
                 <td>${task.matched_images}</td>
-                <td>${task.match_rate.toFixed(1)}%</td>
+                <td>${parseFloat(task.match_rate).toFixed(1)}%</td>
                 <td><span class="badge ${statusClass}">${getStatusText(task.status)}</span></td>
                 <td>
                     <button class="btn btn-sm btn-primary view-task" data-id="${task.id}">查看</button>
