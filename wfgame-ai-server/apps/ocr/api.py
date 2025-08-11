@@ -38,6 +38,7 @@ from .serializers import (
 from .services.ocr_service import OCRService
 from .services.gitlab import create_gitlab_service
 from .tasks import process_ocr_task
+from .services.path_utils import PathUtils
 
 # 配置日志
 logger = logging.getLogger(__name__)
@@ -245,6 +246,22 @@ class OCRTaskAPIView(APIView):
             try:
                 task = OCRTask.objects.get(id=task_id)
                 serializer = OCRTaskSerializer(task)
+
+                # 检查是否有汇总报告
+                report_file = task.config.get('report_file')
+                if report_file and os.path.exists(report_file):
+                    # 读取报告内容
+                    with open(report_file, 'r', encoding='utf-8') as f:
+                        report_content = f.read()
+
+                    # 添加报告内容到响应
+                    response_data = serializer.data
+                    response_data['report'] = {
+                        'content': report_content,
+                        'file_path': report_file
+                    }
+                    return Response(response_data)
+
                 return Response(serializer.data)
             except OCRTask.DoesNotExist:
                 return Response(
@@ -311,9 +328,14 @@ class OCRTaskAPIView(APIView):
                     # 导出为JSON
                     export_data = []
                     for result in results:
+                        # 确保使用相对路径
+                        image_path = result.image_path
+                        # 使用PathUtils规范化路径
+                        image_path = PathUtils.normalize_path(image_path)
+
                         export_data.append(
                             {
-                                "image_path": result.image_path,
+                                "image_path": image_path,
                                 "texts": result.texts,
                                 "languages": result.languages,
                                 "has_match": result.has_match,
@@ -346,10 +368,15 @@ class OCRTaskAPIView(APIView):
 
                     # 写入数据
                     for result in results:
+                        # 确保使用相对路径
+                        image_path = result.image_path
+                        # 使用PathUtils规范化路径
+                        image_path = PathUtils.normalize_path(image_path)
+
                         for text in result.texts:
                             languages = ",".join(result.languages.keys())
                             csv_writer.writerow(
-                                [result.image_path, text, languages, result.has_match]
+                                [image_path, text, languages, result.has_match]
                             )
 
                     # 创建响应
@@ -369,7 +396,12 @@ class OCRTaskAPIView(APIView):
 
                     # 写入数据
                     for result in results:
-                        txt_buffer.write(f"图片路径: {result.image_path}\n")
+                        # 确保使用相对路径
+                        image_path = result.image_path
+                        # 使用PathUtils规范化路径
+                        image_path = PathUtils.normalize_path(image_path)
+
+                        txt_buffer.write(f"图片路径: {image_path}\n")
                         txt_buffer.write(f"识别文本:\n")
                         for i, text in enumerate(result.texts, 1):
                             txt_buffer.write(f"{i}. {text}\n")
@@ -532,7 +564,7 @@ class OCRUploadAPIView(APIView):
 
             # 创建上传ID
             upload_id = f"upload_{uuid.uuid4().hex[:8]}"
-            upload_dir = os.path.join(settings.MEDIA_ROOT, "ocr", "uploads", upload_id)
+            upload_dir = os.path.join(PathUtils.get_ocr_uploads_dir(), upload_id)
             os.makedirs(upload_dir, exist_ok=True)
 
             # 保存文件
@@ -631,7 +663,7 @@ class OCRProcessAPIView(APIView):
                             "languages": languages,
                             "use_gpu": use_gpu,
                             "gpu_id": gpu_id,
-                            "target_dir": settings.CFG.get_path("ocr_repos_dir"),
+                            "target_dir": PathUtils.get_ocr_repos_dir(),
                         },
                     )
 
@@ -671,6 +703,12 @@ class OCRHistoryAPIView(APIView):
 
     def post(self, request):
         """查询历史记录"""
+        action = request.data.get("action", "list")
+
+        if action == "download":
+            return self.download_results(request)
+
+        # 默认list操作
         serializer = OCRHistoryQuerySerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -719,3 +757,57 @@ class OCRHistoryAPIView(APIView):
                 "total_pages": (total_count + page_size - 1) // page_size,
             }
         )
+
+    def download_results(self, request):
+        """下载任务结果为CSV"""
+        task_id = request.data.get("task_id")
+        if not task_id:
+            return Response(
+                {"detail": "缺少task_id参数"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            # 获取任务信息
+            task = OCRTask.objects.get(id=task_id)
+
+            # 获取该任务的所有结果
+            results = OCRResult.objects.filter(task=task)
+
+            # 导出为CSV
+            import csv
+            from io import StringIO
+
+            csv_buffer = StringIO()
+            csv_writer = csv.writer(csv_buffer)
+
+            # 写入表头
+            csv_writer.writerow(["id", "image_path", "texts"])
+
+            # 写入数据
+            for result in results:
+                # 使用PathUtils规范化路径
+                image_path = PathUtils.normalize_path(result.image_path)
+
+                # 将texts列表转为字符串
+                texts_str = " ".join(result.texts) if result.texts else ""
+
+                csv_writer.writerow([result.id, image_path, texts_str])
+
+            # 创建响应
+            response = HttpResponse(csv_buffer.getvalue(), content_type="text/csv")
+
+            # 使用任务名称作为文件名
+            filename = f"{task.name if task.name else task.id}.csv"
+            response["Content-Disposition"] = f"attachment; filename={filename}"
+
+            return response
+
+        except OCRTask.DoesNotExist:
+            return Response(
+                {"detail": "任务不存在"}, status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {"detail": f"下载失败: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )

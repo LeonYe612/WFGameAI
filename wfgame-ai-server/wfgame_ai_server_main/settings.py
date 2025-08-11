@@ -80,12 +80,12 @@ TEMPLATES = [
 WSGI_APPLICATION = "wfgame_ai_server_main.wsgi.application"
 
 # 数据库配置
-# import configparser
+import configparser
 
-# # 读取config.ini配置
-# config = configparser.ConfigParser()
-# config_path = os.path.join(BASE_DIR.parent.parent, 'config.ini')
-# config.read(config_path, encoding='utf-8')
+# 读取config.ini配置
+config = configparser.ConfigParser()
+config_path = os.path.join(BASE_DIR.parent, 'config.ini')
+config.read(config_path, encoding='utf-8')
 
 # 将项目根目录添加到Python路径，确保可以导入utils模块
 import sys
@@ -93,24 +93,40 @@ import sys
 PROJECT_ROOT = BASE_DIR.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
-from utils import config
+from utils import config as utils_config
 
-CFG = config
+CFG = utils_config
+
 
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
-        "NAME": config.get("database", "dbname", fallback="gogotest_data"),
-        "USER": config.get("database", "username", fallback="root"),
-        "PASSWORD": config.get("database", "password", fallback="qa123456"),
-        "HOST": config.get("database", "host", fallback="127.0.0.1"),
-        "PORT": config.get("database", "port", fallback="3306"),
+        'NAME': 'gogotest_data',
+        'USER': 'root',
+        'PASSWORD': 'qa123456',
+        'HOST': '172.28.133.134',
+        'PORT': '3307',
         "OPTIONS": {
             "charset": "utf8mb4",
             "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
         },
     }
 }
+
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.mysql",
+#         "NAME": config.get("database", "dbname", fallback="gogotest_data"),
+#         "USER": config.get("database", "username", fallback="root"),
+#         "PASSWORD": config.get("database", "password", fallback="qa123456"),
+#         "HOST": config.get("database", "host", fallback="127.0.0.1"),
+#         "PORT": config.get("database", "port", fallback="3306"),
+#         "OPTIONS": {
+#             "charset": "utf8mb4",
+#             "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
+#         },
+#     }
+# }
 
 # 密码校验
 AUTH_PASSWORD_VALIDATORS = [

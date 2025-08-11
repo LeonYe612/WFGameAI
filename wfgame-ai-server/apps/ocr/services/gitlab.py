@@ -400,7 +400,6 @@ class GitLabService:
 
         except Exception as e:
             logger.error(f"获取分支失败: {e}")
-            return ["main", "master"]  # 返回默认分支
 
     def _should_download_file(
         self, file_info: Dict, download_config: DownloadConfig

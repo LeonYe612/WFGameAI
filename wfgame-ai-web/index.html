@@ -1,21 +1,51 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="WFGame AI自动化测试平台，基于YOLO11m自定义模型的游戏UI自动化测试解决方案">
-  <meta name="keywords" content="WFGame, AI, 自动化测试, 游戏测试, YOLO, 机器学习">
-  <meta name="author" content="WFGame AI团队">
-  <link rel="icon" href="<%= BASE_URL %>favicon.ico">
-  <title>WFGame AI自动化测试平台</title>
-  <!-- 预加载关键字体 -->
-  <link rel="preload" href="<%= BASE_URL %>fonts/stheitimedium.woff2" as="font" type="font/woff2" crossorigin>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="WFGame AI自动化测试平台，基于YOLO11m自定义模型的游戏UI自动化测试解决方案">
+    <meta name="keywords" content="WFGame, AI, 自动化测试, 游戏测试, YOLO, 机器学习">
+    <meta name="author" content="WFGame AI团队">
+    <link rel="icon" href="<%= BASE_URL %>favicon.ico">
+    <title>WFGame AI自动化测试平台</title>
+    <!-- 预加载关键字体 -->
+    <link rel="preload" href="<%= BASE_URL %>fonts/stheitimedium.woff2" as="font" type="font/woff2" crossorigin>
+
+    <!-- 样式文件 -->
+    <link rel="stylesheet" href="lib/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="lib/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="css/main.css">
 </head>
+
 <body>
-  <noscript>
-    <strong>很抱歉，WFGame AI自动化测试平台需要启用JavaScript才能正常工作。请启用它以继续。</strong>
-  </noscript>
-  <div id="app"></div>
-  <!-- 构建的文件将自动注入 -->
+    <noscript>
+        <strong>很抱歉，WFGame AI自动化测试平台需要启用JavaScript才能正常工作。请启用它以继续。</strong>
+    </noscript>
+    <div id="app"></div>
+
+    <!-- 库文件 -->
+    <script src="lib/vue.min.js"></script>
+    <script src="lib/axios.min.js"></script>
+    <script src="lib/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="lib/echarts/echarts.min.js"></script>
+
+    <!-- API和路由 -->
+    <script src="js/api.js"></script>
+    <script src="js/router.js"></script>
+
+    <!-- 页面组件 -->
+    <script src="js/pages/dashboard.js"></script>
+    <script src="js/pages/scripts.js"></script>
+    <script src="js/pages/tasks.js"></script>
+    <script src="js/pages/devices.js"></script>
+    <script src="js/pages/reports.js"></script>
+    <script src="js/pages/data.js"></script>
+    <script src="js/pages/settings.js"></script>
+    <script src="js/pages/ocr_history.js"></script>
+
+    <!-- 主应用 -->
+    <script src="js/main.js"></script>
 </body>
+
 </html>

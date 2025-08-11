@@ -10,6 +10,7 @@ from django.utils import timezone
 from django.conf import settings
 from celery import shared_task
 import traceback
+import datetime
 
 from .models import OCRTask, OCRResult, OCRGitRepository
 from .services.ocr_service import OCRService
@@ -19,408 +20,298 @@ from .services.gitlab import (
     GitLabConfig,
     GitLabService,
 )
+from .services.path_utils import PathUtils
 
 # 配置日志
 logger = logging.getLogger(__name__)
 
-
-# @shared_task
-# def process_ocr_task_old(task_id):
-#     """
-#     处理OCR任务的异步Celery任务
-
-#     Args:
-#         task_id: OCR任务ID
-
-#     Returns:
-#         Dict: 任务处理结果
-#     """
-#     try:
-#         # 获取任务
-#         logger.info(f"开始处理OCR任务: {task_id}")
-
-#         try:
-#             task = OCRTask.objects.get(id=task_id)
-#         except OCRTask.DoesNotExist:
-#             logger.error(f"任务不存在: {task_id}")
-#             return {"success": False, "error": "任务不存在"}
-
-#         # 更新任务状态
-#         task.status = "running"
-#         task.start_time = timezone.now()
-#         task.save()
-
-#         # 获取配置
-#         config = task.config
-#         target_languages = config.get("target_languages", ["ch"])
-#         image_formats = config.get(
-#             "image_formats", ["jpg", "jpeg", "png", "bmp", "tiff", "tif", "webp"]
-#         )
-#         use_gpu = config.get("use_gpu", True)
-#         gpu_id = config.get("gpu_id", 0)
-
-#         # 确定GPU ID列表
-#         gpu_ids = [gpu_id]
-
-#         # 初始化多线程OCR服务
-#         ocr_service = MultiThreadOCR(
-#             use_gpu=use_gpu,
-#             lang="ch",  # 基础语言模型
-#             gpu_ids=gpu_ids,
-#             max_workers=4,  # 可从配置中获取
-#         )
-
-#         # 处理不同类型的任务
-#         try:
-#             # 本地上传
-#             if task.source_type == "upload":
-#                 # 获取上传目录 (task_id的后8位作为上传ID)
-#                 upload_id = f"upload_{task_id[-8:]}"
-#                 upload_dir = os.path.join(
-#                     settings.MEDIA_ROOT, "ocr", "uploads", upload_id
-#                 )
-
-#                 if not os.path.exists(upload_dir):
-#                     raise Exception(f"上传目录不存在: {upload_dir}")
-
-#                 # 批量识别
-#                 results = ocr_service.recognize_batch(
-#                     upload_dir, image_formats=image_formats
-#                 )
-
-#                 # 处理结果
-#                 _process_results(task, results, target_languages)
-
-#             # Git仓库
-#             elif task.source_type == "git":
-#                 if not task.git_repository:
-#                     raise Exception("任务未关联Git仓库")
-
-#                 # 获取分支
-#                 branch = config.get("branch", "main")
-
-#                 # 克隆仓库
-#                 repo_path = GitService.clone_repository(
-#                     task.git_repository.url, branch, task.id
-#                 )
-
-#                 # 批量识别
-#                 results = ocr_service.recognize_batch(
-#                     repo_path, image_formats=image_formats
-#                 )
-
-#                 # 处理结果
-#                 _process_results(task, results, target_languages)
-
-#             else:
-#                 raise Exception(f"不支持的来源类型: {task.source_type}")
-
-#             # 更新任务状态
-#             task.status = "completed"
-#             task.end_time = timezone.now()
-#             task.save()
-
-#             logger.info(
-#                 f"任务 {task_id} 处理完成，共处理 {task.total_images} 张图片，"
-#                 f"匹配 {task.matched_images} 张，匹配率: {task.match_rate:.2f}%"
-#             )
-
-#             return {
-#                 "success": True,
-#                 "task_id": task_id,
-#                 "total_images": task.total_images,
-#                 "matched_images": task.matched_images,
-#                 "match_rate": task.match_rate,
-#             }
-
-#         except Exception as e:
-#             logger.error(f"任务处理失败: {str(e)}")
-#             logger.error(traceback.format_exc())
-
-#             # 更新任务状态
-#             task.status = "failed"
-#             task.end_time = timezone.now()
-#             task.save()
-
-#             return {"success": False, "error": str(e)}
-
-#     except Exception as e:
-#         logger.error(f"处理任务异常: {str(e)}")
-#         logger.error(traceback.format_exc())
-#         return {"success": False, "error": str(e)}
+# 定义常量 - 使用PathUtils从config.ini获取路径
+REPOS_DIR = PathUtils.get_ocr_repos_dir()
+UPLOADS_DIR = PathUtils.get_ocr_uploads_dir()
+RESULTS_DIR = PathUtils.get_ocr_results_dir()
 
 
-# @shared_task
-# def process_git_ocr_task(task_id, task_config=None):
-#     """
-#     专门处理Git仓库OCR的异步Celery任务
-#     支持使用令牌进行Git仓库认证
-
-#     Args:
-#         task_id: OCR任务ID
-#         task_config: 任务配置，可能包含令牌
-
-#     Returns:
-#         Dict: 任务处理结果
-#     """
-#     try:
-#         # 获取任务
-#         logger.info(f"开始处理Git OCR任务: {task_id}")
-
-#         try:
-#             task = OCRTask.objects.get(id=task_id)
-#         except OCRTask.DoesNotExist:
-#             logger.error(f"任务不存在: {task_id}")
-#             return {"success": False, "error": "任务不存在"}
-
-#         # 更新任务状态
-#         task.status = "running"
-#         task.start_time = timezone.now()
-#         task.save()
-
-#         # 获取配置
-#         config = task_config or task.config
-#         languages = config.get("languages", ["ch"])
-#         image_formats = config.get(
-#             "image_formats", ["jpg", "jpeg", "png", "bmp", "tiff", "tif", "webp"]
-#         )
-#         use_gpu = config.get("use_gpu", True)
-#         gpu_id = config.get("gpu_id", 0)
-#         token = config.get("token")  # 获取令牌
-#         skip_ssl_verify = config.get("skip_ssl_verify", False)  # 获取是否跳过SSL验证
-
-#         if skip_ssl_verify:
-#             logger.warning("⚠️ 任务使用了跳过SSL验证选项，这可能存在安全风险")
-
-#         # 分支
-#         branch = config.get("branch", "main")
-
-#         # 确定GPU ID列表
-#         gpu_ids = [gpu_id]
-
-#         # 初始化多线程OCR服务
-#         ocr_service = MultiThreadOCR(
-#             use_gpu=use_gpu,
-#             lang="ch",  # 基础语言模型
-#             gpu_ids=gpu_ids,
-#             max_workers=4,  # 可从配置中获取
-#         )
-
-#         try:
-#             if not task.git_repository:
-#                 raise Exception("任务未关联Git仓库")
-
-#             # 克隆仓库，使用令牌
-#             logger.info(
-#                 f"开始克隆仓库，使用{'令牌' if token else '无令牌'}，{'禁用' if skip_ssl_verify else '启用'}SSL验证"
-#             )
-#             repo_path = GitService.clone_repository(
-#                 task.git_repository.url,
-#                 branch,
-#                 task.id,
-#                 token=token,
-#                 skip_ssl_verify=skip_ssl_verify,
-#             )
-#             logger.info(f"仓库克隆成功: {repo_path}")
-
-#             # 批量识别
-#             logger.info(f"开始OCR识别，使用GPU: {use_gpu}, GPU ID: {gpu_id}")
-#             results = ocr_service.recognize_batch(
-#                 repo_path, image_formats=image_formats
-#             )
-#             logger.info(f"识别完成，共 {len(results)} 个结果")
-
-#             # 处理结果
-#             _process_results(task, results, languages)
-
-#             # 更新任务状态
-#             task.status = "completed"
-#             task.end_time = timezone.now()
-#             task.save()
-
-#             logger.info(
-#                 f"任务 {task_id} 处理完成，共处理 {task.total_images} 张图片，"
-#                 f"匹配 {task.matched_images} 张，匹配率: {task.match_rate:.2f}%"
-#             )
-
-#             return {
-#                 "success": True,
-#                 "task_id": task_id,
-#                 "total_images": task.total_images,
-#                 "matched_images": task.matched_images,
-#                 "match_rate": task.match_rate,
-#             }
-
-#         except Exception as e:
-#             logger.error(f"Git任务处理失败: {str(e)}")
-#             logger.error(traceback.format_exc())
-
-#             # 更新任务状态
-#             task.status = "failed"
-#             task.end_time = timezone.now()
-#             task.save()
-
-#             return {"success": False, "error": str(e)}
-
-#     except Exception as e:
-#         logger.error(f"处理Git任务异常: {str(e)}")
-#         logger.error(traceback.format_exc())
-#         return {"success": False, "error": str(e)}
-
-
-# @shared_task
+@shared_task
 def process_ocr_task(task_id):
-    """
-    处理OCR任务的异步Celery任务
+    """处理OCR任务"""
+    logger.info(f"开始处理OCR任务: {task_id}")
 
-    Args:
-        task_id: OCR任务ID
-
-    Returns:
-        Dict: 任务处理结果
-    """
     try:
-        # 获取任务
-        logger.info(f"接收到新的 OCR 处理任务 | TaskId: {task_id}")
-        task = OCRTask.objects.filter(id=task_id).first()
-        if not task:
-            raise Exception(f"任务不存在: {task_id}")
+        # 获取任务信息
+        task = OCRTask.objects.get(id=task_id)
 
         # 更新任务状态
-        task.status = "running"
+        task.status = 'processing'
         task.start_time = timezone.now()
         task.save()
+
+        # 获取目标语言
         task_config = task.config or {}
+        target_languages = task_config.get('target_languages', ['zh'])  # 默认检测中文
 
-        # 确定待检测目录
-        target_dir = task_config.get("target_dir")
-        check_dir = None
-        if task.source_type == "upload":
-            # 创建任务时已经完成上传目录，记录在 config["target_dir"] 中
-            check_dir = target_dir
-        elif task.source_type == "git":
-            git_service = GitLabService(
-                GitLabConfig(
-                    repo_url=task.git_repository.url,
-                    access_token=task.git_repository.token,
-                )
-            )
-            result: DownloadResult = git_service.download_files_with_git_clone(
-                repo_base_dir=target_dir,
-                branch=task_config.get("branch", "master"),
-            )
-            if not result.success:
-                raise Exception(f"Git仓库下载失败: {result.message}")
-            check_dir = result.output_dir
+        # 为了方便调试，直接使用固定目录，不管任务类型
+        debug_dir = PathUtils.get_debug_dir()
+
+        # 打印完整的调试目录路径，方便排查问题
+        logger.info(f"调试目录完整路径: {os.path.abspath(debug_dir)}")
+
+        # 检查调试目录是否存在
+        if os.path.exists(debug_dir):
+            logger.info(f"使用调试目录: {debug_dir}")
+            check_dir = debug_dir
         else:
-            raise Exception(f"不支持的来源类型: {task.source_type}")
+            # 如果调试目录不存在，则使用正常流程
+            logger.warning(f"调试目录不存在: {debug_dir}，使用正常流程")
 
-        # 确认目标目录存在
-        if not check_dir or not os.path.exists(check_dir):
-            raise Exception(f"OCR待检测目录不存在: {check_dir}")
+            # 根据任务类型确定检查目录
+            if task.source_type == 'git':
+                # Git仓库
+                repo = task.git_repository
+                if not repo:
+                    raise ValueError("任务未关联Git仓库")
 
-        target_languages = task_config.get("target_languages", ["ch"])
+                # 获取仓库目录
+                repo_dir = os.path.join(REPOS_DIR, repo.local_path)
+                if not os.path.exists(repo_dir):
+                    # 克隆或更新仓库
+                    _clone_or_update_repository(repo)
 
-        # 初始化多线程OCR服务
-        ocr_service = MultiThreadOCR(
-            use_gpu=task_config.get("use_gpu", True),
-            lang=task_config.get("target_languages", ["ch"])[0],  # 基础语言模型
-            gpu_ids=task_config.get("gpu_ids", 0),
-            max_workers=4,  # 可从配置中获取
-        )
+                # 获取检查目录
+                target_dir = os.path.join(repo_dir, task.target_path) if task.target_path else repo_dir
+                check_dir = target_dir
 
-        # 批量识别
-        ocr_results = ocr_service.recognize_batch(
-            check_dir,
-            image_formats=task_config.get(
-                "image_formats", ["jpg", "jpeg", "png", "bmp", "tiff", "tif", "webp"]
-            ),
-        )
+            elif task.source_type == 'upload':
+                # 上传文件
+                check_dir = os.path.join(UPLOADS_DIR, str(task.id))
+                if not os.path.exists(check_dir):
+                    os.makedirs(check_dir, exist_ok=True)
+
+            else:
+                raise ValueError(f"不支持的任务类型: {task.source_type}")
+
+        # 初始化OCR服务
+        ocr_service = OCRService()
+
+        # 设置默认语言为中文
+        ocr_service.lang = "ch"
+
+        # 执行OCR识别
+        logger.info(f"开始识别目录: {check_dir}")
+        ocr_results = ocr_service.recognize_batch(check_dir)
+        logger.info(f"识别完成，共处理 {len(ocr_results)} 张图片")
 
         # 处理结果
         _process_results(task, ocr_results, target_languages)
 
-        # 更新任务状态
-        task.status = "completed"
-        task.end_time = timezone.now()
-        task.save()
+        # 生成汇总报告
+        _generate_summary_report(task, ocr_results, target_languages)
 
-        logger.info(
-            f"任务 {task_id} 处理完成，共处理 {task.total_images} 张图片，"
-            f"匹配 {task.matched_images} 张，匹配率: {task.match_rate:.2f}%"
-        )
-
-        return {
-            "success": True,
-            "task_id": task_id,
-            "total_images": task.total_images,
-            "matched_images": task.matched_images,
-            "match_rate": task.match_rate,
-        }
+        return {"status": "success", "task_id": task_id}
 
     except Exception as e:
         logger.error(f"任务处理失败: {str(e)}")
+        # 记录详细的异常堆栈
+        import traceback
         logger.error(traceback.format_exc())
 
-        # 更新任务状态
-        task.status = "failed"
-        task.end_time = timezone.now()
-        task.save()
+        # 更新任务状态为失败
+        try:
+            task = OCRTask.objects.get(id=task_id)
+            task.status = 'failed'
+            task.end_time = timezone.now()
+            task.save()
+        except Exception:
+            pass
 
-        return {"success": False, "error": str(e)}
+        return {"status": "error", "message": str(e)}
+
+
+def _generate_summary_report(task, results, target_languages):
+    """生成汇总报告"""
+    # 统计信息
+    total_images = len(results)
+    chinese_images = []
+
+    # 筛选包含中文的图片
+    for result in results:
+        # 跳过处理失败的图片
+        if 'error' in result:
+            continue
+
+        # 检查是否包含中文
+        if OCRService.check_language_match(result.get('texts', []), 'zh'):
+            # 获取文件信息
+            image_path = result.get('image_path', '')
+
+            # 使用PathUtils规范化路径
+            image_path = PathUtils.normalize_path(image_path)
+
+            file_name = os.path.basename(image_path)
+
+            try:
+                # 尝试获取文件大小
+                if os.path.isabs(image_path):
+                    file_size = os.path.getsize(image_path) / 1024  # KB
+                else:
+                    full_path = os.path.join(settings.MEDIA_ROOT, image_path)
+                    file_size = os.path.getsize(full_path) / 1024  # KB
+            except:
+                file_size = 0
+
+            chinese_images.append({
+                'path': image_path,
+                'name': file_name,
+                'size': file_size,
+                'time': result.get('time_cost', 0),
+                'texts': result.get('texts', []),
+                'chinese_text': ' '.join([text for text in result.get('texts', [])
+                                        if OCRService.check_language_match([text], 'zh')])
+            })
+
+    # 计算统计信息
+    chinese_count = len(chinese_images)
+    chinese_rate = (chinese_count / total_images * 100) if total_images > 0 else 0
+
+    # 生成报告内容
+    now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    report = f"""包含中文的图片检测结果
+==================================================
+生成时间: {now}
+总处理图片数: {total_images}
+包含中文图片数: {chinese_count}
+中文检出率: {chinese_rate:.1f}%
+
+包含中文的图片列表:
+------------------------------"""
+
+    # 添加每张图片的详细信息
+    for i, img in enumerate(chinese_images, 1):
+        report += f"""
+{i}. 图片信息:
+   文件路径: {img['path']}
+   文件名: {img['name']}
+   文件大小: {img['size']:.2f} KB
+   处理时间: {img['time']:.2f}秒
+   识别的中文: {img['chinese_text']}
+   完整文本: {' '.join(img['texts'])}"""
+
+    # 添加说明信息
+    report += """
+
+1、识别结束后的结果按照以上格式汇总输出。
+2、不再单张图片单个文件输出。"""
+
+    # 保存报告
+    report_dir = PathUtils.get_ocr_reports_dir()
+    os.makedirs(report_dir, exist_ok=True)
+    report_file = os.path.join(report_dir, f"{task.id}_summary.txt")
+
+    with open(report_file, 'w', encoding='utf-8') as f:
+        f.write(report)
+
+    # 更新任务信息
+    task.config['report_file'] = report_file
+    task.save()
+
+    logger.info(f"汇总报告已生成: {report_file}")
+
+    # 打印简要统计信息到日志
+    logger.info(f"OCR识别统计: 总图片数={total_images}, 包含中文图片数={chinese_count}, 检出率={chinese_rate:.1f}%")
 
 
 def _process_results(task, results, target_languages):
-    """
-    处理OCR结果
-
-    Args:
-        task: OCR任务
-        results: OCR识别结果
-        target_languages: 目标语言列表
-    """
-    # 创建OCR服务用于语言检测
-    ocr_service = OCRService()
-
-    # 统计信息
-    total_images = len(results)
+    """处理OCR识别结果"""
+    anomaly_images = []
     matched_images = 0
+    total_images = len(results)
 
     for result in results:
-        # 跳过错误结果
-        if "error" in result:
+        # 跳过处理失败的图片
+        if 'error' in result:
             continue
 
-        # 检查语言匹配
-        texts = result.get("texts", [])
-        has_match = ocr_service.check_language_match(texts, target_languages)
-        if has_match:
-            matched_images += 1
+        # 检查是否包含目标语言文本
+        has_match = False
+        for lang in target_languages:
+            if OCRService.check_language_match(result.get('texts', []), lang):
+                has_match = True
+                break
 
-        # 检测每个文本的语言
-        languages = {}
-        for text in texts:
-            lang_result = ocr_service.detect_language(text)
-            for lang, value in lang_result.items():
-                if value:
-                    languages[lang] = True
+        # 获取图片路径，转换为相对路径
+        image_path = result.get('image_path', '')
+        # 使用PathUtils规范化路径
+        image_path = PathUtils.normalize_path(image_path)
 
         # 保存结果到数据库
-        processing_time = result.get("processing_time", 0)
         OCRResult.objects.create(
             task=task,
-            image_path=result.get("image_path", ""),
-            texts=texts,
-            languages=languages,
+            image_path=image_path,
+            texts=result.get('texts', []),
+            languages={lang: True for lang in target_languages if OCRService.check_language_match(result.get('texts', []), lang)},
             has_match=has_match,
-            processing_time=processing_time,
+            confidence=result.get('confidence', 0.95),
+            processing_time=result.get('time_cost', 0)
         )
 
-    # 更新任务统计信息
+        if has_match:
+            matched_images += 1
+            # 记录异常图片路径
+            anomaly_images.append(image_path)
+
+    # 更新任务状态
+    task.status = 'completed'
+    task.end_time = timezone.now()
     task.total_images = total_images
     task.matched_images = matched_images
     task.match_rate = (matched_images / total_images * 100) if total_images > 0 else 0
     task.save()
+
+    # 汇总报告异常图片数量
+    if matched_images > 0:
+        logger.info(f"检测到异常图片: {matched_images}/{total_images} ({(matched_images/total_images*100):.2f}%)")
+
+
+def _clone_or_update_repository(repo):
+    """克隆或更新Git仓库"""
+    from .services.gitlab import GitLabService
+
+    logger.info(f"克隆或更新仓库: {repo.url}")
+
+    # 创建GitLab服务
+    git_service = GitLabService(repo.url, repo.token)
+
+    # 获取仓库本地路径
+    repo_dir = os.path.join(REPOS_DIR, repo.local_path or git_service.get_repo_name())
+
+    # 检查仓库是否已存在
+    if os.path.exists(repo_dir):
+        # 更新仓库
+        logger.info(f"更新仓库: {repo_dir}")
+        try:
+            git_service.pull_repository(repo_dir, repo.branch)
+            logger.info(f"仓库更新成功: {repo_dir}")
+            return repo_dir
+        except Exception as e:
+            logger.error(f"仓库更新失败: {str(e)}")
+            # 如果更新失败，尝试重新克隆
+            import shutil
+            shutil.rmtree(repo_dir, ignore_errors=True)
+
+    # 克隆仓库
+    logger.info(f"克隆仓库: {repo.url} -> {repo_dir}")
+    try:
+        git_service.clone_repository(repo_dir, repo.branch)
+        logger.info(f"仓库克隆成功: {repo_dir}")
+
+        # 更新仓库本地路径
+        if not repo.local_path:
+            repo.local_path = git_service.get_repo_name()
+            repo.save()
+
+        return repo_dir
+    except Exception as e:
+        logger.error(f"仓库克隆失败: {str(e)}")
+        raise
 
 
 @shared_task

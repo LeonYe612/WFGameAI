@@ -15,3 +15,45 @@ datasets/
 *.bmp
 *.tiff
 *.ico
+*.json
+
+train_results/
+train_model/
+ui_structure_analysis/
+docs/
+*.log
+*test*.py
+*debug*.py
+*verify*.py
+*.txt
+# 大文件需要 Git LFS 跟踪或忽略
+*.pt
+*.png
+*.jpg
+*.jpeg
+*.ttf
+*.eot
+*.woff
+*.woff2
+*.svg
+*.md
+
+# IDE
+.vscode/
+.idea/
+
+# 静态文件和报告
+wfgame-ai-server/logs/
+wfgame-ai-server/staticfiles/reports/
+wfgame-ai-server/staticfiles/reports/summary_reports/
+wfgame-ai-server/staticfiles/reports/ui_run/
+wfgame-ai-server/apps/scripts/screen_analysis_results/screen_analysis_results/
+wfgame-ai-server/apps/scripts/ui_detection_output/
+wfgame-ai-server/media/ocr/
+wfgame-ai-server/media/
+wfgame-ai-server/apps/scripts/
+wfgame-ai-server/apps/scripts/ui_structure_analysis/
+wfgame-ai-server/${project_root}
+wfgame-ai-server/${server_dir}
+ai_capture_and_analyze_result/*.json
+ai_capture_and_analyze_result/*.png

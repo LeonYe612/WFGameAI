@@ -148,12 +148,12 @@
             <div class="card-header bg-white">
                 <ul class="nav nav-pills card-header-pills" id="ocr-tabs" role="tablist">
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="ocr-upload-tab" data-bs-toggle="tab"
-                            data-bs-target="#ocr-upload" type="button" role="tab">本地上传识别</button>
+                        <button class="nav-link active" id="ocr-git-tab" data-bs-toggle="tab" data-bs-target="#ocr-git"
+                            type="button" role="tab">Git仓库识别</button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="ocr-git-tab" data-bs-toggle="tab" data-bs-target="#ocr-git"
-                            type="button" role="tab">Git仓库识别</button>
+                        <button class="nav-link" id="ocr-upload-tab" data-bs-toggle="tab" data-bs-target="#ocr-upload"
+                            type="button" role="tab">本地上传识别</button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="ocr-history-tab" data-bs-toggle="tab" data-bs-target="#ocr-history"
@@ -166,105 +166,8 @@
                 </ul>
             </div>
             <div class="tab-content" id="ocr-tabs-content">
-                <!-- 本地上传识别 -->
-                <div class="tab-pane fade show active" id="ocr-upload" role="tabpanel">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h3>上传文件</h3>
-                            <div class="upload-area" id="dropArea">
-                                <i class="fas fa-cloud-upload-alt upload-icon"></i>
-                                <h5>拖放文件到此处或点击上传</h5>
-                                <p>支持图片文件或压缩包(.zip, .tar.gz)</p>
-                                <input type="file" id="fileInput" multiple>
-                                <button class="btn btn-primary" id="selectFileBtn">选择文件</button>
-                            </div>
-                            <div class="mt-3">
-                                <h4>识别语言</h4>
-                                <div class="form-check form-check-inline language-checkbox">
-                                    <input class="form-check-input" type="checkbox" id="lang-ch" value="ch" checked>
-                                    <label class="form-check-label" for="lang-ch">中文</label>
-                                </div>
-                                <div class="form-check form-check-inline language-checkbox">
-                                    <input class="form-check-input" type="checkbox" id="lang-en" value="en">
-                                    <label class="form-check-label" for="lang-en">英文</label>
-                                </div>
-                                <div class="form-check form-check-inline language-checkbox">
-                                    <input class="form-check-input" type="checkbox" id="lang-jp" value="jp">
-                                    <label class="form-check-label" for="lang-jp">日文</label>
-                                </div>
-                                <div class="form-check form-check-inline language-checkbox">
-                                    <input class="form-check-input" type="checkbox" id="lang-ko" value="ko">
-                                    <label class="form-check-label" for="lang-ko">韩文</label>
-                                </div>
-                                <div class="form-check form-check-inline language-checkbox">
-                                    <input class="form-check-input" type="checkbox" id="lang-vi" value="vi">
-                                    <label class="form-check-label" for="lang-vi">越南文</label>
-                                </div>
-                            </div>
-                            <div class="mt-3">
-                                <h4>处理选项</h4>
-                                <div class="form-check form-switch mb-2">
-                                    <input class="form-check-input" type="checkbox" id="useGpu" checked>
-                                    <label class="form-check-label" for="useGpu">使用GPU加速</label>
-                                </div>
-                                <div class="form-group mb-2">
-                                    <label for="gpuId">GPU ID</label>
-                                    <select class="form-select" id="gpuId">
-                                        <option value="0" selected>0</option>
-                                        <option value="1">1</option>
-                                        <option value="2">2</option>
-                                        <option value="3">3</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="mt-3">
-                                <button class="btn btn-success btn-lg" id="startOcrBtn" disabled>开始识别</button>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <h3>处理状态</h3>
-                            <div id="processStatus" class="alert alert-info">
-                                准备就绪，等待上传文件...
-                            </div>
-                            <div id="progressContainer" style="display: none;">
-                                <label>处理进度：</label>
-                                <div class="progress mb-3">
-                                    <div class="progress-bar progress-bar-striped progress-bar-animated"
-                                        id="progressBar" role="progressbar" style="width: 0%" aria-valuenow="0"
-                                        aria-valuemin="0" aria-valuemax="100">0%</div>
-                                </div>
-                                <div id="progressStats" class="d-flex justify-content-between text-muted">
-                                    <span>已处理: <span id="processedCount">0</span>/<span id="totalCount">0</span></span>
-                                    <span>命中率: <span id="matchRate">0%</span></span>
-                                </div>
-                            </div>
-                            <div id="resultsContainer" class="mt-4" style="display: none;">
-                                <h3>识别结果摘要</h3>
-                                <div id="resultsSummary" class="alert alert-success">
-                                </div>
-                                <div class="d-flex justify-content-between mb-3">
-                                    <div>
-                                        <button class="btn btn-primary" id="viewDetailsBtn">查看详细结果</button>
-                                    </div>
-                                    <div class="dropdown">
-                                        <button class="btn btn-outline-secondary dropdown-toggle" type="button"
-                                            id="exportDropdown" data-bs-toggle="dropdown">
-                                            导出结果
-                                        </button>
-                                        <ul class="dropdown-menu" aria-labelledby="exportDropdown">
-                                            <li><a class="dropdown-item" href="#" id="exportJson">导出JSON</a></li>
-                                            <li><a class="dropdown-item" href="#" id="exportCsv">导出CSV</a></li>
-                                            <li><a class="dropdown-item" href="#" id="exportTxt">导出TXT</a></li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Git仓库识别 -->
-                <div class="tab-pane fade" id="ocr-git" role="tabpanel">
+                <div class="tab-pane fade show active" id="ocr-git" role="tabpanel">
                     <div class="row">
                         <div class="col-md-6">
                             <h3>Git仓库配置</h3>
@@ -364,6 +267,103 @@
                                             <li><a class="dropdown-item" href="#" id="gitExportJson">导出JSON</a></li>
                                             <li><a class="dropdown-item" href="#" id="gitExportCsv">导出CSV</a></li>
                                             <li><a class="dropdown-item" href="#" id="gitExportTxt">导出TXT</a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 本地上传识别 -->
+                <div class="tab-pane fade" id="ocr-upload" role="tabpanel">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h3>上传文件</h3>
+                            <div class="upload-area" id="dropArea">
+                                <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                                <h5>拖放文件到此处或点击上传</h5>
+                                <p>支持图片文件或压缩包(.zip, .tar.gz)</p>
+                                <input type="file" id="fileInput" multiple>
+                                <button class="btn btn-primary" id="selectFileBtn">选择文件</button>
+                            </div>
+                            <div class="mt-3">
+                                <h4>识别语言</h4>
+                                <div class="form-check form-check-inline language-checkbox">
+                                    <input class="form-check-input" type="checkbox" id="lang-ch" value="ch" checked>
+                                    <label class="form-check-label" for="lang-ch">中文</label>
+                                </div>
+                                <div class="form-check form-check-inline language-checkbox">
+                                    <input class="form-check-input" type="checkbox" id="lang-en" value="en">
+                                    <label class="form-check-label" for="lang-en">英文</label>
+                                </div>
+                                <div class="form-check form-check-inline language-checkbox">
+                                    <input class="form-check-input" type="checkbox" id="lang-jp" value="jp">
+                                    <label class="form-check-label" for="lang-jp">日文</label>
+                                </div>
+                                <div class="form-check form-check-inline language-checkbox">
+                                    <input class="form-check-input" type="checkbox" id="lang-ko" value="ko">
+                                    <label class="form-check-label" for="lang-ko">韩文</label>
+                                </div>
+                                <div class="form-check form-check-inline language-checkbox">
+                                    <input class="form-check-input" type="checkbox" id="lang-vi" value="vi">
+                                    <label class="form-check-label" for="lang-vi">越南文</label>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <h4>处理选项</h4>
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" id="useGpu" checked>
+                                    <label class="form-check-label" for="useGpu">使用GPU加速</label>
+                                </div>
+                                <div class="form-group mb-2">
+                                    <label for="gpuId">GPU ID</label>
+                                    <select class="form-select" id="gpuId">
+                                        <option value="0" selected>0</option>
+                                        <option value="1">1</option>
+                                        <option value="2">2</option>
+                                        <option value="3">3</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <button class="btn btn-success btn-lg" id="startOcrBtn" disabled>开始识别</button>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h3>处理状态</h3>
+                            <div id="processStatus" class="alert alert-info">
+                                准备就绪，等待上传文件...
+                            </div>
+                            <div id="progressContainer" style="display: none;">
+                                <label>处理进度：</label>
+                                <div class="progress mb-3">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated"
+                                        id="progressBar" role="progressbar" style="width: 0%" aria-valuenow="0"
+                                        aria-valuemin="0" aria-valuemax="100">0%</div>
+                                </div>
+                                <div id="progressStats" class="d-flex justify-content-between text-muted">
+                                    <span>已处理: <span id="processedCount">0</span>/<span id="totalCount">0</span></span>
+                                    <span>命中率: <span id="matchRate">0%</span></span>
+                                </div>
+                            </div>
+                            <div id="resultsContainer" class="mt-4" style="display: none;">
+                                <h3>识别结果摘要</h3>
+                                <div id="resultsSummary" class="alert alert-success">
+                                </div>
+                                <div class="d-flex justify-content-between mb-3">
+                                    <div>
+                                        <button class="btn btn-primary" id="viewDetailsBtn">查看详细结果</button>
+                                    </div>
+                                    <div class="dropdown">
+                                        <button class="btn btn-outline-secondary dropdown-toggle" type="button"
+                                            id="exportDropdown" data-bs-toggle="dropdown">
+                                            导出结果
+                                        </button>
+                                        <ul class="dropdown-menu" aria-labelledby="exportDropdown">
+                                            <li><a class="dropdown-item" href="#" id="exportJson">导出JSON</a></li>
+                                            <li><a class="dropdown-item" href="#" id="exportCsv">导出CSV</a></li>
+                                            <li><a class="dropdown-item" href="#" id="exportTxt">导出TXT</a></li>
                                         </ul>
                                     </div>
                                 </div>

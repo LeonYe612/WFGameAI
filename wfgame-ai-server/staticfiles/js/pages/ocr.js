@@ -517,11 +517,21 @@ function loadProjects() {
                 select.appendChild(firstOption);
 
                 // 添加项目选项
-                data.forEach(project => {
+                data.forEach((project, index) => {
                     const option = document.createElement('option');
                     option.value = project.id;
                     option.textContent = project.name;
                     select.appendChild(option);
+
+                    // 如果是第一个项目且是项目选择下拉框，则自动选中
+                    if (index === 0 && select.id === 'projectSelect') {
+                        option.selected = true;
+                        // 自动触发项目选择变化事件，加载仓库列表
+                        if (select.dispatchEvent) {
+                            const event = new Event('change');
+                            select.dispatchEvent(event);
+                        }
+                    }
                 });
             });
 
@@ -870,12 +880,24 @@ function loadGitRepos(projectId) {
             }
 
             // 清空并添加新选项
-            repoSelect.innerHTML = '<option value="" selected>选择仓库...</option>';
-            data.forEach(repo => {
+            repoSelect.innerHTML = '<option value="">选择仓库...</option>';
+
+            // 添加仓库选项
+            data.forEach((repo, index) => {
                 const option = document.createElement('option');
                 option.value = repo.id;
                 option.textContent = `${repo.url} (${repo.branch})`;
                 repoSelect.appendChild(option);
+
+                // 如果是第一个仓库，则自动选中
+                if (index === 0) {
+                    option.selected = true;
+                    // 自动触发仓库选择变化事件，加载分支列表
+                    if (repoSelect.dispatchEvent) {
+                        const event = new Event('change');
+                        repoSelect.dispatchEvent(event);
+                    }
+                }
             });
         })
         .catch(error => {
@@ -912,12 +934,24 @@ function loadGitBranches(repoId) {
             }
 
             // 清空并添加新选项
-            branchSelect.innerHTML = '<option value="" selected>选择分支...</option>';
-            data.branches.forEach(branch => {
+            branchSelect.innerHTML = '<option value="">选择分支...</option>';
+
+            // 添加分支选项
+            data.branches.forEach((branch, index) => {
                 const option = document.createElement('option');
                 option.value = branch;
                 option.textContent = branch;
                 branchSelect.appendChild(option);
+
+                // 如果是第一个分支，则自动选中
+                if (index === 0) {
+                    option.selected = true;
+                    // 自动触发分支选择变化事件，启用开始识别按钮
+                    if (branchSelect.dispatchEvent) {
+                        const event = new Event('change');
+                        branchSelect.dispatchEvent(event);
+                    }
+                }
             });
         })
         .catch(error => {
@@ -1126,6 +1160,14 @@ function initHistoryRecords() {
         });
     }
 
+    // 监听标签页切换事件，当切换到历史记录标签页时自动刷新
+    const historyTab = document.getElementById('ocr-history-tab');
+    if (historyTab) {
+        historyTab.addEventListener('shown.bs.tab', function () {
+            loadHistoryRecords();
+        });
+    }
+
     // 页面加载完成后加载历史记录
     setTimeout(loadHistoryRecords, 500);
 }
@@ -1179,6 +1221,7 @@ function loadHistoryRecords() {
                 <td><span class="badge ${statusClass}">${getStatusText(task.status)}</span></td>
                 <td>
                     <button class="btn btn-sm btn-primary view-task" data-id="${task.id}">查看</button>
+                    <button class="btn btn-sm btn-success download-task" data-id="${task.id}">下载</button>
                 </td>
             `;
                 historyTable.appendChild(row);
@@ -1189,6 +1232,14 @@ function loadHistoryRecords() {
                 button.addEventListener('click', function () {
                     const taskId = this.getAttribute('data-id');
                     showDetailedResults(taskId);
+                });
+            });
+
+            // 添加下载任务按钮点击事件
+            historyTable.querySelectorAll('.download-task').forEach(button => {
+                button.addEventListener('click', function () {
+                    const taskId = this.getAttribute('data-id');
+                    downloadTaskResults(taskId);
                 });
             });
 
@@ -1277,6 +1328,43 @@ function loadHistoryPage(page) {
         })
         .catch(error => {
             console.error('加载历史页面失败:', error);
+        });
+}
+
+/**
+ * 下载任务结果
+ */
+function downloadTaskResults(taskId) {
+    fetch('/api/ocr/history/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            action: 'download',
+            task_id: taskId
+        })
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('下载失败');
+            }
+            return response.blob();
+        })
+        .then(blob => {
+            // 创建下载链接
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `ocr_results_${taskId}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            a.remove();
+        })
+        .catch(error => {
+            console.error('下载失败:', error);
+            alert('下载失败，请稍后重试');
         });
 }
 
