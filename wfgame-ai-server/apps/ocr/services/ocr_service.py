@@ -109,7 +109,7 @@ class OCRService:
 
     def __init__(self, use_gpu: bool = True, lang: str = "ch", gpu_id: int = 0):
         """
-        初始化OCR服务
+        初始化OCR识别服务类
 
         Args:
             use_gpu: 是否使用GPU
@@ -120,16 +120,20 @@ class OCRService:
         device = f"gpu:{gpu_id}" if use_gpu else "cpu"
 
         try:
-            # 设置所有日志级别为WARNING，抑制DEBUG信息
-            logging.getLogger("ppocr").setLevel(logging.WARNING)
-            logging.getLogger("PIL").setLevel(logging.WARNING)
-            logging.getLogger("paddle").setLevel(logging.WARNING)
+            # 完全禁用PaddleOCR的警告输出
+            import logging
+            import warnings
+            warnings.filterwarnings('ignore')
+            logging.getLogger("ppocr").setLevel(logging.ERROR)
+            logging.getLogger("PIL").setLevel(logging.ERROR)
+            logging.getLogger("paddle").setLevel(logging.ERROR)
 
             # 初始化PaddleOCR
             self.ocr = PaddleOCR(
                 use_doc_orientation_classify=False,  # 不使用文档方向分类模型
                 use_doc_unwarping=False,            # 不使用文本图像矫正模型
                 use_textline_orientation=False,     # 不使用文本行方向分类模型
+                cls=False,                          # 不使用方向分类，避免警告信息
                 lang=lang,
                 device=device  # 根据use_gpu参数选择设备
             )
@@ -162,9 +166,22 @@ class OCRService:
             return {"error": "OCR引擎初始化失败"}
 
         try:
+            # 处理相对路径
+            full_image_path = image_path
+            if not os.path.isabs(image_path):
+                # 如果是相对路径，转换为绝对路径
+                from django.conf import settings
+                full_image_path = os.path.join(settings.MEDIA_ROOT, image_path)
+                logger.debug(f"将相对路径转换为绝对路径: {image_path} -> {full_image_path}")
+
+            # 检查文件是否存在
+            if not os.path.exists(full_image_path):
+                logger.error(f"图片文件不存在: {full_image_path}")
+                return {"error": f"图片文件不存在: {full_image_path}", "image_path": image_path}
+
             start_time = datetime.datetime.now()
             # 使用PaddleOCR的ocr方法而不是recognize_image
-            result = self.ocr.ocr(image_path, cls=True)
+            result = self.ocr.ocr(full_image_path, cls=True)
             end_time = datetime.datetime.now()
 
             # 提取文本内容
@@ -180,7 +197,7 @@ class OCRService:
             time_cost = (end_time - start_time).total_seconds()
 
             return {
-                "image_path": image_path,
+                "image_path": image_path,  # 返回原始路径，保持一致性
                 "texts": texts,
                 "boxes": [],  # 简化处理，不返回坐标信息
                 "confidence": 0.95,  # 简化处理，使用固定置信度
@@ -207,14 +224,39 @@ class OCRService:
         if image_formats is None:
             image_formats = ['.jpg', '.jpeg', '.png', '.bmp']
 
+        # 处理相对路径的目录
+        full_image_dir = image_dir
+        if not os.path.isabs(image_dir):
+            # 如果是相对路径，转换为绝对路径
+            from django.conf import settings
+            full_image_dir = os.path.join(settings.MEDIA_ROOT, image_dir)
+            logger.debug(f"将相对路径目录转换为绝对路径: {image_dir} -> {full_image_dir}")
+
+        # 检查目录是否存在
+        if not os.path.exists(full_image_dir) or not os.path.isdir(full_image_dir):
+            logger.error(f"图片目录不存在或不是目录: {full_image_dir}")
+            return [{"error": f"图片目录不存在或不是目录: {full_image_dir}"}]
+
         results = []
         try:
             # 获取目录下所有图片
             image_paths = []
-            for root, _, files in os.walk(image_dir):
+            for root, _, files in os.walk(full_image_dir):
                 for file in files:
                     if any(file.lower().endswith(fmt) for fmt in image_formats):
-                        image_paths.append(os.path.join(root, file))
+                        abs_path = os.path.join(root, file)
+                        # 计算相对于媒体根目录的路径
+                        from django.conf import settings
+                        if abs_path.startswith(settings.MEDIA_ROOT):
+                            rel_path = os.path.relpath(abs_path, settings.MEDIA_ROOT)
+                            rel_path = rel_path.replace('\\', '/')  # 确保使用正斜杠
+                            image_paths.append(rel_path)
+                            logger.debug(f"添加图片路径: {rel_path}")
+                        else:
+                            image_paths.append(abs_path)
+                            logger.debug(f"添加图片绝对路径: {abs_path}")
+
+            logger.info(f"找到 {len(image_paths)} 张图片")
 
             # 批量处理图片
             for image_path in image_paths:

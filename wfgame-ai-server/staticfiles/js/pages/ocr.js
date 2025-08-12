@@ -302,24 +302,35 @@ function showDetailedResults(taskId) {
                 const resultItem = document.createElement('div');
                 resultItem.className = 'card result-card mb-3';
 
-                const filePath = result.image_path.split('/').pop();
+                // 使用完整的相对路径，而不是只取文件名
+                const imagePath = result.image_path;
                 const hasMatch = result.has_match ? 'text-success' : 'text-muted';
                 const matchIcon = result.has_match ? 'check-circle' : 'times-circle';
+
+                // 构建正确的图片URL - 确保不重复添加ocr/uploads/前缀
+                // 直接使用/media/前缀 + 数据库中存储的相对路径
+                const imageUrl = `/media/${imagePath}`;
+
+                // 提取文件名用于显示
+                const fileName = imagePath.split('/').pop();
 
                 resultItem.innerHTML = `
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-3">
-                            <img src="/media/ocr/uploads/${filePath}" class="img-fluid result-image" alt="图片预览">
+                            <img src="${imageUrl}" class="img-fluid result-image" onerror="this.onerror=null; this.src='/static/images/image-not-found.png'; this.alt='图片加载失败';" alt="图片预览">
                         </div>
                         <div class="col-md-9">
-                            <h5 class="card-title">${filePath} <i class="fas fa-${matchIcon} ${hasMatch}"></i></h5>
+                            <h5 class="card-title">${fileName} <i class="fas fa-${matchIcon} ${hasMatch}"></i></h5>
                             <h6 class="card-subtitle mb-2 text-muted">语言: ${Object.keys(result.languages).join(', ')}</h6>
                             <div class="card-text">
                                 <strong>识别文本:</strong>
                                 <ul class="list-group mt-2">
                                     ${result.texts.map(text => `<li class="list-group-item">${text}</li>`).join('')}
                                 </ul>
+                            </div>
+                            <div class="mt-2">
+                                <small class="text-muted">完整路径: ${imagePath}</small>
                             </div>
                         </div>
                     </div>

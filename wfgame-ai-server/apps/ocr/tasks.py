@@ -11,6 +11,9 @@ from django.conf import settings
 from celery import shared_task
 import traceback
 import datetime
+import time
+
+from sympy import false
 
 from .models import OCRTask, OCRResult, OCRGitRepository
 from .services.ocr_service import OCRService
@@ -49,19 +52,30 @@ def process_ocr_task(task_id):
         task_config = task.config or {}
         target_languages = task_config.get('target_languages', ['zh'])  # 默认检测中文
 
+        # 获取GPU配置
+        use_gpu = task_config.get('use_gpu', True)
+        gpu_id = task_config.get('gpu_id', 0)
+
+        # 从config.ini读取OCR多线程配置
+        config = PathUtils.load_config()
+        ocr_max_workers = config.getint('ocr', 'ocr_max_workers', fallback=4)
+
+        logger.warning(f"从config.ini读取OCR配置: max_workers={ocr_max_workers}")
+
         # 为了方便调试，直接使用固定目录，不管任务类型
         debug_dir = PathUtils.get_debug_dir()
+        debug_status = False
 
         # 打印完整的调试目录路径，方便排查问题
         logger.info(f"调试目录完整路径: {os.path.abspath(debug_dir)}")
 
-        # 检查调试目录是否存在
-        if os.path.exists(debug_dir):
+        # 检查调试目录是否存在 且 开启调试（快速使用指定目录图片排查识别逻辑时使用）
+        if os.path.exists(debug_dir) and debug_status:
             logger.info(f"使用调试目录: {debug_dir}")
             check_dir = debug_dir
         else:
             # 如果调试目录不存在，则使用正常流程
-            logger.warning(f"调试目录不存在: {debug_dir}，使用正常流程")
+            logger.warning(f"调试目录:[ {debug_dir} ] 不存在或未开启调试模式，使用正常流程")
 
             # 根据任务类型确定检查目录
             if task.source_type == 'git':
@@ -71,13 +85,25 @@ def process_ocr_task(task_id):
                     raise ValueError("任务未关联Git仓库")
 
                 # 获取仓库目录
-                repo_dir = os.path.join(REPOS_DIR, repo.local_path)
+                from .services.gitlab import GitLabService, GitLabConfig
+
+                # 使用静态方法解析GitLab URL获取项目路径
+                _, project_path = GitLabService.parse_gitlab_url(repo.url)
+                # 从项目路径中提取仓库名称（最后一部分）
+                repo_name = project_path.split('/')[-1]
+                repo_dir = os.path.join(REPOS_DIR, repo_name)
+                logger.warning(f"仓库目录: {repo_dir}")
+
                 if not os.path.exists(repo_dir):
+                    logger.warning(f"仓库目录不存在: {repo_dir}, 开始克隆或更新仓库")
                     # 克隆或更新仓库
-                    _clone_or_update_repository(repo)
+                    repo_dir = _clone_or_update_repository(repo)
 
                 # 获取检查目录
-                target_dir = os.path.join(repo_dir, task.target_path) if task.target_path else repo_dir
+                target_path = task.config.get('target_path', '')
+                logger.warning(f"目标路径: {target_path}")
+
+                target_dir = os.path.join(repo_dir, target_path) if target_path else repo_dir
                 check_dir = target_dir
 
             elif task.source_type == 'upload':
@@ -89,22 +115,42 @@ def process_ocr_task(task_id):
             else:
                 raise ValueError(f"不支持的任务类型: {task.source_type}")
 
-        # 初始化OCR服务
-        ocr_service = OCRService()
-
-        # 设置默认语言为中文
-        ocr_service.lang = "ch"
+        # 初始化多线程OCR服务
+        logger.warning(f"初始化多线程OCR服务 (GPU: {use_gpu}, GPU ID: {gpu_id}, 最大工作线程: {ocr_max_workers})")
+        multi_thread_ocr = MultiThreadOCR(
+            use_gpu=use_gpu,
+            lang="ch",  # 默认使用中文模型
+            gpu_ids=[gpu_id],  # 使用指定的GPU ID
+            max_workers=ocr_max_workers  # 使用配置的工作线程数
+        )
 
         # 执行OCR识别
-        logger.info(f"开始识别目录: {check_dir}")
-        ocr_results = ocr_service.recognize_batch(check_dir)
-        logger.info(f"识别完成，共处理 {len(ocr_results)} 张图片")
+        logger.warning(f"开始多线程识别目录: {check_dir}")
+        start_time = time.time()
+        ocr_results = multi_thread_ocr.recognize_batch(check_dir)
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+        logger.warning(f"多线程识别完成，共处理 {len(ocr_results)} 张图片，耗时 {elapsed_time:.2f} 秒")
+
+        # 检查结果是否为空
+        if not ocr_results:
+            logger.error("OCR识别结果为空，请检查目录是否包含图片或OCR引擎是否正常工作")
+            raise ValueError("OCR识别结果为空")
+
+        # 检查结果格式
+        if len(ocr_results) > 0:
+            sample_result = ocr_results[0]
+            logger.warning(f"结果样例: {sample_result}")
 
         # 处理结果
+        logger.warning(f"开始调用_process_results处理 {len(ocr_results)} 个结果")
         _process_results(task, ocr_results, target_languages)
+        logger.warning("_process_results处理完成")
 
         # 生成汇总报告
+        logger.warning("开始生成汇总报告")
         _generate_summary_report(task, ocr_results, target_languages)
+        logger.warning("汇总报告生成完成")
 
         return {"status": "success", "task_id": task_id}
 
@@ -221,13 +267,42 @@ def _generate_summary_report(task, results, target_languages):
 
 def _process_results(task, results, target_languages):
     """处理OCR识别结果"""
+    logger.warning(f"开始处理OCR结果，共 {len(results)} 个结果")
     anomaly_images = []
     matched_images = 0
+    failed_images = 0
     total_images = len(results)
+    saved_results = 0
 
-    for result in results:
-        # 跳过处理失败的图片
+    for idx, result in enumerate(results):
+        # 获取图片路径，转换为相对路径
+        image_path = result.get('image_path', '')
+        # 使用PathUtils规范化路径
+        image_path = PathUtils.normalize_path(image_path)
+
+        logger.info(f"处理第 {idx+1}/{total_images} 个结果: {image_path}")
+
+        # 检查是否处理失败
         if 'error' in result:
+            # 记录失败信息到数据库
+            failed_images += 1
+            logger.warning(f"图片处理失败: {image_path}, 错误: {result['error']}")
+
+            try:
+                # 保存失败结果到数据库
+                OCRResult.objects.create(
+                    task=task,
+                    image_path=image_path,
+                    texts=[],
+                    languages={},
+                    has_match=False,
+                    confidence=0.0,
+                    processing_time=0
+                )
+                saved_results += 1
+                logger.warning(f"已保存失败结果到数据库: {image_path}")
+            except Exception as e:
+                logger.error(f"保存失败结果到数据库出错: {image_path}, 错误: {str(e)}")
             continue
 
         # 检查是否包含目标语言文本
@@ -237,21 +312,23 @@ def _process_results(task, results, target_languages):
                 has_match = True
                 break
 
-        # 获取图片路径，转换为相对路径
-        image_path = result.get('image_path', '')
-        # 使用PathUtils规范化路径
-        image_path = PathUtils.normalize_path(image_path)
-
-        # 保存结果到数据库
-        OCRResult.objects.create(
-            task=task,
-            image_path=image_path,
-            texts=result.get('texts', []),
-            languages={lang: True for lang in target_languages if OCRService.check_language_match(result.get('texts', []), lang)},
-            has_match=has_match,
-            confidence=result.get('confidence', 0.95),
-            processing_time=result.get('time_cost', 0)
-        )
+        try:
+            # 保存结果到数据库
+            OCRResult.objects.create(
+                task=task,
+                image_path=image_path,
+                texts=result.get('texts', []),
+                languages={lang: True for lang in target_languages if OCRService.check_language_match(result.get('texts', []), lang)},
+                has_match=has_match,
+                confidence=result.get('confidence', 0.95),
+                processing_time=result.get('time_cost', 0)
+            )
+            saved_results += 1
+            logger.info(f"已保存结果到数据库: {image_path}, 匹配状态: {has_match}")
+        except Exception as e:
+            logger.error(f"保存结果到数据库出错: {image_path}, 错误: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
 
         if has_match:
             matched_images += 1
@@ -259,36 +336,57 @@ def _process_results(task, results, target_languages):
             anomaly_images.append(image_path)
 
     # 更新任务状态
-    task.status = 'completed'
-    task.end_time = timezone.now()
-    task.total_images = total_images
-    task.matched_images = matched_images
-    task.match_rate = (matched_images / total_images * 100) if total_images > 0 else 0
-    task.save()
+    try:
+        task.status = 'completed'
+        task.end_time = timezone.now()
+        task.total_images = total_images
+        task.matched_images = matched_images
+        task.match_rate = (matched_images / total_images * 100) if total_images > 0 else 0
+        task.save()
+        logger.warning(f"已更新任务状态: {task.id}, 状态: {task.status}")
+    except Exception as e:
+        logger.error(f"更新任务状态失败: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
 
     # 汇总报告异常图片数量
     if matched_images > 0:
         logger.info(f"检测到异常图片: {matched_images}/{total_images} ({(matched_images/total_images*100):.2f}%)")
 
+    # 记录失败图片数量
+    if failed_images > 0:
+        logger.warning(f"处理失败图片: {failed_images}/{total_images} ({(failed_images/total_images*100):.2f}%)")
+
+    logger.warning(f"OCR结果处理完成，共保存 {saved_results}/{total_images} 个结果到数据库")
+
 
 def _clone_or_update_repository(repo):
     """克隆或更新Git仓库"""
-    from .services.gitlab import GitLabService
+    from .services.gitlab import GitLabService, GitLabConfig
 
     logger.info(f"克隆或更新仓库: {repo.url}")
 
-    # 创建GitLab服务
-    git_service = GitLabService(repo.url, repo.token)
-
-    # 获取仓库本地路径
-    repo_dir = os.path.join(REPOS_DIR, repo.local_path or git_service.get_repo_name())
+    # 使用静态方法解析GitLab URL获取项目路径
+    _, project_path = GitLabService.parse_gitlab_url(repo.url)
+    # 从项目路径中提取仓库名称（最后一部分）
+    repo_name = project_path.split('/')[-1]
+    repo_dir = os.path.join(REPOS_DIR, repo_name)
 
     # 检查仓库是否已存在
     if os.path.exists(repo_dir):
         # 更新仓库
         logger.info(f"更新仓库: {repo_dir}")
         try:
-            git_service.pull_repository(repo_dir, repo.branch)
+            # 创建GitLab服务用于更新
+            gitlab_config = GitLabConfig(
+                repo_url=repo.url,
+                access_token=repo.token
+            )
+            git_service = GitLabService(gitlab_config)
+
+            # 使用内部方法更新仓库
+            from pathlib import Path
+            git_service._update_repository_with_progress(Path(repo_dir), repo.branch)
             logger.info(f"仓库更新成功: {repo_dir}")
             return repo_dir
         except Exception as e:
@@ -300,14 +398,18 @@ def _clone_or_update_repository(repo):
     # 克隆仓库
     logger.info(f"克隆仓库: {repo.url} -> {repo_dir}")
     try:
-        git_service.clone_repository(repo_dir, repo.branch)
+        # 创建GitLab服务用于克隆
+        gitlab_config = GitLabConfig(
+            repo_url=repo.url,
+            access_token=repo.token
+        )
+        git_service = GitLabService(gitlab_config)
+
+        # 使用clone_repository方法克隆仓库
+        result = git_service.clone_repository(repo_dir, repo.branch)
+        if not result.success:
+            raise Exception(f"克隆失败: {result.error}")
         logger.info(f"仓库克隆成功: {repo_dir}")
-
-        # 更新仓库本地路径
-        if not repo.local_path:
-            repo.local_path = git_service.get_repo_name()
-            repo.save()
-
         return repo_dir
     except Exception as e:
         logger.error(f"仓库克隆失败: {str(e)}")

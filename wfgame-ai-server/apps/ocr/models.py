@@ -10,10 +10,11 @@ import datetime
 
 def generate_task_id():
     """生成任务ID"""
-    # 使用YYYY-MM-dd格式生成任务ID
+    # 使用YYYY-MM-dd_HH-MM-SS格式生成任务ID，确保唯一性
     now = datetime.datetime.now()
     date_str = now.strftime("%Y-%m-%d")
-    return f"task_{date_str}"
+    time_str = now.strftime("%H-%M-%S")
+    return f"task_{date_str}_{time_str}"
 
 
 class OCRProject(models.Model):
