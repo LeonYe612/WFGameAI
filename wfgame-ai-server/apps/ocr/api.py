@@ -550,8 +550,6 @@ class OCRUploadAPIView(APIView):
         uploaded_file = serializer.validated_data.get("file")
         project_id = serializer.validated_data.get("project_id")
         languages = serializer.validated_data.get("languages", ["ch"])
-        use_gpu = serializer.validated_data.get("use_gpu", True)
-        gpu_id = serializer.validated_data.get("gpu_id", 0)
 
         try:
             # 确保项目存在
@@ -589,8 +587,6 @@ class OCRUploadAPIView(APIView):
                 status="pending",
                 config={
                     "target_languages": languages,
-                    "use_gpu": use_gpu,
-                    "gpu_id": gpu_id,
                     "upload_id": upload_id,
                     "target_dir": upload_dir,
                 },
@@ -644,8 +640,6 @@ class OCRProcessAPIView(APIView):
                 repo_id = serializer.validated_data.get("repo_id")
                 branch = serializer.validated_data.get("branch", "main")
                 languages = serializer.validated_data.get("languages", ["ch"])
-                use_gpu = serializer.validated_data.get("use_gpu", True)
-                gpu_id = serializer.validated_data.get("gpu_id", 0)
 
                 try:
                     # 获取项目和仓库
@@ -661,8 +655,6 @@ class OCRProcessAPIView(APIView):
                         config={
                             "branch": branch,
                             "languages": languages,
-                            "use_gpu": use_gpu,
-                            "gpu_id": gpu_id,
                             "target_dir": PathUtils.get_ocr_repos_dir(),
                         },
                     )

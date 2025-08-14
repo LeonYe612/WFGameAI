@@ -122,17 +122,11 @@ function uploadAndProcess() {
         return;
     }
 
-    // 获取GPU配置
-    const useGpu = document.getElementById('useGpu').checked;
-    const gpuId = document.getElementById('gpuId').value;
-
     // 准备表单数据
     const formData = new FormData();
     formData.append('file', fileInput.files[0]);
     formData.append('project_id', projectSelect.value);
     formData.append('languages', JSON.stringify(selectedLanguages));
-    formData.append('use_gpu', useGpu);
-    formData.append('gpu_id', gpuId);
 
     // 显示进度条
     document.getElementById('progressContainer').style.display = 'block';
