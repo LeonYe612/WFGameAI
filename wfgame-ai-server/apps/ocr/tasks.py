@@ -41,11 +41,11 @@ def process_ocr_task(task_id):
     logger.info(f"开始处理OCR任务: {task_id}")
 
     try:
-        # 获取任务信息
+        # step1. 获取任务信息
         task = OCRTask.objects.get(id=task_id)
 
         # 更新任务状态
-        task.status = 'processing'
+        task.status = 'running'
         task.start_time = timezone.now()
         task.save()
 
@@ -67,6 +67,13 @@ def process_ocr_task(task_id):
         # 打印完整的调试目录路径，方便排查问题
         logger.info(f"调试目录完整路径: {os.path.abspath(debug_dir)}")
 
+
+        # step2. 获取待检测目录路径
+        # 获取待检测目录路径 & 待检测文件相对路径
+        target_dir = task_config.get("target_dir")
+        target_path = task_config.get("target_path")
+        check_dir = ""
+
         # 检查调试目录是否存在 且 开启调试（快速使用指定目录图片排查识别逻辑时使用）
         if os.path.exists(debug_dir) and debug_status:
             logger.info(f"使用调试目录: {debug_dir}")
@@ -76,43 +83,31 @@ def process_ocr_task(task_id):
             logger.warning(f"调试目录:[ {debug_dir} ] 不存在或未开启调试模式，使用正常流程")
 
             # 根据任务类型确定检查目录
-            if task.source_type == 'git':
-                # Git仓库
-                repo = task.git_repository
-                if not repo:
-                    raise ValueError("任务未关联Git仓库")
-
-                # 获取仓库目录
-                from .services.gitlab import GitLabService, GitLabConfig
-
-                # 使用静态方法解析GitLab URL获取项目路径
-                _, project_path = GitLabService.parse_gitlab_url(repo.url)
-                # 从项目路径中提取仓库名称（最后一部分）
-                repo_name = project_path.split('/')[-1]
-                repo_dir = os.path.join(REPOS_DIR, repo_name)
-                logger.warning(f"仓库目录: {repo_dir}")
-
-                if not os.path.exists(repo_dir):
-                    logger.warning(f"仓库目录不存在: {repo_dir}, 开始克隆或更新仓库")
-                    # 克隆或更新仓库
-                    repo_dir = _clone_or_update_repository(repo)
-
-                # 获取检查目录
-                target_path = task.config.get('target_path', '')
-                logger.warning(f"目标路径: {target_path}")
-
-                target_dir = os.path.join(repo_dir, target_path) if target_path else repo_dir
+            if task.source_type == 'upload':
                 check_dir = target_dir
-
-            elif task.source_type == 'upload':
-                # 上传文件
-                check_dir = os.path.join(UPLOADS_DIR, str(task.id))
-                if not os.path.exists(check_dir):
-                    os.makedirs(check_dir, exist_ok=True)
-
+            elif task.source_type == 'git':
+                check_dir = os.path.join(target_dir, target_path)
+                git_service = GitLabService(
+                    GitLabConfig(
+                        repo_url=task.git_repository.url,
+                        access_token=task.git_repository.token,
+                        )
+                    )
+                result: DownloadResult = git_service.download_files_with_git_clone(
+                    repo_base_dir=check_dir,
+                    branch=task_config.get("branch", "master"),
+                )
+                if not result.success:
+                    raise Exception(f"Git仓库下载失败: {result.message}")
             else:
                 raise ValueError(f"不支持的任务类型: {task.source_type}")
 
+
+        # step3. 确认目标目录存在
+        if not check_dir or not os.path.exists(check_dir):
+            raise Exception(f"OCR待检测目录不存在: {check_dir}")
+
+        # step4. 执行主逻辑
         # 初始化多线程OCR服务
         logger.warning(f"初始化多线程OCR服务 ( 最大工作线程: {ocr_max_workers})")
         multi_thread_ocr = MultiThreadOCR(
@@ -131,7 +126,8 @@ def process_ocr_task(task_id):
         # 检查结果是否为空
         if not ocr_results:
             logger.error("OCR识别结果为空，请检查目录是否包含图片或OCR引擎是否正常工作")
-            raise ValueError("OCR识别结果为空")
+            # raise ValueError("OCR识别结果为空")
+            return {"status": "failed", "task_id": task_id, "msg": "OCR识别结果为空，请检查目录是否包含图片或OCR引擎是否正常工作"}
 
         # 检查结果格式
         if len(ocr_results) > 0:

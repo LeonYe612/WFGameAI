@@ -69,7 +69,7 @@ import torch
 import cv2
 
 # 本地模块导入
-from utils.logger import Logger
+from apis.logger import Logger
 from models.yolo import YOLO
 ```
 

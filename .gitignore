@@ -51,3 +51,9 @@ db.sqlite3-journal
 .vscode/PythonImportHelper-v2-Completion.json
 ai_capture_and_analyze_result/*.json
 ai_capture_and_analyze_result/*.png
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd

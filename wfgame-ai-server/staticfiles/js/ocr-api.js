@@ -141,15 +141,17 @@ const OCRAPI = {
 
     // 处理API
     process: {
-        git: async function (projectId, repoId, branch, languages, token, skipSSLVerify) {
+        git: async function (projectId, repoId, branch, selectedLanguages, useGpu, gpuId, token, skipSSLVerify) {
             return await sendRequest('/api/ocr/process/', {
                 action: 'process_git',
                 project_id: projectId,
                 repo_id: repoId,
                 branch: branch || 'main',
-                languages: languages || ['ch'],
-                token: token,
-                skip_ssl_verify: skipSSLVerify
+                languages: selectedLanguages || ['ch'],
+                use_gpu: useGpu !== false,
+                gpu_id: gpuId || 0,
+                token: token,  // 添加token参数
+                skip_ssl_verify: skipSSLVerify  // 添加跳过SSL验证参数
             });
         }
     },

@@ -28,7 +28,8 @@ logger = logging.getLogger(__name__)
 
 
 # 读取配置
-config = PathUtils.load_config()
+# config = PathUtils.load_config()
+config = settings.CFG._config
 
 # OCR相关路径配置
 RESULTS_DIR = PathUtils.get_ocr_results_dir()

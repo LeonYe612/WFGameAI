@@ -33,30 +33,30 @@ logger = logging.getLogger(__name__)
 
 # Initialize the unified report manager
 report_manager = ReportManager()
-
-# Get project root directory
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-# Load config.ini from project root
-CONFIG_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../config.ini'))
-config = configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation())
-
-# Ensure config.ini exists
-if not os.path.exists(CONFIG_PATH):
-    raise FileNotFoundError(f'配置文件未找到: {CONFIG_PATH}')
-
-# Read configuration file
-if not config.read(CONFIG_PATH, encoding='utf-8'):
-    raise IOError(f'无法读取配置文件: {CONFIG_PATH}')
+#
+# # Get project root directory
+# BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+#
+# # Load config.ini from project root
+# CONFIG_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../config.ini'))
+# config = configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation())
+#
+# # Ensure config.ini exists
+# if not os.path.exists(CONFIG_PATH):
+#     raise FileNotFoundError(f'配置文件未找到: {CONFIG_PATH}')
+#
+# # Read configuration file
+# if not config.read(CONFIG_PATH, encoding='utf-8'):
+#     raise IOError(f'无法读取配置文件: {CONFIG_PATH}')
 
 # Ensure [paths] section exists
-if 'paths' not in config:
-    raise KeyError(f'配置文件中缺少[paths]部分: {CONFIG_PATH}')
+if 'paths' not in settings.CFG._config:
+    raise KeyError(f'配置文件中缺少[paths]部分: {settings.CFG._config_path}')
 
-paths = config['paths']
+paths = settings.CFG._config["paths"]
 
 # Log loaded key paths
-logger.info(f'已加载配置文件: {CONFIG_PATH}')
+# logger.info(f'已加载配置文件: {paths}')
 logger.info(f'REPORTS_DIR将被设置为: {paths["reports_dir"]}')
 logger.info(f'已加载YOLO模型: {paths["model_path"]}')
 # Get report paths from config.ini

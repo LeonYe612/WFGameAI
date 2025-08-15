@@ -140,7 +140,8 @@ class DeviceDetailSerializer(serializers.ModelSerializer):
     display_name = serializers.SerializerMethodField()
     enhanced_brand = serializers.SerializerMethodField()
     device_series = serializers.SerializerMethodField()
-    device_category = serializers.SerializerMethodField()    class Meta:
+    device_category = serializers.SerializerMethodField()
+    class Meta:
         model = Device
         fields = ['id', 'name', 'device_id', 'brand', 'model', 'android_version',
                  'type', 'type_name', 'status', 'status_display', 'ip_address', 'last_online',

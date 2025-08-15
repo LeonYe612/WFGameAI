@@ -17,6 +17,7 @@ from pymysql.cursors import DictCursor
 from pymysql.connections import Connection
 from dbutils.pooled_db import PooledDB
 import threading
+from django.conf import settings
 
 
 class AccountAllocationError(Exception):
@@ -65,9 +66,9 @@ class MySQLDistributedAccountManager:
             if not os.path.exists(config_path):
                 raise FileNotFoundError(f"配置文件不存在: {config_path}")
 
-            config = configparser.ConfigParser()
-            config.read(config_path, encoding='utf-8')
-
+            # config = configparser.ConfigParser()
+            # config.read(config_path, encoding='utf-8')
+            config = settings.CFG._config
             mysql_config = {
                 'host': config.get('database', 'host'),
                 'user': config.get('database', 'username'),

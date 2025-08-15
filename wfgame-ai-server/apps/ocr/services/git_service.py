@@ -17,8 +17,9 @@ import traceback
 logger = logging.getLogger(__name__)
 
 # 读取配置
-config = configparser.ConfigParser()
-config.read(settings.BASE_DIR.parent / 'config.ini', encoding='utf-8')
+# config = configparser.ConfigParser()
+# config.read(settings.BASE_DIR.parent / 'config.ini', encoding='utf-8')
+config = settings.CFG._config
 
 # Git仓库相关路径
 REPOS_DIR = config.get('paths', 'ocr_repos_dir', fallback='media/ocr/repositories')

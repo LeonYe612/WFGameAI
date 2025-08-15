@@ -10,6 +10,8 @@ import logging
 logging.getLogger('airtest').setLevel(logging.WARNING)
 logging.getLogger('airtest.core.android.adb').setLevel(logging.WARNING)
 logging.getLogger('adbutils').setLevel(logging.WARNING)
+from django.conf import settings
+
 
 # 新增：FileLogger类和SafeOutputWrapper类用于处理二进制内容
 class FileLogger:
@@ -1961,10 +1963,11 @@ def get_confidence_threshold_from_config():
     从config.ini的[settings]节读取AI检测置信度阈值。
     若未配置则返回默认值0.6。
     """
-    config = configparser.ConfigParser()
-    # 构造config.ini的绝对路径（假设本文件在wfgame-ai-server\apps\scripts下）
-    config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), 'config.ini')
-    config.read(config_path, encoding='utf-8')
+    # config = configparser.ConfigParser()
+    # # 构造config.ini的绝对路径（假设本文件在wfgame-ai-server\apps\scripts下）
+    # config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), 'config.ini')
+    # config.read(config_path, encoding='utf-8')
+    config = settings.CFG._config
     try:
         # 优先从[settings]读取confidence_threshold，没有则用默认值0.6
         return float(config.get('settings', 'confidence_threshold', fallback='0.6'))

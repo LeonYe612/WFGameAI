@@ -21,8 +21,9 @@ from .ocr_service import OCRService
 logger = logging.getLogger(__name__)
 
 # 读取配置
-config = configparser.ConfigParser()
-config.read(settings.BASE_DIR.parent / 'config.ini', encoding='utf-8')
+# config = configparser.ConfigParser()
+# config.read(settings.BASE_DIR.parent / 'config.ini', encoding='utf-8')
+config = settings.CFG._config
 
 # OCR并发相关配置
 OCR_MAX_WORKERS = config.getint('ocr', 'ocr_max_workers', fallback=4)
@@ -330,6 +331,7 @@ class MultiThreadOCR:
                             (current_processed / self.total_images) * 100
                             if self.total_images > 0 else 0
                         )
+                        # todo redis存储每一个任务对应的每一个线程ID对应的进度条，速度，剩余时间，执行时间
                         logger.warning(
                             f"进度: {current_processed}/{self.total_images} "
                             f"({progress:.2f}%), 速度: {speed:.2f} 张/秒, 剩余时间: "
@@ -373,9 +375,10 @@ class MultiThreadOCR:
                     logger.warning("所有工作线程已完成")
 
                     # 停止结果收集线程
+                    self.is_running = False
                     progress_reporting_active = False
                     logger.warning("等待结果收集线程结束")
-                    result_collector.join()
+                    result_collector.join(timeout=120)
                     logger.warning("结果收集线程结束")
             except Exception as e:
                 logger.error(f"多线程处理异常: {str(e)}")
@@ -458,6 +461,7 @@ class MultiThreadOCR:
                     self.result_queue.put(result)
 
                     processed_count += 1
+                    # todo 更新redis 对应任务处理图片数量
                     with self.lock:
                         self.processed_images += 1
 
