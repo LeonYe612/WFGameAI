@@ -91,8 +91,6 @@ class OCRProcessGitSerializer(serializers.Serializer):
     languages = serializers.ListField(
         child=serializers.CharField(), required=False, default=["ch"]
     )
-    use_gpu = serializers.BooleanField(required=False, default=True)
-    gpu_id = serializers.IntegerField(required=False, default=0)
     token = serializers.CharField(required=False, allow_blank=True, allow_null=True)
 
     def validate(self, data):
@@ -119,8 +117,6 @@ class TaskCreationSerializer(serializers.Serializer):
     target_languages = serializers.ListField(
         child=serializers.CharField(), required=False, default=["ch"]
     )
-    use_gpu = serializers.BooleanField(required=False, default=True)
-    gpu_id = serializers.IntegerField(required=False, default=0)
 
     def validate(self, data):
         """验证任务创建参数"""
@@ -137,8 +133,6 @@ class FileUploadSerializer(serializers.Serializer):
     languages = serializers.ListField(
         child=serializers.CharField(), required=False, default=["ch"]
     )
-    use_gpu = serializers.BooleanField(required=False, default=True)
-    gpu_id = serializers.IntegerField(required=False, default=0)
 
     def validate_file(self, value):
         """验证上传文件"""

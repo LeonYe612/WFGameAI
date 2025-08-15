@@ -13,6 +13,7 @@ import traceback
 import datetime
 import time
 
+from regex import F
 from sympy import false
 
 from .models import OCRTask, OCRResult, OCRGitRepository
@@ -52,9 +53,6 @@ def process_ocr_task(task_id):
         task_config = task.config or {}
         target_languages = task_config.get('target_languages', ['zh'])  # 默认检测中文
 
-        # 获取GPU配置
-        use_gpu = task_config.get('use_gpu', True)
-        gpu_id = task_config.get('gpu_id', 0)
 
         # 从config.ini读取OCR多线程配置
         config = PathUtils.load_config()
@@ -116,11 +114,9 @@ def process_ocr_task(task_id):
                 raise ValueError(f"不支持的任务类型: {task.source_type}")
 
         # 初始化多线程OCR服务
-        logger.warning(f"初始化多线程OCR服务 (GPU: {use_gpu}, GPU ID: {gpu_id}, 最大工作线程: {ocr_max_workers})")
+        logger.warning(f"初始化多线程OCR服务 ( 最大工作线程: {ocr_max_workers})")
         multi_thread_ocr = MultiThreadOCR(
-            use_gpu=use_gpu,
             lang="ch",  # 默认使用中文模型
-            gpu_ids=[gpu_id],  # 使用指定的GPU ID
             max_workers=ocr_max_workers  # 使用配置的工作线程数
         )
 
@@ -414,24 +410,3 @@ def _clone_or_update_repository(repo):
     except Exception as e:
         logger.error(f"仓库克隆失败: {str(e)}")
         raise
-
-
-@shared_task
-def cleanup_old_data(days=30):
-    """
-    清理旧的OCR数据
-
-    Args:
-        days: 保留天数
-    """
-    from .management.commands.cleanup_ocr_files import Command
-
-    try:
-        logger.info(f"开始清理 {days} 天前的OCR文件和数据")
-        cmd = Command()
-        cmd.handle(days=days)
-        logger.info("清理完成")
-        return {"success": True}
-    except Exception as e:
-        logger.error(f"清理数据异常: {str(e)}")
-        return {"success": False, "error": str(e)}
