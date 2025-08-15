@@ -22,8 +22,9 @@ docs/
 *.md
 
 # IDE
-.vscode/
-.idea/
+.vscode/*
+.idea/*
+.cursor/*
 
 # 静态文件和报告
 wfgame-ai-server/logs/
@@ -57,3 +58,6 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+
+# configs
+config_dev.ini
