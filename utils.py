@@ -35,6 +35,7 @@ class ConfigManager:
     """
     _instance = None
     _config = None
+    _config_path = os.path.join(Path.cwd(), "config.ini")
 
     def __new__(cls):
         if cls._instance is None:
@@ -45,39 +46,27 @@ class ConfigManager:
     def _load_config(self):
         """加载配置文件"""
         self._config = configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation())
-        config_path = self._find_config_file()
-
-        if config_path and os.path.exists(config_path):
-            self._config.read(config_path, encoding='utf-8')
-            logger.info(f"已加载配置文件: {config_path}")
+        self._config_path = self._find_config_file()
+        if self._config_path and os.path.exists(self._config_path):
+            self._config.read(self._config_path, encoding='utf-8')
+            logger.warning(f"ConfigManager 已加载配置文件: {self._config_path}")
         else:
-            raise FileNotFoundError("无法找到config.ini配置文件")
+            raise FileNotFoundError(f"无法找到 {self._config_path} 配置文件")
 
     def _find_config_file(self):
         """查找配置文件"""
-        # 优先使用环境变量中的配置路径
-        if 'WFGAMEAI_CONFIG' in os.environ:
-            return os.environ['WFGAMEAI_CONFIG']
+        try:
+            # 优先使用环境变量中的配置路径
+            if "WFGAMEAI_CONFIG" in os.environ:
+                return os.environ["WFGAMEAI_CONFIG"]
 
-        # 从当前目录向上查找
-        current_dir = Path.cwd()
-        while str(current_dir) != current_dir.anchor:
-            config_path = current_dir / "config.ini"
-            if config_path.exists():
-                return str(config_path)
-            current_dir = current_dir.parent
-
-        # 在项目目录中查找
-        possible_paths = [
-            os.path.join(os.getcwd(), 'config.ini'),
-            os.path.abspath(os.path.join(os.path.dirname(__file__), 'config.ini'))
-        ]
-
-        for path in possible_paths:
-            if os.path.exists(path):
-                return path
-
-        return None
+            # 如果设置了 AI_ENV，使用 config_{env}.ini，否则默认使用 config.ini
+            if "AI_ENV" in os.environ:
+                return  os.path.join(Path.cwd(), f"config_{os.environ.get('AI_ENV')}.ini")
+            return self._config_path
+        except Exception as e:
+            logger.error(f"查找配置文件时出错，使用默认 config.ini: {e}")
+            return "config.ini"
 
     def get_path(self, key, create_if_missing=True):
         """

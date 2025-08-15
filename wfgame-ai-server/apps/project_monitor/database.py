@@ -9,6 +9,8 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import SQLAlchemyError
 from .models import Base
+from django.conf import settings
+
 
 # 配置日志
 logging.basicConfig(level=logging.INFO)
@@ -20,24 +22,18 @@ class DatabaseManager:
     def __init__(self, db_url: Optional[str] = None):
         if db_url is None:
             # 从config.ini读取MySQL配置
-            config_path = os.path.join(os.path.dirname(__file__), '../../../config.ini')
-            if os.path.exists(config_path):
-                config = configparser.ConfigParser()
-                config.read(config_path, encoding='utf-8')
+            config = settings.CFG._config
+            if 'database' in config:
+                host = config.get('database', 'host', fallback='127.0.0.1')
+                username = config.get('database', 'username', fallback='root')
+                password = config.get('database', 'password', fallback='qa123456')
+                dbname = config.get('database', 'dbname', fallback='gogotest_data')
+                port = config.get('database', 'port', fallback='3306')
 
-                if 'database' in config:
-                    host = config.get('database', 'host', fallback='127.0.0.1')
-                    username = config.get('database', 'username', fallback='root')
-                    password = config.get('database', 'password', fallback='qa123456')
-                    dbname = config.get('database', 'dbname', fallback='gogotest_data')
-                    port = config.get('database', 'port', fallback='3306')
-
-                    db_url = f"mysql+pymysql://{username}:{password}@{host}:{port}/{dbname}?charset=utf8mb4"
-                    logger.info(f"使用MySQL数据库: {host}:{port}/{dbname}")
-                else:
-                    raise ValueError("config.ini中缺少database配置")
+                db_url = f"mysql+pymysql://{username}:{password}@{host}:{port}/{dbname}?charset=utf8mb4"
+                logger.info(f"使用MySQL数据库: {host}:{port}/{dbname}")
             else:
-                raise FileNotFoundError(f"配置文件未找到: {config_path}")
+                raise ValueError("config.ini中缺少database配置")
 
         self.db_url = db_url
         self.engine = create_engine(

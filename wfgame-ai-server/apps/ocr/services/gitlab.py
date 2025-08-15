@@ -1259,8 +1259,9 @@ class GitLabService:
         self.stats.start_time = time.time()
 
         try:
-            # 仓库保存目录位置
-            repo_dir = Path(repo_base_dir) / self._generate_repo_key()
+            # 仓库保存目录位置（指定仓库名称为对应项目名）
+            # repo_dir = Path(repo_base_dir) / self._generate_repo_key()
+            repo_dir = Path(repo_base_dir)
             logger.info(f"⭐下载策略 [Git Clone]: {self.config.repo_url} | branch: {branch} -> {repo_dir}")
 
             # 判断是否启用增量更新
@@ -1674,6 +1675,23 @@ class GitLabService:
                 repo_dir, branch, progress_callback
             )
 
+    def get_repo_name(self, repo_url: str) -> str:
+        """
+        从仓库URL中提取仓库名称
+
+        Args:
+            repo_url: 仓库URL
+
+        Returns:
+            仓库名称
+        """
+        try:
+            project_host, project_path = self.parse_gitlab_url(repo_url)
+            repo_name = project_path.split('/')[-1]
+            return repo_name
+        except Exception as e:
+            logger.error(f"从仓库URL提取名称失败: {e}")
+            return ""
 
 # 便捷函数和工厂方法
 def create_gitlab_service(

@@ -23,6 +23,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django.db.models import Q
 
+from apis.orm_api import DecimalEncoder
 from .models import OCRProject, OCRGitRepository, OCRTask, OCRResult
 from .serializers import (
     OCRProjectSerializer,
@@ -36,7 +37,7 @@ from .serializers import (
     OCRProcessGitSerializer,
 )
 from .services.ocr_service import OCRService
-from .services.gitlab import create_gitlab_service
+from .services.gitlab import create_gitlab_service, GitLabService, GitLabConfig
 from .tasks import process_ocr_task
 from .services.path_utils import PathUtils
 
@@ -281,9 +282,17 @@ class OCRTaskAPIView(APIView):
 
         elif action == "get_details":
             task_id = request.data.get("id")
+            has_math = request.data.get("has_match", None)
+            keyword = request.data.get("keyword", None)
             try:
                 task = OCRTask.objects.get(id=task_id)
                 results = OCRResult.objects.filter(task=task)
+                if has_math is True:
+                    results = results.filter(has_match=has_math)
+
+                if keyword != "":
+                    regex = f"/[^/]*{keyword}[^/]*$"
+                    results = results.filter(image_path__iregex=regex)
 
                 # 获取分页参数
                 page = int(request.data.get("page", 1))
@@ -345,7 +354,7 @@ class OCRTaskAPIView(APIView):
 
                     # 创建响应
                     response = HttpResponse(
-                        json.dumps(export_data, ensure_ascii=False, indent=2),
+                        json.dumps(export_data, ensure_ascii=False, indent=2, cls=DecimalEncoder),
                         content_type="application/json",
                     )
                     response["Content-Disposition"] = (
@@ -630,7 +639,6 @@ class OCRProcessAPIView(APIView):
     def post(self, request):
         """处理OCR请求"""
         action = request.data.get("action", "")
-
         if action == "process_git":
             # 处理Git仓库源OCR
             serializer = OCRProcessGitSerializer(data=request.data)
@@ -645,7 +653,6 @@ class OCRProcessAPIView(APIView):
                     # 获取项目和仓库
                     project = OCRProject.objects.get(id=project_id)
                     git_repo = OCRGitRepository.objects.get(id=repo_id, project=project)
-
                     # 创建OCR任务
                     task = OCRTask.objects.create(
                         project=project,
@@ -656,6 +663,12 @@ class OCRProcessAPIView(APIView):
                             "branch": branch,
                             "languages": languages,
                             "target_dir": PathUtils.get_ocr_repos_dir(),
+                            # 项目代码所在目录，与 target_dir 相对路径
+                            "target_path": GitLabService(
+                                GitLabConfig(repo_url=git_repo.url,
+                                             access_token=git_repo.token,
+                                             )).get_repo_name(git_repo.url)
+
                         },
                     )
 

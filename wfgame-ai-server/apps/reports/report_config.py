@@ -7,10 +7,12 @@ Date: 2025-06-17
 """
 
 import os
+import logging
 import configparser
 from pathlib import Path
 from typing import Optional
-import logging
+from django.conf import settings
+
 
 logger = logging.getLogger(__name__)
 
@@ -30,39 +32,9 @@ class ReportConfig:
         """
         初始化配置
         Args:
-            config_file: 配置文件路径，如果为None则使用默认路径
+            config_file: 使用django.settings中的全局配置实例CFG
         """
-        self.config_file = config_file or self._get_default_config_path()
-        self._load_config()
-
-    def _get_default_config_path(self) -> str:
-        """获取默认配置文件路径"""
-        # 优先使用环境变量指定的配置文件
-        if 'WFGAME_CONFIG_PATH' in os.environ:
-            return os.environ['WFGAME_CONFIG_PATH']
-
-        # 其次查找项目根目录下的config.ini
-        project_root = Path(__file__).resolve().parent.parent.parent.parent
-        config_path = project_root / 'config.ini'
-
-        return str(config_path)
-
-    def _load_config(self):
-        """加载配置文件"""        # 启用变量插值，支持 ${variable} 语法
-        self.config = configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation())
-
-        # 设置默认值
-        self._set_defaults()
-
-        # 如果配置文件存在，则加载
-        if os.path.exists(self.config_file):
-            try:
-                self.config.read(self.config_file, encoding='utf-8')
-                logger.info(f"已加载配置文件: {self.config_file}")
-            except Exception as e:
-                logger.warning(f"加载配置文件失败: {e}，使用默认配置")
-        else:
-            logger.info("配置文件不存在，使用默认配置")
+        self.config = settings.CFG._config
 
     def _set_defaults(self):
         """设置默认配置值"""

@@ -16,9 +16,10 @@ class PathUtils:
     @staticmethod
     def load_config():
         """加载配置文件"""
-        config = configparser.ConfigParser()
-        config_path = settings.BASE_DIR.parent / 'config.ini'
-        config.read(config_path, encoding='utf-8')
+        # config = configparser.ConfigParser()
+        # config_path = settings.BASE_DIR.parent / 'config.ini'
+        # config.read(config_path, encoding='utf-8')
+        config = settings.CFG
         return config
 
     @staticmethod
@@ -46,7 +47,7 @@ class PathUtils:
         for var, value in variables.items():
             if var in resolved_path:
                 resolved_path = resolved_path.replace(var, value)
-                logger.debug(f"路径变量替换: {var} -> {value}")
+                logger.warning(f"路径变量替换: {var} -> {value}")
 
         return resolved_path
 

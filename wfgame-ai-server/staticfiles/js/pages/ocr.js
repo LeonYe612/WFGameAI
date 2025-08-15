@@ -3,8 +3,14 @@
  * 提供OCR识别页面的交互功能
  */
 
+// 全局 resultDetail modal
+let resultModalInstance = null;
+
 // 页面加载完成后执行初始化
 document.addEventListener('DOMContentLoaded', function () {
+    // 初始化 ocr 相关的全局监听
+    initGlobalListeners();
+
     // 初始化上传功能
     initUploadFunctions();
 
@@ -79,6 +85,7 @@ function initUploadFunctions() {
 
     // 开始OCR识别按钮
     startOcrBtn.addEventListener('click', function () {
+        resetProcessParams(); // 重置处理参数
         uploadAndProcess();
     });
 }
@@ -122,11 +129,17 @@ function uploadAndProcess() {
         return;
     }
 
+    // 获取GPU配置
+    const useGpu = document.getElementById('useGpu').checked;
+    const gpuId = document.getElementById('gpuId').value;
+
     // 准备表单数据
     const formData = new FormData();
     formData.append('file', fileInput.files[0]);
     formData.append('project_id', projectSelect.value);
     formData.append('languages', JSON.stringify(selectedLanguages));
+    formData.append('use_gpu', useGpu);
+    formData.append('gpu_id', gpuId);
 
     // 显示进度条
     document.getElementById('progressContainer').style.display = 'block';
@@ -189,8 +202,17 @@ function pollTaskStatus(taskId) {
                     // 更新进度统计
                     document.getElementById('processedCount').textContent = data.total_images;
                     document.getElementById('totalCount').textContent = data.total_images;
-                    document.getElementById('matchRate').textContent = `${data.match_rate.toFixed(1)}%`;
+                    document.getElementById('matchRate').textContent = `${parseFloat(data.match_rate).toFixed(1)}%`;
 
+                    // 启用开始识别按钮
+                    // document.getElementById('startOcrBtn').disabled = false;
+
+                    // 清理fileInput对象
+                    const fileInput = document.getElementById('fileInput');
+                    if (fileInput) {
+                        fileInput.value = null;
+                        fileInput.disabled = false;
+                    }
                     // 显示结果
                     updateUploadStatus('处理完成！');
                     showResults(data);
@@ -240,7 +262,7 @@ function showResults(data) {
             <h5>处理完成</h5>
             <p>总图片数: ${data.total_images}</p>
             <p>匹配图片: ${data.matched_images}</p>
-            <p>匹配率: ${data.match_rate.toFixed(1)}%</p>
+            <p>匹配率: ${parseFloat(data.match_rate).toFixed(1)}%</p>
             <p>任务ID: ${data.id}</p>
         `;
     }
@@ -260,16 +282,32 @@ function showResults(data) {
 /**
  * 显示详细结果
  */
-function showDetailedResults(taskId) {
+function showDetailedResults(taskId, page = 1) {
     // 打开模态框
-    const resultModal = new bootstrap.Modal(document.getElementById('resultModal'));
-    resultModal.show();
+    const resultModal = document.getElementById('resultModal');
+    if (!resultModalInstance) {
+        resultModalInstance = new bootstrap.Modal(resultModal);
+    }
+    resultModalInstance.show();
 
     // 清空之前的结果
     const detailedResults = document.getElementById('detailedResults');
     if (detailedResults) {
         detailedResults.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div><p class="mt-2">正在加载结果...</p></div>';
     }
+
+    // 存储当前 taskid 和页码
+    const modalElement = document.getElementById('resultModal');
+    if (!modalElement) {
+        console.error("错误：在页面中找不到 id 为 'resultModal' 的元素！");
+        return;
+    }
+    modalElement.dataset.taskId = taskId;
+    modalElement.dataset.page = page;
+
+    // 过滤字段
+    const hasMatched = document.getElementById('showOnlyMatched')?.checked || false;
+    const keyword = document.getElementById('resultSearchInput')?.value.trim() || '';
 
     // 加载详细结果
     fetch('/api/ocr/tasks/', {
@@ -279,8 +317,10 @@ function showDetailedResults(taskId) {
         },
         body: JSON.stringify({
             action: 'get_details',
+            has_match: hasMatched,
+            keyword: keyword,
             id: taskId,
-            page: 1,
+            page: page,
             page_size: 50
         })
     })
@@ -296,17 +336,19 @@ function showDetailedResults(taskId) {
                 const resultItem = document.createElement('div');
                 resultItem.className = 'card result-card mb-3';
 
-                // 使用完整的相对路径，而不是只取文件名
                 const imagePath = result.image_path;
                 const hasMatch = result.has_match ? 'text-success' : 'text-muted';
                 const matchIcon = result.has_match ? 'check-circle' : 'times-circle';
-
-                // 构建正确的图片URL - 确保不重复添加ocr/uploads/前缀
-                // 直接使用/media/前缀 + 数据库中存储的相对路径
                 const imageUrl = `/media/${imagePath}`;
-
-                // 提取文件名用于显示
                 const fileName = imagePath.split('/').pop();
+
+                const processTexts = (texts) => {
+                    return texts.map(text => {
+                        const maxLength = 200;
+                        const truncatedText = text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+                        return `<li class="list-group-item text-item" title="${text.replace(/"/g, '&quot;')}">${truncatedText}</li>`;
+                    }).join('');
+                };
 
                 resultItem.innerHTML = `
                 <div class="card-body">
@@ -319,9 +361,11 @@ function showDetailedResults(taskId) {
                             <h6 class="card-subtitle mb-2 text-muted">语言: ${Object.keys(result.languages).join(', ')}</h6>
                             <div class="card-text">
                                 <strong>识别文本:</strong>
-                                <ul class="list-group mt-2">
-                                    ${result.texts.map(text => `<li class="list-group-item">${text}</li>`).join('')}
-                                </ul>
+                                <div class="text-container mt-2">
+                                    <ul class="list-group text-list">
+                                        ${processTexts(result.texts)}
+                                    </ul>
+                                </div>
                             </div>
                             <div class="mt-2">
                                 <small class="text-muted">完整路径: ${imagePath}</small>
@@ -330,40 +374,25 @@ function showDetailedResults(taskId) {
                     </div>
                 </div>
             `;
-
                 detailedResults.appendChild(resultItem);
             });
 
             // 添加分页
             if (data.total_pages > 1) {
-                const pagination = document.createElement('nav');
-                pagination.innerHTML = `
-                <ul class="pagination justify-content-center">
-                    <li class="page-item ${data.page === 1 ? 'disabled' : ''}">
-                        <a class="page-link" href="#" data-page="${data.page - 1}">上一页</a>
-                    </li>
-                    ${[...Array(data.total_pages).keys()].map(i => `
-                        <li class="page-item ${data.page === i + 1 ? 'active' : ''}">
-                            <a class="page-link" href="#" data-page="${i + 1}">${i + 1}</a>
-                        </li>
-                    `).join('')}
-                    <li class="page-item ${data.page === data.total_pages ? 'disabled' : ''}">
-                        <a class="page-link" href="#" data-page="${data.page + 1}">下一页</a>
-                    </li>
-                </ul>
-            `;
-
-                detailedResults.appendChild(pagination);
-
-                // 添加分页点击事件
-                pagination.querySelectorAll('.page-link').forEach(link => {
-                    link.addEventListener('click', function (e) {
-                        e.preventDefault();
-                        const page = parseInt(this.getAttribute('data-page'));
-                        loadResultsPage(taskId, page);
-                    });
+                const paginationContainer = document.createElement('div');
+                renderPagination(paginationContainer, data.page, data.total_pages, function (newPage) {
+                    showDetailedResults(taskId, newPage);
                 });
+                detailedResults.appendChild(paginationContainer);
+
+                // 页码信息显示在分页条下方
+                const pageInfo = document.createElement('div');
+                pageInfo.className = 'text-center mb-2';
+                pageInfo.innerHTML = `第 ${data.page} 页 / 共 ${data.total_pages} 页`;
+                detailedResults.appendChild(pageInfo);
             }
+
+
         })
         .catch(error => {
             console.error('加载详细结果失败:', error);
@@ -407,14 +436,62 @@ function loadResultsPage(taskId, page) {
  * 设置导出按钮功能
  */
 function setupExportButtons(taskId) {
-    const formats = ['json', 'csv', 'txt'];
+    const formats = ['json', 'csv', 'txt', 'xlsx'];
 
     formats.forEach(format => {
         const exportBtn = document.getElementById(`export${format.charAt(0).toUpperCase() + format.slice(1)}`);
         if (exportBtn) {
             exportBtn.onclick = function (e) {
                 e.preventDefault();
-                window.location.href = `/api/ocr/tasks/?action=export&id=${taskId}&format=${format}`;
+
+                // 使用 fetch 发送 POST 请求
+                fetch('/api/ocr/tasks/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'export',
+                        id: taskId,
+                        format: format
+                    })
+                })
+                    .then(response => {
+                        // 检查网络响应是否成功
+                        if (!response.ok) {
+                            // 尝试读取错误信息并抛出
+                            return response.json().then(err => { throw new Error(err.detail || '网络响应错误'); });
+                        }
+                        // 从响应头中获取文件名
+                        const disposition = response.headers.get('Content-Disposition');
+                        let filename = `export.${format}`; // 设置一个默认文件名
+                        if (disposition && disposition.includes('attachment')) {
+                            const filenameMatch = disposition.match(/filename="?([^"]+)"?/);
+                            if (filenameMatch && filenameMatch[1]) {
+                                filename = filenameMatch[1];
+                            }
+                        }
+                        // 将响应体转换为 Blob 对象，并传递文件名
+                        return response.blob().then(blob => ({ blob, filename }));
+                    })
+                    .then(({ blob, filename }) => {
+                        // 创建一个隐藏的链接来触发下载
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.style.display = 'none';
+                        a.href = url;
+                        a.download = filename; // 设置下载的文件名
+                        document.body.appendChild(a);
+                        a.click();
+
+                        // 清理创建的临时对象
+                        window.URL.revokeObjectURL(url);
+                        document.body.removeChild(a);
+                    })
+                    .catch(error => {
+                        console.error('导出失败:', error);
+                        alert(`导出文件失败: ${error.message}`);
+                    });
             };
         }
     });
@@ -1008,10 +1085,8 @@ function processGitRepository() {
         skipSSLVerify = skipSSLVerifyElem.checked;
     }
 
-    // 显示进度条
-    document.getElementById('gitProgressContainer').style.display = 'block';
-    document.getElementById('gitProgressBar').style.width = '10%';
-    document.getElementById('gitProgressBar').textContent = '10%';
+    // 重置 部分显示参数
+    resetGitProcessParams()
 
     updateGitStatus('正在启动Git仓库识别任务，请稍候...');
 
@@ -1069,7 +1144,15 @@ function pollGitTaskStatus(taskId) {
                     // 更新进度统计
                     document.getElementById('gitProcessedCount').textContent = data.total_images;
                     document.getElementById('gitTotalCount').textContent = data.total_images;
-                    document.getElementById('gitMatchRate').textContent = `${data.match_rate.toFixed(1)}%`;
+                    document.getElementById('gitMatchRate').textContent = `${parseFloat(data.match_rate).toFixed(1)}%`;
+
+                    // 启用开始识别按钮
+                    document.getElementById('startGitOcrBtn').disabled = false;
+
+                    // 启用下拉框
+                    document.getElementById('projectSelect').disabled = false;
+                    document.getElementById('repoSelect').disabled = false;
+                    document.getElementById('branchSelect').disabled = false;
 
                     // 显示结果
                     updateGitStatus('Git仓库识别完成！');
@@ -1078,6 +1161,15 @@ function pollGitTaskStatus(taskId) {
                 } else if (status === 'failed') {
                     clearInterval(intervalId);
                     updateGitStatus(`处理失败: ${data.error || '未知错误'}`, true);
+                    // 启用开始识别按钮
+                    document.getElementById('startGitOcrBtn').disabled = false;
+
+                    // 启用下拉框
+                    document.getElementById('projectSelect').disabled = false;
+                    document.getElementById('repoSelect').disabled = false;
+                    document.getElementById('branchSelect').disabled = false;
+
+                    // 隐藏进度条
                     document.getElementById('gitProgressContainer').style.display = 'none';
 
                 } else if (status === 'running') {
@@ -1118,7 +1210,7 @@ function showGitResults(data) {
                 <h5>处理完成</h5>
                 <p>总图片数: ${data.total_images}</p>
                 <p>匹配图片: ${data.matched_images}</p>
-                <p>匹配率: ${data.match_rate.toFixed(1)}%</p>
+                <p>匹配率: ${parseFloat(data.match_rate).toFixed(1)}%</p>
                 <p>任务ID: ${data.id}</p>
             `;
         }
@@ -1147,7 +1239,55 @@ function setupGitExportButtons(taskId) {
         if (exportBtn) {
             exportBtn.onclick = function (e) {
                 e.preventDefault();
-                window.location.href = `/api/ocr/tasks/?action=export&id=${taskId}&format=${format}`;
+
+                // 使用 fetch 发送 POST 请求
+                fetch('/api/ocr/tasks/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'export',
+                        id: taskId,
+                        format: format
+                    })
+                })
+                    .then(response => {
+                        // 检查网络响应是否成功
+                        if (!response.ok) {
+                            // 尝试读取错误信息并抛出
+                            return response.json().then(err => { throw new Error(err.detail || '网络响应错误'); });
+                        }
+                        // 从响应头中获取文件名
+                        const disposition = response.headers.get('Content-Disposition');
+                        let filename = `export.${format}`; // 设置一个默认文件名
+                        if (disposition && disposition.includes('attachment')) {
+                            const filenameMatch = disposition.match(/filename="?([^"]+)"?/);
+                            if (filenameMatch && filenameMatch[1]) {
+                                filename = filenameMatch[1];
+                            }
+                        }
+                        // 将响应体转换为 Blob 对象，并传递文件名
+                        return response.blob().then(blob => ({ blob, filename }));
+                    })
+                    .then(({ blob, filename }) => {
+                        // 创建一个隐藏的链接来触发下载
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.style.display = 'none';
+                        a.href = url;
+                        a.download = filename; // 设置下载的文件名
+                        document.body.appendChild(a);
+                        a.click();
+
+                        // 清理创建的临时对象
+                        window.URL.revokeObjectURL(url);
+                        document.body.removeChild(a);
+                    })
+                    .catch(error => {
+                        console.error('导出失败:', error);
+                        alert(`导出文件失败: ${error.message}`);
+                    });
             };
         }
     });
@@ -1266,42 +1406,28 @@ function loadHistoryRecords() {
 function updateHistoryPagination(data) {
     const pagination = document.getElementById('historyPagination');
     if (!pagination) return;
+    renderPagination(pagination, data.page, data.total_pages, function (newPage) {
+        loadHistoryPage(newPage);
+    });
+}
 
-    pagination.innerHTML = '';
+function bindHistoryTableActions() {
+    const historyTable = document.querySelector('#historyTable tbody');
+    if (!historyTable) return;
 
-    if (data.total_pages <= 1) return;
+    // 查看按钮
+    historyTable.querySelectorAll('.view-task').forEach(button => {
+        button.addEventListener('click', function () {
+            const taskId = this.getAttribute('data-id');
+            showDetailedResults(taskId);
+        });
+    });
 
-    const ul = document.createElement('ul');
-    ul.className = 'pagination justify-content-center';
-
-    // 上一页
-    const prevLi = document.createElement('li');
-    prevLi.className = `page-item ${data.page === 1 ? 'disabled' : ''}`;
-    prevLi.innerHTML = `<a class="page-link" href="#" data-page="${data.page - 1}">上一页</a>`;
-    ul.appendChild(prevLi);
-
-    // 页码
-    for (let i = 1; i <= data.total_pages; i++) {
-        const li = document.createElement('li');
-        li.className = `page-item ${data.page === i ? 'active' : ''}`;
-        li.innerHTML = `<a class="page-link" href="#" data-page="${i}">${i}</a>`;
-        ul.appendChild(li);
-    }
-
-    // 下一页
-    const nextLi = document.createElement('li');
-    nextLi.className = `page-item ${data.page === data.total_pages ? 'disabled' : ''}`;
-    nextLi.innerHTML = `<a class="page-link" href="#" data-page="${data.page + 1}">下一页</a>`;
-    ul.appendChild(nextLi);
-
-    pagination.appendChild(ul);
-
-    // 添加分页点击事件
-    pagination.querySelectorAll('.page-link').forEach(link => {
-        link.addEventListener('click', function (e) {
-            e.preventDefault();
-            const page = parseInt(this.getAttribute('data-page'));
-            loadHistoryPage(page);
+    // 下载按钮
+    historyTable.querySelectorAll('.download-task').forEach(button => {
+        button.addEventListener('click', function () {
+            const taskId = this.getAttribute('data-id');
+            downloadTaskResults(taskId);
         });
     });
 }
@@ -1329,7 +1455,36 @@ function loadHistoryPage(page) {
     })
         .then(response => response.json())
         .then(data => {
-            loadHistoryRecords();
+            const tbody = document.querySelector('#historyTable tbody');
+            if (tbody) {
+                tbody.innerHTML = '';
+                (data.tasks || []).forEach(task => {
+                    const formattedDate = new Date(task.created_at).toLocaleString();
+                    const statusClass = getStatusClass(task.status);
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${task.id}</td>
+                        <td>${task.project_name}</td>
+                        <td>${task.source_type === 'git' ? 'Git仓库' : '本地上传'}</td>
+                        <td>${formattedDate}</td>
+                        <td>${task.total_images}</td>
+                        <td>${task.matched_images}</td>
+                        <td>${parseFloat(task.match_rate).toFixed(1)}%</td>
+                        <td><span class="badge ${statusClass}">${getStatusText(task.status)}</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-primary view-task" data-id="${task.id}">查看</button>
+                            <button class="btn btn-sm btn-success download-task" data-id="${task.id}">下载</button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+
+                // 重新绑定操作按钮事件
+                bindHistoryTableActions();
+            }
+
+            // 渲染分页（略，保持原有逻辑）
+            updateHistoryPagination(data);
         })
         .catch(error => {
             console.error('加载历史页面失败:', error);
@@ -1398,3 +1553,118 @@ function getStatusText(status) {
         default: return '未知';
     }
 }
+
+/**
+ * 重置处理状态显示中涉及的相关参数
+ */
+function resetProcessParams() {
+    const resultsContainer = document.getElementById('resultsContainer');
+    if (resultsContainer){
+        // 隐藏结果摘要
+        resultsContainer.style.display = 'none';
+
+        // 显示进度条
+        document.getElementById('progressContainer').style.display = 'block';
+        document.getElementById('progressBar').style.width = '10%';
+        document.getElementById('progressBar').textContent = '10%';
+
+        // 已处理数量
+        document.getElementById('processedCount').textContent = '0';
+        document.getElementById('totalCount').textContent = '0';
+
+        // 命中率
+        document.getElementById('matchRate').textContent = '0%';
+
+        // 禁用开始识别按钮
+        document.getElementById('startOcrBtn').disabled = true;
+
+        // 禁用文件上传按钮
+        document.getElementById('fileInput').disabled = true;
+    }
+}
+
+/**
+ * Git 重置处理状态显示中涉及的相关参数
+ */
+function resetGitProcessParams() {
+    const gitResultsContainer = document.getElementById('gitResultsContainer');
+    if (gitResultsContainer){
+        // 隐藏结果摘要
+        gitResultsContainer.style.display = 'none';
+
+        // 显示进度条
+        document.getElementById('gitProgressContainer').style.display = 'block';
+        document.getElementById('gitProgressBar').style.width = '10%';
+        document.getElementById('gitProgressBar').textContent = '10%';
+
+        // 已处理数量
+        document.getElementById('gitProcessedCount').textContent = '0';
+        document.getElementById('gitTotalCount').textContent = '0';
+
+        // 命中率
+        document.getElementById('gitMatchRate').textContent = '0%';
+
+        // 禁用开始识别按钮
+        document.getElementById('startGitOcrBtn').disabled = true;
+
+        // 禁用下拉框
+        document.getElementById('projectSelect').disabled = true;
+        document.getElementById('repoSelect').disabled = true;
+        document.getElementById('branchSelect').disabled = true;
+
+    }
+}
+
+/**
+ * 全局监听
+ */
+function initGlobalListeners() {
+    // 监听 ‘识别结果详情 - 只显示匹配项’ 复选框变化事件
+    const showOnlyMatchedCheckbox = document.getElementById('showOnlyMatched');
+    if (showOnlyMatchedCheckbox) {
+        showOnlyMatchedCheckbox.addEventListener('change', function() {
+            // 当 checkbox 状态改变时，我们去模态框上寻找之前存好的 task ID
+            const modalElement = document.getElementById('resultModal');
+            const taskId = modalElement.dataset.taskId;
+            // 如果找到了 task ID (意味着模态框是打开的，并且关联了一个任务)
+            if (taskId) {
+                // 就用这个 ID 重新调用 showDetailedResults 函数来刷新内容
+                showDetailedResults(taskId);
+            }
+        });
+    }
+
+    // 监听 ‘识别结果详情 - 搜索按钮’
+    const searchResultsBtn = document.getElementById('resultSearchBtn');
+    if (searchResultsBtn) {
+        searchResultsBtn.addEventListener('click', function() {
+            // 当输入框内容变化时，我们去模态框上寻找之前存好的 task ID
+            const modalElement = document.getElementById('resultModal');
+            const taskId = modalElement.dataset.taskId;
+            // 如果找到了 task ID (意味着模态框是打开的，并且关联了一个任务)
+            if (taskId) {
+                // 就用这个 ID 重新调用 showDetailedResults 函数来刷新内容
+                showDetailedResults(taskId);
+            }
+        });
+    }
+
+    // 监听 ‘识别结果详情 - 清空按钮’
+    const clearResultsBtn = document.getElementById('resultSearchClearBtn');
+    if (clearResultsBtn) {
+        clearResultsBtn.addEventListener('click', function() {
+            // 清空搜索输入框
+            const searchInput = document.getElementById('resultSearchInput');
+            if (searchInput) {
+                searchInput.value = '';
+            }
+            // 重新加载结果
+            const modalElement = document.getElementById('resultModal');
+            const taskId = modalElement.dataset.taskId;
+            if (taskId) {
+                showDetailedResults(taskId);
+            }
+        });
+    }
+}
+

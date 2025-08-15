@@ -30,6 +30,8 @@ import pymysql
 from pymysql.cursors import DictCursor
 from dbutils.pooled_db import PooledDB
 
+from django.conf import settings
+
 
 @dataclass
 class AccountInfo:
@@ -90,9 +92,9 @@ class WindowsDatabaseAccountManager:
         if not Path(config_path).exists():
             raise FileNotFoundError(f"配置文件不存在: {config_path}")
 
-        config = configparser.ConfigParser()
-        config.read(config_path, encoding='utf-8')
-
+        # config = configparser.ConfigParser()
+        # config.read(config_path, encoding='utf-8')
+        config = settings.CFG._config
         # 数据库配置
         db_config = {
             'host': config.get('database', 'host'),
