@@ -269,8 +269,8 @@ class MultiThreadOCR:
                                     self.error_count += 1
                                     continue
 
-                            # 识别
-                            result = ocr.recognize_image(image_path, predict_save=self.predict_save)
+                            # 识别 - 强制开启predict_save以确保能提取到文本
+                            result = ocr.recognize_image(image_path, predict_save=True)
                             result['worker_id'] = 0
                             # 统一字段命名，与OCRService保持一致
                             result['time_cost'] = time.time() - img_start_time

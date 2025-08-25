@@ -62,7 +62,8 @@ def process_ocr_task(task_id):
 
         # 为了方便调试，直接使用固定目录，不管任务类型
         debug_dir = PathUtils.get_debug_dir()
-        debug_status = False
+        debug_status = True
+        # debug_status = False
 
         # 打印完整的调试目录路径，方便排查问题
         logger.info(f"调试目录完整路径: {os.path.abspath(debug_dir)}")
