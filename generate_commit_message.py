@@ -332,7 +332,7 @@ def classify_python_files(files):
         elif any(term in filepath.lower() for term in ['data', 'processor', 'analyzer', 'parser']):
             categories["数据处理"].append(file)
         # 工具类
-        elif basename in ['utils.py', 'helpers.py', 'tools.py'] or '/utils/' in filepath or '/helpers/' in filepath:
+        elif basename in ['config_helper.py', 'helpers.py', 'tools.py'] or '/utils/' in filepath or '/helpers/' in filepath:
             categories["工具函数"].append(file)
         # 核心业务逻辑
         elif any(term in filepath.lower() for term in ['/core/', '/business/', '/domain/', '/service/']):

@@ -17,7 +17,7 @@ class OCRConfig(AppConfig):
         """应用准备就绪时执行的操作"""
 
         # 确保 OCR 相关目录已配置并存在
-        from utils import config
+        from utils.config_helper import config
 
         config.get_path("ocr_results_dir")
         config.get_path("ocr_uploads_dir")

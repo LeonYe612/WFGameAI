@@ -13,18 +13,15 @@ Version: 1.0
 import os
 import sys
 from pathlib import Path
-# 在导入 utils 之前，先将项目根目录加入 sys.path，避免相对导入失败
-BASE_DIR = Path(__file__).resolve().parent.parent  # wfgame-ai-server/wfgame_ai_server_main
-PROJECT_ROOT = BASE_DIR.parent  # WFGameAI
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
+from utils.config_helper import *
+from utils.redis_helper import RedisHelper
 
-# 指定配置文件位置，保证在以 server 目录为工作目录时也能找到 config.ini
-os.environ.setdefault("WFGAMEAI_CONFIG", str(PROJECT_ROOT / "config.ini"))
-
-from utils import get_project_root, ConfigManager  # 现在可以安全导入
-# 兼容旧代码: 再次确保项目根加入 sys.path（幂等）
+# 添加项目根路径至 sys.path
 sys.path.insert(0, get_project_root())
+
+# 构建路径，以项目目录为起点
+BASE_DIR = Path(__file__).resolve().parent.parent # wfgame-ai-server/wfgame_ai_server_main
+
 # 密钥设置
 SECRET_KEY = 'django-insecure-key-for-development-only'
 
@@ -232,3 +229,10 @@ VERSION = "1.0.0"
 # YOLO模型设置
 YOLO_MODEL_PATH = os.path.join(BASE_DIR.parent, "yolo11m.pt")
 YOLO_CONFIDENCE_THRESHOLD = 0.5
+
+# TODO redis 相关
+# ai业务接口
+REDIS_CFG = get_redis_conn("redis")
+REDIS = RedisHelper(REDIS_CFG)
+# ai_celery配置
+CELERY_REDIS_CFG = get_redis_conn("celery")

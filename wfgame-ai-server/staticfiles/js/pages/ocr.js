@@ -143,8 +143,8 @@ function uploadAndProcess() {
 
     // 显示进度条
     document.getElementById('progressContainer').style.display = 'block';
-    document.getElementById('progressBar').style.width = '10%';
-    document.getElementById('progressBar').textContent = '10%';
+    document.getElementById('progressBar').style.width = '5%';
+    document.getElementById('progressBar').textContent = '5%';
 
     updateUploadStatus('正在上传文件，请稍候...');
 
@@ -163,8 +163,8 @@ function uploadAndProcess() {
         })
         .then(data => {
             updateUploadStatus('文件上传成功，正在处理...');
-            document.getElementById('progressBar').style.width = '50%';
-            document.getElementById('progressBar').textContent = '50%';
+            document.getElementById('progressBar').style.width = '10%';
+            document.getElementById('progressBar').textContent = '10%';
 
             // 轮询任务状态
             pollTaskStatus(data.task.id);
@@ -219,7 +219,7 @@ function pollTaskStatus(taskId) {
 
                 } else if (status === 'failed') {
                     clearInterval(intervalId);
-                    updateUploadStatus(`处理失败: ${data.error || '未知错误'}`, true);
+                    updateUploadStatus(`处理失败: ${data.remark || '未知错误'}`, true);
                     document.getElementById('progressContainer').style.display = 'none';
 
                 } else if (status === 'running') {
@@ -229,10 +229,10 @@ function pollTaskStatus(taskId) {
                     document.getElementById('progressBar').textContent = `${progress}%`;
 
                     // 更新进度统计
-                    if (data.processed_count && data.total_count) {
-                        document.getElementById('processedCount').textContent = data.processed_count;
-                        document.getElementById('totalCount').textContent = data.total_count;
-                        const matchRate = data.matched_count / data.processed_count * 100 || 0;
+                    if (data.executed_images && data.total_images) {
+                        document.getElementById('processedCount').textContent = data.executed_images;
+                        document.getElementById('totalCount').textContent = data.total_images;
+                        const matchRate = data.matched_count / data.executed_images * 100 || 0;
                         document.getElementById('matchRate').textContent = `${matchRate.toFixed(1)}%`;
                     }
 
@@ -1094,8 +1094,8 @@ function processGitRepository() {
     OCRAPI.process.git(projectId, repoId, branch, selectedLanguages, useGpu, gpuId, token, skipSSLVerify)
         .then(data => {
             updateGitStatus('Git仓库识别任务已启动，正在处理...');
-            document.getElementById('gitProgressBar').style.width = '20%';
-            document.getElementById('gitProgressBar').textContent = '20%';
+            document.getElementById('gitProgressBar').style.width = '10%';
+            document.getElementById('gitProgressBar').textContent = '10%';
 
             // 轮询任务状态
             pollGitTaskStatus(data.id);
@@ -1160,7 +1160,7 @@ function pollGitTaskStatus(taskId) {
 
                 } else if (status === 'failed') {
                     clearInterval(intervalId);
-                    updateGitStatus(`处理失败: ${data.error || '未知错误'}`, true);
+                    updateGitStatus(`处理失败: ${data.remark || '未知错误'}`, true);
                     // 启用开始识别按钮
                     document.getElementById('startGitOcrBtn').disabled = false;
 
@@ -1179,10 +1179,10 @@ function pollGitTaskStatus(taskId) {
                     document.getElementById('gitProgressBar').textContent = `${progress}%`;
 
                     // 更新进度统计
-                    if (data.processed_count && data.total_count) {
-                        document.getElementById('gitProcessedCount').textContent = data.processed_count;
-                        document.getElementById('gitTotalCount').textContent = data.total_count;
-                        const matchRate = data.matched_count / data.processed_count * 100 || 0;
+                    if (data.executed_images && data.total_images) {
+                        document.getElementById('gitProcessedCount').textContent = data.executed_images;
+                        document.getElementById('gitTotalCount').textContent = data.total_images;
+                        const matchRate = data.matched_count / data.executed_images * 100 || 0;
                         document.getElementById('gitMatchRate').textContent = `${matchRate.toFixed(1)}%`;
                     }
 
@@ -1358,6 +1358,7 @@ function loadHistoryRecords() {
                 row.innerHTML = `
                 <td>${task.id}</td>
                 <td>${task.project_name}</td>
+                <td>${task.git_branch}</td>
                 <td>${task.source_type === 'git' ? 'Git仓库' : '本地上传'}</td>
                 <td>${formattedDate}</td>
                 <td>${task.total_images}</td>
@@ -1459,12 +1460,14 @@ function loadHistoryPage(page) {
             if (tbody) {
                 tbody.innerHTML = '';
                 (data.tasks || []).forEach(task => {
+                    console.log("task :", task)
                     const formattedDate = new Date(task.created_at).toLocaleString();
                     const statusClass = getStatusClass(task.status);
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td>${task.id}</td>
                         <td>${task.project_name}</td>
+                        <td>${task.git_branch}</td>
                         <td>${task.source_type === 'git' ? 'Git仓库' : '本地上传'}</td>
                         <td>${formattedDate}</td>
                         <td>${task.total_images}</td>
@@ -1565,8 +1568,8 @@ function resetProcessParams() {
 
         // 显示进度条
         document.getElementById('progressContainer').style.display = 'block';
-        document.getElementById('progressBar').style.width = '10%';
-        document.getElementById('progressBar').textContent = '10%';
+        document.getElementById('progressBar').style.width = '5%';
+        document.getElementById('progressBar').textContent = '5%';
 
         // 已处理数量
         document.getElementById('processedCount').textContent = '0';
@@ -1594,8 +1597,8 @@ function resetGitProcessParams() {
 
         // 显示进度条
         document.getElementById('gitProgressContainer').style.display = 'block';
-        document.getElementById('gitProgressBar').style.width = '10%';
-        document.getElementById('gitProgressBar').textContent = '10%';
+        document.getElementById('gitProgressBar').style.width = '5%';
+        document.getElementById('gitProgressBar').textContent = '5%';
 
         // 已处理数量
         document.getElementById('gitProcessedCount').textContent = '0';
