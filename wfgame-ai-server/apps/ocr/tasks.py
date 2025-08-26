@@ -16,7 +16,7 @@ import time
 from regex import F
 from sympy import false
 
-from .models import OCRTask,OCRResult
+from .models import OCRTask, OCRResult, OCRGitRepository
 from .services.ocr_service import OCRService
 from .services.multi_thread_ocr import MultiThreadOCR
 from .services.gitlab import (
@@ -65,6 +65,8 @@ def process_ocr_task(task_id):
         # 为了方便调试，直接使用固定目录，不管任务类型
         debug_dir = PathUtils.get_debug_dir()
         debug_status = False
+
+        # 打印完整的调试目录路径，方便排查问题
         logger.info(f"调试目录完整路径: {os.path.abspath(debug_dir)}")
 
         # step2. 获取待检测目录路径

@@ -58,6 +58,7 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+output/ocr/results/predict/
 
 # wfgame-ai-server/node_modules
 wfgame-ai-server/node_modules/*

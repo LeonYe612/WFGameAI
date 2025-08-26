@@ -142,5 +142,6 @@ class PathUtils:
     @staticmethod
     def get_debug_dir():
         """获取调试目录"""
-        return os.path.join(settings.BASE_DIR.parent, "wfgame-ai-server", "media", "ocr", "repositories", "CardGame2", "Client", "assets", "designImg")
+        return os.path.join(settings.BASE_DIR.parent, "wfgame-ai-server", "media", "ocr", "repositories", "ocr_hit_5pics") # 专用于识别错误的测试目录
+        # return os.path.join(settings.BASE_DIR.parent, "wfgame-ai-server", "media", "ocr", "repositories", "CardGame2", "Client", "assets", "designImg")
         return os.path.join(settings.BASE_DIR.parent, "wfgame-ai-server", "media", "ocr", "repositories", "ocr_test")

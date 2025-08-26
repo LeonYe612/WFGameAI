@@ -21,6 +21,7 @@ sys.path.insert(0, get_project_root())
 
 # 构建路径，以项目目录为起点
 BASE_DIR = Path(__file__).resolve().parent.parent # wfgame-ai-server/wfgame_ai_server_main
+
 # 密钥设置
 SECRET_KEY = 'django-insecure-key-for-development-only'
 
@@ -229,7 +230,7 @@ VERSION = "1.0.0"
 YOLO_MODEL_PATH = os.path.join(BASE_DIR.parent, "yolo11m.pt")
 YOLO_CONFIDENCE_THRESHOLD = 0.5
 
-# redis 相关（todo）
+# TODO redis 相关
 # ai业务接口
 REDIS_CFG = get_redis_conn("redis")
 REDIS = RedisHelper(REDIS_CFG)
