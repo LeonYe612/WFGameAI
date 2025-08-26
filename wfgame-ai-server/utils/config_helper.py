@@ -24,6 +24,11 @@ import glob
 import glob
 import shutil
 
+
+from dataclasses import dataclass
+from typing import Optional
+
+
 # 减少日志输出，只在ERROR级别输出
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
@@ -35,7 +40,7 @@ class ConfigManager:
     """
     _instance = None
     _config = None
-    _config_path = os.path.join(Path.cwd(), "config.ini")
+    _config_path = os.path.join(Path.cwd().parent, "config.ini")
 
     def __new__(cls):
         if cls._instance is None:
@@ -62,11 +67,11 @@ class ConfigManager:
 
             # 如果设置了 AI_ENV，使用 config_{env}.ini，否则默认使用 config.ini
             if "AI_ENV" in os.environ:
-                return  os.path.join(Path.cwd(), f"config_{os.environ.get('AI_ENV')}.ini")
+                return  os.path.join(Path.cwd().parent, f"config_{os.environ.get('AI_ENV')}.ini")
             return self._config_path
         except Exception as e:
             logger.error(f"查找配置文件时出错，使用默认 config.ini: {e}")
-            return "config.ini"
+            return self._config_path
 
     def get_path(self, key, create_if_missing=True):
         """
@@ -342,3 +347,47 @@ def get_model_path():
     # 如果所有尝试都失败，返回None
     logger.warning("无法找到有效的模型路径")
     return None
+
+@dataclass
+class RedisConfigObj:
+    host: str
+    port: int
+    username: Optional[str] = None
+    password: Optional[str] = None
+    db: int = 0
+    redis_url: str = ""
+    # 连接池配置
+    max_connections: int = 20
+    socket_connect_timeout: int = 5
+    socket_timeout: int = 5
+    retry_on_timeout: bool = True
+    health_check_interval: int = 30
+
+def get_redis_conn(config_type="redis") -> RedisConfigObj:
+    host = config.get(config_type, 'host', fallback='localhost')
+    port = config.getint(config_type, 'port', fallback=6379)
+    username = config.get(config_type, 'username', fallback="default")
+    password = config.get(config_type, 'password', fallback="")
+    db = config.getint(config_type, 'db', fallback=0)
+    # 连接池配置
+    max_connections = config.getint(config_type, 'max_connections', fallback=20)
+    socket_connect_timeout = config.getint(config_type, 'socket_connect_timeout', fallback=5)
+    socket_timeout = config.getint(config_type, 'socket_timeout', fallback=5)
+    retry_on_timeout = config.getboolean(config_type, 'retry_on_timeout', fallback=True)
+    health_check_interval = config.getint(config_type, 'health_check_interval', fallback=30)
+
+    redis_url = f'redis://{username}:{password}@{host}:{port}/{db}'
+    return RedisConfigObj(
+        host=host,
+        port=port,
+        username=username,
+        password=password,
+        db=db,
+        redis_url=redis_url,
+        max_connections=max_connections,
+        socket_connect_timeout=socket_connect_timeout,
+        socket_timeout=socket_timeout,
+        retry_on_timeout=retry_on_timeout,
+        health_check_interval=health_check_interval
+    )
+

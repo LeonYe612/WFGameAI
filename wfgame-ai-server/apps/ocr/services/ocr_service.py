@@ -146,7 +146,6 @@ class OCRService:
 
         if not self.initialize():
             return {"error": "OCR引擎初始化失败"}
-
         try:
             # Normalize to absolute path under MEDIA_ROOT if relative
             full_image_path = image_path
@@ -191,7 +190,7 @@ class OCRService:
                     with tempfile.NamedTemporaryFile(prefix="ocr_", suffix=".png", delete=False) as tf:
                         tf.write(enc.tobytes())
                         tmp_file = tf.name
-                    results = self.ocr.predict(input=tmp_file)
+                    results = self.ocr.ocr(tmp_file)
                 finally:
                     if tmp_file and os.path.exists(tmp_file):
                         try:

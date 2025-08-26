@@ -13,7 +13,8 @@ Version: 1.0
 import os
 import sys
 from pathlib import Path
-from utils import get_project_root, ConfigManager
+from utils.config_helper import *
+from utils.redis_helper import RedisHelper
 
 # 添加项目根路径至 sys.path
 sys.path.insert(0, get_project_root())
@@ -227,3 +228,10 @@ VERSION = "1.0.0"
 # YOLO模型设置
 YOLO_MODEL_PATH = os.path.join(BASE_DIR.parent, "yolo11m.pt")
 YOLO_CONFIDENCE_THRESHOLD = 0.5
+
+# redis 相关（todo）
+# ai业务接口
+REDIS_CFG = get_redis_conn("redis")
+REDIS = RedisHelper(REDIS_CFG)
+# ai_celery配置
+CELERY_REDIS_CFG = get_redis_conn("celery")

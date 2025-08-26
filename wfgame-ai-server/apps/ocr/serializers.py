@@ -50,6 +50,7 @@ class OCRTaskSerializer(serializers.ModelSerializer):
             "match_rate",
             "created_at",
             "duration",
+            "remark",
         ]
         # name 字段已从数据库模型中移除
 
@@ -207,6 +208,7 @@ class OCRTaskWithResultsSerializer(serializers.ModelSerializer):
             "project_name",
             "source_type",
             "git_repository",
+            "git_branch",
             "git_repository_url",
             "status",
             "config",
@@ -218,6 +220,7 @@ class OCRTaskWithResultsSerializer(serializers.ModelSerializer):
             "created_at",
             "duration",
             "results_count",
+            "remark",
         ]
         # 排除 name 字段，直到数据库迁移完成
         # fields 中已经不包含 name，这里明确排除以确保安全

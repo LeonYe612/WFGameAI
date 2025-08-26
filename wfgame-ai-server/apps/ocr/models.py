@@ -88,6 +88,9 @@ class OCRTask(models.Model):
         blank=True,
         verbose_name="Git仓库",
     )
+    git_branch = models.CharField(
+        max_length=255, default="main", verbose_name="Git分支", blank=True, null=True
+    )
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
@@ -103,6 +106,9 @@ class OCRTask(models.Model):
         max_digits=5, decimal_places=2, default=0.00, verbose_name="匹配率"
     )
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
+    remark = models.TextField(
+        blank=True, null=True, verbose_name="备注信息"
+    )
 
     def __str__(self):
         return self.id

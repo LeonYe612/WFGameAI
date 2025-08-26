@@ -5,7 +5,7 @@
 # @Time    : 2025/7/8 09:50
 # @Author  : Hbuker
 # @Email   : 15190300361@163.com
-# @File    : android_api.py
+# @File    : android_helper.py
 # @desc    :
 
 import os

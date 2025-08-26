@@ -6,7 +6,7 @@ WFGame AI自动化测试平台后端服务
 from __future__ import absolute_import, unicode_literals
 
 # 确保在Django启动时Celery应用也被加载
-from .celery import app as celery_app
+from .celery import AI_CELERY as celery_app
 
 import pymysql
 

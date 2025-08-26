@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # @Time    : 2025/7/24 14:13
 # @Author  : Buker
-# @File    : socketio_api.py
+# @File    : socketio_helper.py
 # @Desc    : 基于socket.io 的 通知服务（redis消息群发以及async异步处理）
 
 import sys
@@ -9,6 +9,7 @@ import socket
 import asyncio
 import socketio
 from aiohttp import web
+from django.conf import settings
 import redis.asyncio as aioredis
 
 class ChatServer:
@@ -18,14 +19,16 @@ class ChatServer:
         self.redis = None
         self.sio = None
         self.app = None
+        self.redis_url = settings.REDIS_URL.redis_url
 
     async def setup(self):
         """在同一个事件循环中初始化所有异步组件"""
         # 1. 初始化 Redis 客户端
-        self.redis = aioredis.from_url('redis://:Hsy48748983@localhost:6379/9')
+        # todo : 使用配置文件中的 Redis 连接信息
+        self.redis = aioredis.from_url(self.redis_url)
 
         # 2. 初始化 Socket.IO 服务器和 Redis 管理器
-        redis_manager = socketio.AsyncRedisManager('redis://:Hsy48748983@localhost:6379/9')
+        redis_manager = socketio.AsyncRedisManager(self.redis_url)
         self.sio = socketio.AsyncServer(
             async_mode='aiohttp',
             cors_allowed_origins='*',
