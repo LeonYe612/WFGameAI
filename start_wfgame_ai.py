@@ -10,6 +10,11 @@ Version: 1.0
 ===============================
 """
 
+"""
+使用
+python start_wfgame_ai.py --config config.ini → 线上环境绑定 8000
+python start_wfgame_ai.py --config config_dev.ini → 开发环境绑定 9000
+"""
 import os
 import sys
 import time
@@ -18,6 +23,7 @@ import threading
 import signal
 import webbrowser
 import platform
+import argparse
 
 # 全局变量，存储进程句柄，用于程序退出时终止进程
 processes = []
@@ -125,7 +131,7 @@ def get_project_root():
 
     return project_root
 
-def run_command(command, cwd=None, name=None):
+def run_command(command, cwd=None, name=None, env_vars=None):
     """
     运行命令并捕获输出
 
@@ -133,6 +139,7 @@ def run_command(command, cwd=None, name=None):
         command (list): 命令和参数列表
         cwd (str, optional): 工作目录
         name (str, optional): 进程名称，用于日志
+        env_vars (dict, optional): 额外的环境变量，会在当前环境基础上叠加
 
     Returns:
         subprocess.Popen: 进程对象
@@ -144,9 +151,14 @@ def run_command(command, cwd=None, name=None):
 
     print_colored(f"{log_prefix}执行命令: {' '.join(command)}", 'blue')
     print_colored(f"{log_prefix}工作目录: {cwd}", 'blue')    # 创建进程，设置不同的输出管道
+    # 组装环境变量
+    env = os.environ.copy()
+    if env_vars:
+        env.update(env_vars)
     process = subprocess.Popen(
         command,
         cwd=cwd,
+        env=env,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
@@ -186,7 +198,7 @@ def run_command(command, cwd=None, name=None):
 
     return process
 
-def start_backend():
+def start_backend(config_path: str = None, port: int = 8000):
     """
     启动Django后端服务
 
@@ -201,11 +213,20 @@ def start_backend():
     if not os.path.exists(backend_dir):
         print_colored(f"错误: 后端目录不存在: {backend_dir}", 'red')
         return None    # 统一使用localhost:8000，但仍绑定到0.0.0.0以允许外部访问
-    command = [sys.executable, 'manage.py', 'runserver', '0.0.0.0:8000']
-    process = run_command(command, cwd=backend_dir, name="后端")
+    bind = f"0.0.0.0:{port}"
+    command = [sys.executable, 'manage.py', 'runserver', bind]
+
+    # 配置文件环境变量
+    env_vars = {}
+    if config_path:
+        env_vars['WFGAMEAI_CONFIG'] = config_path
+        print_colored(f"使用配置文件: {config_path}", 'cyan')
+    print_colored(f"后端绑定端口: {bind}", 'cyan')
+
+    process = run_command(command, cwd=backend_dir, name="后端", env_vars=env_vars)
 
     print_colored("后端服务启动中，请稍后...", 'yellow')
-    print_colored("注意: 服务绑定到0.0.0.0:8000，推荐使用localhost:8000访问", 'cyan')
+    print_colored(f"注意: 服务绑定到{bind}，推荐使用localhost:{port}访问", 'cyan')
     return process
 
 def start_frontend():
@@ -221,13 +242,14 @@ def start_frontend():
 
     return None
 
-def wait_for_services(frontend_process, backend_process):
+def wait_for_services(frontend_process, backend_process, port: int = 8000):
     """
     等待服务启动，并在浏览器中打开前端页面
 
     Args:
         frontend_process (subprocess.Popen): 前端进程
         backend_process (subprocess.Popen): 后端进程
+        port (int): 后端端口
     """
     # 等待前端服务启动（检测"Compiled successfully"消息）
     frontend_ready = True  # 由于跳过前端，默认为True
@@ -262,7 +284,7 @@ def wait_for_services(frontend_process, backend_process):
         else:
             print_colored("\n服务已成功启动！", 'green')
             print_colored("\n访问地址:", 'green')
-            print_colored("- 后端: http://localhost:8000", 'cyan')
+            print_colored(f"- 后端: http://localhost:{port}", 'cyan')
             # print_colored("- API文档: http://localhost:8000/api/docs/", 'cyan')
 
             # 自动打开浏览器访问后端
@@ -316,8 +338,41 @@ def main():
         # 显示启动横幅
         show_banner()
 
+        # 命令行参数
+        parser = argparse.ArgumentParser(description='WFGame AI 启动器')
+        parser.add_argument('--config', type=str, default=None,
+                            help='配置文件名或路径，支持 config.ini / config_dev.ini 或自定义路径')
+        parser.add_argument('--env', type=str, default=None, choices=['prod', 'online'],
+                            help='运行环境：prod(生产:9000) / online(线上:8000)')
+        args = parser.parse_args()
+
+        project_root = get_project_root()
+        # 解析配置文件路径
+        selected_config = None
+        if args.config:
+            # 如果传入的是文件名，则拼接到项目根目录
+            if os.path.isabs(args.config):
+                selected_config = args.config
+            else:
+                selected_config = os.path.join(project_root, args.config)
+        else:
+            # 未指定时，默认使用项目根目录下的 config.ini
+            selected_config = os.path.join(project_root, 'config.ini')
+
+        # 解析端口：严格按配置文件名固定映射（写死映射，不考虑其他情况）
+        base = os.path.basename(selected_config).lower()
+        # 线上环境
+        if base == 'config.ini':
+            port = 8000
+        # 开发环境
+        elif base == 'config_dev.ini':
+            port = 9000
+        else:
+            # 默认 8000（仅在用户给了其他文件名时兜底）
+            port = 8000
+
         # 启动后端服务
-        backend_process = start_backend()
+        backend_process = start_backend(config_path=selected_config, port=port)
         if not backend_process:
             print_colored("后端服务启动失败", 'red')
             return
@@ -329,7 +384,7 @@ def main():
         prepare_devices()
 
         # 等待服务启动
-        wait_for_services(frontend_process, backend_process)
+        wait_for_services(frontend_process, backend_process, port=port)
 
         # 保持脚本运行，直到用户按下Ctrl+C
         print_colored("\n服务正在运行中，按Ctrl+C停止...", 'green')
