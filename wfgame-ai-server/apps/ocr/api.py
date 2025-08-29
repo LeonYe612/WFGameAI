@@ -257,7 +257,6 @@ class OCRTaskAPIView(APIView):
                 # 前 10% 用于准备阶段，后 90% 用于处理阶段
                 font_default_progress = 10.0 # 默认进度10%
                 progress = int(progress_data.get('executed', 0)) / total_images * 100 * 0.9 + font_default_progress if total_images > 0 else font_default_progress
-                print("progress : " , progress)
                 response_data = serializer.data
                 response_data.update({
                     'status': progress_data.get('status', ''),
@@ -345,9 +344,13 @@ class OCRTaskAPIView(APIView):
             task_id = request.data.get("id")
             has_math = request.data.get("has_match", None)
             keyword = request.data.get("keyword", None)
+            result_type = request.data.get("result_type")
             try:
                 task = OCRTask.objects.get(id=task_id)
                 results = OCRResult.objects.filter(task=task)
+                if result_type:
+                    results = results.filter(result_type=result_type)
+
                 if has_math is True:
                     results = results.filter(has_match=has_math)
 
@@ -600,6 +603,28 @@ class OCRResultAPIView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
+        elif action == "update":
+            # 更新结果处理是否正确，result_type
+            result_ids = request.data.get("ids", {})
+            # 拼接更新结构体，包括ids， result_type
+            update_results = []
+            for id, result_type in result_ids.items():
+                try:
+                    result = OCRResult.objects.get(id=id)
+                    result.result_type = result_type
+                    update_results.append(result)
+                except OCRResult.DoesNotExist:
+                    continue
+
+            # 批量更新sql
+            if update_results:
+                OCRResult.objects.bulk_update(update_results, ['result_type'])
+                return Response({"detail": "结果更新成功", "total": len(update_results)})
+            else:
+                return Response(
+                    {"detail": "没有有效的结果需要更新"}, status=status.HTTP_400_BAD_REQUEST
+                )
+
         return Response(
             {"detail": f"不支持的操作: {action}"}, status=status.HTTP_400_BAD_REQUEST
         )
@@ -774,6 +799,8 @@ class OCRHistoryAPIView(APIView):
         if action == "download":
             return self.download_results(request)
 
+        if action == "del":
+            return self.del_result(request)
         # 默认list操作
         serializer = OCRHistoryQuerySerializer(data=request.data)
         if not serializer.is_valid():
@@ -875,5 +902,33 @@ class OCRHistoryAPIView(APIView):
         except Exception as e:
             return Response(
                 {"detail": f"下载失败: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    def del_result(self, request):
+        """删除历史任务及其结果"""
+        task_id = request.data.get("task_id")
+        print("====> task_id : ", task_id)
+        if not task_id:
+            return Response(
+                {"detail": "缺少task_id参数"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            # 删除 task 表数据
+            task = OCRTask.objects.get(id=task_id)
+            task.delete()
+
+            # 删除redis key数据
+            settings.REDIS.delete(f'ai_ocr_progress:{task_id}')
+            return Response({"detail": "任务及其结果删除成功"})
+
+        except OCRTask.DoesNotExist:
+            return Response(
+                {"detail": "任务不存在"}, status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {"detail": f"删除失败: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )

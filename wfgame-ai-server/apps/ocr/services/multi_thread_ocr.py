@@ -544,8 +544,8 @@ class MultiThreadOCR:
         logger.warning("结果收集线程启动")
         buffer = []
         # todo 改成百分比存图，但是可能会导致一次插入数据过多（多任务执行会涉及到表锁）
-        batch_size = 30 # 每30张图存一次db
-        flush_interval = 3  # 秒
+        batch_size = settings.CFG.getint('ocr', 'ocr_batch_size', fallback=10)
+        flush_interval = settings.CFG.getint('ocr', 'ocr_flush_interval', fallback=3)
         last_flush = time.time()
 
         while self.is_running or not self.result_queue.empty():
