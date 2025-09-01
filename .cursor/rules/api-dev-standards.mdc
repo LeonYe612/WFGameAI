@@ -1,6 +1,6 @@
 ---
-description:
-globs:
+description: 
+globs: 
 alwaysApply: true
 ---
 ---
@@ -12,7 +12,8 @@ alwaysApply: true
 # WFGame AI API 开发规范
 
 ## 基本要求。必须遵守！
- - By default, all responses must be in Chinese.
+ - 回复必须使用简体中文
+ - 注释必须使用简体中文
  - 禁止只进行解释，必须在解释说明之后直接在原文件内修改
  - 禁止针对某个问题单独处理，必须找到其特征，采用通用的解决方案避免此类问题再次出现。
  - 对话默认使用[中文简体]回复
@@ -24,7 +25,7 @@ alwaysApply: true
    - 遵循 PEP 8 代码风格指南
    - 使用四个空格缩进，禁止使用制表符
    - 每行代码长度不超过 79 个字符
-   - 禁止使用中文注释和中文变量名
+   - 禁止使用非中文注释和中文变量名
    - 禁止任何情况下使用任何形式的硬编码
 2. **命名规范**
    - 类名使用驼峰命名法（如 `MyClass`）
