@@ -121,6 +121,11 @@ class OCRTask(models.Model):
 
 class OCRResult(models.Model):
     """OCR结果模型"""
+    TYPE_CHOICES = (
+        ("1", "正确"),
+        ("2", "误检"),
+        ("3", "漏检"),
+    )
 
     task = models.ForeignKey(
         OCRTask,
@@ -139,6 +144,9 @@ class OCRResult(models.Model):
         max_digits=10, decimal_places=3, null=True, blank=True, verbose_name="处理时间"
     )
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
+    result_type = models.IntegerField(
+        choices=TYPE_CHOICES, default=1, verbose_name="识别结果类型"
+    )
 
     def __str__(self):
         return f"{self.task.id}_{self.id}"
