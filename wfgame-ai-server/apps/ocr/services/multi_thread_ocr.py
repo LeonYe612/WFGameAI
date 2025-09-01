@@ -37,23 +37,32 @@ class MultiThreadOCR:
                  task,
                  lang: str = 'ch',
                  max_workers: int = None,
-                 predict_save: bool = False # 是否保存预测可视化图片/JSON 结果
+                 predict_save: bool = False, # 是否保存预测可视化图片/JSON 结果
+                 match_languages: Optional[List[str]] = None
                  ):
         """
         初始化多线程OCR处理
 
         Args:
-            lang: 语言模型
-            max_workers: 最大工作线程数
-            task_id: 任务ID，用于落盘调试日志（文件名为 task_id.log）
+            lang (str): OCR识别模型语言（用于 PaddleOCR 初始化，例如 'ch'）。
+            max_workers (int): 最大工作线程数。
+            predict_save (bool): 是否保存预测可视化图片/JSON 结果。
+            match_languages (list[str] | None): 动态命中判定所用语言码列表，
+                若为 None 或空，则默认 ['ch']。命中逻辑与 OCR 识别语言解耦。
         """
         self.task = task
         # 初始化 Redis 助手
         self.redis_helper = settings.REDIS
         self.lang = lang
+        self.match_languages = match_languages or ['ch']
         self.max_workers = max_workers or OCR_MAX_WORKERS
         self.predict_save = predict_save  # 是否保存预测可视化/JSON 结果
-        self.task_id = task_id
+        # 安全初始化任务ID：若未通过构造传入，则尝试从 task.id 获取
+        try:
+            if not hasattr(self, 'task_id') or self.task_id is None:
+                self.task_id = str(getattr(task, 'id', '')) if getattr(task, 'id', None) is not None else None
+        except Exception:
+            self.task_id = None
 
         # 确保最小值为1，避免无效值
         if self.max_workers <= 0:
@@ -139,6 +148,15 @@ class MultiThreadOCR:
             try:
                 # OCRService 内部已按配置优先GPU，否则回退CPU
                 ocr_inst = OCRService(lang=self.lang)
+                # 若任务配置指定了预设，则运行时应用预设（前端可传入 high_speed/balanced/high_precision）
+                try:
+                    preset_name = ''
+                    if isinstance(self.task.config, dict):
+                        preset_name = self.task.config.get('smart_ocr_preset', '')
+                    if preset_name:
+                        ocr_inst.set_smart_ocr_preset(preset_name)
+                except Exception as _preset_err:
+                    logger.warning(f"应用智能OCR预设失败: {_preset_err}")
                 self.worker_ocrs.append(ocr_inst)
             except Exception as init_err:
                 logger.error(f"初始化OCR实例失败(线程索引 {i}): {init_err}")
@@ -341,7 +359,14 @@ class MultiThreadOCR:
         return all_results
 
     def _process_single_thread(self):
-        """单线程处理逻辑"""
+        """单线程处理逻辑（统一复用 _process_single_image）
+        
+        说明:
+            早前实现中部分图片未经过 `_process_single_image`，
+            导致 `languages/has_match` 未设置且未更新进度统计。
+            此处统一改为所有图片均走 `_process_single_image`，
+            确保命中判定与 Redis 进度计数一致。
+        """
         try:
             ocr = self.worker_ocrs[0]
             if ocr is None:
@@ -351,6 +376,7 @@ class MultiThreadOCR:
             while not self.image_queue.empty():
                 try:
                     relative_path = self.image_queue.get(block=False)
+                    # 统一使用单张图片处理函数，内部负责设置 has_match/languages
                     self._process_single_image(ocr, relative_path, 0)
                 except queue.Empty:
                     break
@@ -359,64 +385,9 @@ class MultiThreadOCR:
                     logger.error(f"单线程处理异常: {e}")
                     logger.error(traceback.format_exc())
                     break
-                # 直接处理所有图片
-                while not self.image_queue.empty():
-                    try:
-                        image_path = self.image_queue.get(block=False)
-                        logger.debug(f"单线程处理图片: {image_path}")
-                        img_start_time = time.time()
-
-                        try:
-                            if not os.path.isabs(image_path):
-                                full_path = os.path.join(settings.MEDIA_ROOT, image_path)
-                                if not os.path.exists(full_path):
-                                    logger.error(f"图片文件不存在: {full_path}")
-                                    error_result = {
-                                        "image_path": image_path,
-                                        "error": f"图片文件不存在: {full_path}",
-                                        "worker_id": 0
-                                    }
-                                    all_results.append(error_result)
-                                    self.error_count += 1
-                                    continue
-
-                            # 识别：遵循配置的 predict_save，关闭保存时不触发无文件名提示
-                            result = ocr.recognize_image(
-                                image_path,
-                                predict_save=self.predict_save,
-                                task_id=self.task_id,
-                            )
-                            result['worker_id'] = 0
-                            # 统一字段命名，与OCRService保持一致
-                            result['time_cost'] = time.time() - img_start_time
-
-                            all_results.append(result)
-                            self.processed_images += 1
-
-                            # 如果设置了结果回调，则调用
-                            if self.result_callback:
-                                self.result_callback(result)
-
-                        except Exception as e:
-                            logger.error(f"单线程处理失败 {image_path}: {e}")
-                            error_result = {
-                                "image_path": image_path,
-                                "error": str(e),
-                                "worker_id": 0
-                            }
-                            all_results.append(error_result)
-                            self.error_count += 1
-
-                    except queue.Empty:
-                        break
-                    except Exception as e:
-                        logger.error(f"单线程处理异常: {e}")
-                        logger.error(traceback.format_exc())
-                        break
-
         except Exception as e:
             self.update_progress_exception()
-            logger.error(f"单线程处理异常: {str(e)}")
+            logger.error(f"单线程处理逻辑失败: {e}")
             logger.error(traceback.format_exc())
 
     def _process_multi_thread(self):
@@ -528,7 +499,8 @@ class MultiThreadOCR:
                     logger.error(f"result_queue.put失败: {e}")
                 return
             else:
-                languages = {lang: True for lang in self.lang if OCRService.check_language_match(texts, lang)}
+                languages = {lang: True for lang in (self.match_languages or ['ch'])
+                             if OCRService.check_language_match(texts, lang)}
                 result['languages'] = languages
                 result['has_match'] = bool(languages)
                 result['confidence'] = result.get('confidence', 0.95)
@@ -586,19 +558,19 @@ class MultiThreadOCR:
 
                 self._process_single_image(ocr, relative_path, worker_id)
                 processed_count += 1
-                logger.debug(f"线程 {worker_id}: 处理图片 {image_path}")
+                logger.debug(f"线程 {worker_id}: 处理图片 {relative_path}")
                 img_start_time = time.time()
 
                 try:
                     from django.conf import settings
-                    if not os.path.isabs(image_path):
-                        full_path = os.path.join(settings.MEDIA_ROOT, image_path)
+                    if not os.path.isabs(relative_path):
+                        full_path = os.path.join(settings.MEDIA_ROOT, relative_path)
                         if not os.path.exists(full_path):
                             logger.error(
                                 f"线程 {worker_id}: 图片文件不存在: {full_path}"
                             )
                             error_result = {
-                                "image_path": image_path,
+                                "image_path": relative_path,
                                 "error": f"图片文件不存在: {full_path}",
                                 "worker_id": worker_id
                             }
@@ -608,7 +580,7 @@ class MultiThreadOCR:
                             continue
 
                     # 识别
-                    result = ocr.recognize_image(image_path, predict_save=self.predict_save, task_id=self.task_id)
+                    result = ocr.recognize_image(relative_path, predict_save=self.predict_save, task_id=self.task_id)
                     result['worker_id'] = worker_id
                     # 统一字段命名，与OCRService保持一致
                     result['time_cost'] = time.time() - img_start_time
@@ -622,10 +594,10 @@ class MultiThreadOCR:
 
                 except Exception as e:
                     logger.error(
-                        f"线程 {worker_id}: 处理失败 {image_path}: {e}"
+                        f"线程 {worker_id}: 处理失败 {relative_path}: {e}"
                     )
                     error_result = {
-                        "image_path": image_path,
+                        "image_path": relative_path,
                         "error": str(e),
                         "worker_id": worker_id
                     }

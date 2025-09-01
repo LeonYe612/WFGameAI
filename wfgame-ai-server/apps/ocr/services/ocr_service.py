@@ -141,6 +141,9 @@ class OCRService:
             except Exception:
                 pass
 
+            # 记录当前设备参数供后续可能的重建复用
+            self._device_arg = device_arg
+
             # 核心OCR阈值与边长限制从配置读取（优先新参数名，旧名作为回退）
             # 检测后处理阈值
             text_det_thresh = config.getfloat(
@@ -171,30 +174,7 @@ class OCRService:
             except Exception:
                 text_rec_score_thresh = config.getfloat('ocr', 'rec_score_thresh', fallback=0.00)
 
-            # 保存为实例属性（使用官方参数名），供后续强制写入与结果层过滤使用
-            self.text_det_thresh = text_det_thresh
-            self.text_det_box_thresh = text_det_box_thresh
-            self.text_det_unclip_ratio = text_det_unclip_ratio
-            self.text_det_limit_type = text_det_limit_type
-            self.text_det_limit_side_len = text_det_limit_side_len
-            self.text_rec_score_thresh = text_rec_score_thresh
-
-            logger.warning(
-                "应用OCR核心阈值参数: "
-                f"text_det_thresh={text_det_thresh}, "
-                f"text_det_box_thresh={text_det_box_thresh}, "
-                f"text_det_unclip_ratio={text_det_unclip_ratio}, "
-                f"text_det_limit_type={text_det_limit_type}, "
-                f"text_det_limit_side_len={text_det_limit_side_len}, "
-                f"text_rec_score_thresh={text_rec_score_thresh}"
-            )
-
-            # 初始化 PaddleOCR
             # 说明：以下三个开关用于控制“预测前的预处理阶段”是否启用
-            # - use_doc_orientation_classify: 文档方向分类
-            # - use_doc_unwarping: 文档扭曲矫正
-            # - use_textline_orientation: 文本行方向分类
-            # 它们在 self.ocr.predict() 调用之前由内部管线执行
             use_doc_orientation_classify = config.getboolean(
                 'ocr', 'use_doc_orientation_classify', fallback=False
             )
@@ -204,6 +184,72 @@ class OCRService:
             use_textline_orientation = config.getboolean(
                 'ocr', 'use_textline_orientation', fallback=False
             )
+
+            # 新增: 三种预设（high_speed/balanced/high_precision）及动态开关
+            self.smart_ocr_preset = config.get('ocr', 'smart_ocr_preset', fallback='balanced')
+            self.smart_ocr_dynamic_limit_enabled = config.getboolean(
+                'ocr', 'smart_ocr_dynamic_limit_enabled', fallback=True
+            )
+
+            # 应用预设覆盖（与 ocrdemo 保持一致）
+            # - high_speed: 降低精度换速度，固定 max/960，较高阈值
+            # - balanced: 均衡参数，960，动态 min/max（由图片分辨率决定）
+            # - high_precision: 提升精度，固定 min/1280，较低阈值，启用文本行方向
+            preset = (self.smart_ocr_preset or 'balanced').lower()
+            if preset == 'high_speed':
+                text_det_limit_type = 'max'
+                text_det_limit_side_len = 960
+                text_det_thresh = 0.5
+                text_det_box_thresh = 0.7
+                text_det_unclip_ratio = 1.0
+                use_textline_orientation = False
+                # 高速模式默认不启用动态切换
+                self.smart_ocr_dynamic_limit_enabled = False
+            elif preset == 'high_precision':
+                text_det_limit_type = 'min'
+                text_det_limit_side_len = 1280
+                text_det_thresh = 0.2
+                text_det_box_thresh = 0.4
+                text_det_unclip_ratio = 2.0
+                use_textline_orientation = True
+                # 高精度模式默认不启用动态切换
+                self.smart_ocr_dynamic_limit_enabled = False
+            else:
+                # balanced 默认启用动态切换（可被配置覆盖）
+                # 侧边长度与阈值采用均衡推荐
+                text_det_limit_side_len = 960
+                text_det_thresh = 0.3
+                text_det_box_thresh = 0.6
+                text_det_unclip_ratio = 1.5
+                # 若配置显式关闭，则不启用动态
+                self.smart_ocr_dynamic_limit_enabled = bool(self.smart_ocr_dynamic_limit_enabled)
+
+            # 保存为实例属性（使用官方参数名），供后续强制写入与结果层过滤使用
+            self.text_det_thresh = text_det_thresh
+            self.text_det_box_thresh = text_det_box_thresh
+            self.text_det_unclip_ratio = text_det_unclip_ratio
+            self.text_det_limit_type = text_det_limit_type
+            self.text_det_limit_side_len = text_det_limit_side_len
+            self.text_rec_score_thresh = text_rec_score_thresh
+            # 保存文本行方向开关，便于重建时复用
+            self.use_textline_orientation = use_textline_orientation
+
+            # 当前使用的 limit_type（首次取预设/配置值）
+            self._current_limit_type = self.text_det_limit_type
+
+            logger.warning(
+                "应用OCR核心阈值参数: "
+                f"text_det_thresh={self.text_det_thresh}, "
+                f"text_det_box_thresh={self.text_det_box_thresh}, "
+                f"text_det_unclip_ratio={self.text_det_unclip_ratio}, "
+                f"text_det_limit_type={self.text_det_limit_type}, "
+                f"text_det_limit_side_len={self.text_det_limit_side_len}, "
+                f"text_rec_score_thresh={self.text_rec_score_thresh}, "
+                f"smart_ocr_preset={self.smart_ocr_preset}, "
+                f"dynamic_limit_enabled={self.smart_ocr_dynamic_limit_enabled}"
+            )
+
+            # 模型名称
             text_detection_model_name = config.get(
                 'ocr', 'text_detection_model_name', fallback='PP-OCRv5_server_det'
             )
@@ -215,7 +261,7 @@ class OCRService:
                 "OCR初始化配置: "
                 f"use_doc_orientation_classify={use_doc_orientation_classify}, "
                 f"use_doc_unwarping={use_doc_unwarping}, "
-                f"use_textline_orientation={use_textline_orientation}, "
+                f"use_textline_orientation={self.use_textline_orientation}, "
                 f"text_detection_model_name={text_detection_model_name}, "
                 f"text_recognition_model_name={text_recognition_model_name}"
             )
@@ -225,7 +271,7 @@ class OCRService:
                 lang=self.lang,
                 use_doc_orientation_classify=use_doc_orientation_classify,
                 use_doc_unwarping=use_doc_unwarping,
-                use_textline_orientation=use_textline_orientation,
+                use_textline_orientation=self.use_textline_orientation,
                 text_detection_model_name=text_detection_model_name,
                 text_recognition_model_name=text_recognition_model_name,
             )
@@ -234,15 +280,16 @@ class OCRService:
             # 优先尝试传入官方新参数；若当前安装版本不支持则回退最小参数集
             try:
                 det_params_kwargs = dict(
-                    text_det_thresh=text_det_thresh,
-                    text_det_box_thresh=text_det_box_thresh,
-                    text_det_unclip_ratio=text_det_unclip_ratio,
-                    text_det_limit_side_len=text_det_limit_side_len,
-                    text_rec_score_thresh=text_rec_score_thresh,
+                    text_det_thresh=self.text_det_thresh,
+                    text_det_box_thresh=self.text_det_box_thresh,
+                    text_det_unclip_ratio=self.text_det_unclip_ratio,
+                    text_det_limit_side_len=self.text_det_limit_side_len,
+                    text_rec_score_thresh=self.text_rec_score_thresh,
+                    text_det_limit_type=self.text_det_limit_type,
                 )
                 self.ocr = PaddleOCR(**{**init_kwargs, **det_params_kwargs})
                 logger.warning(
-                    "PaddleOCR初始化已接收核心参数(text_det_*, text_rec_score_thresh)"
+                    "PaddleOCR初始化已接收核心参数(text_det_*, text_rec_score_thresh, text_det_limit_type)"
                 )
             except TypeError:
                 # 回退：使用最小参数集初始化，后续强制写入子模块
@@ -254,6 +301,132 @@ class OCRService:
             raise
         print(f"PaddleOCR模型初始化完成，device={device_arg}")
 
+    def _select_limit_type_by_image(self, image_nd) -> str:
+        """基于图像分辨率动态选择 text_det_limit_type。
+
+        Args:
+            image_nd (numpy.ndarray): 已读取的图像矩阵
+
+        Returns:
+            str: 'max' 或 'min'。当无法读取尺寸时，返回当前生效的 limit_type。
+        """
+        try:
+            if image_nd is None:
+                return getattr(self, '_current_limit_type', self.text_det_limit_type)
+            height, width = image_nd.shape[:2]
+            if width >= height:
+                return 'max'
+            return 'min'
+        except Exception:
+            return getattr(self, '_current_limit_type', self.text_det_limit_type)
+
+    def _reinit_ocr_with_limit_type(self, new_limit_type: str) -> None:
+        """按需使用新的 text_det_limit_type 重建 OCR 引擎。
+
+        仅在 limit_type 发生变化时调用。尽量复用现有参数与设备设置，
+        若 PaddleOCR 版本不支持传入该参数，则回退最小参数集并继续运行。
+
+        Args:
+            new_limit_type (str): 新的 limit_type，'min' 或 'max'
+        """
+        try:
+            # 读取与初始化一致的开关与模型名称
+            use_doc_orientation_classify = config.getboolean(
+                'ocr', 'use_doc_orientation_classify', fallback=False
+            )
+            use_doc_unwarping = config.getboolean(
+                'ocr', 'use_doc_unwarping', fallback=False
+            )
+            # 使用当前实例的文本行方向开关（可能被预设覆盖）
+            _use_textline_orientation = getattr(self, 'use_textline_orientation', False)
+            text_detection_model_name = config.get(
+                'ocr', 'text_detection_model_name', fallback='PP-OCRv5_server_det'
+            )
+            text_recognition_model_name = config.get(
+                'ocr', 'text_recognition_model_name', fallback='PP-OCRv5_server_rec'
+            )
+
+            init_kwargs = dict(
+                device=getattr(self, '_device_arg', 'gpu'),
+                lang=self.lang,
+                use_doc_orientation_classify=use_doc_orientation_classify,
+                use_doc_unwarping=use_doc_unwarping,
+                use_textline_orientation=_use_textline_orientation,
+                text_detection_model_name=text_detection_model_name,
+                text_recognition_model_name=text_recognition_model_name,
+            )
+
+            # 优先尝试传入官方新参数（包含动态的 limit_type）
+            try:
+                det_params_kwargs = dict(
+                    text_det_thresh=self.text_det_thresh,
+                    text_det_box_thresh=self.text_det_box_thresh,
+                    text_det_unclip_ratio=self.text_det_unclip_ratio,
+                    text_det_limit_side_len=self.text_det_limit_side_len,
+                    text_rec_score_thresh=self.text_rec_score_thresh,
+                    text_det_limit_type=new_limit_type,
+                )
+                self.ocr = PaddleOCR(**{**init_kwargs, **det_params_kwargs})
+                logger.warning(
+                    f"已根据图片尺寸切换 text_det_limit_type={new_limit_type} 并重建OCR"
+                )
+            except TypeError:
+                # 回退：不传入 limit_type，仅使用最小参数集
+                self.ocr = PaddleOCR(**init_kwargs)
+                logger.warning(
+                    "当前 PaddleOCR 版本不支持 text_det_limit_type 参数，"
+                    "已使用最小参数集重建OCR。"
+                )
+
+            # 更新当前生效的 limit_type（供日志与后续判断使用）
+            self.text_det_limit_type = new_limit_type
+            self._current_limit_type = new_limit_type
+        except Exception as e:
+            logger.warning(f"重建OCR失败，继续沿用现有实例。原因: {e}")
+
+    def set_smart_ocr_preset(self, preset_name: str) -> None:
+        """运行时设置智能OCR预设，并按需重建引擎。
+
+        Args:
+            preset_name (str): 'high_speed' | 'balanced' | 'high_precision'
+        """
+        try:
+            name = (preset_name or '').lower().strip()
+            if name not in {'high_speed', 'balanced', 'high_precision'}:
+                logger.warning(f"未知预设: {preset_name}")
+                return
+            self.smart_ocr_preset = name
+            # 根据预设调整参数
+            if name == 'high_speed':
+                self.smart_ocr_dynamic_limit_enabled = False
+                self.use_textline_orientation = False
+                self.text_det_limit_type = 'max'
+                self.text_det_limit_side_len = 960
+                self.text_det_thresh = 0.5
+                self.text_det_box_thresh = 0.7
+                self.text_det_unclip_ratio = 1.0
+            elif name == 'high_precision':
+                self.smart_ocr_dynamic_limit_enabled = False
+                self.use_textline_orientation = True
+                self.text_det_limit_type = 'min'
+                self.text_det_limit_side_len = 1280
+                self.text_det_thresh = 0.2
+                self.text_det_box_thresh = 0.4
+                self.text_det_unclip_ratio = 2.0
+            else:
+                # balanced
+                self.smart_ocr_dynamic_limit_enabled = True
+                self.use_textline_orientation = False
+                # 初始值保持当前 limit_type，由动态策略在首张图后生效
+                self.text_det_limit_side_len = 960
+                self.text_det_thresh = 0.3
+                self.text_det_box_thresh = 0.6
+                self.text_det_unclip_ratio = 1.5
+
+            # 依据当前(或新) limit_type 立即重建一次，确保立即生效
+            self._reinit_ocr_with_limit_type(self.text_det_limit_type)
+        except Exception as e:
+            logger.warning(f"设置预设失败: {e}")
 
 
     def initialize(self):
@@ -320,6 +493,17 @@ class OCRService:
             # 3) 文本识别: 识别 + （可选）内部 score_thresh 过滤
             # 4) 结果层兜底过滤: 再次按 text_rec_score_thresh 过滤，保证最高优先级
             #    注: 为兼容不同版本，内部与结果层双保险，不改变检测/识别主流程
+
+            # 新增: 基于图像分辨率动态选择 limit_type，发生变化时重建 OCR
+            try:
+                if getattr(self, 'smart_ocr_dynamic_limit_enabled', True):
+                    next_limit_type = self._select_limit_type_by_image(image_nd)
+                    if next_limit_type and next_limit_type != getattr(self, '_current_limit_type', self.text_det_limit_type):
+                        self._reinit_ocr_with_limit_type(next_limit_type)
+            except Exception as _dyn_err:
+                # 动态策略失败不应影响主流程
+                logger.debug(f"动态 limit_type 策略未生效: {_dyn_err}")
+
             # 根据配置决定是否保存预测可视化/JSON 结果
             timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")
             base_name = os.path.splitext(os.path.basename(full_image_path))[0]
@@ -728,7 +912,7 @@ class OCRService:
 
         Args:
             texts: 文本列表
-            target_language: 目标语言代码
+            target_language: 目标语言代码（支持官方与内部代码）
 
         Returns:
             bool: 是否包含目标语言
@@ -783,14 +967,6 @@ if __name__ == "__main__":
             print(f"批量识别目录: {args.path}")
             results = ocr.recognize_batch(args.path)
             print(f"批量识别完成，共处理 {len(results)} 张图片")
-
-            # 统计包含中文的图片
-            zh_count = 0
-            for result in results:
-                if 'texts' in result and OCRService.check_language_match(result['texts'], 'zh'):
-                    zh_count += 1
-
-            print(f"包含中文的图片: {zh_count}/{len(results)}")
         elif os.path.isfile(args.path):
             print(f"识别单张图片: {args.path}")
             result = ocr.recognize_image(args.path)

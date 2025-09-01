@@ -14,17 +14,15 @@ docs/
 *.png
 *.jpg
 *.jpeg
-*.ttf
 *.eot
-*.woff
-*.woff2
 *.svg
 *.md
+*.mdc
 
 # IDE
-.vscode/*
-.idea/*
-.cursor/*
+.vscode/
+.idea/
+.cursor/
 
 # 静态文件和报告
 wfgame-ai-server/logs/

@@ -35,10 +35,97 @@ UPLOADS_DIR = PathUtils.get_ocr_uploads_dir()
 RESULTS_DIR = PathUtils.get_ocr_results_dir()
 
 
+# 通用工具函数：语言命中与文本过滤（避免任何硬编码语言码）
+def _is_language_hit(texts, target_languages):
+    """判断识别结果是否命中任一目标语言。
+
+    Args:
+        texts (list[str]): 文本识别得到的文本列表，允许为空列表或None。
+        target_languages (list[str] | None): 目标语言代码列表，例如 ['ch','en']。
+            若为None或空列表，则默认使用 ['ch']。
+
+    Returns:
+        bool: 当且仅当 `texts` 中包含任一 `target_languages` 对应语言的文本时
+        返回 True，否则返回 False。
+
+    Raises:
+        无显式抛出。内部异常会被吞并以保证稳健性。
+
+    Example:
+        >>> _is_language_hit(['你好','hello'], ['en'])
+        True
+        >>> _is_language_hit(['你好'], ['en'])
+        False
+
+    Notes:
+        - 为保证健壮性，单项语言匹配异常不会影响整体判断，会被忽略继续。
+        - 该函数不做语言码合法性校验，默认交由 `OCRService.check_language_match` 处理。
+    """
+    safe_langs = target_languages or ['ch']
+    for lang in safe_langs:
+        try:
+            if OCRService.check_language_match(texts or [], lang):
+                return True
+        except Exception:
+            # 单项语言匹配异常不影响整体判断
+            continue
+    return False
+
+
+def _filter_texts_by_languages(texts, target_languages):
+    """按目标语言过滤文本并返回命中项。
+
+    Args:
+        texts (list[str]): 文本识别得到的文本列表，允许为空列表或None。
+        target_languages (list[str] | None): 目标语言代码列表，例如 ['ch','en']。
+            若为None或空列表，则默认使用 ['ch']。
+
+    Returns:
+        list[str]: 所有被任一目标语言规则命中的文本项，按原顺序返回。
+
+    Raises:
+        无显式抛出。内部异常会被吞并以保证稳健性。
+
+    Example:
+        >>> _filter_texts_by_languages(['你好','hello'], ['en'])
+        ['hello']
+
+    Notes:
+        - 使用 `OCRService.check_language_match` 对单条文本进行判定。
+        - 单条判定异常不会中断流程，仅跳过该条。
+    """
+    safe_langs = target_languages or ['ch']
+    filtered = []
+    for text in texts or []:
+        try:
+            if any(OCRService.check_language_match([text], lang) for lang in safe_langs):
+                filtered.append(text)
+        except Exception:
+            continue
+    return filtered
+
+
 @shared_task(queue="ai_queue")
 def process_ocr_task(task_id):
-    """
-    处理OCR任务（主流程只负责调度和收尾，所有批量写库逻辑已在 MultiThreadOCR 内部完成）
+    """调度并处理指定 OCR 任务。
+
+    Args:
+        task_id (int|str): `OCRTask` 主键ID。
+
+    Returns:
+        dict: 执行结果字典，包含 `status` 与可选的 `task_id`/`message` 等。
+
+    Raises:
+        异常会被捕获记录到日志，并回写任务状态为 failed，不向外抛出。
+
+    Example:
+        由 Celery Worker 异步调用：
+        >>> process_ocr_task.delay(123)
+
+    Notes:
+        - 批量写库逻辑在 `MultiThreadOCR` 内部完成。
+        - 目标语言从 `task.config['target_languages']` 动态获取，未设置默认 ['ch']。
+        - 命中规则统一在 `_is_language_hit` / `_filter_texts_by_languages` 中处理。
     """
     logger.info(f"开始处理OCR任务: {task_id}")
 
@@ -53,7 +140,7 @@ def process_ocr_task(task_id):
 
         # 获取目标语言
         task_config = task.config or {}
-        target_languages = task_config.get('target_languages', ['zh'])  # 默认检测中文
+        target_languages = task_config.get('target_languages', ['ch'])  # 默认检测中文（官方语言码）
 
 
         # 从config.ini读取OCR多线程配置
@@ -64,7 +151,7 @@ def process_ocr_task(task_id):
 
         # 为了方便调试，直接使用固定目录，不管任务类型
         debug_dir = PathUtils.get_debug_dir()
-        debug_status = False
+        debug_status = True
 
         # 打印完整的调试目录路径，方便排查问题
         logger.info(f"调试目录完整路径: {os.path.abspath(debug_dir)}")
@@ -129,7 +216,7 @@ def process_ocr_task(task_id):
             task,
             lang="ch",  # 默认使用中文模型
             max_workers=ocr_max_workers,  # 使用配置的工作线程数
-            task_id=str(task_id),         # 传入任务ID用于调试日志落盘
+            match_languages=target_languages  # 将命中判定语言动态传入，避免硬编码
         )
 
         # OCR多线程识别（所有批量写库逻辑已在 MultiThreadOCR 内部完成）
@@ -180,72 +267,93 @@ def process_ocr_task(task_id):
 
 
 def _generate_summary_report(task, results, target_languages):
-    """生成汇总报告"""
+    """生成OCR汇总报告（按动态目标语言命中）。
+
+    Args:
+        task (OCRTask): 当前任务实例。
+        results (list[dict]): 识别结果列表，元素包含 `image_path`、`texts` 等字段。
+        target_languages (list[str] | None): 目标语言代码列表；None/空默认 ['ch']。
+
+    Returns:
+        None: 结果直接写入报告文件，并更新 `task.config['report_file']`。
+
+    Raises:
+        无显式抛出。内部异常已做保护性处理并记录日志。
+
+    Example:
+        >>> _generate_summary_report(task, results, ['ch','en'])
+
+    Notes:
+        - 命中判定遵循“任意目标语言命中即视为命中”。
+        - 路径统一经 `PathUtils.normalize_path` 规范化。
+    """
     # 统计信息
     total_images = len(results)
-    chinese_images = []
+    matched_images = []
 
-    # 筛选包含中文的图片
+    # 筛选包含目标语言的图片（命中规则：包含任一目标语言文字即为命中）
     for result in results:
         # 跳过处理失败的图片
         if 'error' in result:
             continue
 
-        # 检查是否包含中文
-        if OCRService.check_language_match(result.get('texts', []), 'zh'):
-            # 获取文件信息
-            image_path = result.get('image_path', '')
+        texts = result.get('texts', [])
+        if not _is_language_hit(texts, target_languages):
+            continue
 
-            # 使用PathUtils规范化路径
-            image_path = PathUtils.normalize_path(image_path)
+        # 获取文件信息
+        image_path = result.get('image_path', '')
+        image_path = PathUtils.normalize_path(image_path)
+        file_name = os.path.basename(image_path)
 
-            file_name = os.path.basename(image_path)
+        try:
+            # 尝试获取文件大小（相对路径拼接 MEDIA_ROOT）
+            if os.path.isabs(image_path):
+                file_size = os.path.getsize(image_path) / 1024  # KB
+            else:
+                full_path = os.path.join(settings.MEDIA_ROOT, image_path)
+                file_size = os.path.getsize(full_path) / 1024  # KB
+        except Exception:
+            file_size = 0
 
-            try:
-                # 尝试获取文件大小
-                if os.path.isabs(image_path):
-                    file_size = os.path.getsize(image_path) / 1024  # KB
-                else:
-                    full_path = os.path.join(settings.MEDIA_ROOT, image_path)
-                    file_size = os.path.getsize(full_path) / 1024  # KB
-            except:
-                file_size = 0
+        matched_texts = _filter_texts_by_languages(texts, target_languages)
 
-            chinese_images.append({
-                'path': image_path,
-                'name': file_name,
-                'size': file_size,
-                'time': result.get('time_cost', 0),
-                'texts': result.get('texts', []),
-                'chinese_text': ' '.join([text for text in result.get('texts', [])
-                                          if OCRService.check_language_match([text], 'zh')])
-            })
+        matched_images.append({
+            'path': image_path,
+            'name': file_name,
+            'size': file_size,
+            'time': result.get('time_cost', 0),
+            'texts': texts,
+            'matched_texts': ' '.join(matched_texts),
+        })
 
     # 计算统计信息
-    chinese_count = len(chinese_images)
-    chinese_rate = (chinese_count / total_images * 100) if total_images > 0 else 0
+    matched_count = len(matched_images)
+    matched_rate = (matched_count / total_images * 100) if total_images > 0 else 0
 
-    # 生成报告内容
+    # 生成报告内容（动态目标语言）
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    report = f"""包含中文的图片检测结果
+    langs_str = ','.join(target_languages or ['ch'])
+    report = f"""包含目标语言的图片检测结果
 ==================================================
 生成时间: {now}
+目标语言: {langs_str}
 总处理图片数: {total_images}
-包含中文图片数: {chinese_count}
-中文检出率: {chinese_rate:.1f}%
+命中图片数: {matched_count}
+命中率: {matched_rate:.1f}%
 
-包含中文的图片列表:
+命中的图片列表:
 ------------------------------"""
 
     # 添加每张图片的详细信息
-    for i, img in enumerate(chinese_images, 1):
+    for i, img in enumerate(matched_images, 1):
         report += f"""
 {i}. 图片信息:
    文件路径: {img['path']}
    文件名: {img['name']}
    文件大小: {img['size']:.2f} KB
    处理时间: {img['time']:.2f}秒
-   识别的中文: {img['chinese_text']}
+   命中文本: {img['matched_texts']}
    完整文本: {' '.join(img['texts'])}"""
 
     # 添加说明信息
@@ -267,157 +375,104 @@ def _generate_summary_report(task, results, target_languages):
     task.save()
 
     logger.info(f"汇总报告已生成: {report_file}")
-
-    # 打印简要统计信息到日志
-    logger.info(f"OCR识别统计: 总图片数={total_images}, 包含中文图片数={chinese_count}, 检出率={chinese_rate:.1f}%")
+    logger.info(
+        f"OCR识别统计: 总图片数={total_images}, 命中图片数={matched_count}, 命中率={matched_rate:.1f}%"
+    )
 
 
 def _process_results(task, results, target_languages):
-    """处理OCR识别结果"""
+    """
+    处理OCR识别结果（通用动态语言命中）。
+
+    Args:
+        task (OCRTask): 当前任务实例。
+        results (list[dict]): 识别结果列表，元素包含 `image_path`、`texts` 等字段。
+        target_languages (list[str] | None): 目标语言代码列表；None/空默认 ['ch']。
+
+    Returns:
+        dict: 包含以下键：
+            - processed_results (list[dict]): 附带 `languages`/`has_match` 的结果列表
+            - matched_images (list[dict]): 命中图片的精简信息
+            - matched_count (int): 命中数量
+            - matched_rate (float): 命中率（0~100）
+
+    Raises:
+        无显式抛出。内部异常会在必要处被保护性捕获并记录。
+
+    Example:
+        >>> data = _process_results(task, results, ['ch','en'])
+        >>> data['matched_count']
+
+    Notes:
+        - 命中规则：只要包含任一目标语言文本即命中。
+        - 避免硬编码语言；按输入动态决定。
+        - 严格控制缩进与循环层级，保证可维护性与可读性。
+    """
     logger.warning(f"开始处理OCR结果，共 {len(results)} 个结果")
-    anomaly_images = []
-    matched_images = 0
-    failed_images = 0
-    total_images = len(results)
-    saved_results = 0
 
-    for idx, result in enumerate(results):
-        # 获取图片路径，转换为相对路径
-        image_path = result.get('image_path', '')
-        # 使用PathUtils规范化路径
-        image_path = PathUtils.normalize_path(image_path)
+    processed_results = []
+    matched_images = []
 
-        logger.info(f"处理第 {idx+1}/{total_images} 个结果: {image_path}")
+    safe_langs = target_languages or ['ch']
 
-        # 检查是否处理失败
+    for result in results:
         if 'error' in result:
-            # 记录失败信息到数据库
-            failed_images += 1
-            logger.warning(f"图片处理失败: {image_path}, 错误: {result['error']}")
-
-            try:
-                # 保存失败结果到数据库
-                OCRResult.objects.create(
-                    task=task,
-                    image_path=image_path,
-                    texts=[],
-                    languages={},
-                    has_match=False,
-                    confidence=0.0,
-                    processing_time=0
-                )
-                saved_results += 1
-                logger.warning(f"已保存失败结果到数据库: {image_path}")
-            except Exception as e:
-                logger.error(f"保存失败结果到数据库出错: {image_path}, 错误: {str(e)}")
             continue
 
-        # 检查是否包含目标语言文本
-        has_match = False
-        for lang in target_languages:
-            if OCRService.check_language_match(result.get('texts', []), lang):
-                has_match = True
-                break
+        texts = result.get('texts', [])
+        languages = {}
+        for lang in safe_langs:
+            try:
+                if OCRService.check_language_match(texts, lang):
+                    languages[lang] = True
+            except Exception:
+                continue
+        has_match = bool(languages)
 
-        try:
-            # 保存结果到数据库
-            OCRResult.objects.create(
-                task=task,
-                image_path=image_path,
-                texts=result.get('texts', []),
-                languages={lang: True for lang in target_languages if OCRService.check_language_match(result.get('texts', []), lang)},
-                has_match=has_match,
-                confidence=result.get('confidence', 0.95),
-                processing_time=result.get('time_cost', 0)
-            )
-            saved_results += 1
-            logger.info(f"已保存结果到数据库: {image_path}, 匹配状态: {has_match}")
-        except Exception as e:
-            logger.error(f"保存结果到数据库出错: {image_path}, 错误: {str(e)}")
-            import traceback
-            logger.error(traceback.format_exc())
+        enriched = {
+            **result,
+            'languages': languages,
+            'has_match': has_match,
+        }
+        processed_results.append(enriched)
 
         if has_match:
-            matched_images += 1
-            # 记录异常图片路径
-            anomaly_images.append(image_path)
+            image_path = PathUtils.normalize_path(result.get('image_path', ''))
+            file_name = os.path.basename(image_path)
+            try:
+                if os.path.isabs(image_path):
+                    file_size = os.path.getsize(image_path) / 1024  # KB
+                else:
+                    full_path = os.path.join(settings.MEDIA_ROOT, image_path)
+                    file_size = os.path.getsize(full_path) / 1024  # KB
+            except Exception:
+                file_size = 0
 
-    # 更新任务状态
-    try:
-        task.status = 'completed'
-        task.end_time = timezone.now()
-        task.total_images = total_images
-        task.matched_images = matched_images
-        task.match_rate = (matched_images / total_images * 100) if total_images > 0 else 0
-        task.save()
-        logger.warning(f"已更新任务状态: {task.id}, 状态: {task.status}")
-    except Exception as e:
-        logger.error(f"更新任务状态失败: {str(e)}")
-        import traceback
-        logger.error(traceback.format_exc())
+            matched_texts = _filter_texts_by_languages(texts, safe_langs)
 
-    # 汇总报告异常图片数量
-    if matched_images > 0:
-        logger.info(f"检测到异常图片: {matched_images}/{total_images} ({(matched_images/total_images*100):.2f}%)")
+            matched_images.append({
+                'path': image_path,
+                'name': file_name,
+                'size': file_size,
+                'time': result.get('time_cost', 0),
+                'texts': texts,
+                'matched_texts': ' '.join(matched_texts),
+            })
 
-    # 记录失败图片数量
-    if failed_images > 0:
-        logger.warning(f"处理失败图片: {failed_images}/{total_images} ({(failed_images/total_images*100):.2f}%)")
+    total_images = len(results)
+    matched_count = len(matched_images)
+    matched_rate = (matched_count / total_images * 100) if total_images > 0 else 0
 
-    logger.warning(f"OCR结果处理完成，共保存 {saved_results}/{total_images} 个结果到数据库")
+    logger.info(
+        f"OCR识别统计: 总图片数={total_images}, 命中图片数={matched_count}, 命中率={matched_rate:.1f}%"
+    )
 
+    # 可按需返回结构化结果，当前不影响既有调用方
+    return {
+        'processed_results': processed_results,
+        'matched_images': matched_images,
+        'matched_count': matched_count,
+        'matched_rate': matched_rate,
+    }
 
-def _clone_or_update_repository(repo):
-    """克隆或更新Git仓库"""
-    from .services.gitlab import GitLabService, GitLabConfig
-
-    logger.info(f"克隆或更新仓库: {repo.url}")
-
-    # 使用静态方法解析GitLab URL获取项目路径
-    _, project_path = GitLabService.parse_gitlab_url(repo.url)
-    # 从项目路径中提取仓库名称（最后一部分）
-    repo_name = project_path.split('/')[-1]
-    repo_dir = os.path.join(REPOS_DIR, repo_name)
-
-    # 检查仓库是否已存在
-    if os.path.exists(repo_dir):
-        # 更新仓库
-        logger.info(f"更新仓库: {repo_dir}")
-        try:
-            # 创建GitLab服务用于更新
-            gitlab_config = GitLabConfig(
-                repo_url=repo.url,
-                access_token=repo.token
-            )
-            git_service = GitLabService(gitlab_config)
-
-            # 使用内部方法更新仓库
-            from pathlib import Path
-            git_service._update_repository_with_progress(Path(repo_dir), repo.branch)
-            logger.info(f"仓库更新成功: {repo_dir}")
-            return repo_dir
-        except Exception as e:
-            logger.error(f"仓库更新失败: {str(e)}")
-            # 如果更新失败，尝试重新克隆
-            import shutil
-            shutil.rmtree(repo_dir, ignore_errors=True)
-
-    # 克隆仓库
-    logger.info(f"克隆仓库: {repo.url} -> {repo_dir}")
-    try:
-        # 创建GitLab服务用于克隆
-        gitlab_config = GitLabConfig(
-            repo_url=repo.url,
-            access_token=repo.token
-        )
-        git_service = GitLabService(gitlab_config)
-
-        # 使用clone_repository方法克隆仓库
-        result = git_service.clone_repository(repo_dir, repo.branch)
-        if not result.success:
-            raise Exception(f"克隆失败: {result.error}")
-        logger.info(f"仓库克隆成功: {repo_dir}")
-        return repo_dir
-    except Exception as e:
-        logger.error(f"仓库克隆失败: {str(e)}")
-        raise
+    
