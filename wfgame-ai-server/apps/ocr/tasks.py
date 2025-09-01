@@ -35,9 +35,11 @@ UPLOADS_DIR = PathUtils.get_ocr_uploads_dir()
 RESULTS_DIR = PathUtils.get_ocr_results_dir()
 
 
-@shared_task
+@shared_task(queue="ai_queue")
 def process_ocr_task(task_id):
-    """处理OCR任务"""
+    """
+    处理OCR任务（主流程只负责调度和收尾，所有批量写库逻辑已在 MultiThreadOCR 内部完成）
+    """
     logger.info(f"开始处理OCR任务: {task_id}")
 
     try:
@@ -62,12 +64,10 @@ def process_ocr_task(task_id):
 
         # 为了方便调试，直接使用固定目录，不管任务类型
         debug_dir = PathUtils.get_debug_dir()
-        debug_status = True
-        # debug_status = False
+        debug_status = False
 
         # 打印完整的调试目录路径，方便排查问题
         logger.info(f"调试目录完整路径: {os.path.abspath(debug_dir)}")
-
 
         # step2. 获取待检测目录路径
         # 获取待检测目录路径 & 待检测文件相对路径
@@ -92,32 +92,47 @@ def process_ocr_task(task_id):
                     GitLabConfig(
                         repo_url=task.git_repository.url,
                         access_token=task.git_repository.token,
-                        )
                     )
+                )
                 result: DownloadResult = git_service.download_files_with_git_clone(
                     repo_base_dir=check_dir,
-                    branch=task_config.get("branch", "master"),
+                    branch=task_config.get("branch", "main"),
                 )
                 if not result.success:
-                    raise Exception(f"Git仓库下载失败: {result.message}")
+                    logger.error(f"Git仓库下载失败: {result.message}")
+                    task.status = 'failed'
+                    task.end_time = timezone.now()
+                    task.remark = f"Git仓库下载失败: {result.message}"
+                    task.save()
+                    return {"status": "error", "message": f"Git仓库下载失败: {result.message}"}
             else:
-                raise ValueError(f"不支持的任务类型: {task.source_type}")
+                logger.error(f"不支持的任务类型: {task.source_type}")
+                task.status = 'failed'
+                task.end_time = timezone.now()
+                task.remark = f"不支持的任务类型: {task.source_type}"
+                task.save()
+                return {"status": "error", "message": f"不支持的任务类型: {task.source_type}"}
 
-
-        # step3. 确认目标目录存在
+        # 检查目标目录
         if not check_dir or not os.path.exists(check_dir):
-            raise Exception(f"OCR待检测目录不存在: {check_dir}")
+            logger.error(f"OCR待检测目录不存在: {check_dir}")
+            task.status = 'failed'
+            task.end_time = timezone.now()
+            task.remark = f"OCR待检测目录不存在: {check_dir}"
+            task.save()
+            return {"status": "error", "message": f"OCR待检测目录不存在: {check_dir}"}
 
         # step4. 执行主逻辑
         # 初始化多线程OCR服务
         logger.warning(f"初始化多线程OCR服务 ( 最大工作线程: {ocr_max_workers})")
         multi_thread_ocr = MultiThreadOCR(
+            task,
             lang="ch",  # 默认使用中文模型
             max_workers=ocr_max_workers,  # 使用配置的工作线程数
             task_id=str(task_id),         # 传入任务ID用于调试日志落盘
         )
 
-        # 执行OCR识别
+        # OCR多线程识别（所有批量写库逻辑已在 MultiThreadOCR 内部完成）
         logger.warning(f"开始多线程识别目录: {check_dir}")
         start_time = time.time()
         ocr_results = multi_thread_ocr.recognize_batch(check_dir)
@@ -125,10 +140,12 @@ def process_ocr_task(task_id):
         elapsed_time = end_time - start_time
         logger.warning(f"多线程识别完成，共处理 {len(ocr_results)} 张图片，耗时 {elapsed_time:.2f} 秒")
 
-        # 检查结果是否为空
         if not ocr_results:
             logger.error("OCR识别结果为空，请检查目录是否包含图片或OCR引擎是否正常工作")
-            # raise ValueError("OCR识别结果为空")
+            task.status = 'failed'
+            task.end_time = timezone.now()
+            task.remark = f"OCR识别结果为空，请检查目录是否包含图片或OCR引擎是否正常工作"
+            task.save()
             return {"status": "failed", "task_id": task_id, "msg": "OCR识别结果为空，请检查目录是否包含图片或OCR引擎是否正常工作"}
 
         # 检查结果格式
@@ -136,12 +153,7 @@ def process_ocr_task(task_id):
             sample_result = ocr_results[0]
             logger.warning(f"结果样例: {sample_result}")
 
-        # 处理结果
-        logger.warning(f"开始调用_process_results处理 {len(ocr_results)} 个结果")
-        _process_results(task, ocr_results, target_languages)
-        logger.warning("_process_results处理完成")
-
-        # 生成汇总报告
+        # 生成汇总报告（如有需要）
         logger.warning("开始生成汇总报告")
         _generate_summary_report(task, ocr_results, target_languages)
         logger.warning("汇总报告生成完成")
@@ -159,6 +171,7 @@ def process_ocr_task(task_id):
             task = OCRTask.objects.get(id=task_id)
             task.status = 'failed'
             task.end_time = timezone.now()
+            task.remark = f"任务处理失败: {str(e)}"
             task.save()
         except Exception:
             pass
@@ -205,7 +218,7 @@ def _generate_summary_report(task, results, target_languages):
                 'time': result.get('time_cost', 0),
                 'texts': result.get('texts', []),
                 'chinese_text': ' '.join([text for text in result.get('texts', [])
-                                        if OCRService.check_language_match([text], 'zh')])
+                                          if OCRService.check_language_match([text], 'zh')])
             })
 
     # 计算统计信息

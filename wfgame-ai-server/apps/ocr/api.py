@@ -22,8 +22,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django.db.models import Q
-
-from apis.orm_api import DecimalEncoder
+from utils.orm_helper import DecimalEncoder
 from .models import OCRProject, OCRGitRepository, OCRTask, OCRResult
 from .serializers import (
     OCRProjectSerializer,
@@ -235,8 +234,7 @@ class OCRTaskAPIView(APIView):
                 task = serializer.save()
 
                 # 提交Celery任务
-                # process_ocr_task.delay(task.id)
-                process_ocr_task(task.id)
+                process_ocr_task.delay(task.id)
 
                 result_serializer = OCRTaskSerializer(task)
                 return Response(result_serializer.data, status=status.HTTP_201_CREATED)
@@ -248,26 +246,88 @@ class OCRTaskAPIView(APIView):
                 task = OCRTask.objects.get(id=task_id)
                 serializer = OCRTaskSerializer(task)
 
-                # 检查是否有汇总报告
+                # 获取实时进度数据
+                key = f'ai_ocr_progress:{task.id}'
+                progress_data = settings.REDIS.hgetall(key)
+
+                total_images = int(progress_data.get('total', 0))
+                matched_images = int(progress_data.get('matched', 0))
+                executed_images = int(progress_data.get('executed', 0))
+                match_rate = (matched_images / total_images * 100) if total_images > 0 else 0
+                # 前 10% 用于准备阶段，后 90% 用于处理阶段
+                font_default_progress = 10.0 # 默认进度10%
+                progress = int(progress_data.get('executed', 0)) / total_images * 100 * 0.9 + font_default_progress if total_images > 0 else font_default_progress
+                response_data = serializer.data
+                response_data.update({
+                    'status': progress_data.get('status', ''),
+                    'total_images': total_images,
+                    'matched_images': matched_images,
+                    'executed_images': executed_images,
+                    'match_rate': round(match_rate, 2),
+                    'progress': round(progress, 2),
+                    'start_time': float(progress_data.get('start_time', 0)),
+                    'end_time': float(progress_data.get('end_time', 0))
+                })
+
+                # 汇总报告
                 report_file = task.config.get('report_file')
                 if report_file and os.path.exists(report_file):
-                    # 读取报告内容
                     with open(report_file, 'r', encoding='utf-8') as f:
                         report_content = f.read()
-
-                    # 添加报告内容到响应
-                    response_data = serializer.data
                     response_data['report'] = {
                         'content': report_content,
                         'file_path': report_file
                     }
-                    return Response(response_data)
 
-                return Response(serializer.data)
+                return Response(response_data)
             except OCRTask.DoesNotExist:
                 return Response(
                     {"detail": "任务不存在"}, status=status.HTTP_404_NOT_FOUND
                 )
+        # elif action == "get":
+        #     task_id = request.data.get("id")
+        #     try:
+        #         task = OCRTask.objects.get(id=task_id)
+        #         serializer = OCRTaskSerializer(task)
+        #
+        #         # 获取实时进度数据
+        #         key = f'ai_ocr_progress:{task.id}'
+        #         progress_data = settings.REDIS.hgetall(key)
+        #
+        #         # 字段映射与模型同步
+        #         total_images = int(progress_data.get('total', 0))
+        #         matched_images = int(progress_data.get('matched', 0))
+        #         match_rate = (matched_images / total_images * 100) if total_images > 0 else 0
+        #
+        #         response_data = serializer.data
+        #         response_data.update({
+        #             'status': progress_data.get('status', ''),
+        #             'total_images': total_images,
+        #             'matched_images': matched_images,
+        #             'match_rate': round(match_rate, 2),
+        #             'start_time': float(progress_data.get('start_time', 0)),
+        #             'end_time': float(progress_data.get('end_time', 0)),
+        #             'executed_images': int(progress_data.get('executed', 0)),
+        #             'success_images': int(progress_data.get('success', 0)),
+        #             'fail_images': int(progress_data.get('fail', 0)),
+        #             'exception_images': int(progress_data.get('exception', 0)),
+        #         })
+        #
+        #         # 检查是否有汇总报告
+        #         report_file = task.config.get('report_file')
+        #         if report_file and os.path.exists(report_file):
+        #             with open(report_file, 'r', encoding='utf-8') as f:
+        #                 report_content = f.read()
+        #             response_data['report'] = {
+        #                 'content': report_content,
+        #                 'file_path': report_file
+        #             }
+        #
+        #         return Response(response_data)
+        #     except OCRTask.DoesNotExist:
+        #         return Response(
+        #             {"detail": "任务不存在"}, status=status.HTTP_404_NOT_FOUND
+        #         )
 
         elif action == "delete":
             task_id = request.data.get("id")
@@ -284,9 +344,13 @@ class OCRTaskAPIView(APIView):
             task_id = request.data.get("id")
             has_math = request.data.get("has_match", None)
             keyword = request.data.get("keyword", None)
+            result_type = request.data.get("result_type")
             try:
                 task = OCRTask.objects.get(id=task_id)
                 results = OCRResult.objects.filter(task=task)
+                if result_type:
+                    results = results.filter(result_type=result_type)
+
                 if has_math is True:
                     results = results.filter(has_match=has_math)
 
@@ -332,7 +396,7 @@ class OCRTaskAPIView(APIView):
             try:
                 task = OCRTask.objects.get(id=task_id)
                 results = OCRResult.objects.filter(task=task)
-
+                print("results : ", results)
                 if export_format == "json":
                     # 导出为JSON
                     export_data = []
@@ -377,16 +441,17 @@ class OCRTaskAPIView(APIView):
 
                     # 写入数据
                     for result in results:
-                        # 确保使用相对路径
-                        image_path = result.image_path
-                        # 使用PathUtils规范化路径
-                        image_path = PathUtils.normalize_path(image_path)
+                        image_path = PathUtils.normalize_path(result.image_path)
+                        texts = result.texts if isinstance(result.texts, list) else []
+                        languages = ",".join(result.languages.keys()) if isinstance(result.languages, dict) else ""
+                        has_match = result.has_match
 
-                        for text in result.texts:
-                            languages = ",".join(result.languages.keys())
-                            csv_writer.writerow(
-                                [image_path, text, languages, result.has_match]
-                            )
+                        # 如果 texts 为空，也写一行，避免漏掉
+                        if not texts:
+                            csv_writer.writerow([image_path, "", languages, has_match])
+                        else:
+                            for text in texts:
+                                csv_writer.writerow([image_path, text, languages, has_match])
 
                     # 创建响应
                     response = HttpResponse(
@@ -538,6 +603,28 @@ class OCRResultAPIView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
+        elif action == "update":
+            # 更新结果处理是否正确，result_type
+            result_ids = request.data.get("ids", {})
+            # 拼接更新结构体，包括ids， result_type
+            update_results = []
+            for id, result_type in result_ids.items():
+                try:
+                    result = OCRResult.objects.get(id=id)
+                    result.result_type = result_type
+                    update_results.append(result)
+                except OCRResult.DoesNotExist:
+                    continue
+
+            # 批量更新sql
+            if update_results:
+                OCRResult.objects.bulk_update(update_results, ['result_type'])
+                return Response({"detail": "结果更新成功", "total": len(update_results)})
+            else:
+                return Response(
+                    {"detail": "没有有效的结果需要更新"}, status=status.HTTP_400_BAD_REQUEST
+                )
+
         return Response(
             {"detail": f"不支持的操作: {action}"}, status=status.HTTP_400_BAD_REQUEST
         )
@@ -602,8 +689,8 @@ class OCRUploadAPIView(APIView):
             )
 
             # 提交Celery任务
-            # process_ocr_task.delay(task.id)
-            process_ocr_task(task.id)
+            process_ocr_task.delay(task.id)
+            # process_ocr_task(task.id)
 
             serializer = OCRTaskSerializer(task)
             return Response(
@@ -657,10 +744,11 @@ class OCRProcessAPIView(APIView):
                     task = OCRTask.objects.create(
                         project=project,
                         git_repository=git_repo,
+                        git_branch=branch,
                         source_type="git",
                         status="pending",
                         config={
-                            "branch": branch,
+                            # "branch": branch,
                             "languages": languages,
                             "target_dir": PathUtils.get_ocr_repos_dir(),
                             # 项目代码所在目录，与 target_dir 相对路径
@@ -672,9 +760,7 @@ class OCRProcessAPIView(APIView):
                         },
                     )
 
-                    # process_git_ocr_task.delay(task.id, task_config)
-                    process_ocr_task(task.id)
-
+                    process_ocr_task.delay(task.id)
                     # 返回任务信息
                     serializer = OCRTaskSerializer(task)
                     return Response(serializer.data)
@@ -713,6 +799,8 @@ class OCRHistoryAPIView(APIView):
         if action == "download":
             return self.download_results(request)
 
+        if action == "del":
+            return self.del_result(request)
         # 默认list操作
         serializer = OCRHistoryQuerySerializer(data=request.data)
         if not serializer.is_valid():
@@ -814,5 +902,33 @@ class OCRHistoryAPIView(APIView):
         except Exception as e:
             return Response(
                 {"detail": f"下载失败: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    def del_result(self, request):
+        """删除历史任务及其结果"""
+        task_id = request.data.get("task_id")
+        print("====> task_id : ", task_id)
+        if not task_id:
+            return Response(
+                {"detail": "缺少task_id参数"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            # 删除 task 表数据
+            task = OCRTask.objects.get(id=task_id)
+            task.delete()
+
+            # 删除redis key数据
+            settings.REDIS.delete(f'ai_ocr_progress:{task_id}')
+            return Response({"detail": "任务及其结果删除成功"})
+
+        except OCRTask.DoesNotExist:
+            return Response(
+                {"detail": "任务不存在"}, status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {"detail": f"删除失败: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )

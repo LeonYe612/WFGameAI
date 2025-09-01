@@ -143,8 +143,8 @@ function uploadAndProcess() {
 
     // 显示进度条
     document.getElementById('progressContainer').style.display = 'block';
-    document.getElementById('progressBar').style.width = '10%';
-    document.getElementById('progressBar').textContent = '10%';
+    document.getElementById('progressBar').style.width = '5%';
+    document.getElementById('progressBar').textContent = '5%';
 
     updateUploadStatus('正在上传文件，请稍候...');
 
@@ -163,8 +163,8 @@ function uploadAndProcess() {
         })
         .then(data => {
             updateUploadStatus('文件上传成功，正在处理...');
-            document.getElementById('progressBar').style.width = '50%';
-            document.getElementById('progressBar').textContent = '50%';
+            document.getElementById('progressBar').style.width = '10%';
+            document.getElementById('progressBar').textContent = '10%';
 
             // 轮询任务状态
             pollTaskStatus(data.task.id);
@@ -219,7 +219,7 @@ function pollTaskStatus(taskId) {
 
                 } else if (status === 'failed') {
                     clearInterval(intervalId);
-                    updateUploadStatus(`处理失败: ${data.error || '未知错误'}`, true);
+                    updateUploadStatus(`处理失败: ${data.remark || '未知错误'}`, true);
                     document.getElementById('progressContainer').style.display = 'none';
 
                 } else if (status === 'running') {
@@ -229,10 +229,10 @@ function pollTaskStatus(taskId) {
                     document.getElementById('progressBar').textContent = `${progress}%`;
 
                     // 更新进度统计
-                    if (data.processed_count && data.total_count) {
-                        document.getElementById('processedCount').textContent = data.processed_count;
-                        document.getElementById('totalCount').textContent = data.total_count;
-                        const matchRate = data.matched_count / data.processed_count * 100 || 0;
+                    if (data.executed_images && data.total_images) {
+                        document.getElementById('processedCount').textContent = data.executed_images;
+                        document.getElementById('totalCount').textContent = data.total_images;
+                        const matchRate = data.matched_count / data.executed_images * 100 || 0;
                         document.getElementById('matchRate').textContent = `${matchRate.toFixed(1)}%`;
                     }
 
@@ -305,9 +305,10 @@ function showDetailedResults(taskId, page = 1) {
     modalElement.dataset.taskId = taskId;
     modalElement.dataset.page = page;
 
-    // 过滤字段
     const hasMatched = document.getElementById('showOnlyMatched')?.checked || false;
-    const keyword = document.getElementById('resultSearchInput')?.value.trim() || '';
+    const searchInput = document.getElementById('resultSearchInput');
+    const keyword = searchInput && searchInput.value ? searchInput.value.trim() : '';
+    const resultType = document.querySelector('#resultTypeFilterGroup .active')?.getAttribute('data-type') || '';
 
     // 加载详细结果
     fetch('/api/ocr/tasks/', {
@@ -319,6 +320,7 @@ function showDetailedResults(taskId, page = 1) {
             action: 'get_details',
             has_match: hasMatched,
             keyword: keyword,
+            result_type: resultType,
             id: taskId,
             page: page,
             page_size: 50
@@ -327,43 +329,65 @@ function showDetailedResults(taskId, page = 1) {
         .then(response => response.json())
         .then(data => {
             if (!data.results || !detailedResults) return;
-
-            // 清空加载动画
             detailedResults.innerHTML = '';
-
-            // 添加结果
+            const resultTypes = [
+                { label: "正确", value: 1, btn: "btn-success" },
+                { label: "误检", value: 2, btn: "btn-danger" },
+                { label: "漏检", value: 3, btn: "btn-warning" }
+            ];
             data.results.forEach(result => {
-                const resultItem = document.createElement('div');
-                resultItem.className = 'card result-card mb-3';
-
+                const imageId = result.id;
+                const selectedType = result.result_type || 1;
+                let radioGroup = `
+                    <div class="p-2" style="border-radius: 0.5rem; display: inline-block; margin-bottom: 0.5rem;">
+                        <div class="btn-group btn-group-sm" role="group" id="resultTypeGroup_${imageId}">
+                `;
+                                resultTypes.forEach((rt, idx) => {
+                                    const checked = rt.value == selectedType ? 'checked' : '';
+                                    const btnClass = rt.value == selectedType ? rt.btn : '';
+                                    let style = "border:1px solid #bdbdbd;";
+                                    if (idx === 0) style += "border-radius:0.5rem 0 0 0.5rem;";
+                                    else if (idx === resultTypes.length - 1) style += "border-radius:0 0.5rem 0.5rem 0;";
+                                    else style += "border-radius:0;";
+                                    radioGroup += `
+                        <input type="radio" class="btn-check" name="resultType_${imageId}" id="resultType_${imageId}_${rt.value}" value="${rt.value}" ${checked} autocomplete="off" data-original="${selectedType}">
+                        <label class="btn ${btnClass}" style="${style}" for="resultType_${imageId}_${rt.value}">${rt.label}</label>
+                    `;
+                                });
+                                radioGroup += `
+                        </div>
+                    </div>
+                `;
                 const imagePath = result.image_path;
-                const hasMatch = result.has_match ? 'text-success' : 'text-muted';
-                const matchIcon = result.has_match ? 'check-circle' : 'times-circle';
                 const imageUrl = `/media/${imagePath}`;
                 const fileName = imagePath.split('/').pop();
-
-                const processTexts = (texts) => {
-                    return texts.map(text => {
-                        const maxLength = 200;
-                        const truncatedText = text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
-                        return `<li class="list-group-item text-item" title="${text.replace(/"/g, '&quot;')}">${truncatedText}</li>`;
-                    }).join('');
-                };
-
+                const hasMatch = result.has_match ? 'text-success' : 'text-muted';
+                const matchIcon = result.has_match ? 'check-circle' : 'times-circle';
+                const resultItem = document.createElement('div');
+                resultItem.className = 'card result-card mb-3';
                 resultItem.innerHTML = `
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-3">
-                            <img src="${imageUrl}" class="img-fluid result-image" onerror="this.onerror=null; this.src='/static/images/image-not-found.png'; this.alt='图片加载失败';" alt="图片预览">
+                            <img src="${imageUrl}" class="img-fluid result-image" style="cursor:pointer;" 
+                                onclick="showImageModal('${imageUrl}')"
+                                onerror="this.onerror=null; this.src='/static/images/image-not-found.png'; this.alt='图片加载失败';" alt="图片预览">
                         </div>
                         <div class="col-md-9">
-                            <h5 class="card-title">${fileName} <i class="fas fa-${matchIcon} ${hasMatch}"></i></h5>
+                            <h5 class="card-title">
+                                ${fileName} <i class="fas fa-${matchIcon} ${hasMatch}"></i>
+                                <span class="ms-3">${radioGroup}</span>
+                            </h5>
                             <h6 class="card-subtitle mb-2 text-muted">语言: ${Object.keys(result.languages).join(', ')}</h6>
                             <div class="card-text">
                                 <strong>识别文本:</strong>
                                 <div class="text-container mt-2">
                                     <ul class="list-group text-list">
-                                        ${processTexts(result.texts)}
+                                        ${(result.texts || []).map(text => {
+                    const maxLength = 200;
+                    const truncatedText = text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+                    return `<li class="list-group-item text-item" title="${text.replace(/"/g, '&quot;')}">${truncatedText}</li>`;
+                }).join('')}
                                     </ul>
                                 </div>
                             </div>
@@ -375,9 +399,26 @@ function showDetailedResults(taskId, page = 1) {
                 </div>
             `;
                 detailedResults.appendChild(resultItem);
+                setTimeout(() => {
+                    resultTypes.forEach(rt => {
+                        const radio = document.getElementById(`resultType_${imageId}_${rt.value}`);
+                        if (radio) {
+                            radio.addEventListener('change', function () {
+                                resultTypes.forEach(rtt => {
+                                    const label = document.querySelector(`label[for="resultType_${imageId}_${rtt.value}"]`);
+                                    if (label) {
+                                        label.classList.remove('btn-success', 'btn-danger', 'btn-warning');
+                                    }
+                                });
+                                const selectedLabel = document.querySelector(`label[for="resultType_${imageId}_${rt.value}"]`);
+                                if (selectedLabel) {
+                                    selectedLabel.classList.add(rt.btn);
+                                }
+                            });
+                        }
+                    });
+                }, 0);
             });
-
-            // 添加分页
             if (data.total_pages > 1) {
                 const paginationContainer = document.createElement('div');
                 renderPagination(paginationContainer, data.page, data.total_pages, function (newPage) {
@@ -391,8 +432,6 @@ function showDetailedResults(taskId, page = 1) {
                 pageInfo.innerHTML = `第 ${data.page} 页 / 共 ${data.total_pages} 页`;
                 detailedResults.appendChild(pageInfo);
             }
-
-
         })
         .catch(error => {
             console.error('加载详细结果失败:', error);
@@ -1094,8 +1133,8 @@ function processGitRepository() {
     OCRAPI.process.git(projectId, repoId, branch, selectedLanguages, useGpu, gpuId, token, skipSSLVerify)
         .then(data => {
             updateGitStatus('Git仓库识别任务已启动，正在处理...');
-            document.getElementById('gitProgressBar').style.width = '20%';
-            document.getElementById('gitProgressBar').textContent = '20%';
+            document.getElementById('gitProgressBar').style.width = '10%';
+            document.getElementById('gitProgressBar').textContent = '10%';
 
             // 轮询任务状态
             pollGitTaskStatus(data.id);
@@ -1160,7 +1199,7 @@ function pollGitTaskStatus(taskId) {
 
                 } else if (status === 'failed') {
                     clearInterval(intervalId);
-                    updateGitStatus(`处理失败: ${data.error || '未知错误'}`, true);
+                    updateGitStatus(`处理失败: ${data.remark || '未知错误'}`, true);
                     // 启用开始识别按钮
                     document.getElementById('startGitOcrBtn').disabled = false;
 
@@ -1179,10 +1218,10 @@ function pollGitTaskStatus(taskId) {
                     document.getElementById('gitProgressBar').textContent = `${progress}%`;
 
                     // 更新进度统计
-                    if (data.processed_count && data.total_count) {
-                        document.getElementById('gitProcessedCount').textContent = data.processed_count;
-                        document.getElementById('gitTotalCount').textContent = data.total_count;
-                        const matchRate = data.matched_count / data.processed_count * 100 || 0;
+                    if (data.executed_images && data.total_images) {
+                        document.getElementById('gitProcessedCount').textContent = data.executed_images;
+                        document.getElementById('gitTotalCount').textContent = data.total_images;
+                        const matchRate = data.matched_count / data.executed_images * 100 || 0;
                         document.getElementById('gitMatchRate').textContent = `${matchRate.toFixed(1)}%`;
                     }
 
@@ -1358,6 +1397,7 @@ function loadHistoryRecords() {
                 row.innerHTML = `
                 <td>${task.id}</td>
                 <td>${task.project_name}</td>
+                <td>${task.git_branch}</td>
                 <td>${task.source_type === 'git' ? 'Git仓库' : '本地上传'}</td>
                 <td>${formattedDate}</td>
                 <td>${task.total_images}</td>
@@ -1367,6 +1407,7 @@ function loadHistoryRecords() {
                 <td>
                     <button class="btn btn-sm btn-primary view-task" data-id="${task.id}">查看</button>
                     <button class="btn btn-sm btn-success download-task" data-id="${task.id}">下载</button>
+                    <button class="btn btn-sm btn-danger del-task" data-id="${task.id}">删除</button>
                 </td>
             `;
                 historyTable.appendChild(row);
@@ -1388,6 +1429,15 @@ function loadHistoryRecords() {
                 });
             });
 
+            // 添加删除任务按钮点击事件
+            historyTable.querySelectorAll('.del-task').forEach(button => {
+                button.addEventListener('click', function () {
+                    const taskId = this.getAttribute('data-id');
+                    if (confirm('确定要删除该图片结果吗？')) {
+                        deleteResult(taskId);
+                    }
+                });
+            });
             // 更新分页
             updateHistoryPagination(data);
         })
@@ -1411,6 +1461,9 @@ function updateHistoryPagination(data) {
     });
 }
 
+/**
+ * 绑定历史记录表格的操作按钮事件
+ */
 function bindHistoryTableActions() {
     const historyTable = document.querySelector('#historyTable tbody');
     if (!historyTable) return;
@@ -1428,6 +1481,16 @@ function bindHistoryTableActions() {
         button.addEventListener('click', function () {
             const taskId = this.getAttribute('data-id');
             downloadTaskResults(taskId);
+        });
+    });
+
+    // 添加删除任务按钮点击事件
+    historyTable.querySelectorAll('.del-task').forEach(button => {
+        button.addEventListener('click', function () {
+            const taskId = this.getAttribute('data-id');
+            if (confirm('确定要删除该图片结果吗？')) {
+                deleteResult(taskId);
+            }
         });
     });
 }
@@ -1465,6 +1528,7 @@ function loadHistoryPage(page) {
                     row.innerHTML = `
                         <td>${task.id}</td>
                         <td>${task.project_name}</td>
+                        <td>${task.git_branch}</td>
                         <td>${task.source_type === 'git' ? 'Git仓库' : '本地上传'}</td>
                         <td>${formattedDate}</td>
                         <td>${task.total_images}</td>
@@ -1474,6 +1538,7 @@ function loadHistoryPage(page) {
                         <td>
                             <button class="btn btn-sm btn-primary view-task" data-id="${task.id}">查看</button>
                             <button class="btn btn-sm btn-success download-task" data-id="${task.id}">下载</button>
+                            <button class="btn btn-sm btn-danger del-task" data-id="${task.id}">删除</button>
                         </td>
                     `;
                     tbody.appendChild(row);
@@ -1529,6 +1594,38 @@ function downloadTaskResults(taskId) {
 }
 
 /**
+ * 删除历史记录中的单个结果
+ */
+function deleteResult(taskId) {
+    fetch('/api/ocr/history/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            action: 'del',
+            task_id: taskId
+        })
+    })
+        .then(res => res.json())
+        .then(resp => {
+            alert(resp.detail || '删除成功');
+            // 判断当前页面
+            const modalElement = document.getElementById('resultModal');
+            if (modalElement && modalElement.classList.contains('show')) {
+                // 如果模态框打开，刷新详情页
+                const detailTaskId = modalElement.dataset.taskId;
+                const page = modalElement.dataset.page || 1;
+                if (detailTaskId) showDetailedResults(detailTaskId, page);
+            } else {
+                // 否则刷新历史记录表格
+                loadHistoryRecords();
+            }
+        })
+        .catch(err => {
+            alert('删除失败');
+        });
+}
+
+/**
  * 获取状态对应的CSS类名
  */
 function getStatusClass(status) {
@@ -1565,8 +1662,8 @@ function resetProcessParams() {
 
         // 显示进度条
         document.getElementById('progressContainer').style.display = 'block';
-        document.getElementById('progressBar').style.width = '10%';
-        document.getElementById('progressBar').textContent = '10%';
+        document.getElementById('progressBar').style.width = '5%';
+        document.getElementById('progressBar').textContent = '5%';
 
         // 已处理数量
         document.getElementById('processedCount').textContent = '0';
@@ -1594,8 +1691,8 @@ function resetGitProcessParams() {
 
         // 显示进度条
         document.getElementById('gitProgressContainer').style.display = 'block';
-        document.getElementById('gitProgressBar').style.width = '10%';
-        document.getElementById('gitProgressBar').textContent = '10%';
+        document.getElementById('gitProgressBar').style.width = '5%';
+        document.getElementById('gitProgressBar').textContent = '5%';
 
         // 已处理数量
         document.getElementById('gitProcessedCount').textContent = '0';
@@ -1613,6 +1710,91 @@ function resetGitProcessParams() {
         document.getElementById('branchSelect').disabled = true;
 
     }
+}
+
+/**
+ * 显示图片模态框
+ */
+function showImageModal(url) {
+    const modalImg = document.getElementById('modalImage');
+    modalImg.src = url;
+    resetImageZoom(); // 每次打开都还原
+    new bootstrap.Modal(document.getElementById('imageModal')).show();
+}
+
+/**
+ * 图片缩放
+ */
+function zoomImage(factor) {
+    const modalImg = document.getElementById('modalImage');
+    // 取当前宽度（像素），不是百分比
+    let currentWidth = modalImg.width;
+    let newWidth = currentWidth * factor;
+    modalImg.style.width = newWidth + 'px';
+    modalImg.style.height = 'auto';
+    modalImg.dataset.zoom = factor * (parseFloat(modalImg.dataset.zoom || '1'));
+}
+
+/**
+ * 重置图片缩放
+ */
+function resetImageZoom() {
+    const modalImg = document.getElementById('modalImage');
+    modalImg.style.width = modalImg.naturalWidth + 'px';
+    modalImg.style.height = modalImg.naturalHeight + 'px';
+    modalImg.dataset.zoom = '1';
+}
+
+/**
+ * 更新图片的标注类型
+ */
+function submitResultTypes({ forceAll = false, batchType = null } = {}) {
+    const ids = {};
+    document.querySelectorAll('[name^="resultType_"]').forEach(radio => {
+        const imageId = radio.name.replace('resultType_', '');
+        const selectedType = parseInt(radio.value);
+        const originalType = parseInt(radio.getAttribute('data-original'));
+
+        // 批量标注时，强制全部提交并更新data-original
+        if (forceAll && batchType !== null) {
+            if (radio.value === batchType) {
+                radio.checked = true;
+                radio.setAttribute('data-original', batchType);
+                radio.dispatchEvent(new Event('change'));
+                ids[imageId] = selectedType;
+            }
+        } else {
+            // 普通提交，只提交有变更的
+            if (radio.checked && selectedType !== originalType) {
+                ids[imageId] = selectedType;
+            }
+        }
+    });
+
+    if (Object.keys(ids).length === 0) {
+        alert('没有需要更新的标注');
+        return;
+    }
+
+    fetch('/api/ocr/results/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            action: 'update',
+            ids: ids
+        })
+    })
+        .then(res => res.json())
+        .then(resp => {
+            alert(resp.detail || '操作完成');
+            // 更新 data-original
+            document.querySelectorAll('[name^="resultType_"]:checked').forEach(radio => {
+                radio.setAttribute('data-original', radio.value);
+            });
+        })
+        .catch(err => {
+            alert('接口调用失败');
+        });
 }
 
 /**
@@ -1666,5 +1848,44 @@ function initGlobalListeners() {
             }
         });
     }
-}
 
+    // 监听结果类型过滤按钮
+    const filterGroup = document.getElementById('resultTypeFilterGroup');
+    if (filterGroup) {
+        filterGroup.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', function () {
+                // 移除所有按钮的底色和激活
+                filterGroup.querySelectorAll('button').forEach(b => {
+                    b.classList.remove('active', 'btn-info', 'btn-success', 'btn-danger', 'btn-warning');
+                });
+                // 当前按钮加底色和激活
+                const type = this.getAttribute('data-type');
+                if (type === '') this.classList.add('btn-info');
+                else if (type === '1') this.classList.add('btn-success');
+                else if (type === '2') this.classList.add('btn-danger');
+                else if (type === '3') this.classList.add('btn-warning');
+                this.classList.add('active');
+                // 设置过滤类型到模态框 dataset
+                const modalElement = document.getElementById('resultModal');
+                modalElement.dataset.resultType = type;
+                // 刷新结果
+                const taskId = modalElement.dataset.taskId;
+                if (taskId) showDetailedResults(taskId);
+            });
+        });
+    }
+
+    // 普通提交
+    document.getElementById('submitAllResultTypesBtn')?.addEventListener('click', function() {
+        submitResultTypes();
+    });
+
+    // 批量标注并提交
+    document.querySelectorAll('.dropdown-menu .dropdown-item').forEach(item => {
+        item.addEventListener('click', function (e) {
+            e.preventDefault();
+            const type = this.getAttribute('data-type');
+            submitResultTypes({ forceAll: true, batchType: type });
+        });
+    });
+}

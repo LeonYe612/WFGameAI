@@ -23,16 +23,6 @@ from .path_utils import PathUtils
 import threading
 from paddleocr import PaddleOCR
 
-# 设置 PaddleOCR 相关日志级别，减少不必要的输出
-logging.getLogger('PaddleOCR').setLevel(logging.ERROR)
-logging.getLogger('paddle').setLevel(logging.ERROR)
-logging.getLogger('paddleocr').setLevel(logging.ERROR)
-logging.getLogger('PaddleOCR').setLevel(logging.ERROR)
-# 设置更严格的日志级别
-logging.getLogger('glog').setLevel(logging.ERROR)
-logging.getLogger('PIL').setLevel(logging.ERROR)
-logging.getLogger('cv2').setLevel(logging.ERROR)
-
 # 配置日志
 logger = logging.getLogger(__name__)
 
@@ -277,14 +267,9 @@ class OCRService:
             if isinstance(node, dict):
                 for key, value in node.items():
                     key_lower = str(key).lower()
-                    # 支持多种常见字段，以及 PaddleOCR 保存结果中的 rec_texts
-                    if key_lower in {"text", "transcription", "label", "text_content", "rec_texts"}:
+                    if key_lower in {"text", "transcription", "label", "text_content"}:
                         if isinstance(value, str) and value:
                             texts.append(value)
-                        elif isinstance(value, list):
-                            for v in value:
-                                if isinstance(v, str) and v:
-                                    texts.append(v)
                     _walk(value)
             elif isinstance(node, list):
                 for item in node:
@@ -314,7 +299,6 @@ class OCRService:
 
         if not self.initialize():
             return {"error": "OCR引擎初始化失败"}
-
         try:
             full_image_path = image_path
             if not os.path.isabs(image_path):

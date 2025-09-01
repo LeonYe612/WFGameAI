@@ -16,6 +16,7 @@ import concurrent.futures
 import traceback
 
 from .ocr_service import OCRService
+from ..models import OCRResult
 
 # 配置日志
 logger = logging.getLogger(__name__)
@@ -33,11 +34,11 @@ class MultiThreadOCR:
     """多线程OCR处理类"""
 
     def __init__(self,
-                lang: str = 'ch',
-                max_workers: int = None,
-                predict_save: bool = False, # 是否保存预测可视化图片/JSON 结果
-                task_id: Optional[str] = None,
-                ):
+                 task,
+                 lang: str = 'ch',
+                 max_workers: int = None,
+                 predict_save: bool = False # 是否保存预测可视化图片/JSON 结果
+                 ):
         """
         初始化多线程OCR处理
 
@@ -46,6 +47,9 @@ class MultiThreadOCR:
             max_workers: 最大工作线程数
             task_id: 任务ID，用于落盘调试日志（文件名为 task_id.log）
         """
+        self.task = task
+        # 初始化 Redis 助手
+        self.redis_helper = settings.REDIS
         self.lang = lang
         self.max_workers = max_workers or OCR_MAX_WORKERS
         self.predict_save = predict_save  # 是否保存预测可视化/JSON 结果
@@ -176,6 +180,60 @@ class MultiThreadOCR:
         self.progress_callback = progress_callback
         self.result_callback = result_callback
 
+    def _collect_image_paths(self, image_dir: str, image_formats: List[str]) -> List[str]:
+        """
+        收集目录中的图片路径，统一返回相对路径
+
+        Args:
+            image_dir: 图片目录
+            image_formats: 图片格式列表
+
+        Returns:
+            List[str]: 相对于MEDIA_ROOT的图片路径列表
+        """
+        image_extensions = set()
+        for ext in image_formats:
+            image_extensions.add(f".{ext.lower()}")
+            image_extensions.add(f".{ext.upper()}")
+
+        image_paths = []
+        media_root = settings.MEDIA_ROOT
+
+        # 确保media_root以/结尾
+        if not media_root.endswith(os.sep):
+            media_root += os.sep
+
+        logger.info(f"媒体根目录: {media_root}")
+        logger.info(f"搜索目录: {image_dir}")
+
+        for path in Path(image_dir).rglob("*"):
+            if path.is_file() and path.suffix in image_extensions:
+                absolute_path = str(path.resolve())
+
+                # 统一转换为相对路径
+                if absolute_path.startswith(media_root):
+                    relative_path = os.path.relpath(absolute_path, media_root)
+                    relative_path = relative_path.replace('\\', '/')  # 统一使用正斜杠
+                    image_paths.append(relative_path)
+                    logger.debug(f"添加图片: {relative_path}")
+                else:
+                    logger.warning(f"跳过不在媒体目录下的图片: {absolute_path}")
+
+        logger.info(f"收集到 {len(image_paths)} 张图片")
+        return image_paths
+
+    def _get_full_image_path(self, relative_path: str) -> str:
+        """
+        根据相对路径获取完整的绝对路径
+
+        Args:
+            relative_path: 相对于MEDIA_ROOT的路径
+
+        Returns:
+            str: 完整的绝对路径
+        """
+        return os.path.join(settings.MEDIA_ROOT, relative_path)
+
     def recognize_batch(self, image_dir: str, image_formats: List[str] = None) -> List[Dict]:
         """
         多线程批量识别图片
@@ -187,6 +245,7 @@ class MultiThreadOCR:
         Returns:
             List[Dict]: 识别结果列表
         """
+        all_results = []
         batch_start_time = time.time()
 
         if image_formats is None:
@@ -197,6 +256,14 @@ class MultiThreadOCR:
         path_collect_start = time.time()
         image_paths = self._collect_image_paths(image_dir, image_formats)
         path_collect_time = time.time() - path_collect_start
+
+        self.total_images = len(image_paths)
+        self.processed_images = 0
+        self.error_count = 0
+        self.is_running = True
+
+        # 初始化redis
+        self.init_progress(self.total_images)
 
         if not image_paths:
             logger.warning(f"在目录 {image_dir} 中未找到匹配的图片")
@@ -210,11 +277,6 @@ class MultiThreadOCR:
         # 如果图片数量过多，提示处理时间可能较长
         if len(image_paths) > 10000:
             logger.warning(f"图片数量过多({len(image_paths)}张)，处理时间可能较长")
-
-        self.total_images = len(image_paths)
-        self.processed_images = 0
-        self.error_count = 0
-        self.is_running = True
 
         logger.warning(
             f"在 {image_dir} 及其子目录中找到 {self.total_images} 张图片，"
@@ -239,18 +301,64 @@ class MultiThreadOCR:
         for path in image_paths:
             self.image_queue.put(path)
 
-        all_results = []
+        # 启动结果收集线程
+        collector_thread = threading.Thread(target=self._result_collector, args=(all_results,))
+        collector_thread.start()
 
         # 单线程模式特殊处理
         if self.max_workers == 1:
             logger.warning("使用单线程模式处理图片，避免并发问题")
-            try:
-                # 直接使用第一个OCR实例
-                ocr = self.worker_ocrs[0]
-                if ocr is None:
-                    logger.error("OCR实例初始化失败，无法处理图片")
-                    return []
+            self._process_single_thread()
+        else:
+            # 多线程模式处理
+            self._process_multi_thread()
 
+        # 等待所有图片处理完
+        self.is_running = False
+        self.result_queue.join()
+        collector_thread.join()
+
+        # 完成任务
+        self.finish_progress('completed')
+
+        # 统计信息
+        total_time = time.time() - batch_start_time
+        avg_speed = self.processed_images / total_time if total_time > 0 else 0
+        hours = int(total_time / 3600)
+        minutes = int((total_time % 3600) / 60)
+        seconds = int(total_time % 60)
+
+        logger.warning(
+            f"{'单' if self.max_workers == 1 else '多'}线程处理完成，共处理 {self.processed_images} 张图片，错误 "
+            f"{self.error_count} 张，成功率: "
+            f"{(self.processed_images - self.error_count) / self.total_images:.2%}"
+        )
+        logger.warning(
+            f"总处理时间: {hours}小时 {minutes}分钟 {seconds}秒，平均速度: "
+            f"{avg_speed:.2f} 张/秒"
+        )
+
+        return all_results
+
+    def _process_single_thread(self):
+        """单线程处理逻辑"""
+        try:
+            ocr = self.worker_ocrs[0]
+            if ocr is None:
+                logger.error("OCR实例初始化失败，无法处理图片")
+                return
+
+            while not self.image_queue.empty():
+                try:
+                    relative_path = self.image_queue.get(block=False)
+                    self._process_single_image(ocr, relative_path, 0)
+                except queue.Empty:
+                    break
+                except Exception as e:
+                    self.update_progress_exception()
+                    logger.error(f"单线程处理异常: {e}")
+                    logger.error(traceback.format_exc())
+                    break
                 # 直接处理所有图片
                 while not self.image_queue.empty():
                     try:
@@ -306,111 +414,151 @@ class MultiThreadOCR:
                         logger.error(traceback.format_exc())
                         break
 
-            except Exception as e:
-                logger.error(f"单线程处理异常: {str(e)}")
-                logger.error(traceback.format_exc())
+        except Exception as e:
+            self.update_progress_exception()
+            logger.error(f"单线程处理异常: {str(e)}")
+            logger.error(traceback.format_exc())
 
-        else:
-            # 多线程模式处理
-            # 定期报告进度的线程
-            progress_reporting_active = True
+    def _process_multi_thread(self):
+        """多线程处理逻辑"""
+        progress_reporting_active = True
 
-            def progress_reporter():
-                last_processed = 0
-                last_time = time.time()
+        def progress_reporter():
+            last_processed = 0
+            last_time = time.time()
 
-                while progress_reporting_active and self.is_running:
-                    time.sleep(30)
-                    current_time = time.time()
-                    current_processed = self.processed_images
-                    if current_processed > last_processed:
-                        time_diff = current_time - last_time
-                        images_diff = current_processed - last_processed
-                        speed = images_diff / time_diff if time_diff > 0 else 0
-                        remaining_images = self.total_images - current_processed
-                        est_remaining_time = (
-                            remaining_images / speed if speed > 0 else 0
-                        )
-                        est_h = int(est_remaining_time / 3600)
-                        est_m = int((est_remaining_time % 3600) / 60)
-                        est_s = int(est_remaining_time % 60)
-                        progress = (
-                            (current_processed / self.total_images) * 100
-                            if self.total_images > 0 else 0
-                        )
-                        # todo redis存储每一个任务对应的每一个线程ID对应的进度条，速度，剩余时间，执行时间
-                        logger.warning(
-                            f"进度: {current_processed}/{self.total_images} "
-                            f"({progress:.2f}%), 速度: {speed:.2f} 张/秒, 剩余时间: "
-                            f"{est_h}小时 {est_m}分钟 {est_s}秒"
-                        )
-                        last_processed = current_processed
-                        last_time = current_time
-
-            # 启动进度报告线程
-            progress_thread = threading.Thread(target=progress_reporter)
-            progress_thread.daemon = True
-            progress_thread.start()
-
-            try:
-                # 创建线程池
-                logger.warning(
-                    f"创建线程池，最大工作线程数: {self.max_workers}"
-                )
-                with concurrent.futures.ThreadPoolExecutor(
-                    max_workers=self.max_workers
-                ) as executor:
-                    futures = []
-                    for i in range(self.max_workers):
-                        logger.warning(f"创建工作线程 {i}")
-                        futures.append(
-                            executor.submit(self._worker_thread, i)
-                        )
-
-                    # 收集结果线程
-                    logger.warning("启动结果收集线程")
-                    result_collector = threading.Thread(
-                        target=self._result_collector,
-                        args=(all_results,)
+            while progress_reporting_active and self.is_running:
+                time.sleep(30)
+                current_time = time.time()
+                current_processed = self.processed_images
+                if current_processed > last_processed:
+                    time_diff = current_time - last_time
+                    images_diff = current_processed - last_processed
+                    speed = images_diff / time_diff if time_diff > 0 else 0
+                    remaining_images = self.total_images - current_processed
+                    est_remaining_time = (
+                        remaining_images / speed if speed > 0 else 0
                     )
-                    result_collector.daemon = True
-                    result_collector.start()
+                    est_h = int(est_remaining_time / 3600)
+                    est_m = int((est_remaining_time % 3600) / 60)
+                    est_s = int(est_remaining_time % 60)
+                    progress = (
+                        (current_processed / self.total_images) * 100
+                        if self.total_images > 0 else 0
+                    )
+                    logger.warning(
+                        f"进度: {current_processed}/{self.total_images} "
+                        f"({progress:.2f}%), 速度: {speed:.2f} 张/秒, 剩余时间: "
+                        f"{est_h}小时 {est_m}分钟 {est_s}秒"
+                    )
+                    last_processed = current_processed
+                    last_time = current_time
 
-                    # 等待所有工作线程完成
-                    logger.warning("等待所有工作线程完成")
-                    concurrent.futures.wait(futures)
-                    logger.warning("所有工作线程已完成")
+        # 启动进度报告线程
+        progress_thread = threading.Thread(target=progress_reporter)
+        progress_thread.daemon = True
+        progress_thread.start()
 
-                    # 停止结果收集线程
-                    self.is_running = False
-                    progress_reporting_active = False
-                    logger.warning("等待结果收集线程结束")
-                    result_collector.join(timeout=120)
-                    logger.warning("结果收集线程结束")
+        try:
+            # 创建线程池
+            logger.warning(f"创建线程池，最大工作线程数: {self.max_workers}")
+            with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+                futures = []
+                for i in range(self.max_workers):
+                    logger.warning(f"创建工作线程 {i}")
+                    futures.append(executor.submit(self._worker_thread, i))
+
+                # 等待所有工作线程完成
+                logger.warning("等待所有工作线程完成")
+                self.update_status('running')
+                concurrent.futures.wait(futures)
+                logger.warning("所有工作线程已完成")
+
+        except Exception as e:
+            self.update_progress_exception()
+            logger.error(f"多线程处理异常: {str(e)}")
+            logger.error(traceback.format_exc())
+        finally:
+            progress_reporting_active = False
+
+    def _process_single_image(self, ocr: OCRService, relative_path: str, worker_id: int):
+        logger.debug(f"处理图片: {relative_path}")
+        img_start_time = time.time()
+
+        try:
+            full_path = self._get_full_image_path(relative_path)
+
+            if not os.path.exists(full_path):
+                logger.error(f"图片文件不存在: {full_path}")
+                error_result = {
+                    "image_path": relative_path,
+                    "error": f"图片文件不存在: {full_path}",
+                    "worker_id": worker_id,
+                    "has_match": False,
+                    "languages": {},
+                }
+                try:
+                    self.result_queue.put(error_result)
+                    self.update_progress_fail()
+                    with self.lock:
+                        self.error_count += 1
+                except Exception as e:
+                    logger.error(f"result_queue.put失败: {e}")
+                return
+
+            result = ocr.recognize_image(full_path, predict_save=self.predict_save)
+            result['worker_id'] = worker_id
+            result['image_path'] = relative_path
+            result['time_cost'] = time.time() - img_start_time
+
+            texts = result.get('texts', [])
+            error = result.get('error', None)
+
+            if error or not texts:
+                result['has_match'] = False
+                result['languages'] = {}
+                result['confidence'] = 0.0
+                result['processing_time'] = 0
+                try:
+                    self.result_queue.put(result)
+                    with self.lock:
+                        self.processed_images += 1
+                    self.update_progress_fail()
+                except Exception as e:
+                    logger.error(f"result_queue.put失败: {e}")
+                return
+            else:
+                languages = {lang: True for lang in self.lang if OCRService.check_language_match(texts, lang)}
+                result['languages'] = languages
+                result['has_match'] = bool(languages)
+                result['confidence'] = result.get('confidence', 0.95)
+                result['processing_time'] = result.get('time_cost', 0)
+                try:
+                    self.result_queue.put(result)
+                    with self.lock:
+                        self.processed_images += 1
+                    self.update_progress_success(result['has_match'])
+                except Exception as e:
+                    logger.error(f"result_queue.put失败: {e}")
+                return
+
+        except Exception as e:
+            logger.error(f"处理图片失败 {relative_path}: {e}")
+            error_result = {
+                "image_path": relative_path,
+                "error": str(e),
+                "worker_id": worker_id,
+                "has_match": False,
+                "languages": {},
+            }
+            try:
+                self.result_queue.put(error_result)
+                with self.lock:
+                    self.error_count += 1
+                self.update_progress_exception()
             except Exception as e:
-                logger.error(f"多线程处理异常: {str(e)}")
-                logger.error(traceback.format_exc())
-                self.is_running = False
-                progress_reporting_active = False
-
-        # 统计信息
-        total_time = time.time() - batch_start_time
-        avg_speed = self.processed_images / total_time if total_time > 0 else 0
-        hours = int(total_time / 3600)
-        minutes = int((total_time % 3600) / 60)
-        seconds = int(total_time % 60)
-
-        logger.warning(
-            f"{'单' if self.max_workers == 1 else '多'}线程处理完成，共处理 {self.processed_images} 张图片，错误 "
-            f"{self.error_count} 张，成功率: "
-            f"{(self.processed_images - self.error_count) / self.total_images:.2%}"
-        )
-        logger.warning(
-            f"总处理时间: {hours}小时 {minutes}分钟 {seconds}秒，平均速度: "
-            f"{avg_speed:.2f} 张/秒"
-        )
-
-        return all_results
+                logger.error(f"result_queue.put失败: {e}")
+            return
 
     def _worker_thread(self, worker_id: int):
         """
@@ -428,16 +576,16 @@ class MultiThreadOCR:
             return
 
         processed_count = 0
-        start_time = time.time()
-        last_log_time = start_time
 
         while self.is_running:
             try:
                 try:
-                    image_path = self.image_queue.get(block=False)
+                    relative_path = self.image_queue.get(block=False)  # 队列中存储的是相对路径
                 except queue.Empty:
                     break
 
+                self._process_single_image(ocr, relative_path, worker_id)
+                processed_count += 1
                 logger.debug(f"线程 {worker_id}: 处理图片 {image_path}")
                 img_start_time = time.time()
 
@@ -486,6 +634,7 @@ class MultiThreadOCR:
                         self.error_count += 1
 
             except Exception as e:
+                self.update_progress_exception()
                 logger.error(f"线程 {worker_id}: 未知异常: {e}")
                 logger.error(traceback.format_exc())
                 break
@@ -493,76 +642,190 @@ class MultiThreadOCR:
         logger.debug(f"线程 {worker_id} 完成，处理 {processed_count} 张图片")
 
     def _result_collector(self, all_results: List[Dict]):
-        """
-        结果收集线程
-
-        Args:
-            all_results: 用于存储所有结果的列表
-        """
+        """结果收集线程"""
         logger.warning("结果收集线程启动")
+        buffer = []
+        # todo 改成百分比存图，但是可能会导致一次插入数据过多（多任务执行会涉及到表锁）
+        batch_size = settings.CFG.getint('ocr', 'ocr_batch_size', fallback=10)
+        flush_interval = settings.CFG.getint('ocr', 'ocr_flush_interval', fallback=3)
+        last_flush = time.time()
 
         while self.is_running or not self.result_queue.empty():
             try:
-                # 获取结果，设置超时以便及时退出
                 try:
-                    result = self.result_queue.get(timeout=1.0)
+                    result = self.result_queue.get(timeout=3.0)
                 except queue.Empty:
                     continue
-
+                buffer.append(result)
                 # 处理结果
                 all_results.append(result)
-
                 # 如果设置了结果回调，则调用
                 if self.result_callback:
                     self.result_callback(result)
 
+                # 满足批量或定时条件就写库
+                if len(buffer) >= batch_size or (time.time() - last_flush) > flush_interval:
+                    if buffer:
+                        self.bulk_insert_to_db(buffer)
+                        buffer.clear()
+                        last_flush = time.time()
                 # 标记结果处理完成
                 self.result_queue.task_done()
-
             except Exception as e:
                 logger.error(f"结果收集线程异常: {str(e)}")
 
+        # 处理剩余未写入的数据
+        if buffer:
+            self.bulk_insert_to_db(buffer)
         logger.warning("结果收集线程结束")
 
-    def _collect_image_paths(self, image_dir: str, image_formats: List[str]) -> List[str]:
+    def bulk_insert_to_db(self, results):
         """
-        收集目录中的图片路径
-
+        批量插入OCR识别结果到数据库
         Args:
-            image_dir: 图片目录
-            image_formats: 图片格式列表
-
-        Returns:
-            List[str]: 图片路径列表
+            results: List[Dict]，每个dict为一张图片的识别结果
         """
-        from django.conf import settings
+        objs = []
+        for result in results:
+            obj = OCRResult(
+                task=self.task,
+                image_path=result.get('image_path', '').replace('\\', '/'),
+                texts=result.get('texts', []),
+                languages=result.get('languages', {}),
+                has_match=result.get('has_match', False),
+                confidence=result.get('confidence', 0.0),
+                processing_time=result.get('processing_time', 0)
+            )
+            objs.append(obj)
+        if objs:
+            OCRResult.objects.bulk_create(objs)
+            logger.warning(f"批量插入 {len(objs)} 条OCR结果到数据库")
+        # todo 如果考虑继续读 task 数据，需要在此处更新 self.task 实例相关统计字段
 
-        image_extensions = set()
-        for ext in image_formats:
-            image_extensions.add(f".{ext.lower()}")
-            image_extensions.add(f".{ext.upper()}")
+    def init_progress(self, total_images: int):
+        """初始化任务进度"""
+        key = f'ai_ocr_progress:{self.task.id}'
+        progress_data = {
+            'task_id': str(self.task.id), # 任务ID
+            'total': total_images, # 总图片数
+            'executed': 0, # 已处理图片数
+            'matched': 0, # 目标语言匹配图片数
+            'success': 0, # 识别到文本内容图片数
+            'fail': 0, # 未识别到文本内容图片数
+            'exception': 0, # 处理异常图片数
+            'match_rate': 0.0, # 匹配率（后续只在finish_progress中更新）
+            'status': 'pending', # 任务状态
+            'worker_nums': self.max_workers, # ，工作线程数
+            'start_time': time.time() # 任务开始时间
+        }
+        return self.redis_helper.hmset(key, progress_data)
 
-        image_paths = []
-        media_root = settings.MEDIA_ROOT
+    def update_progress_success(self, result=False):
+        """更新成功计数（原子操作）"""
+        key = f'ai_ocr_progress:{self.task.id}'
+        pipe = self.redis_helper.pipeline()
+        pipe.hincrby(key, 'executed', 1)
+        pipe.hincrby(key, 'success', 1)
+        # 只要有匹配，matched 计数+1
+        if result:
+            pipe.hincrby(key, 'matched', 1)
+        return pipe.execute()
 
-        for path in Path(image_dir).rglob("*"):
-            if path.is_file() and path.suffix in image_extensions:
-                # 将绝对路径转换为相对于媒体根目录的路径
-                try:
-                    if str(path).startswith(media_root):
-                        # 如果路径在媒体目录下，转换为相对路径
-                        rel_path = os.path.relpath(str(path), media_root)
-                        # 确保路径使用正斜杠，符合Web URL格式
-                        rel_path = rel_path.replace('\\', '/')
-                        image_paths.append(rel_path)
-                        logger.debug(f"图片路径转换: {str(path)} -> {rel_path}")
-                    else:
-                        # 如果不在媒体目录下，记录警告但仍使用绝对路径
-                        logger.warning(f"图片路径不在媒体目录下: {str(path)}")
-                        image_paths.append(str(path))
-                except Exception as e:
-                    logger.error(f"路径转换失败: {str(path)}, 错误: {str(e)}")
-                    image_paths.append(str(path))
+    def update_progress_fail(self):
+        """更新失败计数（原子操作）"""
+        key = f'ai_ocr_progress:{self.task.id}'
+        pipe = self.redis_helper.pipeline()
+        pipe.hincrby(key, 'executed', 1)
+        pipe.hincrby(key, 'fail', 1)
+        return pipe.execute()
 
-        logger.info(f"收集到 {len(image_paths)} 张图片，媒体根目录: {media_root}")
-        return image_paths
+    def update_progress_exception(self):
+        """更新异常计数（原子操作）"""
+        key = f'ai_ocr_progress:{self.task.id}'
+        pipe = self.redis_helper.pipeline()
+        pipe.hincrby(key, 'executed', 1)
+        pipe.hincrby(key, 'exception', 1)
+        return pipe.execute()
+
+    def finish_progress(self, status='completed'):
+        """完成任务 & task统计结果更新（只查Redis，不回表）"""
+        key = f'ai_ocr_progress:{self.task.id}'
+        progress_data = self.redis_helper.hgetall(key)
+
+        total_images = int(progress_data.get('total', 0))
+        executed_images = int(progress_data.get('executed', 0))
+        success_images = int(progress_data.get('success', 0))
+        fail_images = int(progress_data.get('fail', 0))
+        exception_images = int(progress_data.get('exception', 0))
+        matched_images = int(progress_data.get('matched', 0))
+        match_rate = (matched_images / total_images * 100) if total_images > 0 else 0
+
+        # 更新 Redis 进度状态
+        self.redis_helper.hmset(key, {
+            'status': status,
+            'end_time': time.time(),
+            'match_rate': round(match_rate, 2)
+        })
+
+        # 更新数据库任务状态
+        self.task.status = status
+        self.task.end_time = timezone.now()
+        self.task.total_images = total_images
+        self.task.processed_images = executed_images
+        self.task.success_images = success_images
+        self.task.fail_images = fail_images
+        self.task.exception_images = exception_images
+        self.task.matched_images = matched_images
+        self.task.match_rate = round(match_rate, 2)
+        self.task.save()
+
+        logger.warning(
+            f"任务 {self.task.id} 完成统计: "
+            f"总计 {total_images} 张, 执行 {executed_images} 张, "
+            f"成功 {success_images} 张, 失败 {fail_images} 张, "
+            f"异常 {exception_images} 张, 匹配 {matched_images} 张, "
+            f"匹配率 {match_rate:.2f}%"
+        )
+
+        return {
+            'total_images': total_images,
+            'executed_images': executed_images,
+            'success_images': success_images,
+            'fail_images': fail_images,
+            'exception_images': exception_images,
+            'matched_images': matched_images,
+            'match_rate': round(match_rate, 2),
+            'status': status
+        }
+
+    def update_status(self, status: str):
+        """更新任务状态"""
+        key = f'ai_ocr_progress:{self.task.id}'
+        self.redis_helper.hset(key, 'status', status)
+        self.task.status = status
+        self.task.save()
+        logger.warning(f"任务 {self.task.id} 状态更新为: {status}")
+        return status
+
+    def get_progress(self):
+        """获取当前进度信息（带计算字段）"""
+        key = f'ai_ocr_progress:{self.task.id}'
+        progress_data = self.redis_helper.hgetall(key)
+        total_images = int(progress_data.get('total', 0))
+        executed_images = int(progress_data.get('executed', 0))
+        matched_images = int(progress_data.get('matched', 0))
+        match_rate = (matched_images / total_images * 100) if total_images > 0 else 0
+
+        # 返回带计算字段的进度信息
+        return {
+            'total_images': total_images,
+            'executed_images': executed_images,
+            'matched_images': matched_images,
+            'match_rate': round(match_rate, 2),
+            'success_images': int(progress_data.get('success', 0)),
+            'fail_images': int(progress_data.get('fail', 0)),
+            'exception_images': int(progress_data.get('exception', 0)),
+            'status': progress_data.get('status', ''),
+            'start_time': float(progress_data.get('start_time', 0)),
+            'end_time': float(progress_data.get('end_time', 0)),
+        }
