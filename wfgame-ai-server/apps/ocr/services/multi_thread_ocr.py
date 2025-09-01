@@ -35,7 +35,8 @@ class MultiThreadOCR:
     def __init__(self,
                 lang: str = 'ch',
                 max_workers: int = None,
-                predict_save: bool = False # 是否保存预测可视化图片/JSON 结果
+                predict_save: bool = False, # 是否保存预测可视化图片/JSON 结果
+                task_id: Optional[str] = None,
                 ):
         """
         初始化多线程OCR处理
@@ -43,10 +44,12 @@ class MultiThreadOCR:
         Args:
             lang: 语言模型
             max_workers: 最大工作线程数
+            task_id: 任务ID，用于落盘调试日志（文件名为 task_id.log）
         """
         self.lang = lang
         self.max_workers = max_workers or OCR_MAX_WORKERS
         self.predict_save = predict_save  # 是否保存预测可视化/JSON 结果
+        self.task_id = task_id
 
         # 确保最小值为1，避免无效值
         if self.max_workers <= 0:
@@ -269,8 +272,12 @@ class MultiThreadOCR:
                                     self.error_count += 1
                                     continue
 
-                            # 识别 - 强制开启predict_save以确保能提取到文本
-                            result = ocr.recognize_image(image_path, predict_save=True)
+                            # 识别：遵循配置的 predict_save，关闭保存时不触发无文件名提示
+                            result = ocr.recognize_image(
+                                image_path,
+                                predict_save=self.predict_save,
+                                task_id=self.task_id,
+                            )
                             result['worker_id'] = 0
                             # 统一字段命名，与OCRService保持一致
                             result['time_cost'] = time.time() - img_start_time
@@ -453,7 +460,7 @@ class MultiThreadOCR:
                             continue
 
                     # 识别
-                    result = ocr.recognize_image(image_path, predict_save=self.predict_save)
+                    result = ocr.recognize_image(image_path, predict_save=self.predict_save, task_id=self.task_id)
                     result['worker_id'] = worker_id
                     # 统一字段命名，与OCRService保持一致
                     result['time_cost'] = time.time() - img_start_time

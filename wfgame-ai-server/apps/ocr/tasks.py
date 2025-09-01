@@ -113,7 +113,8 @@ def process_ocr_task(task_id):
         logger.warning(f"初始化多线程OCR服务 ( 最大工作线程: {ocr_max_workers})")
         multi_thread_ocr = MultiThreadOCR(
             lang="ch",  # 默认使用中文模型
-            max_workers=ocr_max_workers  # 使用配置的工作线程数
+            max_workers=ocr_max_workers,  # 使用配置的工作线程数
+            task_id=str(task_id),         # 传入任务ID用于调试日志落盘
         )
 
         # 执行OCR识别
