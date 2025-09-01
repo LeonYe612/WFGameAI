@@ -1,0 +1,250 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# PP-OCRv5 OCR框架开发规范
+
+## 框架要求
+
+### 核心框架
+- **必须使用**: PP-OCRv5 框架
+- **官方文档**: [PP-OCRv5 详细参数说明](mdc:https:/aistudio.baidu.com/modelsdetail/28601/intro)
+- **模型版本**: 仅支持 PP-OCRv5，无需兼容其他版本
+
+### 硬件配置
+- **GPU**: NVIDIA GeForce RTX 4090 24G
+- **不支持**: CPU推理、其他类型显卡（如AMD、Intel集成显卡）
+- **环境变量**: 强制设置CUDA相关环境变量，确保GPU优先使用
+- **CUDA Version**: 12.9
+- **NVIDIA-SMI**: 576.02
+
+## 参数配置规则
+
+### 禁止使用的废弃参数
+以下参数已被官方废弃，**严禁使用**：
+
+```python
+# ❌ 已废弃，禁止使用
+det_model_dir          # 已废弃，请使用 text_detection_model_dir
+det_limit_side_len     # 已废弃，请使用 text_det_limit_side_len  
+det_limit_type         # 已废弃，请使用 text_det_limit_type
+det_db_thresh          # 已废弃，请使用 text_det_thresh
+det_db_box_thresh      # 已废弃，请使用 text_det_box_thresh
+det_db_unclip_ratio    # 已废弃，请使用 text_det_unclip_ratio
+rec_model_dir          # 已废弃，请使用 text_recognition_model_dir
+rec_batch_num          # 已废弃，请使用 text_recognition_batch_size
+use_angle_cls          # 已废弃，请使用 use_textline_orientation
+cls_model_dir          # 已废弃，请使用 text_line_orientation_model_dir
+cls_batch_num          # 已废弃，请使用 text_line_orientation_batch_size
+```
+
+### 必须使用的新参数
+```python
+# ✅ 官方推荐的新参数名
+text_detection_model_dir = "PP-OCRv5_server_det"
+text_recognition_model_dir = "PP-OCRv5_server_rec"
+text_det_thresh = 0.30
+text_det_box_thresh = 0.60
+text_det_unclip_ratio = 1.50
+text_det_limit_type = "min"
+text_det_limit_side_len = 960
+text_rec_score_thresh = 0.00
+use_textline_orientation = False
+text_line_orientation_model_dir = ""
+text_line_orientation_batch_size = 6
+text_recognition_batch_size = 6
+```
+
+## 代码实现规范
+
+### 初始化配置
+```python
+# ✅ 正确的初始化方式
+init_kwargs = {
+    'device': 'gpu',  # 强制使用GPU
+    'lang': 'ch',
+    'use_doc_orientation_classify': False,
+    'use_doc_unwarping': False,
+    'use_textline_orientation': False,
+    'text_detection_model_name': "PP-OCRv5_server_det",
+    'text_recognition_model_name': "PP-OCRv5_server_rec",
+}
+
+# 初始化后强制写入阈值参数
+self.ocr = PaddleOCR(**init_kwargs)
+self._enforce_core_params()
+```
+
+### 参数强制应用
+```python
+def _enforce_core_params(self):
+    """强制应用核心阈值参数到子模块，确保最高优先级生效"""
+    try:
+        # 检测模块参数
+        det = getattr(self.ocr, 'text_detector', None)
+        if det and hasattr(det, 'postprocess_op'):
+            post = det.postprocess_op
+            if hasattr(post, 'thresh'):
+                setattr(post, 'thresh', self.text_det_thresh)
+            if hasattr(post, 'box_thresh'):
+                setattr(post, 'box_thresh', self.text_det_box_thresh)
+            if hasattr(post, 'unclip_ratio'):
+                setattr(post, 'unclip_ratio', self.text_det_unclip_ratio)
+        
+        # 识别模块参数
+        rec = getattr(self.ocr, 'text_recognizer', None)
+        if rec and hasattr(rec, 'postprocess_op'):
+            post = rec.postprocess_op
+            if hasattr(post, 'score_thresh'):
+                setattr(post, 'score_thresh', self.text_rec_score_thresh)
+    except Exception as e:
+        logger.warning(f"强制应用核心参数失败: {e}")
+```
+
+### 环境变量设置
+```python
+# ✅ 强制GPU环境配置
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["FLAGS_use_gpu"] = "true"
+os.environ["FLAGS_fraction_of_gpu_memory_to_use"] = "0.8"
+
+# 禁用CPU相关环境
+os.environ["OPENCV_DNN_OPENCL_ALLOW_ALL_DEVICES"] = "0"
+os.environ["MKL_SERVICE_FORCE_INTEL"] = "0"
+```
+
+## 配置文件规范
+
+### config.ini 配置示例
+```ini
+[ocr]
+# 检测参数（使用新参数名）
+text_det_thresh = 0.30
+text_det_box_thresh = 0.60
+text_det_unclip_ratio = 1.50
+text_det_limit_type = min
+text_det_limit_side_len = 960
+
+# 识别参数
+text_rec_score_thresh = 0.00
+
+# 模型配置
+text_detection_model_name = PP-OCRv5_server_det
+text_recognition_model_name = PP-OCRv5_server_rec
+
+# 功能开关
+use_doc_orientation_classify = false
+use_doc_unwarping = false
+use_textline_orientation = false
+
+# GPU配置
+gpu_enabled = true
+```
+
+## 错误处理规范
+
+### 启动检查
+```python
+def _validate_gpu_environment(self):
+    """验证GPU环境配置"""
+    try:
+        import paddle
+        if not paddle.device.is_compiled_with_cuda():
+            raise RuntimeError("PaddlePaddle未编译CUDA支持，无法使用GPU")
+        
+        import torch
+        if not torch.cuda.is_available():
+            raise RuntimeError("PyTorch CUDA不可用，请检查GPU驱动")
+            
+        # 检查NVIDIA GPU
+        import subprocess
+        result = subprocess.run(['nvidia-smi'], capture_output=True, text=True)
+        if result.returncode != 0:
+            raise RuntimeError("nvidia-smi命令失败，GPU环境异常")
+            
+    except Exception as e:
+        logger.error(f"GPU环境验证失败: {e}")
+        raise
+```
+
+### 参数验证
+```python
+def _validate_ocr_params(self):
+    """验证OCR参数有效性"""
+    required_params = {
+        'text_det_thresh': (0.0, 1.0),
+        'text_det_box_thresh': (0.0, 1.0),
+        'text_det_unclip_ratio': (0.0, 10.0),
+        'text_det_limit_side_len': (100, 2000),
+        'text_rec_score_thresh': (0.0, 1.0)
+    }
+    
+    for param, (min_val, max_val) in required_params.items():
+        value = getattr(self, param, None)
+        if value is None or not (min_val <= value <= max_val):
+            raise ValueError(f"参数{param}={value}超出有效范围[{min_val}, {max_val}]")
+```
+
+## 性能优化建议
+
+### GPU内存管理
+```python
+# 显存使用优化
+os.environ["FLAGS_fraction_of_gpu_memory_to_use"] = "0.8"  # 使用80%显存
+os.environ["FLAGS_allocator_strategy"] = "auto_growth"      # 动态显存分配
+os.environ["FLAGS_eager_delete_tensor_gb"] = "0.0"         # 及时释放显存
+```
+
+### 批处理优化
+```python
+# 批处理大小建议
+text_recognition_batch_size = 6      # 识别批处理
+text_line_orientation_batch_size = 6 # 方向分类批处理
+```
+
+## 测试验证
+
+### 启动测试
+```bash
+# 启动服务
+python start_wfgame_ai.py
+
+# 验证日志输出
+# 应包含：应用OCR核心阈值参数、GPU环境验证成功、PaddleOCR模型初始化完成
+```
+
+### 功能测试
+```python
+# 测试OCR识别功能
+def test_ocr_recognition():
+    ocr_service = OCRService(lang='ch')
+    result = ocr_service.recognize_image("test_image.jpg")
+    
+    # 验证结果包含必要字段
+    assert 'texts' in result
+    assert 'scores' in result
+    assert 'image_path' in result
+    
+    # 验证阈值过滤生效
+    if result['scores']:
+        min_score = min(result['scores'])
+        assert min_score >= ocr_service.text_rec_score_thresh
+```
+
+## 注意事项
+
+1. **参数优先级**: 配置参数 > 代码默认值 > 库默认值
+2. **GPU强制**: 所有OCR操作必须使用GPU，禁止CPU回退
+3. **版本锁定**: 仅支持PP-OCRv5，不兼容其他版本
+4. **错误处理**: 参数验证失败时立即抛出异常，不允许静默失败
+5. **日志记录**: 所有关键参数应用和GPU状态变更必须记录日志
+
+## 相关链接
+
+- [PP-OCRv5 官方文档](mdc:https:/aistudio.baidu.com/modelsdetail/28601/intro)
+- [PaddleOCR GitHub](mdc:https:/github.com/PaddlePaddle/PaddleOCR)
+- [CUDA环境配置指南](mdc:https:/docs.nvidia.com/cuda)
+
+
