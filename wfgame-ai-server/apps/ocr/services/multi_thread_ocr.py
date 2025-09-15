@@ -142,27 +142,140 @@ class MultiThreadOCR:
         logger.info(f"配置文件中设置的最大工作线程数: {OCR_MAX_WORKERS}")
         logger.info(f"实际使用的工作线程数: {self.max_workers}")
 
-        # 顺序初始化与工作线程数一致数量的OCR实例，避免并发初始化导致底层库竞态
+        # 使用缓存池机制，避免为每个线程创建独立的OCR实例
+        # 工作线程将从共享的OCR实例池中获取实例，大大提高效率
         self.worker_ocrs: List[Optional[OCRService]] = []
+        
+        logger.info("使用OCR实例池模式初始化工作线程")
         for i in range(self.max_workers):
             try:
-                # OCRService 内部已按配置优先GPU，否则回退CPU
-                ocr_inst = OCRService(lang=self.lang)
-                # 若任务配置指定了预设，则运行时应用预设（前端可传入 high_speed/balanced/high_precision）
+                # 创建OCRService实例，但不立即初始化PaddleOCR
+                # 实际的PaddleOCR实例将在处理时从缓存池获取
+                ocr_service = OCRService(lang=self.lang)
+                
+                # 若任务配置指定了预设，则应用到服务配置中
                 try:
                     preset_name = ''
                     if isinstance(self.task.config, dict):
                         preset_name = self.task.config.get('smart_ocr_preset', '')
                     if preset_name:
-                        ocr_inst.set_smart_ocr_preset(preset_name)
+                        # 应用预设到OCRService的参数配置中
+                        self._apply_preset_to_ocr_service(ocr_service, preset_name)
                 except Exception as _preset_err:
                     logger.warning(f"应用智能OCR预设失败: {_preset_err}")
-                self.worker_ocrs.append(ocr_inst)
+                
+                self.worker_ocrs.append(ocr_service)
+                logger.debug(f"初始化工作线程 {i} 的OCR服务成功")
+                
             except Exception as init_err:
-                logger.error(f"初始化OCR实例失败(线程索引 {i}): {init_err}")
+                logger.error(f"初始化OCR服务失败(线程索引 {i}): {init_err}")
                 self.worker_ocrs.append(None)
-            # 小延时，避免底层库加载竞态
-            time.sleep(0.1)
+        
+        # 预热缓存：如果配置启用，预先创建常用的OCR实例
+        if config.getboolean('ocr', 'ocr_warm_cache_on_startup', fallback=False):
+            self._warm_ocr_cache()
+
+    def _apply_preset_to_ocr_service(self, ocr_service: OCRService, preset_name: str) -> None:
+        """
+        应用OCR预设到OCRService实例
+        
+        Args:
+            ocr_service: OCRService实例
+            preset_name: 预设名称 (high_speed/balanced/high_precision)
+        """
+        preset = preset_name.lower()
+        
+        if preset == 'high_speed':
+            # 高速模式：降低精度换速度
+            ocr_service.text_det_limit_type = 'max'
+            ocr_service.text_det_limit_side_len = 960
+            ocr_service.text_det_thresh = 0.5
+            ocr_service.text_det_box_thresh = 0.7
+            ocr_service.text_det_unclip_ratio = 1.0
+            ocr_service.smart_ocr_dynamic_limit_enabled = False
+            logger.info(f"应用高速模式预设到OCR服务")
+            
+        elif preset == 'high_precision':
+            # 高精度模式：提升精度
+            ocr_service.text_det_limit_type = 'min'
+            ocr_service.text_det_limit_side_len = 1280
+            ocr_service.text_det_thresh = 0.2
+            ocr_service.text_det_box_thresh = 0.4
+            ocr_service.text_det_unclip_ratio = 2.0
+            ocr_service.smart_ocr_dynamic_limit_enabled = False
+            logger.info(f"应用高精度模式预设到OCR服务")
+            
+        else:
+            # balanced 或其他：均衡模式
+            ocr_service.text_det_limit_side_len = 960
+            ocr_service.text_det_thresh = 0.3
+            ocr_service.text_det_box_thresh = 0.6
+            ocr_service.text_det_unclip_ratio = 1.5
+            ocr_service.smart_ocr_dynamic_limit_enabled = True
+            logger.info(f"应用均衡模式预设到OCR服务")
+    
+    def _warm_ocr_cache(self) -> None:
+        """
+        智能预热OCR缓存池，预先创建最常用的OCR实例
+        
+        预热策略：
+        1. 如果禁用动态切换，只预热默认配置（1个实例=2次模型创建）
+        2. 如果启用动态切换，预热max和min两种配置（2个实例=4次模型创建）
+        """
+        try:
+            logger.info("开始智能预热OCR缓存池")
+            
+            # 从第一个有效的OCR服务获取实例池
+            valid_ocr_service = None
+            for ocr_service in self.worker_ocrs:
+                if ocr_service is not None:
+                    valid_ocr_service = ocr_service
+                    break
+            
+            if valid_ocr_service is None:
+                logger.warning("没有找到有效的OCR服务，跳过缓存预热")
+                return
+            
+            # 基础配置参数
+            base_config = {
+                'lang': self.lang,
+                'text_det_thresh': valid_ocr_service.text_det_thresh,
+                'text_det_box_thresh': valid_ocr_service.text_det_box_thresh,
+                'text_det_unclip_ratio': valid_ocr_service.text_det_unclip_ratio,
+                'text_det_limit_side_len': valid_ocr_service.text_det_limit_side_len,
+            }
+            
+            # 根据是否启用动态切换决定预热策略
+            if valid_ocr_service.smart_ocr_dynamic_limit_enabled:
+                # 启用动态切换：预热max和min两种配置
+                configs_to_warm = [
+                    {**base_config, 'limit_type': 'max'},  # 宽图优化
+                    {**base_config, 'limit_type': 'min'},  # 高图优化
+                ]
+                logger.info("动态切换已启用，预热max和min两种配置")
+            else:
+                # 禁用动态切换：只预热默认配置
+                configs_to_warm = [
+                    {**base_config, 'limit_type': valid_ocr_service.text_det_limit_type}
+                ]
+                logger.info(f"动态切换已禁用，只预热默认配置: {valid_ocr_service.text_det_limit_type}")
+            
+            # 执行预热
+            warmed_count = 0
+            for config in configs_to_warm:
+                try:
+                    valid_ocr_service.ocr_pool.get_ocr_instance(**config)
+                    warmed_count += 1
+                    logger.info(f"✅ 预热OCR实例成功: {config['limit_type']} (第{warmed_count}个)")
+                except Exception as e:
+                    logger.warning(f"❌ 预热OCR实例失败: {config['limit_type']}, 错误: {e}")
+            
+            # 获取缓存统计信息
+            cache_info = valid_ocr_service.ocr_pool.get_cache_info()
+            logger.info(f"🎯 OCR缓存池预热完成: 预热{warmed_count}个实例, 预计创建{warmed_count*2}个模型, 缓存统计: {cache_info}")
+            
+        except Exception as e:
+            logger.error(f"OCR缓存池预热失败: {e}")
 
     def _detect_gpu_memory(self) -> int:
         """

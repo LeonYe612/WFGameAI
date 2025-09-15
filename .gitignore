@@ -18,6 +18,8 @@ docs/
 *.svg
 *.md
 *.mdc
+*.csv
+*.xlsx
 
 # IDE
 .vscode/

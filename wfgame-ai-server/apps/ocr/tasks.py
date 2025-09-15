@@ -143,11 +143,11 @@ def process_ocr_task(task_id):
         target_languages = task_config.get('target_languages', ['ch'])  # 默认检测中文（官方语言码）
 
 
-        # 从config.ini读取OCR多线程配置
-        config = PathUtils.load_config()
+        # 从命令行指定的配置文件读取OCR多线程配置
+        config = settings.CFG._config
         ocr_max_workers = config.getint('ocr', 'ocr_max_workers', fallback=4)
 
-        logger.warning(f"从config.ini读取OCR配置: max_workers={ocr_max_workers}")
+        logger.warning(f"从配置文件读取OCR配置: max_workers={ocr_max_workers}, 配置文件: {settings.CFG._config_path}")
 
         # 为了方便调试，直接使用固定目录，不管任务类型
         debug_dir = PathUtils.get_debug_dir()
@@ -286,6 +286,9 @@ def _generate_summary_report(task, results, target_languages):
     Notes:
         - 命中判定遵循“任意目标语言命中即视为命中”。
         - 路径统一经 `PathUtils.normalize_path` 规范化。
+        - 将在 `MEDIA_ROOT/ocr/reports/` 目录生成两个文件:
+          1) `{task.id}_ocr_summary.json` 本次任务的结构化汇总
+          2) `ocr_summary.json` 指向最近一次生成的覆盖式汇总
     """
     # 统计信息
     total_images = len(results)
@@ -365,16 +368,79 @@ def _generate_summary_report(task, results, target_languages):
     # 保存报告
     report_dir = PathUtils.get_ocr_reports_dir()
     os.makedirs(report_dir, exist_ok=True)
-    report_file = os.path.join(report_dir, f"{task.id}_summary.txt")
 
-    with open(report_file, 'w', encoding='utf-8') as f:
-        f.write(report)
+    # 同步输出结构化 JSON 汇总，便于前端或其他工具使用
+    try:
+        import json
+        json_items = []
+        for img in matched_images:
+            json_items.append({
+                'path': img['path'],
+                'name': img['name'],
+                'matched_texts': img['matched_texts'],
+                # 新增字段, 从结果回填: 分辨率、像素、参数差异、置信度、模式
+                'resolution': None,
+                'pixels': None,
+                'param_diff': None,
+                'confidences': None,
+                'mode_display': None,
+            })
+        # 若原始 results 中包含 used_preset/mode_display, 则进行对齐合并
+        try:
+            # 建立 path -> extras 的映射
+            extras = {}
+            for r in results:
+                if 'error' in r:
+                    continue
+                p = PathUtils.normalize_path(r.get('image_path', ''))
+                extras[p] = {
+                    'mode_display': r.get('mode_display'),
+                    'resolution': r.get('resolution'),
+                    'pixels': r.get('pixels'),
+                    'param_diff': r.get('param_diff'),
+                    'confidences': r.get('confidences'),
+                }
+            # 回填
+            for item in json_items:
+                ext = extras.get(item['path']) or {}
+                if ext.get('mode_display') is not None:
+                    item['mode_display'] = ext.get('mode_display')
+                if ext.get('resolution') is not None:
+                    item['resolution'] = ext.get('resolution')
+                if ext.get('pixels') is not None:
+                    item['pixels'] = ext.get('pixels')
+                if ext.get('param_diff') is not None:
+                    item['param_diff'] = ext.get('param_diff')
+                if ext.get('confidences') is not None:
+                    item['confidences'] = ext.get('confidences')
+        except Exception:
+            pass
 
-    # 更新任务信息
-    task.config['report_file'] = report_file
-    task.save()
+        summary_json = {
+            'task_id': task.id,
+            'generated_at': now,
+            'target_languages': target_languages or ['ch'],
+            'total_images': total_images,
+            'matched_count': matched_count,
+            'matched_rate': round(matched_rate, 2),
+            'items': json_items,
+        }
+        json_dir = report_dir
+        json_file = os.path.join(json_dir, f"{task.id}_ocr_summary.json")
+        with open(json_file, 'w', encoding='utf-8') as jf:
+            json.dump(summary_json, jf, ensure_ascii=False, indent=2)
+        # 生成覆盖式别名文件, 方便用户直接查找最近一次的汇总
+        alias_file = os.path.join(json_dir, "ocr_summary.json")
+        with open(alias_file, 'w', encoding='utf-8') as af:
+            json.dump(summary_json, af, ensure_ascii=False, indent=2)
+        # 使用 warning 级别便于在控制台看到完整路径
+        logger.warning(f"OCR JSON汇总已生成: {json_file}")
+        logger.warning(f"OCR 最近一次汇总(覆盖): {alias_file}")
+    except Exception as je:
+        logger.error(f"生成OCR JSON汇总失败: {je}")
 
-    logger.info(f"汇总报告已生成: {report_file}")
+    # 仅生成JSON, 不再生成txt; 保持任务其他信息不变
+
     logger.info(
         f"OCR识别统计: 总图片数={total_images}, 命中图片数={matched_count}, 命中率={matched_rate:.1f}%"
     )

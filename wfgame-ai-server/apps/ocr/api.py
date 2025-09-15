@@ -932,3 +932,60 @@ class OCRHistoryAPIView(APIView):
                 {"detail": f"删除失败: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+
+class OCRCacheStatusView(APIView):
+    """OCR缓存状态查看API"""
+    
+    permission_classes = [AllowAny]
+    http_method_names = ['post']
+    
+    def post(self, request):
+        """获取OCR缓存池状态"""
+        try:
+            # 创建OCRService实例来访问缓存池
+            ocr_service = OCRService()
+            
+            # 获取缓存统计信息
+            cache_info = ocr_service.ocr_pool.get_cache_info()
+            
+            return Response({
+                "detail": "缓存状态获取成功",
+                "cache_info": cache_info,
+                "timestamp": timezone.now()
+            })
+            
+        except Exception as e:
+            logger.error(f"获取OCR缓存状态失败: {e}")
+            return Response(
+                {"detail": f"获取缓存状态失败: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
+class OCRCacheClearView(APIView):
+    """OCR缓存清理API"""
+    
+    permission_classes = [AllowAny]
+    http_method_names = ['post']
+    
+    def post(self, request):
+        """清空OCR缓存池"""
+        try:
+            # 创建OCRService实例来访问缓存池
+            ocr_service = OCRService()
+            
+            # 清空缓存
+            ocr_service.ocr_pool.clear_cache()
+            
+            return Response({
+                "detail": "OCR缓存池已清空",
+                "timestamp": timezone.now()
+            })
+            
+        except Exception as e:
+            logger.error(f"清理OCR缓存失败: {e}")
+            return Response(
+                {"detail": f"清理缓存失败: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )

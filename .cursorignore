@@ -28,14 +28,6 @@ docs/
 *.txt
 # 大文件需要 Git LFS 跟踪或忽略
 *.pt
-*.png
-*.jpg
-*.jpeg
-*.ttf
-*.eot
-*.woff
-*.woff2
-*.svg
 *.md
 
 # IDE

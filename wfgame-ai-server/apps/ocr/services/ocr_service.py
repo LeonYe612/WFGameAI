@@ -68,238 +68,325 @@ if GPU_ENABLED:
         logger.warning(f"检测NVIDIA GPU失败: {e}")
 
 
-class OCRService:
-    """基于 PP-OCRv5 的 OCR 服务（使用 PaddleOCR.predict 工作流）。
+class OCRInstancePool:
+    """OCR实例池，用于缓存不同参数组合的OCR实例，避免频繁重建"""
+    
+    _instance = None
+    _lock = threading.Lock()
+    
+    def __new__(cls):
+        if cls._instance is None:
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = super().__new__(cls)
+                    cls._instance._initialized = False
+        return cls._instance
+    
+    def __init__(self):
+        if not getattr(self, '_initialized', False):
+            # OCR实例缓存：键为参数组合的hash，值为OCR实例
+            self._cache = {}
+            # 缓存访问锁
+            self._cache_lock = threading.Lock()
+            # 最大缓存数量（避免内存占用过多）
+            self._max_cache_size = 12
+            # 使用统计，用于LRU淘汰
+            self._usage_stats = {}
+            self._initialized = True
+            logger.info("OCR实例池初始化完成")
+    
+    def _generate_cache_key(self, lang: str, limit_type: str, use_textline_orientation: bool) -> str:
+        """生成缓存键（仅与语言、尺寸限制类型、方向分类开关相关）"""
+        orientation_flag = 'cls1' if use_textline_orientation else 'cls0'
+        return f"{lang}_{limit_type}_{orientation_flag}"
+    
+    def get_ocr_instance(self, lang: str = "ch", limit_type: str = "max",
+                        text_det_thresh: float = 0.3, text_det_box_thresh: float = 0.6,
+                        text_det_unclip_ratio: float = 1.5, text_det_limit_side_len: int = 960,
+                        **other_params) -> PaddleOCR:
+        """获取OCR实例，如果缓存中没有则创建新实例"""
+        use_textline_orientation = other_params.get('use_textline_orientation', False)
+        cache_key = self._generate_cache_key(
+            lang, limit_type, use_textline_orientation
+        )
+        
+        with self._cache_lock:
+            # 检查缓存中是否存在
+            if cache_key in self._cache:
+                self._usage_stats[cache_key] = time.time()
+                logger.debug(f"从缓存中获取OCR实例: {cache_key}")
+                return self._cache[cache_key]
+            
+            # 缓存中不存在，创建新实例
+            logger.info(f"创建新的OCR实例并缓存: {cache_key}")
+            
+            # 如果缓存已满，使用LRU策略淘汰最久未使用的实例
+            if len(self._cache) >= self._max_cache_size:
+                self._evict_lru_instance()
+            
+            # 创建新的OCR实例（避免将阈值参与实例构建，阈值使用后续强制写入）
+            ocr_instance = self._create_ocr_instance(
+                lang, limit_type, text_det_limit_side_len,
+                use_textline_orientation=use_textline_orientation
+            )
+            
+            # 添加到缓存
+            self._cache[cache_key] = ocr_instance
+            self._usage_stats[cache_key] = time.time()
+            
+            return ocr_instance
+    
+    def _evict_lru_instance(self):
+        """淘汰最久未使用的OCR实例"""
+        if not self._usage_stats:
+            return
+        
+        # 找到最久未使用的实例
+        lru_key = min(self._usage_stats, key=self._usage_stats.get)
+        
+        # 删除缓存
+        if lru_key in self._cache:
+            del self._cache[lru_key]
+        del self._usage_stats[lru_key]
+        
+        logger.info(f"淘汰LRU OCR实例: {lru_key}")
+    
+    def _create_ocr_instance(self, lang: str, limit_type: str,
+                           text_det_limit_side_len: int,
+                           **other_params) -> PaddleOCR:
+        """创建新的OCR实例"""
+        
+        # 强制GPU环境配置
+        os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+        os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+        os.environ["FLAGS_use_gpu"] = "true"
+        os.environ["FLAGS_fraction_of_gpu_memory_to_use"] = "0.8"
+        
+        # 基本参数
+        init_kwargs = {
+            'device': 'gpu' if GPU_ENABLED else 'cpu',
+            'lang': lang,
+            'use_doc_orientation_classify': False,
+            'use_doc_unwarping': False,
+            'use_textline_orientation': other_params.get('use_textline_orientation', False),
+            'text_detection_model_name': "PP-OCRv5_server_det",
+            'text_recognition_model_name': "PP-OCRv5_server_rec",
+        }
+        
+        try:
+            ocr_instance = PaddleOCR(**init_kwargs)
+            logger.info(f"成功创建OCR实例: {lang}_shared")
+            return ocr_instance
+        except TypeError as e:
+            # 回退：不传入可能不支持的参数
+            logger.warning(f"创建OCR实例失败，回退到基础参数: {e}")
+            ocr_instance = PaddleOCR(**{'device': 'gpu' if GPU_ENABLED else 'cpu', 'lang': lang})
+            return ocr_instance
+    
+    def clear_cache(self):
+        """清空缓存"""
+        with self._cache_lock:
+            self._cache.clear()
+            self._usage_stats.clear()
+            logger.info("OCR实例池缓存已清空")
+    
+    def get_cache_info(self) -> Dict:
+        """获取缓存信息"""
+        with self._cache_lock:
+            return {
+                'cached_instances': len(self._cache),
+                'max_cache_size': self._max_cache_size,
+                'cache_keys': list(self._cache.keys())
+            }
 
-    说明:      
-        处理顺序:
-        1) 预处理阶段（由初始化开关控制是否启用）
-           - 文档方向分类: use_doc_orientation_classify
-           - 文档扭曲矫正: use_doc_unwarping
-           - 文本行方向分类: use_textline_orientation
-           - 检测前的缩放: 仅强制设置 limit_side_len（不写 limit_type，避免版本不兼容）
-        2) 文本检测阶段（DB后处理阈值在此生效）
-           - text_det_thresh、text_det_box_thresh、text_det_unclip_ratio
-        3) 文本识别与结果过滤阶段
-           - 识别后处理内部阈值: postprocess_op.score_thresh（若版本支持）
-           - 结果层兜底过滤: text_rec_score_thresh（保证最高优先级）
-    """
+
+class OCRService:
 
     _ocr_instance = None
     _init_lock = threading.Lock()
+    # 添加日志参数输出标记，用于控制公共参数只输出一次
+    _common_params_logged = False
+    _common_params_task_id = None
 
     def __init__(self, lang: str = "ch"):
+        """
+        初始化OCR服务
+        
+        Args:
+            lang: 识别语言，默认为中文
+        """
         self.lang = lang
 
-        # 初始化OCR模型（与PP-OCRv5官方demo保持一致的核心参数）
-        print("正在初始化PaddleOCR模型...")
-        # 自动选择设备：优先GPU，否则CPU，并给出清晰提示
-        import paddle
-        if not paddle.device.is_compiled_with_cuda():
-            device_arg = 'cpu'
-            print("警告: PaddlePaddle 未编译 CUDA 支持，将使用 CPU 进行推理")
-        else:
-            device_arg = 'gpu'
-            print("使用 GPU 进行推理")
-
-        try:
-            # 设置环境变量来减少 PaddleOCR 的输出
-            os.environ['PADDLE_LOG_LEVEL'] = 'ERROR'
-            os.environ['FLAGS_allocator_strategy'] = 'auto_growth'
-            os.environ['FLAGS_eager_delete_tensor_gb'] = '0.0'
-            # 关闭 PaddleOCR 的文件保存提示
-            os.environ['PADDLEOCR_SAVE_LOG'] = 'False'
-            os.environ['PADDLEOCR_VERBOSE'] = 'False'
-            # 设置更严格的日志级别
-            os.environ['GLOG_v'] = '0'
-            os.environ['GLOG_logtostderr'] = '0'
-            # 关闭 Paddle 的详细输出
-            os.environ['FLAGS_logtostderr'] = '0'
-            os.environ['FLAGS_log_dir'] = '/dev/null'
-            os.environ['FLAGS_log_prefix'] = '0'
-            # 关闭模型下载提示
-            os.environ['PADDLE_DISABLE_LOGGER'] = '1'
-            os.environ['PADDLE_DISABLE_PROFILING'] = '1'
-            
-            # 为了保证相同输入在相同参数/模型下的结果尽可能一致，开启确定性设置
-            # 1) cuDNN 确定性卷积（可能牺牲少量性能换取一致性）
-            os.environ['FLAGS_cudnn_deterministic'] = '1'
-            os.environ['FLAGS_cudnn_exhaustive_search'] = '0'
-            # 2) 固定随机种子（Python/NumPy/Paddle）
-            try:
-                import random as _py_random
-                _seed_val = 1234
-                _py_random.seed(_seed_val)
-                np.random.seed(_seed_val)
-                try:
-                    import paddle as _paddle
-                    if hasattr(_paddle, 'seed'):
-                        _paddle.seed(_seed_val)
-                except Exception:
-                    pass
-                logger.warning("已启用确定性设置: FLAGS_cudnn_deterministic=1, 随机种子=1234")
-            except Exception:
-                pass
-
-            # 记录当前设备参数供后续可能的重建复用
-            self._device_arg = device_arg
-
-            # 核心OCR阈值与边长限制从配置读取（优先新参数名，旧名作为回退）
-            # 检测后处理阈值
-            text_det_thresh = config.getfloat(
-                'ocr', 'text_det_thresh',
-                fallback=config.getfloat('ocr', 'det_db_thresh', fallback=0.30)
-            )
-            text_det_box_thresh = config.getfloat(
-                'ocr', 'text_det_box_thresh',
-                fallback=config.getfloat('ocr', 'det_db_box_thresh', fallback=0.60)
-            )
-            text_det_unclip_ratio = config.getfloat(
-                'ocr', 'text_det_unclip_ratio',
-                fallback=config.getfloat('ocr', 'det_db_unclip_ratio', fallback=1.50)
-            )
-            # 检测预处理边长限制
-            text_det_limit_type = config.get(
-                'ocr', 'text_det_limit_type',
-                fallback=config.get('ocr', 'det_limit_type', fallback='max')
-            )
-
-            text_det_limit_side_len = config.getint(
-                'ocr', 'text_det_limit_side_len',
-                fallback=config.getint('ocr', 'det_limit_side_len', fallback=736)
-            )
-            # 识别过滤阈值（优先官方字段名）
-            try:
-                text_rec_score_thresh = config.getfloat('ocr', 'text_rec_score_thresh')
-            except Exception:
-                text_rec_score_thresh = config.getfloat('ocr', 'rec_score_thresh', fallback=0.00)
-
-            # 说明：以下三个开关用于控制“预测前的预处理阶段”是否启用
-            use_doc_orientation_classify = config.getboolean(
-                'ocr', 'use_doc_orientation_classify', fallback=False
-            )
-            use_doc_unwarping = config.getboolean(
-                'ocr', 'use_doc_unwarping', fallback=False
-            )
-            use_textline_orientation = config.getboolean(
-                'ocr', 'use_textline_orientation', fallback=False
-            )
-
-            # 新增: 三种预设（high_speed/balanced/high_precision）及动态开关
-            self.smart_ocr_preset = config.get('ocr', 'smart_ocr_preset', fallback='balanced')
-            self.smart_ocr_dynamic_limit_enabled = config.getboolean(
-                'ocr', 'smart_ocr_dynamic_limit_enabled', fallback=True
-            )
-
-            # 应用预设覆盖（与 ocrdemo 保持一致）
-            # - high_speed: 降低精度换速度，固定 max/960，较高阈值
-            # - balanced: 均衡参数，960，动态 min/max（由图片分辨率决定）
-            # - high_precision: 提升精度，固定 min/1280，较低阈值，启用文本行方向
-            preset = (self.smart_ocr_preset or 'balanced').lower()
-            if preset == 'high_speed':
-                text_det_limit_type = 'max'
-                text_det_limit_side_len = 960
-                text_det_thresh = 0.5
-                text_det_box_thresh = 0.7
-                text_det_unclip_ratio = 1.0
-                use_textline_orientation = False
-                # 高速模式默认不启用动态切换
-                self.smart_ocr_dynamic_limit_enabled = False
-            elif preset == 'high_precision':
-                text_det_limit_type = 'min'
-                text_det_limit_side_len = 1280
-                text_det_thresh = 0.2
-                text_det_box_thresh = 0.4
-                text_det_unclip_ratio = 2.0
-                use_textline_orientation = True
-                # 高精度模式默认不启用动态切换
-                self.smart_ocr_dynamic_limit_enabled = False
-            else:
-                # balanced 默认启用动态切换（可被配置覆盖）
-                # 侧边长度与阈值采用均衡推荐
-                text_det_limit_side_len = 960
-                text_det_thresh = 0.3
-                text_det_box_thresh = 0.6
-                text_det_unclip_ratio = 1.5
-                # 若配置显式关闭，则不启用动态
-                self.smart_ocr_dynamic_limit_enabled = bool(self.smart_ocr_dynamic_limit_enabled)
-
-            # 保存为实例属性（使用官方参数名），供后续强制写入与结果层过滤使用
-            self.text_det_thresh = text_det_thresh
-            self.text_det_box_thresh = text_det_box_thresh
-            self.text_det_unclip_ratio = text_det_unclip_ratio
-            self.text_det_limit_type = text_det_limit_type
-            self.text_det_limit_side_len = text_det_limit_side_len
-            self.text_rec_score_thresh = text_rec_score_thresh
-            # 保存文本行方向开关，便于重建时复用
-            self.use_textline_orientation = use_textline_orientation
-
-            # 当前使用的 limit_type（首次取预设/配置值）
-            self._current_limit_type = self.text_det_limit_type
-
-            logger.warning(
-                "应用OCR核心阈值参数: "
-                f"text_det_thresh={self.text_det_thresh}, "
-                f"text_det_box_thresh={self.text_det_box_thresh}, "
-                f"text_det_unclip_ratio={self.text_det_unclip_ratio}, "
-                f"text_det_limit_type={self.text_det_limit_type}, "
-                f"text_det_limit_side_len={self.text_det_limit_side_len}, "
-                f"text_rec_score_thresh={self.text_rec_score_thresh}, "
-                f"smart_ocr_preset={self.smart_ocr_preset}, "
-                f"dynamic_limit_enabled={self.smart_ocr_dynamic_limit_enabled}"
-            )
-
-            # 模型名称
-            text_detection_model_name = config.get(
-                'ocr', 'text_detection_model_name', fallback='PP-OCRv5_server_det'
-            )
-            text_recognition_model_name = config.get(
-                'ocr', 'text_recognition_model_name', fallback='PP-OCRv5_server_rec'
-            )
-
-            logger.warning(
-                "OCR初始化配置: "
-                f"use_doc_orientation_classify={use_doc_orientation_classify}, "
-                f"use_doc_unwarping={use_doc_unwarping}, "
-                f"use_textline_orientation={self.use_textline_orientation}, "
-                f"text_detection_model_name={text_detection_model_name}, "
-                f"text_recognition_model_name={text_recognition_model_name}"
-            )
-
-            init_kwargs = dict(
-                device=device_arg,
-                lang=self.lang,
-                use_doc_orientation_classify=use_doc_orientation_classify,
-                use_doc_unwarping=use_doc_unwarping,
-                use_textline_orientation=self.use_textline_orientation,
-                text_detection_model_name=text_detection_model_name,
-                text_recognition_model_name=text_recognition_model_name,
-            )
-
-            # 严格仅传入官方支持且稳定的参数，避免启动报错
-            # 优先尝试传入官方新参数；若当前安装版本不支持则回退最小参数集
-            try:
-                det_params_kwargs = dict(
-                    text_det_thresh=self.text_det_thresh,
-                    text_det_box_thresh=self.text_det_box_thresh,
-                    text_det_unclip_ratio=self.text_det_unclip_ratio,
-                    text_det_limit_side_len=self.text_det_limit_side_len,
-                    text_rec_score_thresh=self.text_rec_score_thresh,
-                    text_det_limit_type=self.text_det_limit_type,
-                )
-                self.ocr = PaddleOCR(**{**init_kwargs, **det_params_kwargs})
-                logger.warning(
-                    "PaddleOCR初始化已接收核心参数(text_det_*, text_rec_score_thresh, text_det_limit_type)"
-                )
-            except TypeError:
-                # 回退：使用最小参数集初始化，后续强制写入子模块
-                self.ocr = PaddleOCR(**init_kwargs)
-
+        # 初始化OCR实例池
+        self.ocr_pool = OCRInstancePool()
         
-        except Exception as init_err:
-            logger.error(f"PaddleOCR模型初始化失败: {init_err}")
-            raise
-        print(f"PaddleOCR模型初始化完成，device={device_arg}")
+        # 从配置文件读取OCR参数
+        self.text_det_thresh = config.getfloat('ocr', 'text_det_thresh', fallback=0.3)
+        self.text_det_box_thresh = config.getfloat('ocr', 'text_det_box_thresh', fallback=0.6)
+        self.text_det_unclip_ratio = config.getfloat('ocr', 'text_det_unclip_ratio', fallback=1.5)
+        self.text_det_limit_side_len = config.getint('ocr', 'text_det_limit_side_len', fallback=960)
+        self.text_det_limit_type = config.get('ocr', 'text_det_limit_type', fallback='max')
+        self.text_rec_score_thresh = config.getfloat('ocr', 'text_rec_score_thresh', fallback=0.0)
+
+        # 智能切换配置
+        self.smart_ocr_dynamic_limit_enabled = config.getboolean('ocr', 'smart_ocr_dynamic_limit_enabled', fallback=True)
+        self.ocr_cache_enabled = config.getboolean('ocr', 'ocr_cache_enabled', fallback=True)
+        
+        # 当前使用的limit_type
+        self._current_limit_type = self.text_det_limit_type
+        
+        # 读取默认预设模式
+        default_preset = config.get('ocr', 'default_preset', fallback="balanced")
+        # 记录当前模式（全局设定）与实际生效子模式
+        self.smart_ocr_preset = default_preset
+        self._effective_preset = None
+ 
+        # 召回优先双通道策略配置
+        self.dual_channel_recall_boost_enabled = config.getboolean(
+            'ocr', 'dual_channel_recall_boost_enabled', fallback=False
+        )
+        self.recall_det_limit_type = config.get(
+            'ocr', 'recall_det_limit_type', fallback='min'
+        )
+        self.recall_det_limit_side_len = config.getint(
+            'ocr', 'recall_det_limit_side_len', fallback=1280
+        )
+        self.recall_det_thresh = config.getfloat(
+            'ocr', 'recall_det_thresh', fallback=0.20
+        )
+        self.recall_det_box_thresh = config.getfloat(
+            'ocr', 'recall_det_box_thresh', fallback=0.40
+        )
+        self.recall_det_unclip_ratio = config.getfloat(
+            'ocr', 'recall_det_unclip_ratio', fallback=2.00
+        )
+
+        # 误检治理参数（全部可配置，避免硬编码）
+        # 小图严苛模式触发阈值（像素数）
+        self.strict_pixels_threshold = config.getint('ocr', 'strict_pixels_threshold', fallback=20000)
+        # 长度感知阈值
+        self.len1_conf_thresh = config.getfloat('ocr', 'len1_conf_thresh', fallback=0.98)
+        self.len2_3_conf_thresh = config.getfloat('ocr', 'len2_3_conf_thresh', fallback=0.92)
+        self.len4p_conf_thresh = config.getfloat('ocr', 'len4p_conf_thresh', fallback=0.88)
+        self.strict_conf_boost = config.getfloat('ocr', 'strict_conf_boost', fallback=0.03)
+        # 几何过滤阈值
+        self.min_box_area_ratio = config.getfloat('ocr', 'min_box_area_ratio', fallback=0.001)
+        self.min_box_side_px = config.getint('ocr', 'min_box_side_px', fallback=8)
+        self.min_aspect_ratio = config.getfloat('ocr', 'min_aspect_ratio', fallback=1.3)
+        self.max_aspect_ratio = config.getfloat('ocr', 'max_aspect_ratio', fallback=20.0)
+        # 语言比例阈值（中文占比）
+        self.lang_ratio_threshold = config.getfloat('ocr', 'lang_ratio_threshold', fallback=0.5)
+        # 总体一致性门槛
+        self.overall_keep_min_count = config.getint('ocr', 'overall_keep_min_count', fallback=2)
+        self.overall_keep_avg_conf = config.getfloat('ocr', 'overall_keep_avg_conf', fallback=0.90)
+        self.overall_keep_len4p_conf = config.getfloat('ocr', 'overall_keep_len4p_conf', fallback=0.95)
+        # 严苛模式下的检测后处理阈值与最小缩放边
+        self.strict_limit_side_len_min = config.getint('ocr', 'strict_limit_side_len_min', fallback=256)
+        self.strict_text_det_thresh = config.getfloat('ocr', 'strict_text_det_thresh', fallback=0.50)
+        self.strict_text_det_box_thresh = config.getfloat('ocr', 'strict_text_det_box_thresh', fallback=0.75)
+        self.strict_text_det_unclip_ratio = config.getfloat('ocr', 'strict_text_det_unclip_ratio', fallback=1.30)
+
+        # 单字复杂度感知参数
+        self.len1_conf_base = config.getfloat('ocr', 'len1_conf_base', fallback=0.92)
+        self.len1_conf_high_complexity = config.getfloat('ocr', 'len1_conf_high_complexity', fallback=0.85)
+        self.len1_conf_low_complexity = config.getfloat('ocr', 'len1_conf_low_complexity', fallback=0.99)
+        self.edge_density_lo = config.getfloat('ocr', 'edge_density_lo', fallback=0.02)
+        self.edge_density_hi = config.getfloat('ocr', 'edge_density_hi', fallback=0.08)
+        self.corner_density_lo = config.getfloat('ocr', 'corner_density_lo', fallback=0.0005)
+        self.corner_density_hi = config.getfloat('ocr', 'corner_density_hi', fallback=0.002)
+        self.single_char_bypass_overall = config.getboolean('ocr', 'single_char_bypass_overall', fallback=True)
+
+        # 从配置文件加载预设模式参数
+        self._load_preset_params_from_config()
+
+        # OCR实例（延迟初始化）
+        self.ocr = None
+        
+        # 如果默认使用智能均衡模式，在初始化阶段不需要加载特定参数
+        # 将在第一次处理图片时动态选择
+        if self.smart_ocr_preset != "smart_balanced":
+            # 如果不是智能均衡模式，直接加载对应的参数
+            self._apply_preset_params(self.smart_ocr_preset)
+        
+        logger.info(
+            f"OCR服务初始化完成 (语言: {lang}, 缓存启用: {self.ocr_cache_enabled}, 预设: {self.smart_ocr_preset})"
+        )
+ 
+    def _compute_roi_metrics(self, image_nd, poly):
+        """计算候选框ROI的复杂度度量（边缘密度、角点密度）。
+
+        返回:
+            dict: { 'edge_density': float, 'corner_density': float }
+        """
+        try:
+            if image_nd is None or not poly:
+                return { 'edge_density': 0.0, 'corner_density': 0.0 }
+            pts = poly
+            if hasattr(pts, 'tolist'):
+                pts = pts.tolist()
+            xs = [int(p[0]) for p in pts]
+            ys = [int(p[1]) for p in pts]
+            minx, maxx = max(0, min(xs)), max(0, max(xs))
+            miny, maxy = max(0, min(ys)), max(0, max(ys))
+            h, w = image_nd.shape[:2]
+            minx = max(0, min(minx, w - 1))
+            maxx = max(0, min(maxx, w - 1))
+            miny = max(0, min(miny, h - 1))
+            maxy = max(0, min(maxy, h - 1))
+            if maxx - minx < 1 or maxy - miny < 1:
+                return { 'edge_density': 0.0, 'corner_density': 0.0 }
+            roi = image_nd[miny:maxy, minx:maxx]
+            # 转灰度
+            gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+            # 自适应阈值+Canny
+            v = float(np.median(gray)) if hasattr(np, 'median') else 128.0
+            lower = int(max(0, 0.66 * v))
+            upper = int(min(255, 1.33 * v))
+            edges = cv2.Canny(gray, lower, upper)
+            edge_density = float(np.count_nonzero(edges)) / float(edges.size)
+            # 角点
+            max_corners = 64
+            corners = cv2.goodFeaturesToTrack(gray, maxCorners=max_corners, qualityLevel=0.01, minDistance=1)
+            corner_count = 0 if corners is None else len(corners)
+            corner_density = float(corner_count) / float(edges.size)
+            return { 'edge_density': edge_density, 'corner_density': corner_density }
+        except Exception:
+            return { 'edge_density': 0.0, 'corner_density': 0.0 }
+
+    def _load_preset_params_from_config(self):
+        """从配置文件加载三种模式的参数"""
+        # 高速模式参数
+        self.high_speed_params = {
+            'text_det_thresh': config.getfloat('ocr_high_speed', 'text_det_thresh', fallback=0.5),
+            'text_det_box_thresh': config.getfloat('ocr_high_speed', 'text_det_box_thresh', fallback=0.7),
+            'text_det_unclip_ratio': config.getfloat('ocr_high_speed', 'text_det_unclip_ratio', fallback=1.0),
+            'text_det_limit_type': config.get('ocr_high_speed', 'text_det_limit_type', fallback='max'),
+            'text_det_limit_side_len': config.getint('ocr_high_speed', 'text_det_limit_side_len', fallback=960),
+            'use_textline_orientation': config.getboolean('ocr_high_speed', 'use_textline_orientation', fallback=False),
+            'smart_ocr_dynamic_limit_enabled': False
+        }
+        
+        # 均衡模式参数
+        self.balanced_params = {
+            'text_det_thresh': config.getfloat('ocr_balanced', 'text_det_thresh', fallback=0.3),
+            'text_det_box_thresh': config.getfloat('ocr_balanced', 'text_det_box_thresh', fallback=0.6),
+            'text_det_unclip_ratio': config.getfloat('ocr_balanced', 'text_det_unclip_ratio', fallback=1.5),
+            'text_det_limit_type': config.get('ocr_balanced', 'text_det_limit_type', fallback='max'),
+            'text_det_limit_side_len': config.getint('ocr_balanced', 'text_det_limit_side_len', fallback=960),
+            'use_textline_orientation': config.getboolean('ocr_balanced', 'use_textline_orientation', fallback=False),
+            'smart_ocr_dynamic_limit_enabled': True
+        }
+        
+        # 高精度模式参数
+        self.high_precision_params = {
+            'text_det_thresh': config.getfloat('ocr_high_precision', 'text_det_thresh', fallback=0.2),
+            'text_det_box_thresh': config.getfloat('ocr_high_precision', 'text_det_box_thresh', fallback=0.4),
+            'text_det_unclip_ratio': config.getfloat('ocr_high_precision', 'text_det_unclip_ratio', fallback=2.0),
+            'text_det_limit_type': config.get('ocr_high_precision', 'text_det_limit_type', fallback='min'),
+            'text_det_limit_side_len': config.getint('ocr_high_precision', 'text_det_limit_side_len', fallback=1280),
+            'use_textline_orientation': config.getboolean('ocr_high_precision', 'use_textline_orientation', fallback=True),
+            'smart_ocr_dynamic_limit_enabled': False
+        }
 
     def _select_limit_type_by_image(self, image_nd) -> str:
         """基于图像分辨率动态选择 text_det_limit_type。
@@ -384,45 +471,88 @@ class OCRService:
         except Exception as e:
             logger.warning(f"重建OCR失败，继续沿用现有实例。原因: {e}")
 
+    def _select_best_preset_for_image(self, image_nd):
+        """根据图片特征选择最佳参数组合
+        
+        Args:
+            image_nd: 图像矩阵
+            
+        Returns:
+            str: "high_speed", "balanced", 或 "high_precision"
+        """
+        if image_nd is None:
+            return "balanced"  # 默认均衡
+            
+        try:
+            height, width = image_nd.shape[:2]
+            pixels = height * width
+            
+            # 小图片用高精度模式
+            if pixels < 10000 or max(height, width) < 100:
+                return "high_precision"
+            
+            # 大图片用快速模式
+            elif pixels > 1000000 or min(height, width) > 1000:
+                return "high_speed"
+            
+            # 中等图片用均衡模式
+            else:
+                return "balanced"
+        except Exception as e:
+            logger.debug(f"动态选择模式失败，使用均衡模式: {e}")
+            return "balanced"
+
+    def _apply_preset_params(self, preset_name):
+        """应用指定预设的参数
+        
+        Args:
+            preset_name: 预设名称，"high_speed", "balanced", 或 "high_precision"
+        """
+        if preset_name == "high_speed":
+            params = self.high_speed_params
+        elif preset_name == "high_precision":
+            params = self.high_precision_params
+        else:  # balanced
+            params = self.balanced_params
+        
+        # 应用参数
+        self.text_det_thresh = params['text_det_thresh']
+        self.text_det_box_thresh = params['text_det_box_thresh']
+        self.text_det_unclip_ratio = params['text_det_unclip_ratio']
+        self.text_det_limit_type = params['text_det_limit_type']
+        self.text_det_limit_side_len = params['text_det_limit_side_len']
+        self.use_textline_orientation = params['use_textline_orientation']
+        self.smart_ocr_dynamic_limit_enabled = params['smart_ocr_dynamic_limit_enabled']
+        
+        # 仅记录当前实际生效的子模式，不覆盖全局设定 smart_ocr_preset
+        self._effective_preset = preset_name
+
     def set_smart_ocr_preset(self, preset_name: str) -> None:
         """运行时设置智能OCR预设，并按需重建引擎。
 
         Args:
-            preset_name (str): 'high_speed' | 'balanced' | 'high_precision'
+            preset_name (str): 'high_speed' | 'balanced' | 'high_precision' | 'smart_balanced'
         """
         try:
             name = (preset_name or '').lower().strip()
+            
+            # 如果指定了智能均衡，设置内部标记但不立即应用参数
+            if name == 'smart_balanced':
+                self.smart_ocr_preset = name
+                # 重置日志标记，因为参数已更改
+                self.__class__._common_params_logged = False
+                return
+            
             if name not in {'high_speed', 'balanced', 'high_precision'}:
                 logger.warning(f"未知预设: {preset_name}")
                 return
-            self.smart_ocr_preset = name
-            # 根据预设调整参数
-            if name == 'high_speed':
-                self.smart_ocr_dynamic_limit_enabled = False
-                self.use_textline_orientation = False
-                self.text_det_limit_type = 'max'
-                self.text_det_limit_side_len = 960
-                self.text_det_thresh = 0.5
-                self.text_det_box_thresh = 0.7
-                self.text_det_unclip_ratio = 1.0
-            elif name == 'high_precision':
-                self.smart_ocr_dynamic_limit_enabled = False
-                self.use_textline_orientation = True
-                self.text_det_limit_type = 'min'
-                self.text_det_limit_side_len = 1280
-                self.text_det_thresh = 0.2
-                self.text_det_box_thresh = 0.4
-                self.text_det_unclip_ratio = 2.0
-            else:
-                # balanced
-                self.smart_ocr_dynamic_limit_enabled = True
-                self.use_textline_orientation = False
-                # 初始值保持当前 limit_type，由动态策略在首张图后生效
-                self.text_det_limit_side_len = 960
-                self.text_det_thresh = 0.3
-                self.text_det_box_thresh = 0.6
-                self.text_det_unclip_ratio = 1.5
+            
+            # 应用预设参数
+            self._apply_preset_params(name)
 
+            # 重置日志标记，因为参数已更改
+            self.__class__._common_params_logged = False
+            
             # 依据当前(或新) limit_type 立即重建一次，确保立即生效
             self._reinit_ocr_with_limit_type(self.text_det_limit_type)
         except Exception as e:
@@ -469,9 +599,17 @@ class OCRService:
             return None
 
     def recognize_image(self, image_path: str, predict_save: bool = False, task_id: Optional[str] = None) -> Dict:
-
-        if not self.initialize():
-            return {"error": "OCR引擎初始化失败"}
+        """
+        识别图片中的文字
+        
+        Args:
+            image_path: 图片路径
+            predict_save: 是否保存预测可视化结果
+            task_id: 任务ID
+            
+        Returns:
+            包含识别结果的字典
+        """
         try:
             full_image_path = image_path
             if not os.path.isabs(image_path):
@@ -486,23 +624,95 @@ class OCRService:
             if image_nd is None:
                 logger.error(f"图像读取失败(可能为Unicode路径或文件损坏): {full_image_path}")
                 return {"error": f"Image read Error: {full_image_path}", "image_path": image_path}
-
-            # 调用 self.ocr.predict() 进入官方流水线，顺序如下：
-            # 1) （可选）预处理: 方向/扭曲/文本行方向 + 检测缩放(limit_side_len)
-            # 2) 文本检测: DB 后处理阈值(thresh/box_thresh/unclip_ratio)
-            # 3) 文本识别: 识别 + （可选）内部 score_thresh 过滤
-            # 4) 结果层兜底过滤: 再次按 text_rec_score_thresh 过滤，保证最高优先级
-            #    注: 为兼容不同版本，内部与结果层双保险，不改变检测/识别主流程
-
-            # 新增: 基于图像分辨率动态选择 limit_type，发生变化时重建 OCR
+            
+            # 记录图像分辨率信息
             try:
-                if getattr(self, 'smart_ocr_dynamic_limit_enabled', True):
+                img_height, img_width = image_nd.shape[:2]
+                img_pixels = int(img_height * img_width)
+            except Exception:
+                img_height, img_width, img_pixels = 0, 0, 0
+            
+            # 智能均衡模式：根据图像特征动态选择最佳参数组合
+            actual_preset = self.smart_ocr_preset
+            if self.smart_ocr_preset == "smart_balanced":
+                # 动态选择最佳预设
+                best_preset = self._select_best_preset_for_image(image_nd)
+                # 应用该预设的参数（不会修改 smart_ocr_preset，只更新 _effective_preset）
+                self._apply_preset_params(best_preset)
+                # 记录实际使用的预设（用于日志显示）
+                actual_preset = best_preset
+            else:
+                # 固定模式下，effective 即为全局设定
+                self._effective_preset = self.smart_ocr_preset
+            
+            # 基于像素判断是否进入小图严苛模式
+            strict_mode = False
+            try:
+                strict_mode = (img_pixels > 0 and img_pixels < int(self.strict_pixels_threshold))
+            except Exception:
+                strict_mode = False
+            
+            # 基于图像分辨率动态选择 limit_type
+            current_limit_type = self._current_limit_type
+            if self.smart_ocr_dynamic_limit_enabled:
+                try:
                     next_limit_type = self._select_limit_type_by_image(image_nd)
-                    if next_limit_type and next_limit_type != getattr(self, '_current_limit_type', self.text_det_limit_type):
-                        self._reinit_ocr_with_limit_type(next_limit_type)
-            except Exception as _dyn_err:
-                # 动态策略失败不应影响主流程
-                logger.debug(f"动态 limit_type 策略未生效: {_dyn_err}")
+                    if next_limit_type:
+                        current_limit_type = next_limit_type
+                        self._current_limit_type = current_limit_type
+                except Exception as _dyn_err:
+                    logger.debug(f"动态 limit_type 策略未生效: {_dyn_err}")
+            
+            # 从缓存池获取OCR实例，避免频繁重建
+            if self.ocr_cache_enabled:
+                self.ocr = self.ocr_pool.get_ocr_instance(
+                    lang=self.lang,
+                    limit_type=current_limit_type,
+                    text_det_thresh=self.text_det_thresh,
+                    text_det_box_thresh=self.text_det_box_thresh,
+                    text_det_unclip_ratio=self.text_det_unclip_ratio,
+                    text_det_limit_side_len=self.text_det_limit_side_len,
+                    text_rec_score_thresh=self.text_rec_score_thresh,
+                    use_textline_orientation=getattr(self, 'use_textline_orientation', False)
+                )
+                # 强制应用核心阈值到子模块，避免因参数不同频繁重建实例
+                try:
+                    det = getattr(self.ocr, 'text_detector', None)
+                    if det and hasattr(det, 'postprocess_op'):
+                        post = det.postprocess_op
+                        # 根据小图严苛模式应用更严格的检测后处理阈值（仅修改当前实例持有的算子属性）
+                        eff_det_thresh = float(self.strict_text_det_thresh) if strict_mode else float(self.text_det_thresh)
+                        eff_box_thresh = float(self.strict_text_det_box_thresh) if strict_mode else float(self.text_det_box_thresh)
+                        eff_unclip_ratio = float(self.strict_text_det_unclip_ratio) if strict_mode else float(self.text_det_unclip_ratio)
+                        if hasattr(post, 'thresh'):
+                            setattr(post, 'thresh', eff_det_thresh)
+                        if hasattr(post, 'box_thresh'):
+                            setattr(post, 'box_thresh', eff_box_thresh)
+                        if hasattr(post, 'unclip_ratio'):
+                            setattr(post, 'unclip_ratio', eff_unclip_ratio)
+                    # 同步预处理的尺寸策略，避免为min/max重建实例
+                    if det and hasattr(det, 'preprocess_op'):
+                        pre = det.preprocess_op
+                        if hasattr(pre, 'limit_type'):
+                            setattr(pre, 'limit_type', current_limit_type)
+                        if hasattr(pre, 'limit_side_len'):
+                            # 严苛模式提高最小缩放边，减少纹理被放大为“字形”的假阳性
+                            eff_limit_side = int(max(self.text_det_limit_side_len, self.strict_limit_side_len_min)) if strict_mode else int(self.text_det_limit_side_len)
+                            setattr(pre, 'limit_side_len', eff_limit_side)
+                    rec = getattr(self.ocr, 'text_recognizer', None)
+                    if rec and hasattr(rec, 'postprocess_op'):
+                        post = rec.postprocess_op
+                        if hasattr(post, 'score_thresh'):
+                            setattr(post, 'score_thresh', float(self.text_rec_score_thresh))
+                except Exception as _force_err:
+                    logger.debug(f"应用核心/预处理参数失败(忽略): {_force_err}")
+            else:
+                # 如果缓存被禁用，使用传统的重建方式
+                if not hasattr(self, 'ocr') or self.ocr is None:
+                    self._reinit_ocr_with_limit_type(current_limit_type)
+                elif current_limit_type != getattr(self, '_last_used_limit_type', None):
+                    self._reinit_ocr_with_limit_type(current_limit_type)
+                    self._last_used_limit_type = current_limit_type
 
             # 根据配置决定是否保存预测可视化/JSON 结果
             timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")
@@ -626,26 +836,246 @@ class OCRService:
                     # 忽略异常并依赖下方的JSON兜底逻辑
                     pass
 
+                # 召回优先双通道：在候选较少时追加一次高召回识别并合并候选
+                try:
+                    need_recall = False
+                    if self.dual_channel_recall_boost_enabled:
+                        # 条件：无候选或候选数低于总体门槛
+                        need_recall = (not candidate_texts) or (
+                            len(candidate_texts) < int(self.overall_keep_min_count)
+                        )
+                    if need_recall:
+                        det = getattr(self.ocr, 'text_detector', None)
+                        prev_vals = {}
+                        try:
+                            # 备份当前参数
+                            if det and hasattr(det, 'postprocess_op'):
+                                post = det.postprocess_op
+                                prev_vals['thresh'] = getattr(post, 'thresh', None)
+                                prev_vals['box_thresh'] = getattr(post, 'box_thresh', None)
+                                prev_vals['unclip_ratio'] = getattr(post, 'unclip_ratio', None)
+                                # 应用召回阈值
+                                if hasattr(post, 'thresh'):
+                                    setattr(post, 'thresh', float(self.recall_det_thresh))
+                                if hasattr(post, 'box_thresh'):
+                                    setattr(post, 'box_thresh', float(self.recall_det_box_thresh))
+                                if hasattr(post, 'unclip_ratio'):
+                                    setattr(post, 'unclip_ratio', float(self.recall_det_unclip_ratio))
+                            if det and hasattr(det, 'preprocess_op'):
+                                pre = det.preprocess_op
+                                prev_vals['limit_type'] = getattr(pre, 'limit_type', None)
+                                prev_vals['limit_side_len'] = getattr(pre, 'limit_side_len', None)
+                                if hasattr(pre, 'limit_type'):
+                                    setattr(pre, 'limit_type', self.recall_det_limit_type)
+                                if hasattr(pre, 'limit_side_len'):
+                                    setattr(pre, 'limit_side_len', int(self.recall_det_limit_side_len))
+                        except Exception:
+                            pass
+
+                        try:
+                            recall_results = self.ocr.predict(input=image_nd)
+                            # 解析并追加候选
+                            try:
+                                for item in recall_results:
+                                    raw = None
+                                    if isinstance(item, dict):
+                                        raw = item.get('res') if 'res' in item else item
+                                    else:
+                                        raw = getattr(item, 'res', None) or item
+                                    rec_texts = []
+                                    rec_scores = []
+                                    polys = []
+                                    if isinstance(raw, dict):
+                                        rec_texts = raw.get('rec_texts') or raw.get('texts') or []
+                                        rec_scores = raw.get('rec_scores') or []
+                                        polys = raw.get('rec_polys') or raw.get('dt_polys') or raw.get('boxes') or []
+                                    else:
+                                        rec_texts = getattr(raw, 'rec_texts', []) or getattr(raw, 'texts', []) or []
+                                        rec_scores = getattr(raw, 'rec_scores', []) or []
+                                        polys = getattr(raw, 'rec_polys', None)
+                                        if polys is None:
+                                            polys = getattr(raw, 'dt_polys', None)
+                                        if polys is None:
+                                            polys = getattr(raw, 'boxes', [])
+                                    if rec_texts and not isinstance(rec_texts, list):
+                                        rec_texts = [rec_texts]
+                                    if rec_scores and not isinstance(rec_scores, list):
+                                        rec_scores = [rec_scores]
+                                    if polys is None:
+                                        polys = []
+                                    # 直接追加，后续统一过滤去重
+                                    for idx_i, t in enumerate(rec_texts):
+                                        if isinstance(t, str) and t.strip():
+                                            candidate_texts.append(t)
+                                            s = 1.0
+                                            if idx_i < len(rec_scores):
+                                                try:
+                                                    s = float(rec_scores[idx_i])
+                                                except Exception:
+                                                    s = 1.0
+                                            candidate_scores.append(s)
+                                    if isinstance(polys, list):
+                                        candidate_polys.extend(polys)
+                                    else:
+                                        try:
+                                            if hasattr(polys, 'tolist'):
+                                                candidate_polys.extend(polys.tolist())
+                                        except Exception:
+                                            pass
+                            except Exception:
+                                pass
+                        finally:
+                            # 恢复原参数，避免影响后续图片
+                            try:
+                                if det and hasattr(det, 'preprocess_op'):
+                                    pre = det.preprocess_op
+                                    if 'limit_type' in prev_vals and prev_vals['limit_type'] is not None and hasattr(pre, 'limit_type'):
+                                        setattr(pre, 'limit_type', prev_vals['limit_type'])
+                                    if 'limit_side_len' in prev_vals and prev_vals['limit_side_len'] is not None and hasattr(pre, 'limit_side_len'):
+                                        setattr(pre, 'limit_side_len', prev_vals['limit_side_len'])
+                                if det and hasattr(det, 'postprocess_op'):
+                                    post = det.postprocess_op
+                                    if 'thresh' in prev_vals and prev_vals['thresh'] is not None and hasattr(post, 'thresh'):
+                                        setattr(post, 'thresh', prev_vals['thresh'])
+                                    if 'box_thresh' in prev_vals and prev_vals['box_thresh'] is not None and hasattr(post, 'box_thresh'):
+                                        setattr(post, 'box_thresh', prev_vals['box_thresh'])
+                                    if 'unclip_ratio' in prev_vals and prev_vals['unclip_ratio'] is not None and hasattr(post, 'unclip_ratio'):
+                                        setattr(post, 'unclip_ratio', prev_vals['unclip_ratio'])
+                            except Exception:
+                                pass
+                except Exception:
+                    logger.debug("召回通道执行失败，已忽略并继续过滤流程")
+
             except Exception as persist_err:
                 logger.debug(f"结果保存或解析失败: {persist_err}")
 
             try:
                 if candidate_texts and candidate_scores and len(candidate_scores) == len(candidate_texts):
+                    # 1) 几何过滤: 依据框面积占比、最短边像素与长宽比
+                    geom_keep = [True] * len(candidate_texts)
+                    try:
+                        img_area = float(max(1, img_width * img_height))
+                        for i, poly in enumerate(candidate_polys):
+                            try:
+                                if not poly:
+                                    geom_keep[i] = False
+                                    continue
+                                pts = poly
+                                # 支持 list[list[int]] 或 ndarray
+                                if hasattr(pts, 'tolist'):
+                                    pts = pts.tolist()
+                                xs = [int(p[0]) for p in pts]
+                                ys = [int(p[1]) for p in pts]
+                                minx, maxx = min(xs), max(xs)
+                                miny, maxy = min(ys), max(ys)
+                                w = float(maxx - minx)
+                                h = float(maxy - miny)
+                                if w <= 0 or h <= 0:
+                                    geom_keep[i] = False
+                                    continue
+                                area_ratio = (w * h) / img_area
+                                side_min = min(w, h)
+                                aspect = (max(w, h) / max(1.0, min(w, h)))
+                                if area_ratio < float(self.min_box_area_ratio) or side_min < float(self.min_box_side_px):
+                                    geom_keep[i] = False
+                                    continue
+                                if not (float(self.min_aspect_ratio) <= aspect <= float(self.max_aspect_ratio)):
+                                    geom_keep[i] = False
+                                    continue
+                            except Exception:
+                                geom_keep[i] = geom_keep[i] and True
+                    except Exception:
+                        pass
+
+                    # 2) 长度感知阈值: 严苛模式整体抬高
+                    def _len_threshold(txt_len: int) -> float:
+                        if txt_len <= 1:
+                            base = float(self.len1_conf_base)
+                        elif txt_len <= 3:
+                            base = float(self.len2_3_conf_thresh)
+                        else:
+                            base = float(self.len4p_conf_thresh)
+                        return base + (float(self.strict_conf_boost) if strict_mode else 0.0)
+
+                    # 3) 语言比例: 中文字符占比阈值
+                    def _cn_ratio_ok(t: str) -> bool:
+                        if not t:
+                            return False
+                        try:
+                            total = len(t)
+                            cn = sum(1 for ch in t if '\u4e00' <= ch <= '\u9fff')
+                            ratio = (cn / max(1, total))
+                            return ratio >= float(self.lang_ratio_threshold)
+                        except Exception:
+                            return True
+
                     filtered_texts = []
                     filtered_scores = []
                     filtered_polys = []
                     for idx, t in enumerate(candidate_texts):
-                        s = candidate_scores[idx] if idx < len(candidate_scores) else 1.0
+                        # 几何先行
+                        if idx < len(geom_keep) and not geom_keep[idx]:
+                            continue
+                        s = candidate_scores[idx] if idx < len(candidate_scores) else 0.0
                         if s is None:
                             s = 0.0
-                        if s >= getattr(self, 'text_rec_score_thresh', 0.0):
-                            filtered_texts.append(t)
-                            filtered_scores.append(s)
-                            if idx < len(candidate_polys):
-                                filtered_polys.append(candidate_polys[idx])
-                    candidate_texts = filtered_texts
-                    candidate_scores = filtered_scores
-                    candidate_polys = filtered_polys
+                        # 长度感知阈值
+                        txt_len = len(t.strip())
+                        th = _len_threshold(txt_len)
+                        # 单字: 依据ROI复杂度动态调整阈值
+                        if txt_len == 1:
+                            metrics = self._compute_roi_metrics(image_nd, candidate_polys[idx] if idx < len(candidate_polys) else None)
+                            ed, cd = float(metrics.get('edge_density', 0.0)), float(metrics.get('corner_density', 0.0))
+                            # 高复杂度: 边缘或角点密度较高, 可适当放宽阈值
+                            if (ed >= float(self.edge_density_hi)) or (cd >= float(self.corner_density_hi)):
+                                th = min(1.0, max(th - (float(self.strict_conf_boost) + 0.03), float(self.len1_conf_high_complexity)))
+                            # 低复杂度: 几乎无边缘/角点, 大幅提高阈值以压制纹理误检
+                            elif (ed <= float(self.edge_density_lo)) and (cd <= float(self.corner_density_lo)):
+                                th = max(th, float(self.len1_conf_low_complexity))
+                        if s < th:
+                            continue
+                        # 语言比例
+                        if not _cn_ratio_ok(t):
+                            continue
+                        filtered_texts.append(t)
+                        filtered_scores.append(float(s))
+                        if idx < len(candidate_polys):
+                            filtered_polys.append(candidate_polys[idx])
+
+                    # 4) 总体一致性门槛
+                    def _passes_overall(ts: list, ss: list) -> bool:
+                        if not ts:
+                            return False
+                        try:
+                            avgc = float(sum(ss) / max(1, len(ss))) if ss else 0.0
+                        except Exception:
+                            avgc = 0.0
+                        if len(ts) >= int(self.overall_keep_min_count) and avgc >= float(self.overall_keep_avg_conf):
+                            return True
+                        for i, txt in enumerate(ts):
+                            if len(txt.strip()) >= 4 and (ss[i] if i < len(ss) else 0.0) >= float(self.overall_keep_len4p_conf):
+                                return True
+                        return False
+
+                    passes = _passes_overall(filtered_texts, filtered_scores)
+                    # 单字兜底: 当仅存在单字且其复杂度高且分高, 可选择绕过总体一致性门槛
+                    if not passes and self.single_char_bypass_overall and len(filtered_texts) == 1 and len(filtered_texts[0].strip()) == 1:
+                        try:
+                            metrics = self._compute_roi_metrics(image_nd, filtered_polys[0] if filtered_polys else None)
+                            ed, cd = float(metrics.get('edge_density', 0.0)), float(metrics.get('corner_density', 0.0))
+                            if (ed >= float(self.edge_density_hi)) or (cd >= float(self.corner_density_hi)):
+                                passes = filtered_scores and filtered_scores[0] >= max(float(self.len1_conf_high_complexity), 0.90)
+                        except Exception:
+                            pass
+
+                    if passes:
+                        candidate_texts = filtered_texts
+                        candidate_scores = filtered_scores
+                        candidate_polys = filtered_polys
+                    else:
+                        candidate_texts = []
+                        candidate_scores = []
+                        candidate_polys = []
             except Exception:
                 # 任何过滤异常不应影响整体识别流程
                 pass
@@ -661,98 +1091,169 @@ class OCRService:
             log_filter_debug = config.getboolean('ocr', 'log_filter_debug', fallback=False)
             log_filter_debug_save = config.getboolean('ocr', 'log_filter_debug_save', fallback=False)
             logs_dir = config.get('paths', 'ocr_logs_dir', fallback=str(Path(settings.BASE_DIR) / 'logs' / 'ocr'))
+            
             if log_filter_debug:
                 image_name = os.path.basename(image_path)
                 header_line = f"==================== OCR filter debug | image: {image_name} ===================="
                 footer_line = "--------------------------------------------------------------------------------------------------"
-                # 读取现有官方参数，分组输出
-                score_thresh = float(getattr(self, 'text_rec_score_thresh', 0.0))
-                det_thresh = float(getattr(self, 'text_det_thresh', config.getfloat('ocr', 'text_det_thresh', fallback=0.30)))
-                det_box_thresh = float(getattr(self, 'text_det_box_thresh', config.getfloat('ocr', 'text_det_box_thresh', fallback=0.60)))
-                det_unclip_ratio = float(getattr(self, 'text_det_unclip_ratio', config.getfloat('ocr', 'text_det_unclip_ratio', fallback=1.50)))
-                det_limit_type = getattr(self, 'text_det_limit_type', config.get('ocr', 'text_det_limit_type', fallback='short'))
-                det_limit_side_len = int(getattr(self, 'text_det_limit_side_len', config.getint('ocr', 'text_det_limit_side_len', fallback=736)))
-                use_doc_orientation_classify = config.getboolean('ocr', 'use_doc_orientation_classify', fallback=False)
-                use_doc_unwarping = config.getboolean('ocr', 'use_doc_unwarping', fallback=False)
-                use_textline_orientation = config.getboolean('ocr', 'use_textline_orientation', fallback=False)
-                text_detection_model_name = config.get('ocr', 'text_detection_model_name', fallback='PP-OCRv5_server_det')
-                text_recognition_model_name = config.get('ocr', 'text_recognition_model_name', fallback='PP-OCRv5_server_rec')
-
-                # 参数摘要（分组格式）
-                param_summary = (
-                    "当前过滤参数:\n"
-                    f"- 核心阈值: text_rec_score_thresh={score_thresh}\n"
-                    f"- 检测参数: text_det_thresh={det_thresh}, text_det_box_thresh={det_box_thresh}, text_det_unclip_ratio={det_unclip_ratio}\n"
-                    f"- 检测尺寸: text_det_limit_type={det_limit_type}, text_det_limit_side_len={det_limit_side_len}\n"
-                    f"- 文档与方向: use_doc_orientation_classify={use_doc_orientation_classify}, use_doc_unwarping={use_doc_unwarping}, use_textline_orientation={use_textline_orientation}\n"
-                    f"- 模型: text_detection_model_name={text_detection_model_name}, text_recognition_model_name={text_recognition_model_name}\n"
-                    f"- 输出: predict_save={predict_save}, candidates={len(candidate_texts)}\n"
-                )
-                # 追加内部实际参数摘要，便于对齐官方demo
-                try:
-                    internal_det = first_raw_debug.get('text_det_params') if isinstance(first_raw_debug, dict) else None
-                    internal_ms = first_raw_debug.get('model_settings') if isinstance(first_raw_debug, dict) else None
-                    internal_doc = first_raw_debug.get('doc_preprocessor_res') if isinstance(first_raw_debug, dict) else None
-                    internal_angles = first_raw_debug.get('textline_orientation_angles') if isinstance(first_raw_debug, dict) else None
-                    internal_summary = (
-                        "内部实际参数(来自PaddleOCR返回):\n"
-                        f"- text_det_params={internal_det}\n"
-                        f"- model_settings={internal_ms}\n"
-                        # f"- doc_preprocessor_res={internal_doc}\n"
-                        f"- textline_orientation_angles={internal_angles}\n"
+                
+                # 获取识别模式中文名称 (基于实际生效的模式, 而非全局设定)
+                preset_name_map = {
+                    'high_speed': '快速',
+                    'balanced': '均衡',
+                    'high_precision': '高精度',
+                    'smart_balanced': '动态均衡'
+                }
+                # 优先使用 _effective_preset (由当前图片特征决定)
+                effective_preset_key = getattr(self, '_effective_preset', None) or self.smart_ocr_preset
+                preset_zh = preset_name_map.get(effective_preset_key, '均衡')
+                
+                # 构建最终用于展示的模式名称 (智能均衡增加前缀)
+                if self.smart_ocr_preset == "smart_balanced":
+                    mode_display = f"动态均衡-{preset_zh}"
+                else:
+                    mode_display = preset_zh
+                
+                # 记录公共参数（仅在任务开始或任务ID变更时输出一次）
+                if not self.__class__._common_params_logged or self.__class__._common_params_task_id != task_id:
+                    # 合并当前过滤参数和内部实际参数，去除重复
+                    text_detection_model_name = config.get('ocr', 'text_detection_model_name', fallback='PP-OCRv5_server_det')
+                    text_recognition_model_name = config.get('ocr', 'text_recognition_model_name', fallback='PP-OCRv5_server_rec')
+                    use_doc_orientation_classify = config.getboolean('ocr', 'use_doc_orientation_classify', fallback=False)
+                    use_doc_unwarping = config.getboolean('ocr', 'use_doc_unwarping', fallback=False)
+                    use_textline_orientation = getattr(self, 'use_textline_orientation', config.getboolean('ocr', 'use_textline_orientation', fallback=False))
+                    
+                    # 整合后的参数摘要
+                    common_params = (
+                        f"OCR 全局参数设置(任务ID: {task_id}):\n"
+                        f"- 核心阈值: text_rec_score_thresh={self.text_rec_score_thresh}\n"
+                        f"- 检测参数: text_det_thresh={self.text_det_thresh}, text_det_box_thresh={self.text_det_box_thresh}, text_det_unclip_ratio={self.text_det_unclip_ratio}\n"
+                        f"- 检测尺寸: text_det_limit_type={self.text_det_limit_type}, text_det_limit_side_len={self.text_det_limit_side_len}\n"
+                        f"- 文档与方向: use_doc_orientation_classify={use_doc_orientation_classify}, use_doc_unwarping={use_doc_unwarping}, use_textline_orientation={use_textline_orientation}\n"
+                        f"- 模型: text_detection_model_name={text_detection_model_name}, text_recognition_model_name={text_recognition_model_name}\n"
+                        f"- 动态模式: smart_ocr_dynamic_limit_enabled={self.smart_ocr_dynamic_limit_enabled}\n"
+                        f"- 缓存启用: ocr_cache_enabled={self.ocr_cache_enabled}\n"
+                        f"- 全局识别模式: {preset_name_map.get(self.smart_ocr_preset, self.smart_ocr_preset)}\n"
                     )
-                except Exception:
-                    internal_summary = "内部实际参数(来自PaddleOCR返回): <unavailable>\n"
-                # 添加图片分辨率信息
+                    
+                    logger.warning(common_params)
+                    
+                    # 更新日志标记
+                    self.__class__._common_params_logged = True
+                    self.__class__._common_params_task_id = task_id
+                    
+                    # 如果需要保存到文件，将公共参数写入
+                    if log_filter_debug_save and task_id:
+                        try:
+                            os.makedirs(logs_dir, exist_ok=True)
+                            file_path = os.path.join(logs_dir, f"{task_id}.log")
+                            with open(file_path, 'a', encoding='utf-8') as fp:
+                                fp.write(f"OCR 全局参数设置 [{time.strftime('%Y-%m-%d %H:%M:%S')}]\n")
+                                fp.write(common_params)
+                                fp.write("\n")
+                        except Exception as perr:
+                            logger.error(f"保存公共参数日志失败: {perr}")
+
+                # 只输出图片特有信息
                 try:
                     img_height, img_width = image_nd.shape[:2] if image_nd is not None else (0, 0)
                     img_pixels = img_height * img_width
-                    resolution_summary = f"图片分辨率: {img_width}x{img_height} (总像素: {img_pixels:,})\n"
-                except Exception:
-                    resolution_summary = "图片分辨率: <unavailable>\n"
-                # 逐项输出（仅展示前若干项，避免日志过长）
-                max_items = 50
-                lines = []
-                if not candidate_texts:
-                    lines.append(
-                        f"detector produced 0 boxes under: text_det_limit_type={det_limit_type}, text_det_limit_side_len={det_limit_side_len}, text_det_thresh={det_thresh}, text_det_box_thresh={det_box_thresh}, text_det_unclip_ratio={det_unclip_ratio}"
+                    
+                    # 图片特定信息
+                    image_specific_info = (
+                        f"{header_line}\n"
+                        f"图片信息: {image_name} | 分辨率: {img_width}x{img_height} | 总像素: {img_pixels:,} | 识别模式: {mode_display}\n"
                     )
-                else:
-                    for i in range(min(len(candidate_texts), max_items)):
-                        s = float(candidate_scores[i]) if i < len(candidate_scores) else 0.0
-                        decision = "keep" if s >= score_thresh else "drop"
-                        comparator = ">=" if decision == "keep" else "<"
-                        reason = f"score({s:.3f}){comparator}text_rec_score_thresh({score_thresh})"
+                    
+                    # 仅显示有差异的参数
+                    internal_det_params = first_raw_debug.get('text_det_params')
+                    if internal_det_params and isinstance(internal_det_params, dict):
+                        # 检测与当前参数的差异
+                        diff_params = []
+                        if internal_det_params.get('limit_side_len') != self.text_det_limit_side_len:
+                            diff_params.append(f"limit_side_len={internal_det_params.get('limit_side_len')}")
+                        if internal_det_params.get('limit_type') != self.text_det_limit_type:
+                            diff_params.append(f"limit_type={internal_det_params.get('limit_type')}")
+                        if internal_det_params.get('thresh') != self.text_det_thresh:
+                            diff_params.append(f"thresh={internal_det_params.get('thresh')}")
+                        if internal_det_params.get('box_thresh') != self.text_det_box_thresh:
+                            diff_params.append(f"box_thresh={internal_det_params.get('box_thresh')}")
+                        if internal_det_params.get('unclip_ratio') != self.text_det_unclip_ratio:
+                            diff_params.append(f"unclip_ratio={internal_det_params.get('unclip_ratio')}")
+                        
+                        if diff_params:
+                            image_specific_info += f"参数差异: {', '.join(diff_params)}\n"
+                    
+                    # 逐项输出（仅展示前若干项，避免日志过长）
+                    max_items = 50
+                    lines = []
+                    if preprocess_retry_used:
+                        image_specific_info += f"预处理重试: {preprocess_retry_info}\n"
+                        
+                    if not candidate_texts:
                         lines.append(
-                            f"idx={i}, txt='{candidate_texts[i]}', score={s:.3f}, decision={decision}, reason={reason}"
+                            f"detector未检出文本框 (共0个)"
                         )
-                logger.warning(
-                    header_line
-                    + (f"\n[preprocess_retry]=True method={preprocess_retry_info}\n" if preprocess_retry_used else "\n")
-                    + param_summary
-                    + resolution_summary
-                    + internal_summary
-                    + "\n".join(lines)
-                    + "\n"
-                    + footer_line
-                )
-                if log_filter_debug_save and task_id:
-                    try:
-                        os.makedirs(logs_dir, exist_ok=True)
-                        file_path = os.path.join(logs_dir, f"{task_id}.log")
-                        with open(file_path, 'a', encoding='utf-8') as fp:
-                            fp.write(header_line + "\n")
-                            fp.write(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] image_name={image_name} image_path={image_path}\n")
-                            fp.write((f"[preprocess_retry]=True method={preprocess_retry_info}\n" if preprocess_retry_used else ""))
-                            fp.write(param_summary)
-                            fp.write(resolution_summary)
-                            fp.write(internal_summary)
-                            for ln in lines:
-                                fp.write(ln + "\n")
-                            fp.write(footer_line + "\n\n")
-                    except Exception as perr:
-                        logger.error(f"保存调试日志失败: {perr}")
-
+                    else:
+                        lines.append(f"检出文本框: {len(candidate_texts)}个")
+                        for i in range(min(len(candidate_texts), max_items)):
+                            s = float(candidate_scores[i]) if i < len(candidate_scores) else 0.0
+                            decision = "keep" if s >= self.text_rec_score_thresh else "drop"
+                            lines.append(
+                                f"  {i+1}. '{candidate_texts[i]}' [置信度={s:.3f}]"
+                            )
+                    
+                    logger.warning(
+                        image_specific_info
+                        + "\n".join(lines)
+                        + "\n"
+                        + footer_line
+                    )
+                    
+                    if log_filter_debug_save and task_id:
+                        try:
+                            os.makedirs(logs_dir, exist_ok=True)
+                            file_path = os.path.join(logs_dir, f"{task_id}.log")
+                            with open(file_path, 'a', encoding='utf-8') as fp:
+                                fp.write(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] {image_name} 处理\n")
+                                fp.write(f"分辨率: {img_width}x{img_height} | 识别模式: {mode_display}\n")
+                                if preprocess_retry_used:
+                                    fp.write(f"预处理重试: {preprocess_retry_info}\n")
+                                for ln in lines:
+                                    fp.write(ln + "\n")
+                                fp.write(footer_line + "\n\n")
+                        except Exception as perr:
+                            logger.error(f"保存图片日志失败: {perr}")
+                except Exception as log_err:
+                    logger.error(f"生成日志信息失败: {log_err}")
+        
+            # 计算参数差异摘要，用于结果输出
+            param_diff_list = []
+            try:
+                internal_det_params = first_raw_debug.get('text_det_params')
+                if internal_det_params and isinstance(internal_det_params, dict):
+                    if internal_det_params.get('limit_side_len') != self.text_det_limit_side_len:
+                        param_diff_list.append(
+                            f"limit_side_len={internal_det_params.get('limit_side_len')}"
+                        )
+                    if internal_det_params.get('limit_type') != self.text_det_limit_type:
+                        param_diff_list.append(
+                            f"limit_type={internal_det_params.get('limit_type')}"
+                        )
+                    if internal_det_params.get('thresh') != self.text_det_thresh:
+                        param_diff_list.append(
+                            f"thresh={internal_det_params.get('thresh')}"
+                        )
+                    if internal_det_params.get('box_thresh') != self.text_det_box_thresh:
+                        param_diff_list.append(
+                            f"box_thresh={internal_det_params.get('box_thresh')}"
+                        )
+                    if internal_det_params.get('unclip_ratio') != self.text_det_unclip_ratio:
+                        param_diff_list.append(
+                            f"unclip_ratio={internal_det_params.get('unclip_ratio')}"
+                        )
+            except Exception:
+                pass
             
             # 构建最终输出结果
             final_texts: List[str] = []
@@ -773,20 +1274,54 @@ class OCRService:
                     overall_conf = float(sum(final_scores) / max(1, len(final_scores)))
                 except Exception:
                     overall_conf = 0.0
+                # 生成可读的模式展示，确保与日志一致
+                preset_name_map = {
+                    'high_speed': '快速',
+                    'balanced': '均衡',
+                    'high_precision': '高精度',
+                    'smart_balanced': '智能均衡'
+                }
+                effective_key = (self._effective_preset or self.smart_ocr_preset)
+                readable_mode = preset_name_map.get(effective_key, '均衡')
+                if self.smart_ocr_preset == 'smart_balanced':
+                    readable_mode = f"动态均衡-{readable_mode}"
                 return {
                     "image_path": image_path,
                     "texts": final_texts,
                     "boxes": final_boxes,
                     "confidence": overall_conf,
-                    "time_cost": time_cost
+                    "time_cost": time_cost,
+                    "used_preset": (self._effective_preset or self.smart_ocr_preset),
+                    "mode_display": readable_mode,
+                    "resolution": {"width": int(img_width), "height": int(img_height)},
+                    "pixels": int(img_pixels),
+                    "param_diff": ", ".join(param_diff_list) if param_diff_list else "",
+                    "confidences": [float(x) for x in final_scores],
                 }
             else:
+                # 生成可读的模式展示，确保与日志一致
+                preset_name_map = {
+                    'high_speed': '快速',
+                    'balanced': '均衡',
+                    'high_precision': '高精度',
+                    'smart_balanced': '智能均衡'
+                }
+                effective_key = (self._effective_preset or self.smart_ocr_preset)
+                readable_mode = preset_name_map.get(effective_key, '均衡')
+                if self.smart_ocr_preset == 'smart_balanced':
+                    readable_mode = f"动态均衡-{readable_mode}"
                 return {
                     "image_path": image_path,
                     "texts": [],
                     "boxes": [],
                     "confidence": 0.0,
-                    "time_cost": time_cost
+                    "time_cost": time_cost,
+                    "used_preset": (self._effective_preset or self.smart_ocr_preset),
+                    "mode_display": readable_mode,
+                    "resolution": {"width": int(img_width), "height": int(img_height)},
+                    "pixels": int(img_pixels),
+                    "param_diff": ", ".join(param_diff_list) if param_diff_list else "",
+                    "confidences": [],
                 }
         except Exception as e:
             logger.error(f"图片识别失败 {image_path}: {str(e)}")

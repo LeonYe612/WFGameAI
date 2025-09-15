@@ -23,4 +23,8 @@ urlpatterns = [
     path("process/", api.OCRProcessAPIView.as_view(), name="ocr_process"),
     # 历史数据API
     path("history/", api.OCRHistoryAPIView.as_view(), name="ocr_history"),
+    
+    # OCR缓存管理API
+    path('cache/status/', api.OCRCacheStatusView.as_view(), name='ocr_cache_status'),
+    path('cache/clear/', api.OCRCacheClearView.as_view(), name='ocr_cache_clear'),
 ]
