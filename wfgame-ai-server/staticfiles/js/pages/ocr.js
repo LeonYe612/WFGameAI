@@ -305,7 +305,15 @@ function showDetailedResults(taskId, page = 1) {
     modalElement.dataset.taskId = taskId;
     modalElement.dataset.page = page;
 
-    const hasMatched = document.getElementById('showOnlyMatched')?.checked || false;
+    let has_match = null;
+    const matched = document.getElementById('showOnlyMatched')?.checked;
+    const unmatched = document.getElementById('showOnlyUnmatched')?.checked;
+    if (matched && !unmatched) {
+        has_match = true;
+    } else if (!matched && unmatched) {
+        has_match = false;
+    } // 两个都不选，has_match 保持 null
+
     const searchInput = document.getElementById('resultSearchInput');
     const keyword = searchInput && searchInput.value ? searchInput.value.trim() : '';
     const resultType = document.querySelector('#resultTypeFilterGroup .active')?.getAttribute('data-type') || '';
@@ -318,7 +326,7 @@ function showDetailedResults(taskId, page = 1) {
         },
         body: JSON.stringify({
             action: 'get_details',
-            has_match: hasMatched,
+            has_match: has_match,
             keyword: keyword,
             result_type: resultType,
             id: taskId,
@@ -342,19 +350,19 @@ function showDetailedResults(taskId, page = 1) {
                     <div class="p-2" style="border-radius: 0.5rem; display: inline-block; margin-bottom: 0.5rem;">
                         <div class="btn-group btn-group-sm" role="group" id="resultTypeGroup_${imageId}">
                 `;
-                                resultTypes.forEach((rt, idx) => {
-                                    const checked = rt.value == selectedType ? 'checked' : '';
-                                    const btnClass = rt.value == selectedType ? rt.btn : '';
-                                    let style = "border:1px solid #bdbdbd;";
-                                    if (idx === 0) style += "border-radius:0.5rem 0 0 0.5rem;";
-                                    else if (idx === resultTypes.length - 1) style += "border-radius:0 0.5rem 0.5rem 0;";
-                                    else style += "border-radius:0;";
-                                    radioGroup += `
+                resultTypes.forEach((rt, idx) => {
+                    const checked = rt.value == selectedType ? 'checked' : '';
+                    const btnClass = rt.value == selectedType ? rt.btn : '';
+                    let style = "border:1px solid #bdbdbd;";
+                    if (idx === 0) style += "border-radius:0.5rem 0 0 0.5rem;";
+                    else if (idx === resultTypes.length - 1) style += "border-radius:0 0.5rem 0.5rem 0;";
+                    else style += "border-radius:0;";
+                    radioGroup += `
                         <input type="radio" class="btn-check" name="resultType_${imageId}" id="resultType_${imageId}_${rt.value}" value="${rt.value}" ${checked} autocomplete="off" data-original="${selectedType}">
                         <label class="btn ${btnClass}" style="${style}" for="resultType_${imageId}_${rt.value}">${rt.label}</label>
                     `;
-                                });
-                                radioGroup += `
+                });
+                radioGroup += `
                         </div>
                     </div>
                 `;
@@ -378,6 +386,7 @@ function showDetailedResults(taskId, page = 1) {
                                 ${fileName} <i class="fas fa-${matchIcon} ${hasMatch}"></i>
                                 <span class="ms-3">${radioGroup}</span>
                             </h5>
+                            <h6 class="card-subtitle mb-2 text-muted">分辨率: ${result.pic_resolution}</h6>
                             <h6 class="card-subtitle mb-2 text-muted">语言: ${Object.keys(result.languages).join(', ')}</h6>
                             <div class="card-text">
                                 <strong>识别文本:</strong>
@@ -1746,29 +1755,30 @@ function resetImageZoom() {
 }
 
 /**
+ * 批量更新图片的标注类型（不管更新，当前页数据全量提交）
+ * @param batchType
+ */
+function batchUpdateResultTypes(batchType) {
+    document.querySelectorAll('[name^="resultType_"]').forEach(radio => {
+        radio.checked = (radio.value === batchType);
+        if (radio.checked) {
+            radio.setAttribute('data-original', batchType); // 同步页面状态
+            radio.dispatchEvent(new Event('change'));
+        }
+    });
+}
+
+/**
  * 更新图片的标注类型
  */
-function submitResultTypes({ forceAll = false, batchType = null } = {}) {
+function submitResultTypes() {
     const ids = {};
-    document.querySelectorAll('[name^="resultType_"]').forEach(radio => {
+    document.querySelectorAll('[name^="resultType_"]:checked').forEach(radio => {
         const imageId = radio.name.replace('resultType_', '');
         const selectedType = parseInt(radio.value);
-        const originalType = parseInt(radio.getAttribute('data-original'));
-
-        // 批量标注时，强制全部提交并更新data-original
-        if (forceAll && batchType !== null) {
-            if (radio.value === batchType) {
-                radio.checked = true;
-                radio.setAttribute('data-original', batchType);
-                radio.dispatchEvent(new Event('change'));
-                ids[imageId] = selectedType;
-            }
-        } else {
-            // 普通提交，只提交有变更的
-            if (radio.checked && selectedType !== originalType) {
-                ids[imageId] = selectedType;
-            }
-        }
+        ids[imageId] = selectedType;
+        // 提交后同步 data-original
+        radio.setAttribute('data-original', radio.value);
     });
 
     if (Object.keys(ids).length === 0) {
@@ -1787,10 +1797,6 @@ function submitResultTypes({ forceAll = false, batchType = null } = {}) {
         .then(res => res.json())
         .then(resp => {
             alert(resp.detail || '操作完成');
-            // 更新 data-original
-            document.querySelectorAll('[name^="resultType_"]:checked').forEach(radio => {
-                radio.setAttribute('data-original', radio.value);
-            });
         })
         .catch(err => {
             alert('接口调用失败');
@@ -1798,21 +1804,36 @@ function submitResultTypes({ forceAll = false, batchType = null } = {}) {
 }
 
 /**
+ * 根据匹配项复选框刷新结果
+ */
+function refreshResultsByMatch() {
+    const modalElement = document.getElementById('resultModal');
+    const taskId = modalElement.dataset.taskId;
+    if (taskId) {
+        showDetailedResults(taskId);
+    }
+}
+
+/**
  * 全局监听
  */
 function initGlobalListeners() {
-    // 监听 ‘识别结果详情 - 只显示匹配项’ 复选框变化事件
+    // 监听 ‘识别结果详情 - 只显示匹配项/未匹配项’ 复选框互斥逻辑
     const showOnlyMatchedCheckbox = document.getElementById('showOnlyMatched');
-    if (showOnlyMatchedCheckbox) {
+    const showOnlyUnmatchedCheckbox = document.getElementById('showOnlyUnmatched');
+
+    if (showOnlyMatchedCheckbox && showOnlyUnmatchedCheckbox) {
         showOnlyMatchedCheckbox.addEventListener('change', function() {
-            // 当 checkbox 状态改变时，我们去模态框上寻找之前存好的 task ID
-            const modalElement = document.getElementById('resultModal');
-            const taskId = modalElement.dataset.taskId;
-            // 如果找到了 task ID (意味着模态框是打开的，并且关联了一个任务)
-            if (taskId) {
-                // 就用这个 ID 重新调用 showDetailedResults 函数来刷新内容
-                showDetailedResults(taskId);
+            if (showOnlyMatchedCheckbox.checked) {
+                showOnlyUnmatchedCheckbox.checked = false;
             }
+            refreshResultsByMatch();
+        });
+        showOnlyUnmatchedCheckbox.addEventListener('change', function() {
+            if (showOnlyUnmatchedCheckbox.checked) {
+                showOnlyMatchedCheckbox.checked = false;
+            }
+            refreshResultsByMatch();
         });
     }
 
@@ -1880,12 +1901,12 @@ function initGlobalListeners() {
         submitResultTypes();
     });
 
-    // 批量标注并提交
+    // 批量标注不提交
     document.querySelectorAll('.dropdown-menu .dropdown-item').forEach(item => {
         item.addEventListener('click', function (e) {
             e.preventDefault();
             const type = this.getAttribute('data-type');
-            submitResultTypes({ forceAll: true, batchType: type });
+            batchUpdateResultTypes(type);
         });
     });
 }

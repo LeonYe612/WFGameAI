@@ -779,7 +779,8 @@ class MultiThreadOCR:
                 languages=result.get('languages', {}),
                 has_match=result.get('has_match', False),
                 confidence=result.get('confidence', 0.0),
-                processing_time=result.get('processing_time', 0)
+                processing_time=result.get('processing_time', 0),
+                pic_resolution=result.get('pic_resolution', '')
             )
             objs.append(obj)
         if objs:
