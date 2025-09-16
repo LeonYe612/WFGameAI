@@ -351,7 +351,7 @@ class OCRTaskAPIView(APIView):
                 if result_type:
                     results = results.filter(result_type=result_type)
 
-                if has_math is True:
+                if has_math is not None:
                     results = results.filter(has_match=has_math)
 
                 if keyword != "":
@@ -908,7 +908,6 @@ class OCRHistoryAPIView(APIView):
     def del_result(self, request):
         """删除历史任务及其结果"""
         task_id = request.data.get("task_id")
-        print("====> task_id : ", task_id)
         if not task_id:
             return Response(
                 {"detail": "缺少task_id参数"}, status=status.HTTP_400_BAD_REQUEST

@@ -27,7 +27,7 @@ class ChatServer:
         # todo : 使用配置文件中的 Redis 连接信息
         self.redis = aioredis.from_url(self.redis_url)
 
-        # 2. 初始化 Socket.IO 服务器和 Redis 管理器
+        # 2. 初始化 Socket.IO 服务器和 Redis 管理器（分布式，后续可横向扩容）
         redis_manager = socketio.AsyncRedisManager(self.redis_url)
         self.sio = socketio.AsyncServer(
             async_mode='aiohttp',

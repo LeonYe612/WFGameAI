@@ -147,6 +147,7 @@ class OCRResult(models.Model):
     result_type = models.IntegerField(
         choices=TYPE_CHOICES, default=1, verbose_name="识别结果类型"
     )
+    pic_resolution = models.CharField(max_length=50, blank=True, null=True, verbose_name="图片分辨率")
 
     def __str__(self):
         return f"{self.task.id}_{self.id}"

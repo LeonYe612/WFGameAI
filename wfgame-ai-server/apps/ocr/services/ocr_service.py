@@ -70,10 +70,10 @@ if GPU_ENABLED:
 
 class OCRInstancePool:
     """OCR实例池，用于缓存不同参数组合的OCR实例，避免频繁重建"""
-    
+
     _instance = None
     _lock = threading.Lock()
-    
+
     def __new__(cls):
         if cls._instance is None:
             with cls._lock:
@@ -81,7 +81,7 @@ class OCRInstancePool:
                     cls._instance = super().__new__(cls)
                     cls._instance._initialized = False
         return cls._instance
-    
+
     def __init__(self):
         if not getattr(self, '_initialized', False):
             # OCR实例缓存：键为参数组合的hash，值为OCR实例
@@ -94,74 +94,74 @@ class OCRInstancePool:
             self._usage_stats = {}
             self._initialized = True
             logger.info("OCR实例池初始化完成")
-    
+
     def _generate_cache_key(self, lang: str, limit_type: str, use_textline_orientation: bool) -> str:
         """生成缓存键（仅与语言、尺寸限制类型、方向分类开关相关）"""
         orientation_flag = 'cls1' if use_textline_orientation else 'cls0'
         return f"{lang}_{limit_type}_{orientation_flag}"
-    
+
     def get_ocr_instance(self, lang: str = "ch", limit_type: str = "max",
-                        text_det_thresh: float = 0.3, text_det_box_thresh: float = 0.6,
-                        text_det_unclip_ratio: float = 1.5, text_det_limit_side_len: int = 960,
-                        **other_params) -> PaddleOCR:
+                         text_det_thresh: float = 0.3, text_det_box_thresh: float = 0.6,
+                         text_det_unclip_ratio: float = 1.5, text_det_limit_side_len: int = 960,
+                         **other_params) -> PaddleOCR:
         """获取OCR实例，如果缓存中没有则创建新实例"""
         use_textline_orientation = other_params.get('use_textline_orientation', False)
         cache_key = self._generate_cache_key(
             lang, limit_type, use_textline_orientation
         )
-        
+
         with self._cache_lock:
             # 检查缓存中是否存在
             if cache_key in self._cache:
                 self._usage_stats[cache_key] = time.time()
                 logger.debug(f"从缓存中获取OCR实例: {cache_key}")
                 return self._cache[cache_key]
-            
+
             # 缓存中不存在，创建新实例
             logger.info(f"创建新的OCR实例并缓存: {cache_key}")
-            
+
             # 如果缓存已满，使用LRU策略淘汰最久未使用的实例
             if len(self._cache) >= self._max_cache_size:
                 self._evict_lru_instance()
-            
+
             # 创建新的OCR实例（避免将阈值参与实例构建，阈值使用后续强制写入）
             ocr_instance = self._create_ocr_instance(
                 lang, limit_type, text_det_limit_side_len,
                 use_textline_orientation=use_textline_orientation
             )
-            
+
             # 添加到缓存
             self._cache[cache_key] = ocr_instance
             self._usage_stats[cache_key] = time.time()
-            
+
             return ocr_instance
-    
+
     def _evict_lru_instance(self):
         """淘汰最久未使用的OCR实例"""
         if not self._usage_stats:
             return
-        
+
         # 找到最久未使用的实例
         lru_key = min(self._usage_stats, key=self._usage_stats.get)
-        
+
         # 删除缓存
         if lru_key in self._cache:
             del self._cache[lru_key]
         del self._usage_stats[lru_key]
-        
+
         logger.info(f"淘汰LRU OCR实例: {lru_key}")
-    
+
     def _create_ocr_instance(self, lang: str, limit_type: str,
-                           text_det_limit_side_len: int,
-                           **other_params) -> PaddleOCR:
+                             text_det_limit_side_len: int,
+                             **other_params) -> PaddleOCR:
         """创建新的OCR实例"""
-        
+
         # 强制GPU环境配置
         os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
         os.environ["CUDA_VISIBLE_DEVICES"] = "0"
         os.environ["FLAGS_use_gpu"] = "true"
         os.environ["FLAGS_fraction_of_gpu_memory_to_use"] = "0.8"
-        
+
         # 基本参数
         init_kwargs = {
             'device': 'gpu' if GPU_ENABLED else 'cpu',
@@ -172,7 +172,7 @@ class OCRInstancePool:
             'text_detection_model_name': "PP-OCRv5_server_det",
             'text_recognition_model_name': "PP-OCRv5_server_rec",
         }
-        
+
         try:
             ocr_instance = PaddleOCR(**init_kwargs)
             logger.info(f"成功创建OCR实例: {lang}_shared")
@@ -182,14 +182,14 @@ class OCRInstancePool:
             logger.warning(f"创建OCR实例失败，回退到基础参数: {e}")
             ocr_instance = PaddleOCR(**{'device': 'gpu' if GPU_ENABLED else 'cpu', 'lang': lang})
             return ocr_instance
-    
+
     def clear_cache(self):
         """清空缓存"""
         with self._cache_lock:
             self._cache.clear()
             self._usage_stats.clear()
             logger.info("OCR实例池缓存已清空")
-    
+
     def get_cache_info(self) -> Dict:
         """获取缓存信息"""
         with self._cache_lock:
@@ -211,7 +211,7 @@ class OCRService:
     def __init__(self, lang: str = "ch"):
         """
         初始化OCR服务
-        
+
         Args:
             lang: 识别语言，默认为中文
         """
@@ -219,7 +219,7 @@ class OCRService:
 
         # 初始化OCR实例池
         self.ocr_pool = OCRInstancePool()
-        
+
         # 从配置文件读取OCR参数
         self.text_det_thresh = config.getfloat('ocr', 'text_det_thresh', fallback=0.3)
         self.text_det_box_thresh = config.getfloat('ocr', 'text_det_box_thresh', fallback=0.6)
@@ -231,16 +231,16 @@ class OCRService:
         # 智能切换配置
         self.smart_ocr_dynamic_limit_enabled = config.getboolean('ocr', 'smart_ocr_dynamic_limit_enabled', fallback=True)
         self.ocr_cache_enabled = config.getboolean('ocr', 'ocr_cache_enabled', fallback=True)
-        
+
         # 当前使用的limit_type
         self._current_limit_type = self.text_det_limit_type
-        
+
         # 读取默认预设模式
         default_preset = config.get('ocr', 'default_preset', fallback="balanced")
         # 记录当前模式（全局设定）与实际生效子模式
         self.smart_ocr_preset = default_preset
         self._effective_preset = None
- 
+
         # 召回优先双通道策略配置
         self.dual_channel_recall_boost_enabled = config.getboolean(
             'ocr', 'dual_channel_recall_boost_enabled', fallback=False
@@ -301,17 +301,17 @@ class OCRService:
 
         # OCR实例（延迟初始化）
         self.ocr = None
-        
+
         # 如果默认使用智能均衡模式，在初始化阶段不需要加载特定参数
         # 将在第一次处理图片时动态选择
         if self.smart_ocr_preset != "smart_balanced":
             # 如果不是智能均衡模式，直接加载对应的参数
             self._apply_preset_params(self.smart_ocr_preset)
-        
+
         logger.info(
             f"OCR服务初始化完成 (语言: {lang}, 缓存启用: {self.ocr_cache_enabled}, 预设: {self.smart_ocr_preset})"
         )
- 
+
     def _compute_roi_metrics(self, image_nd, poly):
         """计算候选框ROI的复杂度度量（边缘密度、角点密度）。
 
@@ -365,7 +365,7 @@ class OCRService:
             'use_textline_orientation': config.getboolean('ocr_high_speed', 'use_textline_orientation', fallback=False),
             'smart_ocr_dynamic_limit_enabled': False
         }
-        
+
         # 均衡模式参数
         self.balanced_params = {
             'text_det_thresh': config.getfloat('ocr_balanced', 'text_det_thresh', fallback=0.3),
@@ -376,7 +376,7 @@ class OCRService:
             'use_textline_orientation': config.getboolean('ocr_balanced', 'use_textline_orientation', fallback=False),
             'smart_ocr_dynamic_limit_enabled': True
         }
-        
+
         # 高精度模式参数
         self.high_precision_params = {
             'text_det_thresh': config.getfloat('ocr_high_precision', 'text_det_thresh', fallback=0.2),
@@ -473,28 +473,28 @@ class OCRService:
 
     def _select_best_preset_for_image(self, image_nd):
         """根据图片特征选择最佳参数组合
-        
+
         Args:
             image_nd: 图像矩阵
-            
+
         Returns:
             str: "high_speed", "balanced", 或 "high_precision"
         """
         if image_nd is None:
             return "balanced"  # 默认均衡
-            
+
         try:
             height, width = image_nd.shape[:2]
             pixels = height * width
-            
+
             # 小图片用高精度模式
             if pixels < 10000 or max(height, width) < 100:
                 return "high_precision"
-            
+
             # 大图片用快速模式
             elif pixels > 1000000 or min(height, width) > 1000:
                 return "high_speed"
-            
+
             # 中等图片用均衡模式
             else:
                 return "balanced"
@@ -504,7 +504,7 @@ class OCRService:
 
     def _apply_preset_params(self, preset_name):
         """应用指定预设的参数
-        
+
         Args:
             preset_name: 预设名称，"high_speed", "balanced", 或 "high_precision"
         """
@@ -514,7 +514,7 @@ class OCRService:
             params = self.high_precision_params
         else:  # balanced
             params = self.balanced_params
-        
+
         # 应用参数
         self.text_det_thresh = params['text_det_thresh']
         self.text_det_box_thresh = params['text_det_box_thresh']
@@ -523,7 +523,7 @@ class OCRService:
         self.text_det_limit_side_len = params['text_det_limit_side_len']
         self.use_textline_orientation = params['use_textline_orientation']
         self.smart_ocr_dynamic_limit_enabled = params['smart_ocr_dynamic_limit_enabled']
-        
+
         # 仅记录当前实际生效的子模式，不覆盖全局设定 smart_ocr_preset
         self._effective_preset = preset_name
 
@@ -535,24 +535,24 @@ class OCRService:
         """
         try:
             name = (preset_name or '').lower().strip()
-            
+
             # 如果指定了智能均衡，设置内部标记但不立即应用参数
             if name == 'smart_balanced':
                 self.smart_ocr_preset = name
                 # 重置日志标记，因为参数已更改
                 self.__class__._common_params_logged = False
                 return
-            
+
             if name not in {'high_speed', 'balanced', 'high_precision'}:
                 logger.warning(f"未知预设: {preset_name}")
                 return
-            
+
             # 应用预设参数
             self._apply_preset_params(name)
 
             # 重置日志标记，因为参数已更改
             self.__class__._common_params_logged = False
-            
+
             # 依据当前(或新) limit_type 立即重建一次，确保立即生效
             self._reinit_ocr_with_limit_type(self.text_det_limit_type)
         except Exception as e:
@@ -601,12 +601,12 @@ class OCRService:
     def recognize_image(self, image_path: str, predict_save: bool = False, task_id: Optional[str] = None) -> Dict:
         """
         识别图片中的文字
-        
+
         Args:
             image_path: 图片路径
             predict_save: 是否保存预测可视化结果
             task_id: 任务ID
-            
+
         Returns:
             包含识别结果的字典
         """
@@ -624,14 +624,17 @@ class OCRService:
             if image_nd is None:
                 logger.error(f"图像读取失败(可能为Unicode路径或文件损坏): {full_image_path}")
                 return {"error": f"Image read Error: {full_image_path}", "image_path": image_path}
-            
+
             # 记录图像分辨率信息
             try:
                 img_height, img_width = image_nd.shape[:2]
                 img_pixels = int(img_height * img_width)
             except Exception:
                 img_height, img_width, img_pixels = 0, 0, 0
-            
+
+            # 拼接图片分辨率 (高度, 宽度)
+            pic_resolution = f"{img_height} x {img_width}"  # 宽 * 高
+
             # 智能均衡模式：根据图像特征动态选择最佳参数组合
             actual_preset = self.smart_ocr_preset
             if self.smart_ocr_preset == "smart_balanced":
@@ -644,14 +647,14 @@ class OCRService:
             else:
                 # 固定模式下，effective 即为全局设定
                 self._effective_preset = self.smart_ocr_preset
-            
+
             # 基于像素判断是否进入小图严苛模式
             strict_mode = False
             try:
                 strict_mode = (img_pixels > 0 and img_pixels < int(self.strict_pixels_threshold))
             except Exception:
                 strict_mode = False
-            
+
             # 基于图像分辨率动态选择 limit_type
             current_limit_type = self._current_limit_type
             if self.smart_ocr_dynamic_limit_enabled:
@@ -662,7 +665,7 @@ class OCRService:
                         self._current_limit_type = current_limit_type
                 except Exception as _dyn_err:
                     logger.debug(f"动态 limit_type 策略未生效: {_dyn_err}")
-            
+
             # 从缓存池获取OCR实例，避免频繁重建
             if self.ocr_cache_enabled:
                 self.ocr = self.ocr_pool.get_ocr_instance(
@@ -729,7 +732,7 @@ class OCRService:
             start_time = datetime.datetime.now()
             # try:
             results = self.ocr.predict(input=image_nd)
-            
+
             end_time = datetime.datetime.now()
 
             texts: List[str] = []
@@ -805,7 +808,7 @@ class OCRService:
                                 polys = getattr(raw, 'dt_polys', None)
                             if polys is None:
                                 polys = getattr(raw, 'boxes', [])
-                            
+
                         # 对齐长度并填充候选
                         if rec_texts and not isinstance(rec_texts, list):
                             rec_texts = [rec_texts]
@@ -842,7 +845,7 @@ class OCRService:
                     if self.dual_channel_recall_boost_enabled:
                         # 条件：无候选或候选数低于总体门槛
                         need_recall = (not candidate_texts) or (
-                            len(candidate_texts) < int(self.overall_keep_min_count)
+                                len(candidate_texts) < int(self.overall_keep_min_count)
                         )
                     if need_recall:
                         det = getattr(self.ocr, 'text_detector', None)
@@ -1084,19 +1087,19 @@ class OCRService:
             preprocess_retry_used = False
             preprocess_retry_info = ""
 
-            
+
             kept_indices = list(range(len(candidate_texts)))
 
             # 调试输出：仅保留必要信息（官方参数与候选列表），并支持保存到文件
             log_filter_debug = config.getboolean('ocr', 'log_filter_debug', fallback=False)
             log_filter_debug_save = config.getboolean('ocr', 'log_filter_debug_save', fallback=False)
             logs_dir = config.get('paths', 'ocr_logs_dir', fallback=str(Path(settings.BASE_DIR) / 'logs' / 'ocr'))
-            
+
             if log_filter_debug:
                 image_name = os.path.basename(image_path)
                 header_line = f"==================== OCR filter debug | image: {image_name} ===================="
                 footer_line = "--------------------------------------------------------------------------------------------------"
-                
+
                 # 获取识别模式中文名称 (基于实际生效的模式, 而非全局设定)
                 preset_name_map = {
                     'high_speed': '快速',
@@ -1107,13 +1110,13 @@ class OCRService:
                 # 优先使用 _effective_preset (由当前图片特征决定)
                 effective_preset_key = getattr(self, '_effective_preset', None) or self.smart_ocr_preset
                 preset_zh = preset_name_map.get(effective_preset_key, '均衡')
-                
+
                 # 构建最终用于展示的模式名称 (智能均衡增加前缀)
                 if self.smart_ocr_preset == "smart_balanced":
                     mode_display = f"动态均衡-{preset_zh}"
                 else:
                     mode_display = preset_zh
-                
+
                 # 记录公共参数（仅在任务开始或任务ID变更时输出一次）
                 if not self.__class__._common_params_logged or self.__class__._common_params_task_id != task_id:
                     # 合并当前过滤参数和内部实际参数，去除重复
@@ -1122,7 +1125,7 @@ class OCRService:
                     use_doc_orientation_classify = config.getboolean('ocr', 'use_doc_orientation_classify', fallback=False)
                     use_doc_unwarping = config.getboolean('ocr', 'use_doc_unwarping', fallback=False)
                     use_textline_orientation = getattr(self, 'use_textline_orientation', config.getboolean('ocr', 'use_textline_orientation', fallback=False))
-                    
+
                     # 整合后的参数摘要
                     common_params = (
                         f"OCR 全局参数设置(任务ID: {task_id}):\n"
@@ -1135,13 +1138,13 @@ class OCRService:
                         f"- 缓存启用: ocr_cache_enabled={self.ocr_cache_enabled}\n"
                         f"- 全局识别模式: {preset_name_map.get(self.smart_ocr_preset, self.smart_ocr_preset)}\n"
                     )
-                    
+
                     logger.warning(common_params)
-                    
+
                     # 更新日志标记
                     self.__class__._common_params_logged = True
                     self.__class__._common_params_task_id = task_id
-                    
+
                     # 如果需要保存到文件，将公共参数写入
                     if log_filter_debug_save and task_id:
                         try:
@@ -1158,13 +1161,13 @@ class OCRService:
                 try:
                     img_height, img_width = image_nd.shape[:2] if image_nd is not None else (0, 0)
                     img_pixels = img_height * img_width
-                    
+
                     # 图片特定信息
                     image_specific_info = (
                         f"{header_line}\n"
                         f"图片信息: {image_name} | 分辨率: {img_width}x{img_height} | 总像素: {img_pixels:,} | 识别模式: {mode_display}\n"
                     )
-                    
+
                     # 仅显示有差异的参数
                     internal_det_params = first_raw_debug.get('text_det_params')
                     if internal_det_params and isinstance(internal_det_params, dict):
@@ -1180,16 +1183,16 @@ class OCRService:
                             diff_params.append(f"box_thresh={internal_det_params.get('box_thresh')}")
                         if internal_det_params.get('unclip_ratio') != self.text_det_unclip_ratio:
                             diff_params.append(f"unclip_ratio={internal_det_params.get('unclip_ratio')}")
-                        
+
                         if diff_params:
                             image_specific_info += f"参数差异: {', '.join(diff_params)}\n"
-                    
+
                     # 逐项输出（仅展示前若干项，避免日志过长）
                     max_items = 50
                     lines = []
                     if preprocess_retry_used:
                         image_specific_info += f"预处理重试: {preprocess_retry_info}\n"
-                        
+
                     if not candidate_texts:
                         lines.append(
                             f"detector未检出文本框 (共0个)"
@@ -1202,14 +1205,14 @@ class OCRService:
                             lines.append(
                                 f"  {i+1}. '{candidate_texts[i]}' [置信度={s:.3f}]"
                             )
-                    
+
                     logger.warning(
                         image_specific_info
                         + "\n".join(lines)
                         + "\n"
                         + footer_line
                     )
-                    
+
                     if log_filter_debug_save and task_id:
                         try:
                             os.makedirs(logs_dir, exist_ok=True)
@@ -1226,7 +1229,7 @@ class OCRService:
                             logger.error(f"保存图片日志失败: {perr}")
                 except Exception as log_err:
                     logger.error(f"生成日志信息失败: {log_err}")
-        
+
             # 计算参数差异摘要，用于结果输出
             param_diff_list = []
             try:
@@ -1254,7 +1257,7 @@ class OCRService:
                         )
             except Exception:
                 pass
-            
+
             # 构建最终输出结果
             final_texts: List[str] = []
             final_boxes: List[Any] = []
@@ -1297,6 +1300,7 @@ class OCRService:
                     "pixels": int(img_pixels),
                     "param_diff": ", ".join(param_diff_list) if param_diff_list else "",
                     "confidences": [float(x) for x in final_scores],
+                    "pic_resolution": pic_resolution,
                 }
             else:
                 # 生成可读的模式展示，确保与日志一致
@@ -1322,10 +1326,11 @@ class OCRService:
                     "pixels": int(img_pixels),
                     "param_diff": ", ".join(param_diff_list) if param_diff_list else "",
                     "confidences": [],
+                    "pic_resolution": pic_resolution,
                 }
         except Exception as e:
             logger.error(f"图片识别失败 {image_path}: {str(e)}")
-            return {"error": f"图片识别失败: {str(e)}", "image_path": image_path}
+            return {"error": f"图片识别失败: {str(e)}", "image_path": image_path, "pic_resolution": pic_resolution }
 
     def recognize_batch(self, image_dir: str, image_formats: List[str] = None) -> List[Dict]:
 
@@ -1412,11 +1417,11 @@ class OCRService:
         # CJK笔画 (U+31C0-U+31EF)
         # CJK符号和标点 (U+3000-U+303F)
         if (any('\u4e00' <= ch <= '\u9fff' for ch in text) or  # 基本汉字
-            any('\u3400' <= ch <= '\u4dbf' for ch in text) or  # 扩展A
-            any('\u2e80' <= ch <= '\u2eff' for ch in text) or  # 部首扩展
-            any('\u31c0' <= ch <= '\u31ef' for ch in text) or  # 笔画
-            any('\u3000' <= ch <= '\u303f' for ch in text) or  # 符号和标点
-            any(ord(ch) >= 0x20000 and ord(ch) <= 0x2a6df for ch in text)):  # 扩展B
+                any('\u3400' <= ch <= '\u4dbf' for ch in text) or  # 扩展A
+                any('\u2e80' <= ch <= '\u2eff' for ch in text) or  # 部首扩展
+                any('\u31c0' <= ch <= '\u31ef' for ch in text) or  # 笔画
+                any('\u3000' <= ch <= '\u303f' for ch in text) or  # 符号和标点
+                any(ord(ch) >= 0x20000 and ord(ch) <= 0x2a6df for ch in text)):  # 扩展B
             languages['chinese'] = True
 
         # 英文字符

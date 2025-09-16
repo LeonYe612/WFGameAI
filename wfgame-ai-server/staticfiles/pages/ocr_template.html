@@ -643,6 +643,10 @@
                             <input class="form-check-input" type="checkbox" id="showOnlyMatched" value="true">
                             <label class="form-check-label" for="showOnlyMatched">只显示匹配项</label>
                         </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="showOnlyUnmatched" value="true">
+                            <label class="form-check-label" for="showOnlyUnmatched">只显示未匹配项</label>
+                        </div>
                     </div>
                 </div>
                 <div id="detailedResults">
@@ -654,9 +658,9 @@
                     <button type="button" class="btn btn-success" id="submitAllResultTypesBtn">提交标注结果</button>
                     <button type="button" class="btn btn-success dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false"></button>
                     <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="#" data-type="1">全部标为正确并提交</a></li>
-                        <li><a class="dropdown-item" href="#" data-type="2">全部标为误检并提交</a></li>
-                        <li><a class="dropdown-item" href="#" data-type="3">全部标为漏检并提交</a></li>
+                        <li><a class="dropdown-item" href="#" data-type="1">全部标为正确</a></li>
+                        <li><a class="dropdown-item" href="#" data-type="2">全部标为误检</a></li>
+                        <li><a class="dropdown-item" href="#" data-type="3">全部标为漏检</a></li>
                     </ul>
                 </div>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
