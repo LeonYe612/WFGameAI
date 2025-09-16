@@ -457,7 +457,7 @@ class MultiThreadOCR:
         avg_speed = self.processed_images / total_time if total_time > 0 else 0
         hours = int(total_time / 3600)
         minutes = int((total_time % 3600) / 60)
-        seconds = int(total_time % 60)
+        seconds = total_time % 60  # 保留小数
 
         logger.warning(
             f"{'单' if self.max_workers == 1 else '多'}线程处理完成，共处理 {self.processed_images} 张图片，错误 "
@@ -465,7 +465,7 @@ class MultiThreadOCR:
             f"{(self.processed_images - self.error_count) / self.total_images:.2%}"
         )
         logger.warning(
-            f"总处理时间: {hours}小时 {minutes}分钟 {seconds}秒，平均速度: "
+            f"总处理时间: {hours}小时 {minutes}分钟 {seconds:.2f}秒，平均速度: "
             f"{avg_speed:.2f} 张/秒"
         )
 
@@ -568,82 +568,77 @@ class MultiThreadOCR:
     def _process_single_image(self, ocr: OCRService, relative_path: str, worker_id: int):
         logger.debug(f"处理图片: {relative_path}")
         img_start_time = time.time()
+        result = None
+        update_func = None
+        counter_attr = None
 
         try:
             full_path = self._get_full_image_path(relative_path)
 
             if not os.path.exists(full_path):
                 logger.error(f"图片文件不存在: {full_path}")
-                error_result = {
+                result = {
                     "image_path": relative_path,
                     "error": f"图片文件不存在: {full_path}",
                     "worker_id": worker_id,
                     "has_match": False,
                     "languages": {},
                 }
-                try:
-                    self.result_queue.put(error_result)
-                    self.update_progress_fail()
-                    with self.lock:
-                        self.error_count += 1
-                except Exception as e:
-                    logger.error(f"result_queue.put失败: {e}")
-                return
-
-            result = ocr.recognize_image(full_path, predict_save=self.predict_save)
-            result['worker_id'] = worker_id
-            result['image_path'] = relative_path
-            result['time_cost'] = time.time() - img_start_time
-
-            texts = result.get('texts', [])
-            error = result.get('error', None)
-
-            if error or not texts:
-                result['has_match'] = False
-                result['languages'] = {}
-                result['confidence'] = 0.0
-                result['processing_time'] = 0
-                try:
-                    self.result_queue.put(result)
-                    with self.lock:
-                        self.processed_images += 1
-                    self.update_progress_fail()
-                except Exception as e:
-                    logger.error(f"result_queue.put失败: {e}")
-                return
+                update_func = self.update_progress_fail
+                counter_attr = "error_count"
             else:
-                languages = {lang: True for lang in (self.match_languages or ['ch'])
-                             if OCRService.check_language_match(texts, lang)}
-                result['languages'] = languages
-                result['has_match'] = bool(languages)
-                result['confidence'] = result.get('confidence', 0.95)
-                result['processing_time'] = result.get('time_cost', 0)
-                try:
-                    self.result_queue.put(result)
-                    with self.lock:
-                        self.processed_images += 1
-                    self.update_progress_success(result['has_match'])
-                except Exception as e:
-                    logger.error(f"result_queue.put失败: {e}")
-                return
+                #  调用OCR识别
+                result = ocr.recognize_image(full_path, predict_save=self.predict_save)
+                result['worker_id'] = worker_id
+                result['image_path'] = relative_path
+                result['time_cost'] = time.time() - img_start_time
+
+                texts = result.get('texts', [])
+                error = result.get('error', None)
+
+                if error or not texts:
+                    result['has_match'] = False
+                    result['languages'] = {}
+                    result['confidence'] = 0.0
+                    result['processing_time'] = 0
+                    update_func = self.update_progress_fail
+                    counter_attr = "error_count"
+                else:
+                    languages = {lang: True for lang in (self.match_languages or ['ch'])
+                                 if OCRService.check_language_match(texts, lang)}
+                    result['languages'] = languages
+                    result['has_match'] = bool(languages)
+                    result['confidence'] = result.get('confidence', 0.95)
+                    result['processing_time'] = result.get('time_cost', 0)
+                    update_func = lambda: self.update_progress_success(result['has_match'])
+                    counter_attr = "processed_images"
 
         except Exception as e:
             logger.error(f"处理图片失败 {relative_path}: {e}")
-            error_result = {
+            result = {
                 "image_path": relative_path,
                 "error": str(e),
                 "worker_id": worker_id,
                 "has_match": False,
                 "languages": {},
             }
-            try:
-                self.result_queue.put(error_result)
+            update_func = self.update_progress_fail
+            counter_attr = "error_count"
+
+        # 统一处理队列和进度
+        try:
+            # 线程安全地更新已处理图片计数
+            with self.lock:
+                self.processed_images += 1
+
+            self.result_queue.put(result)
+            if counter_attr:
                 with self.lock:
-                    self.error_count += 1
-                self.update_progress_exception()
-            except Exception as e:
-                logger.error(f"result_queue.put失败: {e}")
-            return
+                    setattr(self, counter_attr, getattr(self, counter_attr) + 1)
+            if update_func:
+                update_func()
+        except Exception as e:
+            logger.error(f"result_queue.put失败: {e}")
 
     def _worker_thread(self, worker_id: int):
         """
@@ -669,54 +664,9 @@ class MultiThreadOCR:
                 except queue.Empty:
                     break
 
+                # 只调用一次图片处理逻辑
                 self._process_single_image(ocr, relative_path, worker_id)
                 processed_count += 1
-                logger.debug(f"线程 {worker_id}: 处理图片 {relative_path}")
-                img_start_time = time.time()
-
-                try:
-                    from django.conf import settings
-                    if not os.path.isabs(relative_path):
-                        full_path = os.path.join(settings.MEDIA_ROOT, relative_path)
-                        if not os.path.exists(full_path):
-                            logger.error(
-                                f"线程 {worker_id}: 图片文件不存在: {full_path}"
-                            )
-                            error_result = {
-                                "image_path": relative_path,
-                                "error": f"图片文件不存在: {full_path}",
-                                "worker_id": worker_id
-                            }
-                            self.result_queue.put(error_result)
-                            with self.lock:
-                                self.error_count += 1
-                            continue
-
-                    # 识别
-                    result = ocr.recognize_image(relative_path, predict_save=self.predict_save, task_id=self.task_id)
-                    result['worker_id'] = worker_id
-                    # 统一字段命名，与OCRService保持一致
-                    result['time_cost'] = time.time() - img_start_time
-
-                    self.result_queue.put(result)
-
-                    processed_count += 1
-                    # todo 更新redis 对应任务处理图片数量
-                    with self.lock:
-                        self.processed_images += 1
-
-                except Exception as e:
-                    logger.error(
-                        f"线程 {worker_id}: 处理失败 {relative_path}: {e}"
-                    )
-                    error_result = {
-                        "image_path": relative_path,
-                        "error": str(e),
-                        "worker_id": worker_id
-                    }
-                    self.result_queue.put(error_result)
-                    with self.lock:
-                        self.error_count += 1
 
             except Exception as e:
                 self.update_progress_exception()
