@@ -22,6 +22,7 @@ import importlib.util
 from .path_utils import PathUtils
 import threading
 from paddleocr import PaddleOCR
+import shutil
 
 # 配置日志
 logger = logging.getLogger(__name__)
@@ -696,7 +697,7 @@ class OCRService:
                         if hasattr(pre, 'limit_type'):
                             setattr(pre, 'limit_type', current_limit_type)
                         if hasattr(pre, 'limit_side_len'):
-                            # 严苛模式提高最小缩放边，减少纹理被放大为“字形”的假阳性
+                            # 严苛模式提高最小缩放边，减少纹理被放大为"字形"的假阳性
                             eff_limit_side = int(max(self.text_det_limit_side_len, self.strict_limit_side_len_min)) if strict_mode else int(self.text_det_limit_side_len)
                             setattr(pre, 'limit_side_len', eff_limit_side)
                     rec = getattr(self.ocr, 'text_recognizer', None)
@@ -1328,7 +1329,18 @@ class OCRService:
             return {"error": f"图片识别失败: {str(e)}", "image_path": image_path}
 
     def recognize_batch(self, image_dir: str, image_formats: List[str] = None) -> List[Dict]:
+        """批量识别（兼容保留）。
 
+        注意：旧的"单套参数/单轮流程"已被多轮识别方案取代。
+        本方法仅为兼容保留，推荐改用 `recognize_rounds_batch`，
+        以获得"命中即剔除、首轮命中参数回写、可视化/复制"等能力。
+        """
+        try:
+            logger.warning(
+                "recognize_batch 已兼容保留，推荐改用 recognize_rounds_batch 以启用多轮识别能力")
+        except Exception:
+            pass
+        
         if not self.initialize():
             return [{"error": "OCR引擎初始化失败"}]
 
@@ -1480,6 +1492,535 @@ class OCRService:
                 return True
 
         return False
+
+    # ============================ 多轮识别：工具函数与实现 ============================
+
+    @staticmethod
+    def _text_is_chinese_only(text: str) -> bool:
+        """仅保留包含中文且不含英文字母和数字的文本。"""
+        if not text:
+            return False
+        has_cn = any('\u4e00' <= ch <= '\u9fff' for ch in text)
+        has_ascii_alnum = any((ord(ch) < 128) and (ch.isalpha() or ch.isdigit()) for ch in text)
+        return has_cn and not has_ascii_alnum
+
+    @staticmethod
+    def _parse_predict_items(res: Any) -> List[Any]:
+        """解析 PaddleOCR.predict 的返回，输出 (poly, text, score) 列表。
+
+        为简化仅返回三元组，poly 可为空列表。"""
+        items: List[Any] = []
+        if res is None:
+            return items
+        try:
+            if isinstance(res, list) and res:
+                first = res[0]
+                if isinstance(first, dict):
+                    raw = first
+                    texts = raw.get('rec_texts') or raw.get('texts') or []
+                    scores = raw.get('rec_scores') or []
+                    polys = (raw.get('rec_polys') or raw.get('dt_polys')
+                             or raw.get('boxes') or [])
+                    if texts and not isinstance(texts, list):
+                        texts = [texts]
+                    if scores and not isinstance(scores, list):
+                        scores = [scores]
+                    if polys is None:
+                        polys = []
+                    n = max(len(texts), len(scores), len(polys))
+                    for i in range(n):
+                        t = texts[i] if i < len(texts) else ""
+                        try:
+                            s = float(scores[i]) if i < len(scores) else 0.0
+                        except Exception:
+                            s = 0.0
+                        p = polys[i] if i < len(polys) else []
+                        items.append((p, str(t), float(s)))
+                    return items
+                if isinstance(first, list):
+                    for itm in first:
+                        if (isinstance(itm, list) and len(itm) >= 2 and
+                                isinstance(itm[0], (list, np.ndarray)) and
+                                isinstance(itm[1], (list, tuple))):
+                            poly = itm[0]
+                            text = str(itm[1][0])
+                            try:
+                                score = float(itm[1][1])
+                            except Exception:
+                                score = 0.0
+                            items.append((poly, text, score))
+                    return items
+            if isinstance(res, dict):
+                raw = res
+                texts = raw.get('rec_texts') or raw.get('texts') or []
+                scores = raw.get('rec_scores') or []
+                polys = (raw.get('rec_polys') or raw.get('dt_polys')
+                         or raw.get('boxes') or [])
+                if texts and not isinstance(texts, list):
+                    texts = [texts]
+                if scores and not isinstance(scores, list):
+                    scores = [scores]
+                if polys is None:
+                    polys = []
+                n = max(len(texts), len(scores), len(polys))
+                for i in range(n):
+                    t = texts[i] if i < len(texts) else ""
+                    try:
+                        s = float(scores[i]) if i < len(scores) else 0.0
+                    except Exception:
+                        s = 0.0
+                    p = polys[i] if i < len(polys) else []
+                    items.append((p, str(t), float(s)))
+        except Exception:
+            return items
+        return items
+
+    @staticmethod
+    def _compute_scaled_resolution(h: int, w: int, limit_type: str,
+                                   side_len: int) -> str:
+        """根据 limit_type 与 side_len 估算等比缩放后的分辨率字符串。
+        逻辑与 helper 保持一致。"""
+        try:
+            h = int(h); w = int(w); side = int(side_len)
+            if h <= 0 or w <= 0 or side <= 0:
+                return f"{w}x{h}"
+            lt = str(limit_type)
+            cur_max = float(max(h, w))
+            cur_min = float(min(h, w))
+            if lt == 'max':
+                if cur_max > side:
+                    r = float(side) / cur_max
+                    sw = int(round(w * r)); sh = int(round(h * r))
+                    return f"{max(1, sw)}x{max(1, sh)}"
+                return f"{w}x{h}"
+            if lt == 'min':
+                if cur_min < side:
+                    r = float(side) / cur_min
+                    sw = int(round(w * r)); sh = int(round(h * r))
+                    return f"{max(1, sw)}x{max(1, sh)}"
+                return f"{w}x{h}"
+            denom = float(min(h, w)) if lt == 'min' else float(max(h, w))
+            if denom <= 0:
+                return f"{w}x{h}"
+            r = float(side) / denom
+            sw = int(round(w * r)); sh = int(round(h * r))
+            return f"{max(1, sw)}x{max(1, sh)}"
+        except Exception:
+            return f"{w}x{h}"
+
+    @staticmethod
+    def _validate_round_params(p: Dict[str, Any]) -> Dict[str, Any]:
+        """校验并规范化每轮参数，仅接受官方字段名。"""
+        required = [
+            'text_det_limit_type',
+            'text_det_limit_side_len',
+            'text_det_thresh',
+            'text_det_box_thresh',
+            'text_det_unclip_ratio',
+            'text_rec_score_thresh',
+        ]
+        for k in required:
+            if k not in p or p.get(k) is None or str(p.get(k)).strip() == '':
+                raise ValueError(f"缺少必要参数: {k}")
+        out: Dict[str, Any] = dict(p)
+        out['text_det_limit_type'] = str(p.get('text_det_limit_type'))
+        out['text_det_limit_side_len'] = int(float(p.get('text_det_limit_side_len')))
+        out['text_det_thresh'] = float(p.get('text_det_thresh'))
+        out['text_det_box_thresh'] = float(p.get('text_det_box_thresh'))
+        out['text_det_unclip_ratio'] = float(p.get('text_det_unclip_ratio'))
+        out['text_rec_score_thresh'] = float(p.get('text_rec_score_thresh'))
+        out['use_doc_unwarping'] = bool(p.get('use_doc_unwarping', False))
+        out['use_textline_orientation'] = bool(
+            p.get('use_textline_orientation', False)
+        )
+        return out
+
+    @staticmethod
+    def _default_round_param_sets() -> List[Dict[str, Any]]:
+        """默认6轮参数（与 helper 对齐）。"""
+        return [
+            {
+                'text_det_limit_type': 'min',
+                'text_det_limit_side_len': 736,
+                'text_det_thresh': 0.30,
+                'text_det_box_thresh': 0.60,
+                'text_det_unclip_ratio': 1.5,
+                'text_rec_score_thresh': 0.9,
+                'use_textline_orientation': False,
+                'use_doc_unwarping': False,
+            },
+            {
+                'text_det_limit_type': 'min',
+                'text_det_limit_side_len': 680,
+                'text_det_thresh': 0.3,
+                'text_det_box_thresh': 0.6,
+                'text_det_unclip_ratio': 1.5,
+                'text_rec_score_thresh': 0.8,
+                'use_textline_orientation': False,
+                'use_doc_unwarping': False,
+            },
+            {
+                'text_det_limit_type': 'max',
+                'text_det_limit_side_len': 960,
+                'text_det_thresh': 0.3,
+                'text_det_box_thresh': 0.6,
+                'text_det_unclip_ratio': 2.0,
+                'text_rec_score_thresh': 0.8,
+                'use_textline_orientation': False,
+                'use_doc_unwarping': False,
+            },
+            {
+                'text_det_limit_type': 'min',
+                'text_det_limit_side_len': 1280,
+                'text_det_thresh': 0.3,
+                'text_det_box_thresh': 0.6,
+                'text_det_unclip_ratio': 2.0,
+                'text_rec_score_thresh': 0.6,
+                'use_textline_orientation': False,
+                'use_doc_unwarping': True,
+            },
+            {
+                'text_det_limit_type': 'min',
+                'text_det_limit_side_len': 1280,
+                'text_det_thresh': 0.25,
+                'text_det_box_thresh': 0.45,
+                'text_det_unclip_ratio': 2.0,
+                'text_rec_score_thresh': 0.8,
+                'use_textline_orientation': False,
+                'use_doc_unwarping': False,
+            },
+            {
+                'text_det_limit_type': 'max',
+                'text_det_limit_side_len': 960,
+                'text_det_thresh': 0.3,
+                'text_det_box_thresh': 0.6,
+                'text_det_unclip_ratio': 2.0,
+                'text_rec_score_thresh': 0.7,
+                'use_textline_orientation': True,
+                'use_doc_unwarping': True,
+            },
+        ]
+
+    def _load_rounds_from_config(self) -> List[Dict[str, Any]]:
+        """从配置加载多轮参数，支持两种方式：
+        1) [ocr_rounds] section: round1=..., round2=...（JSON字符串）
+        2) [ocr] rounds_json=... （JSON数组字符串）
+        若都不存在，返回默认集。
+        """
+        try:
+            cfg = settings.CFG._config
+            # 方式2：ocr.rounds_json
+            try:
+                rounds_json = cfg.get('ocr', 'rounds_json', fallback='').strip()
+            except Exception:
+                rounds_json = ''
+            if rounds_json:
+                arr = json.loads(rounds_json)
+                if isinstance(arr, list) and arr:
+                    return [self._validate_round_params(x) for x in arr]
+            # 方式1：独立 section
+            if cfg.has_section('ocr_rounds'):
+                parser: configparser.SectionProxy = cfg['ocr_rounds']
+                collected: List[Dict[str, Any]] = []
+                for key in sorted(parser.keys()):
+                    try:
+                        val = parser.get(key)
+                        obj = json.loads(val)
+                        if isinstance(obj, dict):
+                            collected.append(self._validate_round_params(obj))
+                    except Exception:
+                        continue
+                if collected:
+                    return collected
+        except Exception as e:
+            logger.warning(f"读取多轮参数失败，使用默认集: {e}")
+        # 默认
+        return [self._validate_round_params(x)
+                for x in self._default_round_param_sets()]
+
+    @staticmethod
+    def _force_apply_params_to_instance(ocr_obj: PaddleOCR,
+                                        params: Dict[str, Any]) -> None:
+        """将 text_* 阈值与预处理策略强制写入已创建的 OCR 实例。"""
+        try:
+            det = getattr(ocr_obj, 'text_detector', None)
+            if det and hasattr(det, 'postprocess_op'):
+                post = det.postprocess_op
+                if hasattr(post, 'thresh'):
+                    setattr(post, 'thresh', float(params['text_det_thresh']))
+                if hasattr(post, 'box_thresh'):
+                    setattr(post, 'box_thresh', float(params['text_det_box_thresh']))
+                if hasattr(post, 'unclip_ratio'):
+                    setattr(post, 'unclip_ratio', float(params['text_det_unclip_ratio']))
+            if det and hasattr(det, 'preprocess_op'):
+                pre = det.preprocess_op
+                if hasattr(pre, 'limit_type'):
+                    setattr(pre, 'limit_type', str(params['text_det_limit_type']))
+                if hasattr(pre, 'limit_side_len'):
+                    setattr(pre, 'limit_side_len', int(params['text_det_limit_side_len']))
+            rec = getattr(ocr_obj, 'text_recognizer', None)
+            if rec and hasattr(rec, 'postprocess_op'):
+                post = rec.postprocess_op
+                if hasattr(post, 'score_thresh'):
+                    setattr(post, 'score_thresh', float(params['text_rec_score_thresh']))
+        except Exception as e:
+            logger.debug(f"强制写入参数失败(忽略)：{e}")
+
+    def _get_ocr_for_round(self, params: Dict[str, Any]) -> PaddleOCR:
+        """依据轮次参数获取/创建 OCR 实例，并强制写入阈值。"""
+        use_textline_orientation = bool(params.get('use_textline_orientation', False))
+        ocr_inst = self.ocr_pool.get_ocr_instance(
+            lang=self.lang,
+            limit_type=str(params['text_det_limit_type']),
+            text_det_thresh=float(params['text_det_thresh']),
+            text_det_box_thresh=float(params['text_det_box_thresh']),
+            text_det_unclip_ratio=float(params['text_det_unclip_ratio']),
+            text_det_limit_side_len=int(params['text_det_limit_side_len']),
+            text_rec_score_thresh=float(params['text_rec_score_thresh']),
+            use_textline_orientation=use_textline_orientation
+        )
+        self._force_apply_params_to_instance(ocr_inst, params)
+        return ocr_inst
+
+    def recognize_rounds_batch(self,
+                               image_dir: str,
+                               image_formats: Optional[List[str]] = None,
+                               enable_draw: Optional[bool] = None,
+                               enable_copy: Optional[bool] = None,
+                               enable_annotate: Optional[bool] = None
+                               ) -> Dict[str, Any]:
+        """多轮参数识别（命中即剔除），与 helper 行为保持一致的核心流程。
+
+        返回批次统计与每图首轮命中信息，便于上层落盘。"""
+        # 固定启用多轮识别（不再从配置读取开关）
+
+        img_exts = image_formats or ['.jpg', '.jpeg', '.png', '.bmp', '.webp']
+        full_image_dir = image_dir
+        if not os.path.isabs(image_dir):
+            full_image_dir = os.path.join(settings.MEDIA_ROOT, image_dir)
+        if not os.path.exists(full_image_dir) or not os.path.isdir(full_image_dir):
+            return {"error": f"图片目录不存在或不是目录: {full_image_dir}"}
+
+        image_paths: List[str] = []
+        for root_dir, _, files in os.walk(full_image_dir):
+            for fname in files:
+                if any(fname.lower().endswith(ext) for ext in img_exts):
+                    image_paths.append(os.path.join(root_dir, fname))
+        if not image_paths:
+            return {"error": "未发现图片"}
+
+        # 预分流：按 min_side 的 P95
+        try:
+            min_sides: List[int] = []
+            name_to_path: Dict[str, str] = {}
+            for p in image_paths:
+                try:
+                    data = np.fromfile(p, dtype=np.uint8)
+                    img = cv2.imdecode(data, cv2.IMREAD_COLOR)
+                    if img is None:
+                        continue
+                    h, w = img.shape[:2]
+                    min_sides.append(int(min(h, w)))
+                    name_to_path[os.path.basename(p)] = p
+                except Exception:
+                    continue
+            th_small = None
+            if min_sides:
+                arr = np.array(min_sides, dtype=np.float32)
+                th_small = int(np.percentile(arr, 95))
+            small_images: List[str] = []
+            rest_images: List[str] = []
+            if th_small is not None:
+                for p in image_paths:
+                    try:
+                        data = np.fromfile(p, dtype=np.uint8)
+                        img = cv2.imdecode(data, cv2.IMREAD_COLOR)
+                        if img is None:
+                            rest_images.append(p)
+                            continue
+                        h, w = img.shape[:2]
+                        if min(h, w) <= th_small:
+                            small_images.append(p)
+                        else:
+                            rest_images.append(p)
+                    except Exception:
+                        rest_images.append(p)
+        except Exception as e:
+            logger.warning(f"预分流失败: {e}")
+            small_images, rest_images = [], list(image_paths)
+
+        cur_inputs = list(small_images) if small_images else list(image_paths)
+        ts = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+        rounds_root = os.path.join(PathUtils.get_ocr_results_dir(),
+                                   f"rounds_eval_{ts}")
+        try:
+            os.makedirs(rounds_root, exist_ok=True)
+        except Exception:
+            pass
+        hit_root = os.path.join(rounds_root, 'hit')
+        miss_root = os.path.join(rounds_root, 'miss')
+        os.makedirs(hit_root, exist_ok=True)
+        os.makedirs(miss_root, exist_ok=True)
+
+        # 通过函数参数控制：未显式传入则安全默认 False
+        enable_draw = bool(enable_draw) if enable_draw is not None else False
+        enable_copy = bool(enable_copy) if enable_copy is not None else False
+        enable_annotate = bool(enable_annotate) if enable_annotate is not None else False
+ 
+        # 固定使用内置6轮参数，不从配置读取
+        rounds = [self._validate_round_params(x)
+                  for x in self._default_round_param_sets()]
+        try:
+            logger.warning(
+                f"多轮识别：使用内置参数集，轮数={len(rounds)}"
+            )
+        except Exception:
+            pass
+ 
+        total_hit = 0
+        last_miss_count = 0
+        first_hit_info: Dict[str, Dict[str, Any]] = {}
+ 
+        for ridx, rp in enumerate(rounds, start=1):
+            if not cur_inputs:
+                logger.warning(f"多轮迭代：第{ridx}轮无输入，提前结束。")
+                break
+            try:
+                rp = self._validate_round_params(rp)
+            except Exception as ve:
+                logger.error(f"多轮迭代：参数缺失或非法(第{ridx}轮)：{ve}")
+                continue
+            try:
+                logger.warning(
+                    "多轮迭代：第%s轮开始，输入=%s | 参数: limit_type=%s side_len=%s det_thresh=%.2f box_thresh=%.2f unclip=%.2f rec_score=%.2f doc_unwarp=%s textline=%s",
+                    ridx, len(cur_inputs),
+                    rp.get('text_det_limit_type'), rp.get('text_det_limit_side_len'),
+                    float(rp.get('text_det_thresh')), float(rp.get('text_det_box_thresh')),
+                    float(rp.get('text_det_unclip_ratio')), float(rp.get('text_rec_score_thresh')),
+                    bool(rp.get('use_doc_unwarping', False)),
+                    bool(rp.get('use_textline_orientation', False))
+                )
+            except Exception:
+                pass
+            ocr_inst = self._get_ocr_for_round(rp)
+ 
+            vis_hit_dir = os.path.join(rounds_root, f"vis_r{ridx}", 'hit')
+            vis_miss_dir = os.path.join(rounds_root, f"vis_r{ridx}", 'miss')
+            if enable_draw:
+                os.makedirs(vis_hit_dir, exist_ok=True)
+                os.makedirs(vis_miss_dir, exist_ok=True)
+ 
+            hit_paths: List[str] = []
+            miss_paths: List[str] = []
+            for p in cur_inputs:
+                try:
+                    data = np.fromfile(p, dtype=np.uint8)
+                    img = cv2.imdecode(data, cv2.IMREAD_COLOR)
+                    if img is None:
+                        miss_paths.append(p)
+                        continue
+                    res = ocr_inst.predict(input=img)
+                    items = self._parse_predict_items(res)
+                    # 中文过滤（与 helper 对齐，默认开启）
+                    kept = [(poly, t, s) for (poly, t, s) in items
+                            if self._text_is_chinese_only(t)]
+                    ok = len(kept) > 0
+ 
+                    if enable_draw:
+                        try:
+                            vis = img.copy()
+                            for poly, t, s in kept:
+                                pts = np.array(poly, dtype=np.int32)
+                                if pts.ndim == 2 and pts.shape[0] >= 4:
+                                    cv2.polylines(vis, [pts], True,
+                                                  (0, 255, 0), 2)
+                                    x = int(np.min(pts[:, 0])); y = int(np.min(pts[:, 1]))
+                                else:
+                                    x, y = 2, 20
+                                if enable_annotate:
+                                    label = f"{t} ({float(s):.2f})"
+                                    cv2.putText(
+                                        vis, label, (x, max(0, y - 5)),
+                                        cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+                                        (0, 0, 255), 1, cv2.LINE_AA
+                                    )
+                                out_dir = vis_hit_dir if ok else vis_miss_dir
+                                out_path = os.path.join(out_dir,
+                                                        os.path.basename(p))
+                                cv2.imwrite(out_path, vis)
+                        except Exception:
+                            pass
+ 
+                    if ok:
+                        hit_paths.append(p)
+                        name = os.path.basename(p)
+                        if name not in first_hit_info:
+                            try:
+                                h, w = img.shape[:2]
+                                sr = self._compute_scaled_resolution(
+                                    h, w,
+                                    str(rp['text_det_limit_type']),
+                                    int(rp['text_det_limit_side_len'])
+                                )
+                                texts_str = "|".join([str(t) for (_, t, _) in kept])
+                                scores_str = "|".join([
+                                    f"{float(s):.4f}" for (_, _, s) in kept
+                                ])
+                                first_hit_info[name] = {
+                                    'round': ridx,
+                                    'text_det_limit_type': rp['text_det_limit_type'],
+                                    'text_det_limit_side_len': rp['text_det_limit_side_len'],
+                                    'text_det_thresh': rp['text_det_thresh'],
+                                    'text_det_box_thresh': rp['text_det_box_thresh'],
+                                    'text_det_unclip_ratio': rp['text_det_unclip_ratio'],
+                                    'text_rec_score_thresh': rp['text_rec_score_thresh'],
+                                    'use_doc_unwarping': bool(rp.get('use_doc_unwarping', False)),
+                                    'use_textline_orientation': bool(rp.get('use_textline_orientation', False)),
+                                    'hit_texts': texts_str,
+                                    'hit_scores': scores_str,
+                                    'scaled_resolution': sr,
+                                }
+                            except Exception:
+                                pass
+                    else:
+                        miss_paths.append(p)
+                except Exception as e:
+                    logger.error(f"预测失败 {p}: {e}")
+                    miss_paths.append(p)
+ 
+            # 命中即复制
+            if enable_copy:
+                for sp in hit_paths:
+                    try:
+                        shutil.copy2(sp, os.path.join(hit_root,
+                                                       os.path.basename(sp)))
+                    except Exception:
+                        pass
+            total_hit += len(hit_paths)
+            last_miss_count = len(miss_paths)
+            try:
+                logger.warning(
+                    f"多轮迭代：第{ridx}轮结束，hit={len(hit_paths)} miss={len(miss_paths)}"
+                )
+            except Exception:
+                pass
+            cur_inputs = list(miss_paths)
+ 
+        # 最终未命中复制
+        if enable_copy and cur_inputs:
+            for sp in cur_inputs:
+                try:
+                    shutil.copy2(sp, os.path.join(miss_root,
+                                                   os.path.basename(sp)))
+                except Exception:
+                    pass
+ 
+        return {
+            'rounds_root': rounds_root,
+            'total_hit': int(total_hit),
+            'final_miss': int(last_miss_count),
+            'first_hit_info': first_hit_info,
+        }
 
 
 # 如果作为独立脚本运行，提供简单的测试功能

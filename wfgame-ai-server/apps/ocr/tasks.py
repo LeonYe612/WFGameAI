@@ -219,31 +219,151 @@ def process_ocr_task(task_id):
             match_languages=target_languages  # 将命中判定语言动态传入，避免硬编码
         )
 
-        # OCR多线程识别（所有批量写库逻辑已在 MultiThreadOCR 内部完成）
-        logger.warning(f"开始多线程识别目录: {check_dir}")
+        # 切换为：调用服务层多轮识别（内置6轮），并按需输出可视化/复制/标注
+        logger.warning(f"开始多轮识别目录(6轮): {check_dir}")
         start_time = time.time()
-        ocr_results = multi_thread_ocr.recognize_batch(check_dir)
+        # 初始化进度(以待处理图片总数为准)
+        try:
+            img_exts_init = {'.jpg', '.jpeg', '.png', '.bmp', '.webp', '.tif', '.tiff'}
+            total_images_for_progress = 0
+            for root_dir, _, files in os.walk(check_dir):
+                for fname in files:
+                    if os.path.splitext(fname)[1].lower() in img_exts_init:
+                        total_images_for_progress += 1
+            multi_thread_ocr.init_progress(total_images_for_progress)
+        except Exception as _init_prog_err:
+            logger.warning(f"初始化进度失败(忽略): {_init_prog_err}")
+
+        # 从任务配置读取开关（未设置默认False）
+        try:
+            enable_draw = bool(task_config.get('rounds_draw_enable', False))
+        except Exception:
+            enable_draw = False
+        try:
+            enable_copy = bool(task_config.get('rounds_copy_enable', False))
+        except Exception:
+            enable_copy = False
+        try:
+            enable_annotate = bool(task_config.get('rounds_annotate_enable', False))
+        except Exception:
+            enable_annotate = False
+
+        ocr_service = OCRService(lang="ch")
+        rounds_res = ocr_service.recognize_rounds_batch(
+            check_dir,
+            enable_draw=enable_draw,
+            enable_copy=enable_copy,
+            enable_annotate=enable_annotate,
+        )
         end_time = time.time()
         elapsed_time = end_time - start_time
-        logger.warning(f"多线程识别完成，共处理 {len(ocr_results)} 张图片，耗时 {elapsed_time:.2f} 秒")
 
-        if not ocr_results:
-            logger.error("OCR识别结果为空，请检查目录是否包含图片或OCR引擎是否正常工作")
+        if isinstance(rounds_res, dict) and rounds_res.get('error'):
+            logger.error(f"多轮识别失败: {rounds_res.get('error')}")
             task.status = 'failed'
             task.end_time = timezone.now()
-            task.remark = f"OCR识别结果为空，请检查目录是否包含图片或OCR引擎是否正常工作"
+            task.remark = f"多轮识别失败: {rounds_res.get('error')}"
             task.save()
-            return {"status": "failed", "task_id": task_id, "msg": "OCR识别结果为空，请检查目录是否包含图片或OCR引擎是否正常工作"}
+            return {"status": "error", "message": rounds_res.get('error')}
 
-        # 检查结果格式
-        if len(ocr_results) > 0:
-            sample_result = ocr_results[0]
-            logger.warning(f"结果样例: {sample_result}")
+        logger.warning(
+            f"多轮识别完成，总命中={int(rounds_res.get('total_hit', 0))} 最终未命中={int(rounds_res.get('final_miss', 0))}，"
+            f"耗时 {elapsed_time:.2f} 秒，输出根目录={rounds_res.get('rounds_root')}"
+        )
 
-        # 生成汇总报告（如有需要）
+        # 构建与旧流程兼容的结果列表（用于写库与汇总）
+        # 1) 收集目录内图片相对路径，建立 basename -> relative_path 映射
+        img_exts = {'.jpg', '.jpeg', '.png', '.bmp', '.webp', '.tif', '.tiff'}
+        media_root = settings.MEDIA_ROOT
+        rel_map = {}
+        total_scanned = 0
+        for root_dir, _, files in os.walk(check_dir):
+            for fname in files:
+                if os.path.splitext(fname)[1].lower() in img_exts:
+                    total_scanned += 1
+                    abs_path = os.path.join(root_dir, fname)
+                    if abs_path.startswith(media_root):
+                        rel_path = os.path.relpath(abs_path, media_root).replace('\\', '/')
+                    else:
+                        # 若不在MEDIA_ROOT下，直接使用绝对路径（与旧流程保持兼容）
+                        rel_path = abs_path
+                    rel_map[fname] = rel_path
+        first_hit_info = rounds_res.get('first_hit_info', {}) or {}
+
+        # 2) 生成兼容结果
+        ocr_results = []
+        for fname, rel_path in rel_map.items():
+            info = first_hit_info.get(fname)
+            texts = []
+            confidences = []
+            if info:
+                try:
+                    if info.get('hit_texts'):
+                        texts = [t for t in str(info['hit_texts']).split('|') if t]
+                    if info.get('hit_scores'):
+                        confidences = [float(s) for s in str(info['hit_scores']).split('|') if s]
+                except Exception:
+                    texts = texts or []
+                    confidences = confidences or []
+            # 命中判定按动态目标语言
+            has_match = _is_language_hit(texts, target_languages)
+            languages = _filter_texts_by_languages(texts, target_languages)
+            try:
+                avg_conf = (sum(confidences) / len(confidences)) if confidences else 0.0
+            except Exception:
+                avg_conf = 0.0
+            ocr_results.append({
+                'image_path': rel_path,
+                'texts': texts,
+                'confidences': confidences,
+                'confidence': avg_conf,
+                'time_cost': 0.0,
+                'has_match': has_match,
+                'languages': {lang: True for lang in target_languages or ['ch'] if OCRService.check_language_match(texts, lang)} if texts else {},
+            })
+
+        # 3) 写库（复用原批量写库逻辑）
+        if ocr_results:
+            multi_thread_ocr.bulk_insert_to_db(ocr_results)
+            # 进度上报：逐条更新 executed/success/fail/matched
+            try:
+                for item in ocr_results:
+                    texts_present = bool(item.get('texts'))
+                    if texts_present:
+                        multi_thread_ocr.update_progress_success(
+                            bool(item.get('has_match', False))
+                        )
+                    else:
+                        multi_thread_ocr.update_progress_fail()
+            except Exception as _upd_err:
+                logger.warning(f"进度更新失败(忽略): {_upd_err}")
+        else:
+            logger.warning("多轮识别未生成任何结果项")
+
+        # 生成汇总报告
         logger.warning("开始生成汇总报告")
         _generate_summary_report(task, ocr_results, target_languages)
         logger.warning("汇总报告生成完成")
+
+        # 持久化首轮命中参数 first_hit_info，供导出填充
+        try:
+            first_hit_info = rounds_res.get('first_hit_info', {}) or {}
+            if first_hit_info:
+                import json as _json
+                report_dir = PathUtils.get_ocr_reports_dir()
+                os.makedirs(report_dir, exist_ok=True)
+                param_file = os.path.join(report_dir, f"{task.id}_first_hit.json")
+                with open(param_file, 'w', encoding='utf-8') as fp:
+                    _json.dump(first_hit_info, fp, ensure_ascii=False)
+                logger.warning(f"首轮命中参数已写入: {param_file}")
+        except Exception as _fh_err:
+            logger.warning(f"写入首轮命中参数失败(忽略): {_fh_err}")
+
+        # 完成进度
+        try:
+            multi_thread_ocr.finish_progress('completed')
+        except Exception as _fin_err:
+            logger.warning(f"完成进度更新失败(忽略): {_fin_err}")
 
         return {"status": "success", "task_id": task_id}
 
