@@ -1047,7 +1047,6 @@ def _export_helper_xlsx(request, results, task_id: str, task_name: str = ""):
             'scaled_resolution': scaled_str,
             'num_items': num_items_val,
             'scores': scores_str,
-            'route': 'rounds_result',
             'use_doc_orientation_classify': 'False',
             'use_doc_unwarping': str(bool(fh.get('use_doc_unwarping', False))),
             'use_textline_orientation': str(bool(fh.get('use_textline_orientation', False))),

@@ -151,7 +151,7 @@ def process_ocr_task(task_id):
 
         # 为了方便调试，直接使用固定目录，不管任务类型
         debug_dir = PathUtils.get_debug_dir()
-        debug_status = True
+        debug_status = False
 
         # 打印完整的调试目录路径，方便排查问题
         logger.info(f"调试目录完整路径: {os.path.abspath(debug_dir)}")
@@ -296,6 +296,22 @@ def process_ocr_task(task_id):
             info = first_hit_info.get(fname)
             texts = []
             confidences = []
+            # 读取图片分辨率，生成 "宽x高" 字符串，用于写库显示
+            pic_resolution = ''
+            try:
+                full_path = (
+                    rel_path if os.path.isabs(rel_path)
+                    else os.path.join(media_root, rel_path)
+                )
+                import numpy as _np  # 局部导入，避免全局依赖变更
+                import cv2 as _cv2
+                data = _np.fromfile(full_path, dtype=_np.uint8)
+                img_nd = _cv2.imdecode(data, _cv2.IMREAD_COLOR)
+                if img_nd is not None:
+                    h, w = img_nd.shape[:2]
+                    pic_resolution = f"{int(w)}x{int(h)}"
+            except Exception:
+                pic_resolution = ''
             if info:
                 try:
                     if info.get('hit_texts'):
@@ -320,6 +336,7 @@ def process_ocr_task(task_id):
                 'time_cost': 0.0,
                 'has_match': has_match,
                 'languages': {lang: True for lang in target_languages or ['ch'] if OCRService.check_language_match(texts, lang)} if texts else {},
+                'pic_resolution': pic_resolution,
             })
 
         # 3) 写库（复用原批量写库逻辑）

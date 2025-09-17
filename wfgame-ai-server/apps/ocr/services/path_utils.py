@@ -142,8 +142,8 @@ class PathUtils:
     @staticmethod
     def get_debug_dir():
         """获取调试目录"""
-        # return os.path.join(settings.BASE_DIR.parent, "wfgame-ai-server", "media", "ocr", "repositories", "ocr_error") # 233 张 error
-        # return os.path.join(settings.BASE_DIR.parent, "wfgame-ai-server", "media", "ocr", "repositories", "ocr_1141", "missed_detection_33") # 33 张 error
+        return os.path.join(settings.BASE_DIR.parent, "wfgame-ai-server", "media", "ocr", "repositories", "ocr_error") # 233 张 error
+        return os.path.join(settings.BASE_DIR.parent, "wfgame-ai-server", "media", "ocr", "repositories", "ocr_1141", "missed_detection_33") # 33 张 error
         # return os.path.join(settings.BASE_DIR.parent, "wfgame-ai-server", "media", "ocr", "repositories", "ocr_mix") # 233 +5+38张 error
         return os.path.join(settings.BASE_DIR.parent, "wfgame-ai-server", "media", "ocr", "repositories", "ocr_hit") # 1400 张
         # return os.path.join(settings.BASE_DIR.parent, "wfgame-ai-server", "media", "ocr", "repositories", "ocr_hit_5pics") # 38张专用于识别错误的测试目录
