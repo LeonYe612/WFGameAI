@@ -189,6 +189,7 @@ const OCRHistoryView = {
                                             <tr v-for="(result, index) in selectedTask.results" :key="index">
                                                 <td>{{ result.image_path }}</td>
                                                 <td>{{ result.texts.join(', ') }}</td>
+                                                <td>{{ result.pic_resolution }}</td>
                                                 <td>{{ Object.keys(result.languages).join(', ') }}</td>
                                                 <td>
                                                     <span :class="result.has_match ? 'badge bg-success' : 'badge bg-secondary'">
