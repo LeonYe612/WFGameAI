@@ -3,9 +3,27 @@ import { useGlobal } from "@pureadmin/utils";
 import backTop from "@/assets/svg/back_top.svg?component";
 import { h, computed, Transition, defineComponent } from "vue";
 import { usePermissionStoreHook } from "@/store/modules/permission";
+import { useSSE, ServerEvent } from "@/hooks/useSSE";
+import { ElNotification } from "element-plus";
+
+const { on } = useSSE();
 
 const props = defineProps({
   fixedHeader: Boolean
+});
+
+interface NotificationData {
+  title?: string;
+  type: "success" | "info" | "warning" | "error";
+  message: string;
+}
+on(ServerEvent.NOTIFICATION, (data: NotificationData) => {
+  ElNotification({
+    title: data.title || "系统通知",
+    message: data.message,
+    type: data.type,
+    duration: 0
+  });
 });
 
 const { $storage, $config } = useGlobal<GlobalPropertiesApi>();

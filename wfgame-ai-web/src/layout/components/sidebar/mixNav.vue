@@ -101,7 +101,7 @@ watch(
       <!-- 退出登录 -->
       <el-dropdown trigger="click">
         <span class="select-none el-dropdown-link navbar-bg-hover">
-          <img :src="avatar" :style="avatarsStyle" />
+          <component :is="toRaw(avatar)" :style="avatarsStyle" />
           <p v-if="chineseName" class="dark:text-white">{{ chineseName }}</p>
         </span>
         <template #dropdown>

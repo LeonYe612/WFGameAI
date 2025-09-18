@@ -9,7 +9,7 @@
         <el-image
           class="cursor-pointer"
           style="width: 100%; height: 250px"
-          :src="getImageUrl(result.image_path)"
+          :src="mediaUrl(result.image_path)"
           fit="cover"
           lazy
           @click="handleImageClick(result)"
@@ -54,6 +54,7 @@ import { type OcrResult, ocrResultApi } from "@/api/ocr";
 import { ocrResultTypeEnum, getEnumEntry } from "@/utils/enums";
 import { ref, computed } from "vue";
 import { superRequest } from "@/utils/request";
+import { mediaUrl } from "@/api/utils";
 
 type Emits = {
   (e: "view-image", result: OcrResult): void;
@@ -78,10 +79,6 @@ const getCardColor = (resultType: string) => {
 
 const handleImageClick = (result: OcrResult) => {
   emit("view-image", result);
-};
-
-const getImageUrl = (imagePath: string) => {
-  return `http://172.20.19.90:8000/media/${imagePath}`;
 };
 
 const getImgName = (imagePath: string) => {
@@ -165,18 +162,20 @@ const handleResultTypeChange = async (newType: string) => {
 .result-type-radios {
   margin-top: auto;
   padding-top: 10px;
+  margin-left: auto;
+  margin-right: auto;
   :deep(.el-radio-button__inner) {
-    background-color: var(--radio-bg-color, #f2f2f2);
-    color: var(--radio-text-color, #303133);
+    background-color: #fff;
+    color: #303133;
     border-color: #dcdfe6;
     box-shadow: none;
   }
 
   :deep(.el-radio-button.is-active .el-radio-button__inner) {
     background-color: var(--radio-bg-color, #409eff);
-    border-color: #409eff;
+    border-color: var(--radio-bg-color, #409eff);
     color: #fff;
-    box-shadow: -1px 0 0 0 #409eff;
+    box-shadow: -1px 0 0 0 var(--radio-bg-color, #409eff);
   }
 
   :deep(.el-radio-button:first-child .el-radio-button__inner) {

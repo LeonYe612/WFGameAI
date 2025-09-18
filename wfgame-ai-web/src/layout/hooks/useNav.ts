@@ -10,6 +10,8 @@ import { router, remainingPaths } from "@/router";
 import { useAppStoreHook } from "@/store/modules/app";
 import { useUserStoreHook } from "@/store/modules/user";
 import { usePermissionStoreHook } from "@/store/modules/permission";
+import knownUser from "@/assets/user/avatar.svg?component";
+import unknownUser from "@/assets/user/unknown.svg?component";
 
 const errorInfo = "当前路由配置不正确，请检查配置";
 
@@ -43,7 +45,7 @@ export function useNav() {
 
   // 用户头像
   const avatar = computed(() => {
-    return username.value ? "/avatar.svg" : "/unknown.svg";
+    return username.value ? knownUser : unknownUser;
   });
 
   const avatarsStyle = computed(() => {

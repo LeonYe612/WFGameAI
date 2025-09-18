@@ -26,15 +26,5 @@ export default [
         component: () => import("@/layout/redirect.vue")
       }
     ]
-  },
-  {
-    path: "/sso",
-    name: "SSO",
-    component: () => import("@/views/sso/index.vue"),
-    meta: {
-      title: "SSO登录",
-      showLink: false,
-      rank: 103
-    }
   }
 ] as Array<RouteConfigsTable>;

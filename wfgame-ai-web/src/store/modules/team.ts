@@ -9,6 +9,8 @@ import { resetRouter } from "@/router";
 import { gmTypeEnum } from "@/utils/enums";
 import { useUserStore } from "./user";
 import { updateUserKey } from "@/utils/auth";
+import { connect } from "@/hooks/useSSE";
+
 const userStore = useUserStore();
 
 export const useTeamStore = defineStore({
@@ -78,6 +80,7 @@ export const useTeamStore = defineStore({
         apiFunc: switchTeam,
         apiParams: { id: teamId },
         onSucceed: (data: any) => {
+          connect();
           this.SET_TEAM(data);
           // 总是消息弹窗提示太烦人，改成动画提醒
           this.animate = true;

@@ -9,6 +9,7 @@ import { LoginResult, RefreshTokenResult } from "@/api/user";
 import { useMultiTagsStoreHook } from "@/store/modules/multiTags";
 import { type DataInfo, setToken, removeToken, sessionKey } from "@/utils/auth";
 import { message } from "@/utils/message";
+import { disconnect } from "@/hooks/useSSE";
 
 export const useUserStore = defineStore({
   id: "pure-user",
@@ -107,6 +108,7 @@ export const useUserStore = defineStore({
       useMultiTagsStoreHook().handleTags("equal", [...routerArrays]);
       resetRouter();
       router.push("/login");
+      disconnect();
     },
     /** 刷新`token` */
     async handRefreshToken(data) {

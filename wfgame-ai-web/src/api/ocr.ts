@@ -1,5 +1,6 @@
 import { http } from "@/utils/http";
 import { CommonQuery } from "./types";
+import { baseUrlApi, ApiResult } from "./utils";
 
 // OCR 项目类型
 export interface OcrProject {
@@ -105,15 +106,19 @@ export interface TaskGetDetailResponse {
 // OCR 项目相关接口
 export const ocrProjectApi = {
   list: () =>
-    http.request("post", "/api/ocr/projects/", { data: { action: "list" } }),
+    http.request<ApiResult>("post", baseUrlApi("/ocr/projects/"), {
+      data: { action: "list" }
+    }),
   create: (data: { name: string; description?: string }) =>
-    http.request("post", "/api/ocr/projects/", {
+    http.request<ApiResult>("post", baseUrlApi("/ocr/projects/"), {
       data: { ...data, action: "create" }
     }),
   get: (id: string) =>
-    http.request("post", "/api/ocr/projects/", { data: { id, action: "get" } }),
+    http.request<ApiResult>("post", baseUrlApi("/ocr/projects/"), {
+      data: { id, action: "get" }
+    }),
   delete: (id: string) =>
-    http.request("post", "/api/ocr/projects/", {
+    http.request<ApiResult>("post", baseUrlApi("/ocr/projects/"), {
       data: { id, action: "delete" }
     })
 };
@@ -121,23 +126,23 @@ export const ocrProjectApi = {
 // OCR 仓库相关接口
 export const ocrRepositoryApi = {
   list: () =>
-    http.request("post", "/api/ocr/repositories/", {
+    http.request<ApiResult>("post", baseUrlApi("/ocr/repositories/"), {
       data: { action: "list" }
     }),
   create: (data: { url: string; branch: string; token?: string }) =>
-    http.request("post", "/api/ocr/repositories/", {
+    http.request<ApiResult>("post", baseUrlApi("/ocr/repositories/"), {
       data: { ...data, action: "create" }
     }),
   get: (id: string) =>
-    http.request("post", "/api/ocr/repositories/", {
+    http.request<ApiResult>("post", baseUrlApi("/ocr/repositories/"), {
       data: { id, action: "get" }
     }),
   delete: (id: string) =>
-    http.request("post", "/api/ocr/repositories/", {
+    http.request<ApiResult>("post", baseUrlApi("/ocr/repositories/"), {
       data: { id, action: "delete" }
     }),
   getBranches: (id: string, skip_ssl_verify?: boolean) =>
-    http.request("post", "/api/ocr/repositories/", {
+    http.request<ApiResult>("post", baseUrlApi("/ocr/repositories/"), {
       data: { id, action: "get_branches", skip_ssl_verify }
     })
 };
@@ -146,48 +151,52 @@ export const ocrRepositoryApi = {
 export const ocrTaskApi = {
   // deprecated
   list: (project_id?: string) =>
-    http.request("post", "/api/ocr/tasks/", {
+    http.request<ApiResult>("post", baseUrlApi("/ocr/tasks/"), {
       data: { project_id, action: "list" }
     }),
   // deprecated
   create: (data: any) =>
-    http.request("post", "/api/ocr/tasks/", {
+    http.request<ApiResult>("post", baseUrlApi("/ocr/tasks/"), {
       data: { ...data, action: "create" }
     }),
   // deprecated
   update: (id: string, data: any) =>
-    http.request("post", "/api/ocr/tasks/", {
+    http.request<ApiResult>("post", baseUrlApi("/ocr/tasks/"), {
       data: { id, ...data, action: "update" }
     }),
   get: (id: string) =>
-    http.request("post", "/api/ocr/tasks/", { data: { id, action: "get" } }),
+    http.request<ApiResult>("post", baseUrlApi("/ocr/tasks/"), {
+      data: { id, action: "get" }
+    }),
   delete: (id: string) =>
-    http.request("post", "/api/ocr/tasks/", { data: { id, action: "delete" } }),
+    http.request<ApiResult>("post", baseUrlApi("/ocr/tasks/"), {
+      data: { id, action: "delete" }
+    }),
   getDetails: (data: TaskGetDetailsParams) =>
-    http.request("post", "/api/ocr/tasks/", {
+    http.request<ApiResult>("post", baseUrlApi("/ocr/tasks/"), {
       data: { action: "get_details", ...data }
     }),
   export: (id: string, format: string) =>
-    http.request("post", "/api/ocr/tasks/", {
+    http.request<ApiResult>("post", baseUrlApi("/ocr/tasks/"), {
       data: { id, action: "export", format }
     }),
   createGitTask: (data: CreateGitTaskParams) =>
-    http.request("post", "/api/ocr/process/", {
+    http.request<ApiResult>("post", baseUrlApi("/ocr/process/"), {
       data: { ...data, action: "process_git" }
     }),
   createUploadTask: (formData: FormData) =>
-    http.request("post", "/api/ocr/upload/", {
+    http.request<ApiResult>("post", baseUrlApi("/orc/upload/"), {
       data: formData,
       headers: { "Content-Type": "multipart/form-data" }
     }),
   history: (params: OcrHistoryQuery) =>
-    http.request("post", "/api/ocr/history/", {
+    http.request<ApiResult>("post", baseUrlApi("/ocr/history/"), {
       data: { ...params, action: "list" }
     }),
   download: (task_id: string) =>
     http.request(
       "post",
-      "/api/ocr/history/",
+      baseUrlApi("/ocr/history/"),
       {
         data: { task_id, action: "download" }
       },
@@ -198,18 +207,20 @@ export const ocrTaskApi = {
 // OCR 结果相关接口
 export const ocrResultApi = {
   list: (task_id: string) =>
-    http.request("post", "/api/ocr/results/", {
+    http.request<ApiResult>("post", baseUrlApi("/ocr/results/"), {
       data: { task_id, action: "list" }
     }),
   get: (id: string) =>
-    http.request("post", "/api/ocr/results/", { data: { id, action: "get" } }),
+    http.request<ApiResult>("post", baseUrlApi("/ocr/results/"), {
+      data: { id, action: "get" }
+    }),
   search: (task_id: string, query?: string, only_matched?: boolean) =>
-    http.request("post", "/api/ocr/results/", {
+    http.request<ApiResult>("post", baseUrlApi("/ocr/results/"), {
       data: { task_id, action: "search", query, only_matched }
     }),
   // 修改图片识别后的结果类型
   update: (changes: any) =>
-    http.request("post", "/api/ocr/results/", {
+    http.request<ApiResult>("post", baseUrlApi("/ocr/results/"), {
       data: { ...changes, action: "update" }
     })
 };

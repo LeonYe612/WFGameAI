@@ -12,7 +12,7 @@ export const backendHost = (): string => {
     // return "http://127.0.0.1:8000/api";
   } else {
     // 生产环境的URL: 使用域名访问时特殊处理
-    return "https://autoapihttp.wanfeng-inc.com/v1";
+    return "http://127.0.0.1:8000/api";
   }
 };
 
@@ -29,4 +29,16 @@ export const formatBackendUrl = (path: string): string => {
       : "https://autoapihttp.wanfeng-inc.com";
 
   return path.startsWith("/") ? `${host}${path}` : `${host}/${path}`;
+};
+
+export const mediaUrl = (path: string): string => {
+  if (path.startsWith("/")) {
+    path = path.slice(1);
+  }
+  if (process.env.NODE_ENV === "development") {
+    return `http://172.20.19.90:8000/media/${path}`;
+  } else {
+    // 生产环境, 和当前域名一致
+    return `${window.location.origin}/media/${path}`;
+  }
 };

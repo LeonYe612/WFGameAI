@@ -82,7 +82,7 @@ export const ocrResultTypeEnum: Record<string, EnumValue> = {
     value: "3",
     order: 4,
     type: "warning",
-    color: "#f3e17aff"
+    color: "#ddbc04ff"
   } // 更深的浅黄色
 };
 

@@ -8,6 +8,7 @@ import { useNav } from "@/layout/hooks/useNav";
 import { usePermissionStoreHook } from "@/store/modules/permission";
 import LogoutCircleRLine from "@iconify-icons/ri/logout-circle-r-line";
 import Setting from "@iconify-icons/ri/settings-3-line";
+import { toRaw } from "vue";
 
 const menuRef = ref();
 
@@ -70,7 +71,7 @@ watch(
       <!-- 退出登录 -->
       <el-dropdown trigger="click">
         <span class="el-dropdown-link navbar-bg-hover">
-          <img :src="avatar" :style="avatarsStyle" />
+          <component :is="toRaw(avatar)" :style="avatarsStyle" />
           <p v-if="chineseName" class="dark:text-white">{{ chineseName }}</p>
         </span>
         <template #dropdown>

@@ -117,6 +117,7 @@ import { ElMessage } from "element-plus";
 import { superRequest } from "@/utils/request";
 import OcrResultCard from "./OcrResultCard.vue";
 import { ocrResultTypeEnum, ocrIsMatchEnum, sortedEnum } from "@/utils/enums";
+import { mediaUrl } from "@/api/utils";
 
 const props = defineProps<{
   taskId: string;
@@ -135,15 +136,11 @@ const pagination = reactive({
   total: 0
 });
 
-const getImageUrl = (imagePath: string) => {
-  return `http://172.20.19.90:8000/media/${imagePath}`;
-};
-
 const showPreview = ref(false);
 const imageViewer = ref(null);
 const viewerIndex = ref(0);
 const viewerSrcList = computed(() =>
-  results.value.map(item => getImageUrl(item.image_path))
+  results.value.map(item => mediaUrl(item.image_path))
 );
 
 const handleViewImage = (result: OcrResult) => {
