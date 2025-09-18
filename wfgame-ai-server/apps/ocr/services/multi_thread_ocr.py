@@ -117,7 +117,13 @@ class MultiThreadOCR:
         2. 如果启用动态切换，预热max和min两种配置（2个实例=4次模型创建）
         """
         try:
-            logger.info("开始预热OCR缓存池(基于内置6轮参数)")
+            # 动态获取轮数，避免误导
+            try:
+                tmp_service = OCRService(lang=self.lang)
+                round_num = len(tmp_service._default_round_param_sets())
+            except Exception:
+                round_num = 0
+            logger.info(f"开始预热OCR缓存池(基于内置{round_num}轮参数)")
             
             # 从第一个有效的OCR服务获取实例池
             valid_ocr_service = None
@@ -130,7 +136,7 @@ class MultiThreadOCR:
                 logger.warning("没有找到有效的OCR服务，跳过缓存预热")
                 return
             
-            # 使用服务内置的6轮参数进行预热（仅按需创建实例，不涉及文本阈值属性）
+            # 使用服务内置的参数集进行预热（仅按需创建实例，不涉及文本阈值属性）
             try:
                 param_sets = valid_ocr_service._default_round_param_sets()
             except Exception:
