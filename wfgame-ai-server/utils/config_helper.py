@@ -366,7 +366,7 @@ class RedisConfigObj:
 def get_redis_conn(config_type="redis") -> RedisConfigObj:
     host = config.get(config_type, 'host', fallback='localhost')
     port = config.getint(config_type, 'port', fallback=6379)
-    username = config.get(config_type, 'username', fallback="default")
+    username = config.get(config_type, 'username', fallback="")
     password = config.get(config_type, 'password', fallback="")
     db = config.getint(config_type, 'db', fallback=0)
     # 连接池配置
@@ -376,12 +376,17 @@ def get_redis_conn(config_type="redis") -> RedisConfigObj:
     retry_on_timeout = config.getboolean(config_type, 'retry_on_timeout', fallback=True)
     health_check_interval = config.getint(config_type, 'health_check_interval', fallback=30)
 
-    redis_url = f'redis://{username}:{password}@{host}:{port}/{db}'
+    # 构建 Redis URL：仅在有用户名和密码时才包含认证信息
+    if username and password:
+        redis_url = f'redis://{username}:{password}@{host}:{port}/{db}'
+    else:
+        redis_url = f'redis://{host}:{port}/{db}'
+    
     return RedisConfigObj(
         host=host,
         port=port,
-        username=username,
-        password=password,
+        username=username if username else None,
+        password=password if password else None,
         db=db,
         redis_url=redis_url,
         max_connections=max_connections,

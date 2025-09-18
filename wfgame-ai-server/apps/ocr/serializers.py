@@ -80,6 +80,8 @@ class OCRResultSerializer(serializers.ModelSerializer):
             "confidence",
             "processing_time",
             "created_at",
+            "result_type",
+            "pic_resolution"
         ]
 
 

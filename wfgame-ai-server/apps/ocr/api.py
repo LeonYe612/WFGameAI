@@ -252,7 +252,6 @@ class OCRTaskAPIView(APIView):
                 # 前 10% 用于准备阶段，后 90% 用于处理阶段
                 font_default_progress = 10.0 # 默认进度10%
                 progress = int(progress_data.get('executed', 0)) / total_images * 100 * 0.9 + font_default_progress if total_images > 0 else font_default_progress
-                print("progress : " , progress)
                 response_data = serializer.data
                 response_data.update({
                     'status': progress_data.get('status', ''),
@@ -342,10 +341,14 @@ class OCRTaskAPIView(APIView):
             task_id = request.data.get("id")
             has_math = request.data.get("has_match", None)
             keyword = request.data.get("keyword", None)
+            result_type = request.data.get("result_type")
             try:
                 task = OCRTask.objects.get(id=task_id)
                 results = OCRResult.objects.filter(task=task)
-                if has_math is True:
+                if result_type:
+                    results = results.filter(result_type=result_type)
+
+                if has_math is not None:
                     results = results.filter(has_match=has_math)
 
                 if keyword != "":
@@ -597,6 +600,31 @@ class OCRResultAPIView(APIView):
                     msg=f"搜索失败: {str(e)}"
                 )
 
+        elif action == "update":
+            # 更新结果处理是否正确，result_type
+            result_ids = request.data.get("ids", {})
+            # 拼接更新结构体，包括ids， result_type
+            update_results = []
+            for id, result_type in result_ids.items():
+                try:
+                    result = OCRResult.objects.get(id=id)
+                    result.result_type = result_type
+                    update_results.append(result)
+                except OCRResult.DoesNotExist:
+                    continue
+
+            # 批量更新sql
+            if update_results:
+                OCRResult.objects.bulk_update(update_results, ['result_type'])
+                return api_response(
+                    msg="结果更新成功", data={"total": len(update_results)}
+                )
+            else:
+                return api_response(
+                    code=status.HTTP_400_BAD_REQUEST,
+                    msg="没有有效的结果需要更新"
+                )
+
         return api_response(
             code=status.HTTP_400_BAD_REQUEST,
             msg=f"不支持的操作: {action}"
@@ -776,6 +804,8 @@ class OCRHistoryAPIView(APIView):
         if action == "download":
             return self.download_results(request)
 
+        if action == "del":
+            return self.del_result(request)
         # 默认list操作
         serializer = OCRHistoryQuerySerializer(data=request.data)
         if not serializer.is_valid():
@@ -877,4 +907,88 @@ class OCRHistoryAPIView(APIView):
             return api_response(
                 code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 msg=f"下载失败: {str(e)}"
+            )
+
+    def del_result(self, request):
+        """删除历史任务及其结果"""
+        task_id = request.data.get("task_id")
+        if not task_id:
+            return api_response(
+                code=status.HTTP_400_BAD_REQUEST,
+                msg="缺少task_id参数"
+            )
+
+        try:
+            # 删除 task 表数据
+            task = OCRTask.objects.get(id=task_id)
+            task.delete()
+
+            # 删除redis key数据
+            settings.REDIS.delete(f'ai_ocr_progress:{task_id}')
+            return api_response()
+
+        except OCRTask.DoesNotExist:
+            return api_response(
+                code=status.HTTP_404_NOT_FOUND,
+                msg="任务不存在"
+            )
+        except Exception as e:
+            return api_response(
+                code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                msg=f"删除失败: {str(e)}"
+            )
+
+
+class OCRCacheStatusView(APIView):
+    """OCR缓存状态查看API"""
+    
+    permission_classes = [AllowAny]
+    http_method_names = ['post']
+    
+    def post(self, request):
+        """获取OCR缓存池状态"""
+        try:
+            # 创建OCRService实例来访问缓存池
+            ocr_service = OCRService()
+            
+            # 获取缓存统计信息
+            cache_info = ocr_service.ocr_pool.get_cache_info()
+            
+            return api_response(data={
+                "cache_info": cache_info,
+                "timestamp": timezone.now()
+            })
+            
+        except Exception as e:
+            logger.error(f"获取OCR缓存状态失败: {e}")
+            return api_response(
+                code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                msg=f"获取缓存状态失败: {str(e)}"
+            )
+
+
+class OCRCacheClearView(APIView):
+    """OCR缓存清理API"""
+    
+    permission_classes = [AllowAny]
+    http_method_names = ['post']
+    
+    def post(self, request):
+        """清空OCR缓存池"""
+        try:
+            # 创建OCRService实例来访问缓存池
+            ocr_service = OCRService()
+            
+            # 清空缓存
+            ocr_service.ocr_pool.clear_cache()
+            
+            return api_response(data={
+                "timestamp": timezone.now()
+            })
+            
+        except Exception as e:
+            logger.error(f"清理OCR缓存失败: {e}")
+            return api_response(
+                code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                msg=f"清理缓存失败: {str(e)}"
             )
