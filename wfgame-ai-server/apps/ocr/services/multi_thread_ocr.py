@@ -64,64 +64,6 @@ class MultiThreadOCR:
         except Exception:
             self.task_id = None
 
-        # 确保最小值为1，避免无效值
-        if self.max_workers <= 0:
-            self.max_workers = 1
-            logger.warning("工作线程数设置为无效值，已自动调整为1")
-
-        # 单线程模式特殊处理
-        if self.max_workers == 1:
-            logger.warning("检测到单线程模式配置(ocr_max_workers=1)，将禁用GPU多线程优化")
-            num_gpus = 0
-            gpu_memory = 0
-        else:
-            # GPU 优先策略：若检测到可用 GPU，则按显存规模分配每个 GPU 的线程数，
-            # 总线程数 = GPU 数量 × 每GPU线程数；否则按 CPU 模式使用 max_workers。
-            num_gpus = 0
-            try:
-                import torch
-                if torch.cuda.is_available():
-                    num_gpus = torch.cuda.device_count()
-            except Exception:
-                num_gpus = 0
-
-            # 检测 GPU0 显存规模（用于估算线程密度）。如无 GPU，返回 0。
-            gpu_memory = self._detect_gpu_memory()
-            logger.warning(f"GPU显存大小(设备0): {gpu_memory}MB")
-
-        if num_gpus > 0 and self.max_workers > 1:
-            threads_per_gpu = 1
-            if gpu_memory >= 20000:
-                threads_per_gpu = 16
-                logger.warning(
-                    f"检测到高端显卡(显存 {gpu_memory}MB)，每GPU分配16个线程"
-                )
-            elif gpu_memory >= 16000:
-                threads_per_gpu = 8
-                logger.warning(
-                    f"检测到高性能显卡(显存 {gpu_memory}MB)，每GPU分配8个线程"
-                )
-            elif gpu_memory >= 8000:
-                threads_per_gpu = 4
-                logger.warning(
-                    f"检测到中端显卡(显存 {gpu_memory}MB)，每GPU分配4个线程"
-                )
-            else:
-                logger.warning(
-                    f"检测到入门级显卡(显存 {gpu_memory}MB)，每GPU分配1个线程"
-                )
-
-            total_gpu_threads = num_gpus * threads_per_gpu
-            self.max_workers = min(self.max_workers, total_gpu_threads)
-            logger.warning(
-                f"GPU优先模式: 检测到 {num_gpus} 个GPU，每个GPU {threads_per_gpu} 个线程，"
-                f"总计使用 {self.max_workers} 个线程"
-            )
-        else:
-            if self.max_workers == 1:
-                logger.warning(f"单线程模式: 使用 1 个工作线程")
-            else:
-                logger.warning(f"CPU模式: 使用 {self.max_workers} 个线程")
 
         # 状态追踪
         self.total_images = 0
@@ -153,17 +95,7 @@ class MultiThreadOCR:
                 # 实际的PaddleOCR实例将在处理时从缓存池获取
                 ocr_service = OCRService(lang=self.lang)
                 
-                # 若任务配置指定了预设，则应用到服务配置中
-                try:
-                    preset_name = ''
-                    if isinstance(self.task.config, dict):
-                        preset_name = self.task.config.get('smart_ocr_preset', '')
-                    if preset_name:
-                        # 应用预设到OCRService的参数配置中
-                        self._apply_preset_to_ocr_service(ocr_service, preset_name)
-                except Exception as _preset_err:
-                    logger.warning(f"应用智能OCR预设失败: {_preset_err}")
-                
+               
                 self.worker_ocrs.append(ocr_service)
                 logger.debug(f"初始化工作线程 {i} 的OCR服务成功")
                 
@@ -175,45 +107,7 @@ class MultiThreadOCR:
         if config.getboolean('ocr', 'ocr_warm_cache_on_startup', fallback=False):
             self._warm_ocr_cache()
 
-    def _apply_preset_to_ocr_service(self, ocr_service: OCRService, preset_name: str) -> None:
-        """
-        应用OCR预设到OCRService实例
-        
-        Args:
-            ocr_service: OCRService实例
-            preset_name: 预设名称 (high_speed/balanced/high_precision)
-        """
-        preset = preset_name.lower()
-        
-        if preset == 'high_speed':
-            # 高速模式：降低精度换速度
-            ocr_service.text_det_limit_type = 'max'
-            ocr_service.text_det_limit_side_len = 960
-            ocr_service.text_det_thresh = 0.5
-            ocr_service.text_det_box_thresh = 0.7
-            ocr_service.text_det_unclip_ratio = 1.0
-            ocr_service.smart_ocr_dynamic_limit_enabled = False
-            logger.info(f"应用高速模式预设到OCR服务")
-            
-        elif preset == 'high_precision':
-            # 高精度模式：提升精度
-            ocr_service.text_det_limit_type = 'min'
-            ocr_service.text_det_limit_side_len = 1280
-            ocr_service.text_det_thresh = 0.2
-            ocr_service.text_det_box_thresh = 0.4
-            ocr_service.text_det_unclip_ratio = 2.0
-            ocr_service.smart_ocr_dynamic_limit_enabled = False
-            logger.info(f"应用高精度模式预设到OCR服务")
-            
-        else:
-            # balanced 或其他：均衡模式
-            ocr_service.text_det_limit_side_len = 960
-            ocr_service.text_det_thresh = 0.3
-            ocr_service.text_det_box_thresh = 0.6
-            ocr_service.text_det_unclip_ratio = 1.5
-            ocr_service.smart_ocr_dynamic_limit_enabled = True
-            logger.info(f"应用均衡模式预设到OCR服务")
-    
+
     def _warm_ocr_cache(self) -> None:
         """
         智能预热OCR缓存池，预先创建最常用的OCR实例
@@ -223,7 +117,7 @@ class MultiThreadOCR:
         2. 如果启用动态切换，预热max和min两种配置（2个实例=4次模型创建）
         """
         try:
-            logger.info("开始智能预热OCR缓存池")
+            logger.info("开始预热OCR缓存池(基于内置6轮参数)")
             
             # 从第一个有效的OCR服务获取实例池
             valid_ocr_service = None
@@ -236,29 +130,25 @@ class MultiThreadOCR:
                 logger.warning("没有找到有效的OCR服务，跳过缓存预热")
                 return
             
-            # 基础配置参数
-            base_config = {
-                'lang': self.lang,
-                'text_det_thresh': valid_ocr_service.text_det_thresh,
-                'text_det_box_thresh': valid_ocr_service.text_det_box_thresh,
-                'text_det_unclip_ratio': valid_ocr_service.text_det_unclip_ratio,
-                'text_det_limit_side_len': valid_ocr_service.text_det_limit_side_len,
-            }
-            
-            # 根据是否启用动态切换决定预热策略
-            if valid_ocr_service.smart_ocr_dynamic_limit_enabled:
-                # 启用动态切换：预热max和min两种配置
-                configs_to_warm = [
-                    {**base_config, 'limit_type': 'max'},  # 宽图优化
-                    {**base_config, 'limit_type': 'min'},  # 高图优化
-                ]
-                logger.info("动态切换已启用，预热max和min两种配置")
-            else:
-                # 禁用动态切换：只预热默认配置
-                configs_to_warm = [
-                    {**base_config, 'limit_type': valid_ocr_service.text_det_limit_type}
-                ]
-                logger.info(f"动态切换已禁用，只预热默认配置: {valid_ocr_service.text_det_limit_type}")
+            # 使用服务内置的6轮参数进行预热（仅按需创建实例，不涉及文本阈值属性）
+            try:
+                param_sets = valid_ocr_service._default_round_param_sets()
+            except Exception:
+                param_sets = []
+            configs_to_warm = []
+            for rp in param_sets:
+                try:
+                    configs_to_warm.append({
+                        'lang': self.lang,
+                        'limit_type': str(rp.get('text_det_limit_type', 'max')),
+                        'text_det_thresh': float(rp.get('text_det_thresh', 0.3)),
+                        'text_det_box_thresh': float(rp.get('text_det_box_thresh', 0.6)),
+                        'text_det_unclip_ratio': float(rp.get('text_det_unclip_ratio', 1.5)),
+                        'text_det_limit_side_len': int(rp.get('text_det_limit_side_len', 960)),
+                        'use_textline_orientation': bool(rp.get('use_textline_orientation', False)),
+                    })
+                except Exception:
+                    continue
             
             # 执行预热
             warmed_count = 0
@@ -266,39 +156,17 @@ class MultiThreadOCR:
                 try:
                     valid_ocr_service.ocr_pool.get_ocr_instance(**config)
                     warmed_count += 1
-                    logger.info(f"✅ 预热OCR实例成功: {config['limit_type']} (第{warmed_count}个)")
+                    logger.info(f"预热OCR实例成功: {config['limit_type']} side={config['text_det_limit_side_len']} (第{warmed_count}个)")
                 except Exception as e:
-                    logger.warning(f"❌ 预热OCR实例失败: {config['limit_type']}, 错误: {e}")
+                    logger.warning(f"预热OCR实例失败: {config.get('limit_type')}, 错误: {e}")
             
             # 获取缓存统计信息
             cache_info = valid_ocr_service.ocr_pool.get_cache_info()
-            logger.info(f"🎯 OCR缓存池预热完成: 预热{warmed_count}个实例, 预计创建{warmed_count*2}个模型, 缓存统计: {cache_info}")
+            logger.info(f"OCR缓存池预热完成: 预热{warmed_count}个实例, 缓存统计: {cache_info}")
             
         except Exception as e:
             logger.error(f"OCR缓存池预热失败: {e}")
 
-    def _detect_gpu_memory(self) -> int:
-        """
-        检测GPU显存大小(MB)。
-
-        返回:
-            int: 显存大小(MB)。无GPU或检测失败时返回0。
-        """
-        try:
-            import torch
-            # 仅做快速可用性检测，不做复杂的 CUDA 加载
-            if torch.cuda.is_available():
-                gpu_properties = torch.cuda.get_device_properties(0)
-                total_memory = gpu_properties.total_memory / (1024 * 1024)
-                logger.warning(
-                    f"使用NVIDIA GPU: {gpu_properties.name}，显存: {total_memory:.0f}MB"
-                )
-                return int(total_memory)
-            logger.warning("未检测到NVIDIA GPU")
-            return 0
-        except Exception as e:
-            logger.warning(f"检测GPU显存失败: {str(e)}")
-            return 0
 
     def set_callbacks(self, progress_callback=None, result_callback=None):
         """
@@ -365,111 +233,6 @@ class MultiThreadOCR:
         """
         return os.path.join(settings.MEDIA_ROOT, relative_path)
 
-    def recognize_batch(self, image_dir: str, image_formats: List[str] = None) -> List[Dict]:
-        """
-        多线程批量识别图片
-
-        Args:
-            image_dir: 图片目录
-            image_formats: 图片格式列表
-
-        Returns:
-            List[Dict]: 识别结果列表
-        """
-        all_results = []
-        batch_start_time = time.time()
-
-        if image_formats is None:
-            image_formats = ['jpg', 'jpeg', 'png', 'bmp', 'tiff', 'tif', 'webp']
-
-        # 收集所有图片路径
-        logger.warning(f"开始收集图片路径: {image_dir}")
-        path_collect_start = time.time()
-        image_paths = self._collect_image_paths(image_dir, image_formats)
-        path_collect_time = time.time() - path_collect_start
-
-        self.total_images = len(image_paths)
-        self.processed_images = 0
-        self.error_count = 0
-        self.is_running = True
-
-        # 初始化redis
-        self.init_progress(self.total_images)
-
-        if not image_paths:
-            logger.warning(f"在目录 {image_dir} 中未找到匹配的图片")
-            return []
-
-        # 如果至少有一个OCR实例不可用，给出告警但继续执行（对应线程将跳过）
-        if all(inst is None for inst in self.worker_ocrs):
-            logger.error("所有OCR实例初始化均失败，无法开始识别")
-            return []
-
-        # 如果图片数量过多，提示处理时间可能较长
-        if len(image_paths) > 10000:
-            logger.warning(f"图片数量过多({len(image_paths)}张)，处理时间可能较长")
-
-        logger.warning(
-            f"在 {image_dir} 及其子目录中找到 {self.total_images} 张图片，"
-            f"收集耗时 {path_collect_time:.2f} 秒"
-        )
-        logger.warning(f"使用 {self.max_workers} 个工作线程进行处理")
-
-        # 粗略估计处理时间（仅用于日志友好提示）
-        est_time_per_image = 0.5
-        est_total_time = (
-            (self.total_images / self.max_workers) * est_time_per_image
-            if self.max_workers > 0 else 0
-        )
-        est_hours = int(est_total_time / 3600)
-        est_minutes = int((est_total_time % 3600) / 60)
-        est_seconds = int(est_total_time % 60)
-        logger.warning(
-            f"预计处理时间: {est_hours}小时 {est_minutes}分钟 {est_seconds}秒"
-        )
-
-        # 将图片路径放入队列
-        for path in image_paths:
-            self.image_queue.put(path)
-
-        # 启动结果收集线程
-        collector_thread = threading.Thread(target=self._result_collector, args=(all_results,))
-        collector_thread.start()
-
-        # 单线程模式特殊处理
-        if self.max_workers == 1:
-            logger.warning("使用单线程模式处理图片，避免并发问题")
-            self._process_single_thread()
-        else:
-            # 多线程模式处理
-            self._process_multi_thread()
-
-        # 等待所有图片处理完
-        self.is_running = False
-        self.result_queue.join()
-        collector_thread.join()
-
-        # 完成任务
-        self.finish_progress('completed')
-
-        # 统计信息
-        total_time = time.time() - batch_start_time
-        avg_speed = self.processed_images / total_time if total_time > 0 else 0
-        hours = int(total_time / 3600)
-        minutes = int((total_time % 3600) / 60)
-        seconds = int(total_time % 60)
-
-        logger.warning(
-            f"{'单' if self.max_workers == 1 else '多'}线程处理完成，共处理 {self.processed_images} 张图片，错误 "
-            f"{self.error_count} 张，成功率: "
-            f"{(self.processed_images - self.error_count) / self.total_images:.2%}"
-        )
-        logger.warning(
-            f"总处理时间: {hours}小时 {minutes}分钟 {seconds}秒，平均速度: "
-            f"{avg_speed:.2f} 张/秒"
-        )
-
-        return all_results
 
     def _process_single_thread(self):
         """单线程处理逻辑（统一复用 _process_single_image）
@@ -503,45 +266,6 @@ class MultiThreadOCR:
             logger.error(f"单线程处理逻辑失败: {e}")
             logger.error(traceback.format_exc())
 
-    def _process_multi_thread(self):
-        """多线程处理逻辑"""
-        progress_reporting_active = True
-
-        def progress_reporter():
-            last_processed = 0
-            last_time = time.time()
-
-            while progress_reporting_active and self.is_running:
-                time.sleep(30)
-                current_time = time.time()
-                current_processed = self.processed_images
-                if current_processed > last_processed:
-                    time_diff = current_time - last_time
-                    images_diff = current_processed - last_processed
-                    speed = images_diff / time_diff if time_diff > 0 else 0
-                    remaining_images = self.total_images - current_processed
-                    est_remaining_time = (
-                        remaining_images / speed if speed > 0 else 0
-                    )
-                    est_h = int(est_remaining_time / 3600)
-                    est_m = int((est_remaining_time % 3600) / 60)
-                    est_s = int(est_remaining_time % 60)
-                    progress = (
-                        (current_processed / self.total_images) * 100
-                        if self.total_images > 0 else 0
-                    )
-                    logger.warning(
-                        f"进度: {current_processed}/{self.total_images} "
-                        f"({progress:.2f}%), 速度: {speed:.2f} 张/秒, 剩余时间: "
-                        f"{est_h}小时 {est_m}分钟 {est_s}秒"
-                    )
-                    last_processed = current_processed
-                    last_time = current_time
-
-        # 启动进度报告线程
-        progress_thread = threading.Thread(target=progress_reporter)
-        progress_thread.daemon = True
-        progress_thread.start()
 
         try:
             # 创建线程池
@@ -568,82 +292,77 @@ class MultiThreadOCR:
     def _process_single_image(self, ocr: OCRService, relative_path: str, worker_id: int):
         logger.debug(f"处理图片: {relative_path}")
         img_start_time = time.time()
+        result = None
+        update_func = None
+        counter_attr = None
 
         try:
             full_path = self._get_full_image_path(relative_path)
 
             if not os.path.exists(full_path):
                 logger.error(f"图片文件不存在: {full_path}")
-                error_result = {
+                result = {
                     "image_path": relative_path,
                     "error": f"图片文件不存在: {full_path}",
                     "worker_id": worker_id,
                     "has_match": False,
                     "languages": {},
                 }
-                try:
-                    self.result_queue.put(error_result)
-                    self.update_progress_fail()
-                    with self.lock:
-                        self.error_count += 1
-                except Exception as e:
-                    logger.error(f"result_queue.put失败: {e}")
-                return
-
-            result = ocr.recognize_image(full_path, predict_save=self.predict_save)
-            result['worker_id'] = worker_id
-            result['image_path'] = relative_path
-            result['time_cost'] = time.time() - img_start_time
-
-            texts = result.get('texts', [])
-            error = result.get('error', None)
-
-            if error or not texts:
-                result['has_match'] = False
-                result['languages'] = {}
-                result['confidence'] = 0.0
-                result['processing_time'] = 0
-                try:
-                    self.result_queue.put(result)
-                    with self.lock:
-                        self.processed_images += 1
-                    self.update_progress_fail()
-                except Exception as e:
-                    logger.error(f"result_queue.put失败: {e}")
-                return
+                update_func = self.update_progress_fail
+                counter_attr = "error_count"
             else:
-                languages = {lang: True for lang in (self.match_languages or ['ch'])
-                             if OCRService.check_language_match(texts, lang)}
-                result['languages'] = languages
-                result['has_match'] = bool(languages)
-                result['confidence'] = result.get('confidence', 0.95)
-                result['processing_time'] = result.get('time_cost', 0)
-                try:
-                    self.result_queue.put(result)
-                    with self.lock:
-                        self.processed_images += 1
-                    self.update_progress_success(result['has_match'])
-                except Exception as e:
-                    logger.error(f"result_queue.put失败: {e}")
-                return
+                #  调用OCR识别
+                result = ocr.recognize_image(full_path, predict_save=self.predict_save)
+                result['worker_id'] = worker_id
+                result['image_path'] = relative_path
+                result['time_cost'] = time.time() - img_start_time
+
+                texts = result.get('texts', [])
+                error = result.get('error', None)
+
+                if error or not texts:
+                    result['has_match'] = False
+                    result['languages'] = {}
+                    result['confidence'] = 0.0
+                    result['processing_time'] = 0
+                    update_func = self.update_progress_fail
+                    counter_attr = "error_count"
+                else:
+                    languages = {lang: True for lang in (self.match_languages or ['ch'])
+                                 if OCRService.check_language_match(texts, lang)}
+                    result['languages'] = languages
+                    result['has_match'] = bool(languages)
+                    result['confidence'] = result.get('confidence', 0.95)
+                    result['processing_time'] = result.get('time_cost', 0)
+                    update_func = lambda: self.update_progress_success(result['has_match'])
+                    counter_attr = "processed_images"
 
         except Exception as e:
             logger.error(f"处理图片失败 {relative_path}: {e}")
-            error_result = {
+            result = {
                 "image_path": relative_path,
                 "error": str(e),
                 "worker_id": worker_id,
                 "has_match": False,
                 "languages": {},
             }
-            try:
-                self.result_queue.put(error_result)
+            update_func = self.update_progress_fail
+            counter_attr = "error_count"
+
+        # 统一处理队列和进度
+        try:
+            # 线程安全地更新已处理图片计数
+            with self.lock:
+                self.processed_images += 1
+
+            self.result_queue.put(result)
+            if counter_attr:
                 with self.lock:
-                    self.error_count += 1
-                self.update_progress_exception()
-            except Exception as e:
-                logger.error(f"result_queue.put失败: {e}")
-            return
+                    setattr(self, counter_attr, getattr(self, counter_attr) + 1)
+            if update_func:
+                update_func()
+        except Exception as e:
+            logger.error(f"result_queue.put失败: {e}")
 
     def _worker_thread(self, worker_id: int):
         """
@@ -669,54 +388,9 @@ class MultiThreadOCR:
                 except queue.Empty:
                     break
 
+                # 只调用一次图片处理逻辑
                 self._process_single_image(ocr, relative_path, worker_id)
                 processed_count += 1
-                logger.debug(f"线程 {worker_id}: 处理图片 {relative_path}")
-                img_start_time = time.time()
-
-                try:
-                    from django.conf import settings
-                    if not os.path.isabs(relative_path):
-                        full_path = os.path.join(settings.MEDIA_ROOT, relative_path)
-                        if not os.path.exists(full_path):
-                            logger.error(
-                                f"线程 {worker_id}: 图片文件不存在: {full_path}"
-                            )
-                            error_result = {
-                                "image_path": relative_path,
-                                "error": f"图片文件不存在: {full_path}",
-                                "worker_id": worker_id
-                            }
-                            self.result_queue.put(error_result)
-                            with self.lock:
-                                self.error_count += 1
-                            continue
-
-                    # 识别
-                    result = ocr.recognize_image(relative_path, predict_save=self.predict_save, task_id=self.task_id)
-                    result['worker_id'] = worker_id
-                    # 统一字段命名，与OCRService保持一致
-                    result['time_cost'] = time.time() - img_start_time
-
-                    self.result_queue.put(result)
-
-                    processed_count += 1
-                    # todo 更新redis 对应任务处理图片数量
-                    with self.lock:
-                        self.processed_images += 1
-
-                except Exception as e:
-                    logger.error(
-                        f"线程 {worker_id}: 处理失败 {relative_path}: {e}"
-                    )
-                    error_result = {
-                        "image_path": relative_path,
-                        "error": str(e),
-                        "worker_id": worker_id
-                    }
-                    self.result_queue.put(error_result)
-                    with self.lock:
-                        self.error_count += 1
 
             except Exception as e:
                 self.update_progress_exception()
