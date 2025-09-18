@@ -1,51 +1,87 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="renderer" content="webkit" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=0"
+    />
+    <title>玩蜂AI测试平台</title>
+    <link rel="icon" href="/favicon.ico" />
+    <script>
+      window.process = {};
+    </script>
+  </head>
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="WFGame AI自动化测试平台，基于YOLO11m自定义模型的游戏UI自动化测试解决方案">
-    <meta name="keywords" content="WFGame, AI, 自动化测试, 游戏测试, YOLO, 机器学习">
-    <meta name="author" content="WFGame AI团队">
-    <link rel="icon" href="<%= BASE_URL %>favicon.ico">
-    <title>WFGame AI自动化测试平台</title>
-    <!-- 预加载关键字体 -->
-    <link rel="preload" href="<%= BASE_URL %>fonts/stheitimedium.woff2" as="font" type="font/woff2" crossorigin>
+  <body>
+    <div id="app">
+      <style>
+        html,
+        body,
+        #app {
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 100%;
+          height: 100%;
+          overflow: hidden;
+        }
 
-    <!-- 样式文件 -->
-    <link rel="stylesheet" href="lib/bootstrap/css/bootstrap.min.css">
-    <link rel="stylesheet" href="lib/fontawesome/css/all.min.css">
-    <link rel="stylesheet" href="css/main.css">
-</head>
+        .loader,
+        .loader::before,
+        .loader::after {
+          width: 2.5em;
+          height: 2.5em;
+          border-radius: 50%;
+          animation: load-animation 1.8s infinite ease-in-out;
+          animation-fill-mode: both;
+        }
 
-<body>
-    <noscript>
-        <strong>很抱歉，WFGame AI自动化测试平台需要启用JavaScript才能正常工作。请启用它以继续。</strong>
-    </noscript>
-    <div id="app"></div>
+        .loader {
+          position: relative;
+          top: 0;
+          margin: 80px auto;
+          font-size: 10px;
+          color: #406eeb;
+          text-indent: -9999em;
+          transform: translateZ(0);
+          transform: translate(-50%, 0);
+          animation-delay: -0.16s;
+        }
 
-    <!-- 库文件 -->
-    <script src="lib/vue.min.js"></script>
-    <script src="lib/axios.min.js"></script>
-    <script src="lib/bootstrap/js/bootstrap.bundle.min.js"></script>
-    <script src="lib/echarts/echarts.min.js"></script>
+        .loader::before,
+        .loader::after {
+          position: absolute;
+          top: 0;
+          content: "";
+        }
 
-    <!-- API和路由 -->
-    <script src="js/api.js"></script>
-    <script src="js/router.js"></script>
+        .loader::before {
+          left: -3.5em;
+          animation-delay: -0.32s;
+        }
 
-    <!-- 页面组件 -->
-    <script src="js/pages/dashboard.js"></script>
-    <script src="js/pages/scripts.js"></script>
-    <script src="js/pages/tasks.js"></script>
-    <script src="js/pages/devices.js"></script>
-    <script src="js/pages/reports.js"></script>
-    <script src="js/pages/data.js"></script>
-    <script src="js/pages/settings.js"></script>
-    <script src="js/pages/ocr_history.js"></script>
+        .loader::after {
+          left: 3.5em;
+        }
 
-    <!-- 主应用 -->
-    <script src="js/main.js"></script>
-</body>
+        @keyframes load-animation {
+          0%,
+          80%,
+          100% {
+            box-shadow: 0 2.5em 0 -1.3em;
+          }
 
+          40% {
+            box-shadow: 0 2.5em 0 0;
+          }
+        }
+      </style>
+      <div class="loader"></div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
 </html>

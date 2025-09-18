@@ -44,7 +44,7 @@ def process_ocr_task(task_id):
 
     try:
         # step1. 获取任务信息
-        task = OCRTask.objects.get(id=task_id)
+        task = OCRTask.objects.all_teams().filter(id=task_id).first()
 
         # 更新任务状态
         task.status = 'running'

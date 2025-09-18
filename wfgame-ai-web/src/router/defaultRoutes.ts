@@ -1,0 +1,375 @@
+export default [
+  {
+    id: 75,
+    parent_id: 74,
+    genre: 1,
+    path: "/dashboard",
+    name: "AI-DASHBOARD",
+    queue: 0,
+    meta: {
+      title: "控制台",
+      icon: "ant-design:dashboard-twotone",
+      showLink: true,
+      showParent: true,
+      keepAlive: true,
+      frameLoading: false,
+      hiddenTag: false,
+      transition: {
+        enterTransition: "animate__fadeIn animate__faster",
+        leaveTransition: "animate__fadeOut animate__faster"
+      }
+    },
+    children: [
+      {
+        id: 76,
+        parent_id: 75,
+        genre: 1,
+        path: "/dashboard/index",
+        component: "/dashboard/index",
+        name: "AI-DASHBOARD-INDEX",
+        queue: 0,
+        meta: {
+          title: "控制台",
+          showLink: true,
+          showParent: false,
+          keepAlive: true,
+          frameLoading: false,
+          hiddenTag: false,
+          transition: {
+            enterTransition: "animate__fadeIn animate__faster",
+            leaveTransition: "animate__fadeOut animate__faster"
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 77,
+    parent_id: 74,
+    genre: 1,
+    path: "/devices",
+    name: "AI-DEVICES",
+    queue: 5,
+    meta: {
+      title: "设备管理",
+      icon: "ant-design:mobile-twotone",
+      showLink: true,
+      showParent: true,
+      keepAlive: true,
+      frameLoading: false,
+      hiddenTag: false,
+      transition: {
+        enterTransition: "animate__fadeIn animate__faster",
+        leaveTransition: "animate__fadeOut animate__faster"
+      }
+    },
+    children: [
+      {
+        id: 78,
+        parent_id: 77,
+        genre: 1,
+        path: "/devices/index",
+        component: "/devices/index",
+        name: "AI-DEVICES-INDEX",
+        queue: 0,
+        meta: {
+          title: "设备管理",
+          showLink: true,
+          showParent: false,
+          keepAlive: true,
+          frameLoading: false,
+          hiddenTag: false,
+          transition: {
+            enterTransition: "animate__fadeIn animate__faster",
+            leaveTransition: "animate__fadeOut animate__faster"
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 79,
+    parent_id: 74,
+    genre: 1,
+    path: "/scripts",
+    name: "AI-SCRIPTS",
+    queue: 10,
+    meta: {
+      title: "脚本管理",
+      icon: "ant-design:code-twotone",
+      showLink: true,
+      showParent: true,
+      keepAlive: true,
+      frameLoading: false,
+      hiddenTag: false,
+      transition: {
+        enterTransition: "animate__fadeIn animate__faster",
+        leaveTransition: "animate__fadeOut animate__faster"
+      }
+    },
+    children: [
+      {
+        id: 80,
+        parent_id: 79,
+        genre: 1,
+        path: "/scripts/index",
+        component: "/scripts/index",
+        name: "AI-SCRIPTS-INDEX",
+        queue: 0,
+        meta: {
+          title: "脚本管理",
+          showLink: true,
+          showParent: false,
+          keepAlive: true,
+          frameLoading: false,
+          hiddenTag: false,
+          transition: {
+            enterTransition: "animate__fadeIn animate__faster",
+            leaveTransition: "animate__fadeOut animate__faster"
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 82,
+    parent_id: 74,
+    genre: 1,
+    path: "/tasks",
+    name: "AI-TASKS",
+    queue: 15,
+    meta: {
+      title: "任务管理",
+      icon: "ant-design:rocket-twotone",
+      showLink: true,
+      showParent: true,
+      keepAlive: true,
+      frameLoading: false,
+      hiddenTag: false,
+      transition: {
+        enterTransition: "animate__fadeIn animate__faster",
+        leaveTransition: "animate__fadeOut animate__faster"
+      }
+    },
+    children: [
+      {
+        id: 83,
+        parent_id: 82,
+        genre: 1,
+        path: "/tasks/index",
+        component: "/tasks/index",
+        name: "AI-TASKS-INDEX",
+        queue: 0,
+        meta: {
+          title: "任务管理",
+          showLink: true,
+          showParent: false,
+          keepAlive: true,
+          frameLoading: false,
+          hiddenTag: false,
+          transition: {
+            enterTransition: "animate__fadeIn animate__faster",
+            leaveTransition: "animate__fadeOut animate__faster"
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 84,
+    parent_id: 74,
+    genre: 1,
+    path: "/reports",
+    name: "AI-REPORTS",
+    queue: 20,
+    meta: {
+      title: "测试报告",
+      icon: "ant-design:pie-chart-twotone",
+      showLink: true,
+      showParent: true,
+      keepAlive: true,
+      frameLoading: false,
+      hiddenTag: false,
+      transition: {
+        enterTransition: "animate__fadeIn animate__faster",
+        leaveTransition: "animate__fadeOut animate__faster"
+      }
+    },
+    children: [
+      {
+        id: 85,
+        parent_id: 84,
+        genre: 1,
+        path: "/reports/index",
+        component: "/reports/index",
+        name: "AI-REPORTS-INDEX",
+        queue: 0,
+        meta: {
+          title: "测试报告",
+          showLink: true,
+          showParent: false,
+          keepAlive: true,
+          frameLoading: false,
+          hiddenTag: false,
+          transition: {
+            enterTransition: "animate__fadeIn animate__faster",
+            leaveTransition: "animate__fadeOut animate__faster"
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 86,
+    parent_id: 74,
+    genre: 1,
+    path: "/data",
+    name: "AI-DATA",
+    queue: 25,
+    meta: {
+      title: "数据管理",
+      icon: "ant-design:database-twotone",
+      showLink: true,
+      showParent: true,
+      keepAlive: true,
+      frameLoading: false,
+      hiddenTag: false,
+      transition: {
+        enterTransition: "animate__fadeIn animate__faster",
+        leaveTransition: "animate__fadeOut animate__faster"
+      }
+    },
+    children: [
+      {
+        id: 87,
+        parent_id: 86,
+        genre: 1,
+        path: "/data/index",
+        component: "/data/index",
+        name: "AI-DATA-INDEX",
+        queue: 0,
+        meta: {
+          title: "数据管理",
+          showLink: true,
+          showParent: false,
+          keepAlive: true,
+          frameLoading: false,
+          hiddenTag: false,
+          transition: {
+            enterTransition: "animate__fadeIn animate__faster",
+            leaveTransition: "animate__fadeOut animate__faster"
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 88,
+    parent_id: 74,
+    genre: 1,
+    path: "/ocr",
+    name: "AI-OCR",
+    queue: 30,
+    meta: {
+      title: "OCR识别",
+      icon: "ant-design:camera-twotone",
+      showLink: true,
+      showParent: true,
+      keepAlive: true,
+      frameLoading: false,
+      hiddenTag: false,
+      transition: {
+        enterTransition: "animate__fadeIn animate__faster",
+        leaveTransition: "animate__fadeOut animate__faster"
+      }
+    },
+    children: [
+      {
+        id: 89,
+        parent_id: 88,
+        genre: 1,
+        path: "/ocr/index",
+        component: "/ocr/index",
+        name: "AI-OCR-INDEX",
+        queue: 0,
+        meta: {
+          title: "OCR识别",
+          showLink: true,
+          showParent: false,
+          keepAlive: true,
+          frameLoading: false,
+          hiddenTag: false,
+          transition: {
+            enterTransition: "animate__fadeIn animate__faster",
+            leaveTransition: "animate__fadeOut animate__faster"
+          }
+        }
+      },
+      {
+        id: 899,
+        parent_id: 88,
+        genre: 1,
+        path: "/ocr/result",
+        component: "/ocr/result",
+        name: "AI-OCR-RESULT",
+        queue: 0,
+        meta: {
+          title: "OCR结果",
+          showLink: false,
+          showParent: false,
+          keepAlive: true,
+          frameLoading: false,
+          hiddenTag: false,
+          transition: {
+            enterTransition: "animate__fadeIn animate__faster",
+            leaveTransition: "animate__fadeOut animate__faster"
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 90,
+    parent_id: 74,
+    genre: 1,
+    path: "/settings",
+    name: "AI-SETTINGS",
+    queue: 35,
+    meta: {
+      title: "系统设置",
+      icon: "ant-design:setting-twotone",
+      showLink: true,
+      showParent: true,
+      keepAlive: true,
+      frameLoading: false,
+      hiddenTag: false,
+      transition: {
+        enterTransition: "animate__fadeIn animate__faster",
+        leaveTransition: "animate__fadeOut animate__faster"
+      }
+    },
+    children: [
+      {
+        id: 91,
+        parent_id: 90,
+        genre: 1,
+        path: "/settings/index",
+        component: "/settings/index",
+        name: "AI-SETTINGS-INDEX",
+        queue: 0,
+        meta: {
+          title: "系统设置",
+          showLink: true,
+          showParent: false,
+          keepAlive: true,
+          frameLoading: false,
+          hiddenTag: false,
+          transition: {
+            enterTransition: "animate__fadeIn animate__faster",
+            leaveTransition: "animate__fadeOut animate__faster"
+          }
+        }
+      }
+    ]
+  }
+];
