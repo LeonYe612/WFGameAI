@@ -52,6 +52,7 @@ from rest_framework.parsers import FileUploadParser
 from rest_framework.decorators import api_view, action, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from apps.core.utils.response import api_response
 
 from .models import (
     Script, ScriptCategory, ScriptVersion, ScriptExecution
@@ -81,6 +82,7 @@ os.makedirs(DEVICE_REPORTS_DIR, exist_ok=True)
 
 
 # 辅助函数：生成标准格式的API响应
+# deprecated, 使用 api_response 替代
 def create_api_response(success=True, message="", data=None, status_code=status.HTTP_200_OK):
     """
     创建标准格式的API响应
@@ -392,11 +394,7 @@ def import_script(request):
 
         # 检查是否有文件上传
         if not request.FILES:
-            return create_api_response(
-                success=False,
-                message='请选择至少一个文件',
-                status_code=status.HTTP_400_BAD_REQUEST
-            )
+            return api_response(code=status.HTTP_400_BAD_REQUEST, msg="请选择至少一个文件")
 
         # 构建保存路径
         script_dir = os.path.join(settings.BASE_DIR, 'apps', 'scripts', 'testcase')
@@ -481,19 +479,17 @@ def import_script(request):
                 fail_count += 1
 
         # 返回总体结果
-        return create_api_response(
-            success=success_count > 0,
-            message=f'成功导入 {success_count} 个文件，失败 {fail_count} 个文件',
-            data={'results': results}
+        return api_response(
+            data=results,
+            msg=f'成功导入 {success_count} 个文件，失败 {fail_count} 个文件',
         )
 
     except Exception as e:
         logger.error(f"导入脚本出错: {str(e)}")
         logger.error(traceback.format_exc())
-        return create_api_response(
-            success=False,
-            message=f'导入失败: {str(e)}',
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        return api_response(
+            code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            msg=f'导入失败: {str(e)}'
         )
 
 
@@ -540,19 +536,13 @@ def get_scripts(request):
         scripts.sort(key=lambda x: x['created'], reverse=True)
 
         # 使用辅助函数返回统一格式的响应
-        return create_api_response(
-            success=True,
-            message="获取脚本列表成功",
-            data={"scripts": scripts}
-        )
+        return api_response(data=scripts)
 
     except Exception as e:
         logger.error(f"获取脚本列表出错: {str(e)}")
-        return create_api_response(
-            success=False,
-            message=f"获取脚本列表失败: {str(e)}",
-            data={"scripts": []},
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        return api_response(
+            code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            msg=f"获取脚本列表失败: {str(e)}",
         )
 
 
@@ -654,19 +644,13 @@ class ScriptViewSet(viewsets.ModelViewSet):
             scripts.sort(key=lambda x: x['created'], reverse=True)
 
             # 返回使用统一格式的响应
-            return create_api_response(
-                success=True,
-                message="获取脚本列表成功",
-                data={"scripts": scripts}
-            )
+            return api_response(data=scripts)
 
         except Exception as e:
             logger.error(f"获取脚本列表出错: {str(e)}")
-            return create_api_response(
-                success=False,
-                message=f"获取脚本列表失败: {str(e)}",
-                data={"scripts": []},
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            return api_response(
+                code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                msg=f"获取脚本列表失败: {str(e)}",
             )
 
     def get_queryset(self):
@@ -2366,10 +2350,9 @@ def delete_script(request):
         if script_path is None:
             # 记录找不到文件的详细信息
             logger.error(f"找不到脚本文件: '{filename}'，已检查目录: {script_dirs}")
-            return create_api_response(
-                success=False,
-                message=f"找不到脚本文件: {filename}",
-                status_code=status.HTTP_404_NOT_FOUND
+            return api_response(
+                code=status.HTTP_404_NOT_FOUND,
+                msg=f"找不到脚本文件: {filename}",
             )
 
         # 删除脚本文件
@@ -2377,16 +2360,12 @@ def delete_script(request):
         logger.info(f"脚本文件已删除: '{script_path}'")
 
         # 返回成功响应
-        return create_api_response(
-            success=True,
-            message=f"脚本 {filename} 已成功删除"
-        )
+        return api_response()
     except Exception as e:
         logger.exception(f"删除脚本时发生错误: {str(e)}")
-        return create_api_response(
-            success=False,
-            message=f"删除失败: {str(e)}",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        return api_response(
+            code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            msg=f"删除失败: {str(e)}",
         )
 
 

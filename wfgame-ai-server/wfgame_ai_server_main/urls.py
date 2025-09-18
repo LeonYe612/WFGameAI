@@ -29,7 +29,8 @@ pages_dir = os.path.join(staticfiles_dir, 'pages')
 
 urlpatterns = [
     # 根路径使用主页模板
-    path('', RedirectView.as_view(url='/pages/index_template.html', permanent=False), name='index'),
+    # path('', RedirectView.as_view(url='/pages/index_template.html', permanent=False), name='index'),
+    path('', RedirectView.as_view(url='/static/dist/index.html', permanent=False), name='index'),
 
     # API文档
     path('admin/', admin.site.urls),
@@ -47,10 +48,12 @@ urlpatterns = [
     path('pages/<path:template_name>', static_page_view, name='static_pages'),
 
     # Application endpoints
+    path("api/users/", include("apps.users.urls")),
     path('api/devices/', include('apps.devices.urls')),
     path('api/scripts/', include('apps.scripts.urls')),
     path('api/project-monitor/', include('apps.project_monitor.urls')),
     path('api/reports/', include('apps.reports.urls')),
+    path('api/notifications/', include('apps.notifications.urls')),
 
     # OCR模块API
     path('api/ocr/', include('apps.ocr.urls')),

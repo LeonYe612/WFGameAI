@@ -20,10 +20,15 @@ from utils.redis_helper import RedisHelper
 sys.path.insert(0, get_project_root())
 
 # 构建路径，以项目目录为起点
-BASE_DIR = Path(__file__).resolve().parent.parent # wfgame-ai-server/wfgame_ai_server_main
+BASE_DIR = (
+    Path(__file__).resolve().parent.parent
+)  # wfgame-ai-server/wfgame_ai_server_main
 
 # 密钥设置
-SECRET_KEY = 'django-insecure-key-for-development-only'
+SECRET_KEY = "django-insecure-key-for-development-only"
+
+AUTH_USER_MODEL = "users.AuthUser"  # 使用自定义用户模型
+APPEND_SLASH = False  # 自动追加斜杠
 
 # 调试模式
 DEBUG = True
@@ -50,6 +55,7 @@ INSTALLED_APPS = [
     "apps.reports",
     "apps.data_source",
     "apps.ocr",  # OCR模块
+    "apps.notifications", # SSE 通知应用
 ]
 
 MIDDLEWARE = [
@@ -59,6 +65,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     # 'django.middleware.csrf.CsrfViewMiddleware',  # 暂时注释掉CSRF中间件，仅用于测试环境
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "apps.core.middleware.auth.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "wfgame_ai_server.middleware.JsonErrorHandlerMiddleware",  # 添加自定义中间件，确保API错误返回JSON
@@ -88,16 +95,16 @@ WSGI_APPLICATION = "wfgame_ai_server_main.wsgi.application"
 CFG = ConfigManager()
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': CFG.get('database', 'dbname', fallback='gogotest_data'),
-        'USER': CFG.get('database', 'username', fallback='root'),
-        'PASSWORD': CFG.get('database', 'password', fallback='qa123456'),
-        'HOST': CFG.get('database', 'host', fallback='127.0.0.1'),
-        'PORT': CFG.get('database', 'port', fallback='3306'),
-        'OPTIONS': {
-            'charset': 'utf8mb4',
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+    "default": {
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": CFG.get("database", "dbname", fallback="gogotest_data"),
+        "USER": CFG.get("database", "username", fallback="root"),
+        "PASSWORD": CFG.get("database", "password", fallback="qa123456"),
+        "HOST": CFG.get("database", "host", fallback="127.0.0.1"),
+        "PORT": CFG.get("database", "port", fallback="3306"),
+        "OPTIONS": {
+            "charset": "utf8mb4",
+            "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
         },
     }
 }
@@ -147,7 +154,8 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.AllowAny",
     ],
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework.authentication.SessionAuthentication",
+        # 不使用 DRF SessionAuthentication，避免 CSRF问题
+        # "rest_framework.authentication.SessionAuthentication",
         "rest_framework.authentication.BasicAuthentication",
     ],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",

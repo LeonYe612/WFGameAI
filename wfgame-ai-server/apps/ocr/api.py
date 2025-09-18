@@ -2,15 +2,12 @@
 OCR模块API视图
 """
 
-import os
+import csv
 import json
-import uuid
-import shutil
-import tempfile
 import logging
-from pathlib import Path
-from typing import Dict, List, Any
+import os
 import tarfile
+import uuid
 import zipfile
 
 from django.http import HttpResponse
@@ -18,7 +15,6 @@ from django.conf import settings
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.views import APIView
-from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django.db.models import Q
@@ -39,6 +35,7 @@ from .services.ocr_service import OCRService
 from .services.gitlab import create_gitlab_service, GitLabService, GitLabConfig
 from .tasks import process_ocr_task
 from .services.path_utils import PathUtils
+from apps.core.utils.response import api_response
 
 # 配置日志
 logger = logging.getLogger(__name__)
@@ -57,40 +54,34 @@ class OCRProjectAPIView(APIView):
         if action == "list":
             projects = OCRProject.objects.all()
             serializer = OCRProjectSerializer(projects, many=True)
-            return Response(serializer.data)
+            return api_response(serializer.data)
 
         elif action == "create":
             serializer = OCRProjectSerializer(data=request.data)
             if serializer.is_valid():
                 serializer.save()
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                return api_response(serializer.data)
+            return api_response(status.HTTP_400_BAD_REQUEST, data=serializer.errors, msg="创建失败")
 
         elif action == "get":
             project_id = request.data.get("id")
             try:
                 project = OCRProject.objects.get(id=project_id)
                 serializer = OCRProjectSerializer(project)
-                return Response(serializer.data)
+                return api_response(serializer.data)
             except OCRProject.DoesNotExist:
-                return Response(
-                    {"detail": "项目不存在"}, status=status.HTTP_404_NOT_FOUND
-                )
+                return api_response(status.HTTP_404_NOT_FOUND, msg="项目不存在")
 
         elif action == "delete":
             project_id = request.data.get("id")
             try:
                 project = OCRProject.objects.get(id=project_id)
                 project.delete()
-                return Response({"detail": "项目删除成功"})
+                return api_response()
             except OCRProject.DoesNotExist:
-                return Response(
-                    {"detail": "项目不存在"}, status=status.HTTP_404_NOT_FOUND
-                )
+                return api_response(code=status.HTTP_404_NOT_FOUND, msg="项目不存在")
 
-        return Response(
-            {"detail": f"不支持的操作: {action}"}, status=status.HTTP_400_BAD_REQUEST
-        )
+        return api_response(code=status.HTTP_400_BAD_REQUEST, msg=f"不支持的操作: {action}")
 
 
 class OCRGitRepositoryAPIView(APIView):
@@ -111,7 +102,7 @@ class OCRGitRepositoryAPIView(APIView):
                 repositories = OCRGitRepository.objects.all()
 
             serializer = OCRGitRepositorySerializer(repositories, many=True)
-            return Response(serializer.data)
+            return api_response(data=serializer.data)
 
         elif action == "create":
             try:
@@ -132,27 +123,27 @@ class OCRGitRepositoryAPIView(APIView):
                             url, token=token, skip_ssl_verify=skip_ssl_verify
                         ).validate_repository()
                         if not is_valid:
-                            return Response(
-                                {"detail": "Git仓库URL无效或无法访问"},
-                                status=status.HTTP_400_BAD_REQUEST,
+                            return api_response(
+                                code=status.HTTP_400_BAD_REQUEST,
+                                msg="Git仓库URL无效或无法访问"
                             )
                     except Exception as e:
                         logger.error(f"验证仓库URL失败: {str(e)}")
-                        return Response(
-                            {"detail": f"验证仓库URL失败: {str(e)}"},
-                            status=status.HTTP_400_BAD_REQUEST,
+                        return api_response(
+                            code=status.HTTP_400_BAD_REQUEST,
+                            msg=f"验证仓库URL失败: {str(e)}"
                         )
 
                     # 保存仓库信息，但不存储令牌
                     serializer.save()
 
-                    return Response(serializer.data, status=status.HTTP_201_CREATED)
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                    return api_response(data=serializer.data, msg="创建成功")
+                return api_response(code=status.HTTP_400_BAD_REQUEST, data=serializer.errors, msg="创建失败")
             except Exception as e:
                 logger.error(f"创建仓库异常: {str(e)}")
-                return Response(
-                    {"detail": f"创建仓库失败: {str(e)}"},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                return api_response(
+                    code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    msg=f"创建仓库失败: {str(e)}"
                 )
 
         elif action == "get":
@@ -160,10 +151,11 @@ class OCRGitRepositoryAPIView(APIView):
             try:
                 repo = OCRGitRepository.objects.get(id=repo_id)
                 serializer = OCRGitRepositorySerializer(repo)
-                return Response(serializer.data)
+                return api_response(data=serializer.data)
             except OCRGitRepository.DoesNotExist:
-                return Response(
-                    {"detail": "Git仓库不存在"}, status=status.HTTP_404_NOT_FOUND
+                return api_response(
+                    code=status.HTTP_404_NOT_FOUND,
+                    msg="Git仓库不存在"
                 )
 
         elif action == "delete":
@@ -171,10 +163,11 @@ class OCRGitRepositoryAPIView(APIView):
             try:
                 repo = OCRGitRepository.objects.get(id=repo_id)
                 repo.delete()
-                return Response({"detail": "Git仓库删除成功"})
+                return api_response(msg="Git仓库删除成功")
             except OCRGitRepository.DoesNotExist:
-                return Response(
-                    {"detail": "Git仓库不存在"}, status=status.HTTP_404_NOT_FOUND
+                return api_response(
+                    code=status.HTTP_404_NOT_FOUND,
+                    msg="Git仓库不存在"
                 )
 
         elif action == "get_branches":
@@ -189,19 +182,21 @@ class OCRGitRepositoryAPIView(APIView):
                 branches = create_gitlab_service(
                     repo.url, token=repo.token, skip_ssl_verify=skip_ssl_verify
                 ).get_repository_branches()
-                return Response({"branches": branches})
+                return api_response(data={"branches": branches})
             except OCRGitRepository.DoesNotExist:
-                return Response(
-                    {"detail": "Git仓库不存在"}, status=status.HTTP_404_NOT_FOUND
+                return api_response(
+                    code=status.HTTP_404_NOT_FOUND,
+                    msg="Git仓库不存在"
                 )
             except Exception as e:
-                return Response(
-                    {"detail": f"获取分支失败: {str(e)}"},
-                    status=status.HTTP_400_BAD_REQUEST,
+                return api_response(
+                    code=status.HTTP_400_BAD_REQUEST,
+                    msg=f"获取分支失败: {str(e)}"
                 )
 
-        return Response(
-            {"detail": f"不支持的操作: {action}"}, status=status.HTTP_400_BAD_REQUEST
+        return api_response(
+            code=status.HTTP_400_BAD_REQUEST,
+            msg=f"不支持的操作: {action}"
         )
 
 
@@ -225,7 +220,7 @@ class OCRTaskAPIView(APIView):
                 tasks = OCRTask.objects.all().order_by("-created_time")
 
             serializer = OCRTaskSerializer(tasks, many=True)
-            return Response(serializer.data)
+            return api_response(data=serializer.data)
 
         elif action == "create":
             serializer = OCRTaskCreateSerializer(data=request.data)
@@ -237,8 +232,8 @@ class OCRTaskAPIView(APIView):
                 process_ocr_task.delay(task.id)
 
                 result_serializer = OCRTaskSerializer(task)
-                return Response(result_serializer.data, status=status.HTTP_201_CREATED)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                return api_response(data=result_serializer.data, msg="任务创建成功")
+            return api_response(code=status.HTTP_400_BAD_REQUEST, data=serializer.errors, msg="任务创建失败")
 
         elif action == "get":
             task_id = request.data.get("id")
@@ -279,10 +274,11 @@ class OCRTaskAPIView(APIView):
                         'file_path': report_file
                     }
 
-                return Response(response_data)
+                return api_response(data=response_data)
             except OCRTask.DoesNotExist:
-                return Response(
-                    {"detail": "任务不存在"}, status=status.HTTP_404_NOT_FOUND
+                return api_response(
+                    code=status.HTTP_404_NOT_FOUND,
+                    msg="任务不存在"
                 )
         # elif action == "get":
         #     task_id = request.data.get("id")
@@ -334,10 +330,11 @@ class OCRTaskAPIView(APIView):
             try:
                 task = OCRTask.objects.get(id=task_id)
                 task.delete()
-                return Response({"detail": "任务删除成功"})
+                return api_response(msg="任务删除成功")
             except OCRTask.DoesNotExist:
-                return Response(
-                    {"detail": "任务不存在"}, status=status.HTTP_404_NOT_FOUND
+                return api_response(
+                    code=status.HTTP_404_NOT_FOUND,
+                    msg="任务不存在"
                 )
 
         elif action == "get_details":
@@ -373,20 +370,19 @@ class OCRTaskAPIView(APIView):
                 task_serializer = OCRTaskSerializer(task)
                 results_serializer = OCRResultSerializer(paginated_results, many=True)
 
-                return Response(
-                    {
+                return api_response(data={
                         "task": task_serializer.data,
                         "results": results_serializer.data,
                         "total": results.count(),
                         "page": page,
                         "page_size": page_size,
                         "total_pages": (results.count() + page_size - 1) // page_size,
-                    }
-                )
+                    })
 
             except OCRTask.DoesNotExist:
-                return Response(
-                    {"detail": "任务不存在"}, status=status.HTTP_404_NOT_FOUND
+                return api_response(
+                    code=status.HTTP_404_NOT_FOUND,
+                    msg="任务不存在"
                 )
 
         elif action == "export":
@@ -427,7 +423,7 @@ class OCRTaskAPIView(APIView):
                     return response
 
                 elif export_format == "csv":
-                                        # 直接导出 helper 风格的 xlsx（替换旧逻辑，不再保留CSV旧格式）
+                    # 直接导出 helper 风格的 xlsx（替换旧逻辑，不再保留CSV旧格式）
                     xbytes, fname = _export_helper_xlsx(request, results, str(task_id))
                     response = HttpResponse(xbytes, content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
                     response["Content-Disposition"] = f"attachment; filename={fname}"
@@ -468,18 +464,20 @@ class OCRTaskAPIView(APIView):
                     return response
 
                 else:
-                    return Response(
-                        {"detail": f"不支持的导出格式: {export_format}"},
-                        status=status.HTTP_400_BAD_REQUEST,
+                    return api_response(
+                        code=status.HTTP_400_BAD_REQUEST,
+                        msg=f"不支持的导出格式: {export_format}"
                     )
 
             except OCRTask.DoesNotExist:
-                return Response(
-                    {"detail": "任务不存在"}, status=status.HTTP_404_NOT_FOUND
+                return api_response(
+                    code=status.HTTP_404_NOT_FOUND,
+                    msg="任务不存在"
                 )
 
-        return Response(
-            {"detail": f"不支持的操作: {action}"}, status=status.HTTP_400_BAD_REQUEST
+        return api_response(
+            code=status.HTTP_400_BAD_REQUEST,
+            msg=f"不支持的操作: {action}"
         )
 
 
@@ -501,17 +499,18 @@ class OCRResultAPIView(APIView):
                 results = OCRResult.objects.all()
 
             serializer = OCRResultSerializer(results, many=True)
-            return Response(serializer.data)
+            return api_response(data=serializer.data)
 
         elif action == "get":
             result_id = request.data.get("id")
             try:
                 result = OCRResult.objects.get(id=result_id)
                 serializer = OCRResultSerializer(result)
-                return Response(serializer.data)
+                return api_response(data=serializer.data)
             except OCRResult.DoesNotExist:
-                return Response(
-                    {"detail": "结果不存在"}, status=status.HTTP_404_NOT_FOUND
+                return api_response(
+                    code=status.HTTP_404_NOT_FOUND,
+                    msg="结果不存在"
                 )
 
         elif action == "search":
@@ -521,8 +520,9 @@ class OCRResultAPIView(APIView):
             only_matched = request.data.get("only_matched", False)
 
             if not task_id:
-                return Response(
-                    {"detail": "缺少task_id参数"}, status=status.HTTP_400_BAD_REQUEST
+                return api_response(
+                    code=status.HTTP_400_BAD_REQUEST,
+                    msg="缺少task_id参数"
                 )
 
             try:
@@ -558,20 +558,18 @@ class OCRResultAPIView(APIView):
                 # 序列化
                 serializer = OCRResultSerializer(paginated_results, many=True)
 
-                return Response(
-                    {
+                return api_response(data={
                         "results": serializer.data,
                         "total": results.count(),
                         "page": page,
                         "page_size": page_size,
                         "total_pages": (results.count() + page_size - 1) // page_size,
-                    }
-                )
+                    })
 
             except Exception as e:
-                return Response(
-                    {"detail": f"搜索失败: {str(e)}"},
-                    status=status.HTTP_400_BAD_REQUEST,
+                return api_response(
+                    code=status.HTTP_400_BAD_REQUEST,
+                    msg=f"搜索失败: {str(e)}"
                 )
 
         elif action == "update":
@@ -590,14 +588,18 @@ class OCRResultAPIView(APIView):
             # 批量更新sql
             if update_results:
                 OCRResult.objects.bulk_update(update_results, ['result_type'])
-                return Response({"detail": "结果更新成功", "total": len(update_results)})
+                return api_response(
+                    msg="结果更新成功", data={"total": len(update_results)}
+                )
             else:
-                return Response(
-                    {"detail": "没有有效的结果需要更新"}, status=status.HTTP_400_BAD_REQUEST
+                return api_response(
+                    code=status.HTTP_400_BAD_REQUEST,
+                    msg="没有有效的结果需要更新"
                 )
 
-        return Response(
-            {"detail": f"不支持的操作: {action}"}, status=status.HTTP_400_BAD_REQUEST
+        return api_response(
+            code=status.HTTP_400_BAD_REQUEST,
+            msg=f"不支持的操作: {action}"
         )
 
 
@@ -612,7 +614,7 @@ class OCRUploadAPIView(APIView):
         # 处理文件上传
         serializer = FileUploadSerializer(data=request.data)
         if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return api_response(code=status.HTTP_400_BAD_REQUEST, data=serializer.errors, msg="参数验证失败")
 
         uploaded_file = serializer.validated_data.get("file")
         project_id = serializer.validated_data.get("project_id")
@@ -623,8 +625,9 @@ class OCRUploadAPIView(APIView):
             try:
                 project = OCRProject.objects.get(id=project_id)
             except OCRProject.DoesNotExist:
-                return Response(
-                    {"detail": "项目不存在"}, status=status.HTTP_404_NOT_FOUND
+                return api_response(
+                    code=status.HTTP_404_NOT_FOUND,
+                    msg="项目不存在"
                 )
 
             # 创建上传ID
@@ -664,15 +667,15 @@ class OCRUploadAPIView(APIView):
             # process_ocr_task(task.id)
 
             serializer = OCRTaskSerializer(task)
-            return Response(
-                {"detail": "文件上传成功，开始OCR处理", "task": serializer.data},
-                status=status.HTTP_201_CREATED,
+            return api_response(
+                data={"task": serializer.data},
+                msg="文件上传成功，开始OCR处理"
             )
 
         except Exception as e:
-            return Response(
-                {"detail": f"文件上传处理失败: {str(e)}"},
-                status=status.HTTP_400_BAD_REQUEST,
+            return api_response(
+                code=status.HTTP_400_BAD_REQUEST,
+                msg=f"文件上传处理失败: {str(e)}"
             )
 
     def _extract_zip_file(self, zip_path, extract_to):
@@ -734,26 +737,29 @@ class OCRProcessAPIView(APIView):
                     process_ocr_task.delay(task.id)
                     # 返回任务信息
                     serializer = OCRTaskSerializer(task)
-                    return Response(serializer.data)
+                    return api_response(data=serializer.data, msg="Git仓库OCR任务创建成功")
 
                 except OCRProject.DoesNotExist:
-                    return Response(
-                        {"detail": "项目不存在"}, status=status.HTTP_404_NOT_FOUND
+                    return api_response(
+                        code=status.HTTP_404_NOT_FOUND,
+                        msg="项目不存在"
                     )
                 except OCRGitRepository.DoesNotExist:
-                    return Response(
-                        {"detail": "仓库不存在"}, status=status.HTTP_404_NOT_FOUND
+                    return api_response(
+                        code=status.HTTP_404_NOT_FOUND,
+                        msg="仓库不存在"
                     )
                 except Exception as e:
-                    return Response(
-                        {"detail": f"处理失败: {str(e)}"},
-                        status=status.HTTP_400_BAD_REQUEST,
+                    return api_response(
+                        code=status.HTTP_400_BAD_REQUEST,
+                        msg=f"处理失败: {str(e)}"
                     )
 
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return api_response(code=status.HTTP_400_BAD_REQUEST, data=serializer.errors, msg="参数验证失败")
 
-        return Response(
-            {"detail": f"不支持的操作: {action}"}, status=status.HTTP_400_BAD_REQUEST
+        return api_response(
+            code=status.HTTP_400_BAD_REQUEST,
+            msg=f"不支持的操作: {action}"
         )
 
 
@@ -775,7 +781,7 @@ class OCRHistoryAPIView(APIView):
         # 默认list操作
         serializer = OCRHistoryQuerySerializer(data=request.data)
         if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return api_response(code=status.HTTP_400_BAD_REQUEST, data=serializer.errors, msg="参数验证失败")
 
         # 获取查询参数
         project_id = serializer.validated_data.get("project_id")
@@ -812,22 +818,21 @@ class OCRHistoryAPIView(APIView):
         # 序列化
         task_serializer = OCRTaskWithResultsSerializer(paginated_tasks, many=True)
 
-        return Response(
-            {
+        return api_response(data={
                 "tasks": task_serializer.data,
                 "total": total_count,
                 "page": page,
                 "page_size": page_size,
                 "total_pages": (total_count + page_size - 1) // page_size,
-            }
-        )
+            })
 
     def download_results(self, request):
         """下载任务结果为CSV"""
         task_id = request.data.get("task_id")
         if not task_id:
-            return Response(
-                {"detail": "缺少task_id参数"}, status=status.HTTP_400_BAD_REQUEST
+            return api_response(
+                code=status.HTTP_400_BAD_REQUEST,
+                msg="缺少task_id参数"
             )
 
         try:
@@ -844,21 +849,23 @@ class OCRHistoryAPIView(APIView):
             return response
 
         except OCRTask.DoesNotExist:
-            return Response(
-                {"detail": "任务不存在"}, status=status.HTTP_404_NOT_FOUND
+            return api_response(
+                code=status.HTTP_404_NOT_FOUND,
+                msg="任务不存在"
             )
         except Exception as e:
-            return Response(
-                {"detail": f"下载失败: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            return api_response(
+                code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                msg=f"下载失败: {str(e)}"
             )
 
     def del_result(self, request):
         """删除历史任务及其结果"""
         task_id = request.data.get("task_id")
         if not task_id:
-            return Response(
-                {"detail": "缺少task_id参数"}, status=status.HTTP_400_BAD_REQUEST
+            return api_response(
+                code=status.HTTP_400_BAD_REQUEST,
+                msg="缺少task_id参数"
             )
 
         try:
@@ -868,16 +875,17 @@ class OCRHistoryAPIView(APIView):
 
             # 删除redis key数据
             settings.REDIS.delete(f'ai_ocr_progress:{task_id}')
-            return Response({"detail": "任务及其结果删除成功"})
+            return api_response()
 
         except OCRTask.DoesNotExist:
-            return Response(
-                {"detail": "任务不存在"}, status=status.HTTP_404_NOT_FOUND
+            return api_response(
+                code=status.HTTP_404_NOT_FOUND,
+                msg="任务不存在"
             )
         except Exception as e:
-            return Response(
-                {"detail": f"删除失败: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            return api_response(
+                code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                msg=f"删除失败: {str(e)}"
             )
 
 
@@ -896,17 +904,16 @@ class OCRCacheStatusView(APIView):
             # 获取缓存统计信息
             cache_info = ocr_service.ocr_pool.get_cache_info()
             
-            return Response({
-                "detail": "缓存状态获取成功",
+            return api_response(data={
                 "cache_info": cache_info,
                 "timestamp": timezone.now()
             })
             
         except Exception as e:
             logger.error(f"获取OCR缓存状态失败: {e}")
-            return Response(
-                {"detail": f"获取缓存状态失败: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            return api_response(
+                code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                msg=f"获取缓存状态失败: {str(e)}"
             )
 
 
@@ -925,17 +932,17 @@ class OCRCacheClearView(APIView):
             # 清空缓存
             ocr_service.ocr_pool.clear_cache()
             
-            return Response({
-                "detail": "OCR缓存池已清空",
+            return api_response(data={
                 "timestamp": timezone.now()
             })
             
         except Exception as e:
             logger.error(f"清理OCR缓存失败: {e}")
-            return Response(
-                {"detail": f"清理缓存失败: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            return api_response(
+                code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                msg=f"清理缓存失败: {str(e)}"
             )
+
 
 # 在文件内新增：按helper规范导出xlsx的工具函数
 def _export_helper_xlsx(request, results, task_id: str, task_name: str = ""):
