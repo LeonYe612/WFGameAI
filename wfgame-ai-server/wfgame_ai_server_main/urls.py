@@ -29,7 +29,8 @@ pages_dir = os.path.join(staticfiles_dir, 'pages')
 
 urlpatterns = [
     # 根路径使用主页模板
-    path('', RedirectView.as_view(url='/pages/index_template.html', permanent=False), name='index'),
+    # path('', RedirectView.as_view(url='/pages/index_template.html', permanent=False), name='index'),
+    path('', RedirectView.as_view(url='/static/dist/index.html', permanent=False), name='index'),
 
     # API文档
     path('admin/', admin.site.urls),

@@ -1,6 +1,6 @@
 <template>
   <el-card
-    shadow="hover"
+    shadow="always"
     class="result-card"
     :style="{ background: getCardColor(result.result_type) }"
   >
@@ -51,7 +51,7 @@
 
 <script setup lang="ts">
 import { type OcrResult, ocrResultApi } from "@/api/ocr";
-import { ocrResultTypeEnum, getEnumEntry } from "@/utils/enums";
+import { ocrResultTypeEnum } from "@/utils/enums";
 import { ref, computed } from "vue";
 import { superRequest } from "@/utils/request";
 import { mediaUrl } from "@/api/utils";
@@ -72,9 +72,10 @@ const resultTypes = computed(() => {
   return Object.values(ocrResultTypeEnum).filter(item => item.value !== "");
 });
 
-const getCardColor = (resultType: string) => {
-  const entry = getEnumEntry(ocrResultTypeEnum, resultType);
-  return entry ? entry.color : "#F2F2F2";
+const getCardColor = (_resultType: string) => {
+  // const entry = getEnumEntry(ocrResultTypeEnum, resultType);
+  // return entry ? entry.color : "#F2F2F2";
+  return "#FFFFFF";
 };
 
 const handleImageClick = (result: OcrResult) => {
