@@ -66,3 +66,5 @@ wfgame-ai-server/node_modules/*
 # configs
 config_dev.ini
 
+/wfgame-ai-web/node_modules/
+/.vscode/

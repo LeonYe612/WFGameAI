@@ -7,6 +7,8 @@ from django.db import models
 import uuid
 import datetime
 
+from apps.core.models.team import TeamOwnedMixin
+
 
 def generate_task_id():
     """生成任务ID"""
@@ -34,7 +36,7 @@ class OCRProject(models.Model):
         db_table = "ocr_project"
 
 
-class OCRGitRepository(models.Model):
+class OCRGitRepository(TeamOwnedMixin):
     """OCR Git仓库模型"""
 
     project = models.ForeignKey(
@@ -42,6 +44,7 @@ class OCRGitRepository(models.Model):
         on_delete=models.CASCADE,
         related_name="repositories",
         verbose_name="所属项目",
+        null=True,
     )
     url = models.CharField(max_length=255, verbose_name="仓库URL")
     branch = models.CharField(max_length=100, default="main", verbose_name="默认分支")
@@ -57,7 +60,7 @@ class OCRGitRepository(models.Model):
         db_table = "ocr_git_repository"
 
 
-class OCRTask(models.Model):
+class OCRTask(TeamOwnedMixin):
     """OCR任务模型"""
 
     STATUS_CHOICES = (
@@ -119,7 +122,7 @@ class OCRTask(models.Model):
         db_table = "ocr_task"
 
 
-class OCRResult(models.Model):
+class OCRResult(TeamOwnedMixin):
     """OCR结果模型"""
     TYPE_CHOICES = (
         ("1", "正确"),

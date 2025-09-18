@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>脚本管理 - WFGame AI自动化测试平台</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/element-plus/dist/index.css"
+    />
+        <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.1.3/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="/static/js/view/lib/vue3.global.prod.js"></script>
+    <script src="https://unpkg.com/element-plus"></script>
+    <style>
+      body {
+        background: #f5f5f5;
+      }
+
+      #app {
+        max-width: 1200px;
+        margin: 30px auto;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="app"></div>
+    <!-- Vue3 + Element Plus 页面布局 -->
+    <script type="text/x-template" id="scripts-page">
+      <div>
+        <el-card>
+          <template #header>
+            <NavBar />
+            <el-row justify="space-between" align="middle">
+              <el-col>
+                <el-text tag="h2"><el-icon><i class="el-icon-document"></i></el-icon> 脚本管理</el-text>
+                <div class="el-text--secondary">管理测试脚本和录制新脚本</div>
+              </el-col>
+              <el-col>
+                <el-button type="primary" @click="dialogVisible = true">新建脚本</el-button>
+              </el-col>
+            </el-row>
+          </template>
+
+          <el-alert type="info" show-icon title="功能演示" description="加入日志功能已启用。start_app1.json 和 stop_app1.json 显示为未加入日志，其他脚本显示为已加入日志。" />
+
+          <el-row :gutter="20" class="mb-3" style="margin-top:20px;">
+            <el-col :span="6">
+              <el-input v-model="filters.search" placeholder="搜索脚本" clearable />
+            </el-col>
+            <el-col :span="4">
+              <el-select v-model="filters.type" placeholder="脚本类型" clearable>
+                <el-option v-for="item in scriptTypes" :key="item.value" :label="item.label" :value="item.value" />
+              </el-select>
+            </el-col>
+            <el-col :span="6">
+              <el-select v-model="filters.category" placeholder="脚本分类" clearable>
+                <el-option v-for="item in scriptCategories" :key="item.value" :label="item.label" :value="item.value" />
+              </el-select>
+            </el-col>
+            <el-col :span="4">
+              <el-select v-model="filters.log" placeholder="加入日志" clearable>
+                <el-option v-for="item in logOptions" :key="item.value" :label="item.label" :value="item.value" />
+              </el-select>
+            </el-col>
+          </el-row>
+
+          <el-table :data="filteredScripts" v-loading="loading" style="width: 100%;margin-top:10px;">
+            <el-table-column prop="filename" label="名称" />
+            <el-table-column prop="type" label="类型" />
+            <el-table-column prop="category" label="分类" />
+            <el-table-column prop="step_count" label="步骤数" />
+            <el-table-column label="加入日志">
+              <template #default="scope">
+                <el-tag :type="scope.row.include_in_log ? 'success' : 'info'">
+                  {{ scope.row.include_in_log ? '已加入' : '未加入' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="created" label="创建日期" />
+            <el-table-column label="操作" width="220">
+              <template #default="scope">
+                <el-button size="small" type="primary" @click="handleEdit(scope.row)">编辑</el-button>
+                <el-button size="small" type="danger" @click="handleDelete(scope.row)">删除</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-card>
+
+        <!-- 新建脚本弹窗 -->
+        <el-dialog v-model="dialogVisible" title="新建脚本" width="600px">
+          <el-form label-width="100px">
+            <el-form-item label="脚本名称">
+              <el-input v-model="newScript.filename" />
+            </el-form-item>
+            <el-form-item label="脚本分类">
+              <el-select v-model="newScript.category">
+                <el-option v-for="item in scriptCategories" :key="item.value" :label="item.label" :value="item.value" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="脚本描述">
+              <el-input v-model="newScript.desc" type="textarea" rows="3" />
+            </el-form-item>
+            <el-form-item label="脚本内容">
+              <el-input v-model="newScript.content" type="textarea" rows="10" placeholder='{"steps":[]}' />
+            </el-form-item>
+          </el-form>
+          <template #footer>
+            <el-button @click="dialogVisible = false">取消</el-button>
+            <el-button type="primary" @click="handleSaveNew">保存</el-button>
+          </template>
+        </el-dialog>
+
+        <!-- 编辑脚本弹窗 -->
+        <el-dialog v-model="editDialogVisible" title="编辑脚本" width="800px">
+          <el-form label-width="100px">
+            <el-form-item label="文件名">
+              <el-input v-model="currentScript.filename" disabled />
+            </el-form-item>
+            <el-form-item label="内容">
+              <el-input type="textarea" v-model="currentScript.content" rows="15" />
+            </el-form-item>
+          </el-form>
+          <template #footer>
+            <el-button @click="editDialogVisible = false">取消</el-button>
+            <el-button type="primary" @click="handleSaveEdit">保存</el-button>
+          </template>
+        </el-dialog>
+
+        <div class="footer" style="margin-top:30px;text-align:center;color:#666;">
+          WFGame AI自动化测试平台 &copy; 2025 WFGame AI团队
+        </div>
+      </div>
+    </script>
+
+    <script type="module">
+      const { ref, reactive, onMounted, computed } = Vue;
+      const { ElMessage, ElMessageBox } = ElementPlus;
+      import NavBar from '/static/js/view/components/navbar.js';
+
+      const scriptTypes = [
+        { label: "所有类型", value: "all" },
+        { label: "录制", value: "录制" },
+        { label: "手动", value: "手动" },
+        { label: "自动生成", value: "自动生成" },
+      ];
+      const scriptCategories = [
+        { label: "所有分类", value: "all" },
+        { label: "启动游戏", value: "启动游戏" },
+        { label: "退出游戏", value: "退出游戏" },
+        { label: "登录流程", value: "登录流程" },
+        { label: "战斗流程", value: "战斗流程" },
+        { label: "UI测试", value: "UI测试" },
+      ];
+      const logOptions = [
+        { label: "全部脚本", value: "all" },
+        { label: "已加入日志", value: "true" },
+        { label: "未加入日志", value: "false" },
+      ];
+
+      const setup = () => {
+          const scripts = ref([]);
+          const loading = ref(false);
+          const filters = reactive({
+            search: "",
+            type: "all",
+            category: "all",
+            log: "all",
+          });
+          const dialogVisible = ref(false);
+          const editDialogVisible = ref(false);
+          const currentScript = ref({ filename: "", content: "" });
+          const newScript = reactive({
+            filename: "",
+            category: "",
+            desc: "",
+            content: "",
+          });
+
+          // 获取脚本列表
+          const fetchScripts = async () => {
+            loading.value = true;
+            try {
+              const res = await fetch("/api/scripts/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+              });
+              const text = await res.text();
+              let data = text ? JSON.parse(text) : {};
+              let list = Array.isArray(data) ? data : data.scripts || [];
+              scripts.value = list.map((script) => ({
+                ...script,
+                include_in_log:
+                  script.include_in_log ??
+                  (script.filename !== "start_app1.json" &&
+                    script.filename !== "stop_app1.json"),
+              }));
+            } catch (e) {
+              ElMessage.error("加载脚本失败");
+            }
+            loading.value = false;
+          };
+
+          // 过滤脚本
+          const filteredScripts = computed(() => {
+            return scripts.value.filter((script) => {
+              const matchesSearch =
+                !filters.search ||
+                script.filename
+                  ?.toLowerCase()
+                  .includes(filters.search.toLowerCase()) ||
+                script.category
+                  ?.toLowerCase()
+                  .includes(filters.search.toLowerCase());
+              const matchesType =
+                filters.type === "all" || script.type === filters.type;
+              const matchesCategory =
+                filters.category === "all" ||
+                script.category === filters.category;
+              const matchesLog =
+                filters.log === "all" ||
+                (filters.log === "true" && script.include_in_log) ||
+                (filters.log === "false" && !script.include_in_log);
+              return (
+                matchesSearch && matchesType && matchesCategory && matchesLog
+              );
+            });
+          });
+
+          // 编辑脚本
+          const handleEdit = async (row) => {
+            loading.value = true;
+            try {
+              const res = await fetch("/api/scripts/edit/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  operation: "read",
+                  filename: row.filename,
+                }),
+              });
+              const data = await res.json();
+              if (data.success) {
+                currentScript.value = {
+                  filename: row.filename,
+                  content: data.content || "",
+                };
+                editDialogVisible.value = true;
+              } else {
+                ElMessage.error(data.message || "加载失败");
+              }
+            } catch (e) {
+              ElMessage.error("加载失败");
+            }
+            loading.value = false;
+          };
+
+          // 删除脚本
+          const handleDelete = (row) => {
+            ElMessageBox.confirm(
+              "确定要删除该脚本吗？此操作不可恢复。",
+              "警告",
+              { type: "warning" }
+            ).then(async () => {
+              loading.value = true;
+              try {
+                const res = await fetch("/api/scripts/delete/", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ filename: row.filename }),
+                });
+                const data = await res.json();
+                if (data.success) {
+                  ElMessage.success("删除成功");
+                  fetchScripts();
+                } else {
+                  ElMessage.error(data.message || "删除失败");
+                }
+              } catch (e) {
+                ElMessage.error("删除失败");
+              }
+              loading.value = false;
+            });
+          };
+
+          // 保存编辑
+          const handleSaveEdit = async () => {
+            loading.value = true;
+            try {
+              const res = await fetch("/api/scripts/edit/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  operation: "write",
+                  filename: currentScript.value.filename,
+                  content: currentScript.value.content,
+                }),
+              });
+              const data = await res.json();
+              if (data.success) {
+                ElMessage.success("保存成功");
+                editDialogVisible.value = false;
+                fetchScripts();
+              } else {
+                ElMessage.error(data.message || "保存失败");
+              }
+            } catch (e) {
+              ElMessage.error("保存失败");
+            }
+            loading.value = false;
+          };
+
+          // 保存新建
+          const handleSaveNew = async () => {
+            if (!newScript.filename || !newScript.content) {
+              ElMessage.warning("请填写脚本名称和内容");
+              return;
+            }
+            loading.value = true;
+            try {
+              const res = await fetch("/api/scripts/create/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  filename: newScript.filename,
+                  category: newScript.category,
+                  desc: newScript.desc,
+                  content: newScript.content,
+                }),
+              });
+              const data = await res.json();
+              if (data.success) {
+                ElMessage.success("新建成功");
+                dialogVisible.value = false;
+                fetchScripts();
+                newScript.filename = "";
+                newScript.category = "";
+                newScript.desc = "";
+                newScript.content = "";
+              } else {
+                ElMessage.error(data.message || "新建失败");
+              }
+            } catch (e) {
+              ElMessage.error("新建失败");
+            }
+            loading.value = false;
+          };
+
+          onMounted(fetchScripts);
+
+          return {
+            scripts,
+            loading,
+            filters,
+            filteredScripts,
+            dialogVisible,
+            editDialogVisible,
+            currentScript,
+            newScript,
+            scriptTypes,
+            scriptCategories,
+            logOptions,
+            handleEdit,
+            handleDelete,
+            handleSaveEdit,
+            handleSaveNew,
+          };
+        };
+      const app = Vue.createApp({
+        template: "#scripts-page",
+        setup: setup,
+      })
+      app.use(ElementPlus);
+      app.component('NavBar', NavBar);
+      app.mount("#app");
+    </script>
+  </body>
+</html>
