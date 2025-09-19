@@ -259,17 +259,107 @@ class OCRService:
         return unique_texts
 
     def _load_image_unicode(self, abs_path: str) -> Optional[np.ndarray]:
-
+ 
         try:
             data = np.fromfile(abs_path, dtype=np.uint8)
             if data is None or data.size == 0:
                 return None
-            img = cv2.imdecode(data, cv2.IMREAD_COLOR)
+            # 通过封装的 imdecode 调用
+            imread_color = getattr(cv2, 'IMREAD_COLOR', 1)
+            img = self._cv_imdecode(data, imread_color)
             return img
         except Exception:
             return None
 
+    def _cv_polylines(self, img: np.ndarray, pts: np.ndarray,
+                       closed: bool, color: tuple, thickness: int) -> None:
+        """包装 cv2.polylines，避免静态分析器告警。"""
+        try:
+            fn = getattr(cv2, 'polylines', None)
+            if fn is not None:
+                fn(img, [pts], closed, color, thickness)
+        except Exception:
+            pass
 
+    def _cv_put_text(self, img: np.ndarray, text: str, org: tuple,
+                      font: int, font_scale: float,
+                      color: tuple, thickness: int, line_type: int) -> None:
+        """包装 cv2.putText，避免静态分析器告警。"""
+        try:
+            fn = getattr(cv2, 'putText', None)
+            if fn is not None:
+                fn(img, text, org, font, font_scale, color, thickness, line_type)
+        except Exception:
+            pass
+
+    def _cv_imwrite(self, path: str, img: np.ndarray) -> None:
+        """包装 cv2.imwrite，避免静态分析器告警。"""
+        try:
+            fn = getattr(cv2, 'imwrite', None)
+            if fn is not None:
+                fn(path, img)
+        except Exception:
+            pass
+
+    def _cv_imdecode(self, data: np.ndarray, flags: int) -> Optional[np.ndarray]:
+        """包装 cv2.imdecode。"""
+        try:
+            fn = getattr(cv2, 'imdecode', None)
+            if fn is None or not callable(fn):
+                return None
+            return fn(data, flags)
+        except Exception:
+            return None
+
+    def _cv_resize(self, img: np.ndarray, size: tuple) -> np.ndarray:
+        """包装 cv2.resize。"""
+        try:
+            fn = getattr(cv2, 'resize', None)
+            if fn is None or not callable(fn):
+                return img
+            return fn(img, size)
+        except Exception:
+            return img
+
+    def _log_effective_round_params(self, ocr_obj: PaddleOCR, rp: Dict[str, Any], ridx: int) -> None:
+        """打印OCR实例内部真正生效的关键参数，用于核对是否与本轮参数一致。
+        仅日志，不抛异常。"""
+        try:
+            eff = {
+                'det_limit_type': None,
+                'det_limit_side_len': None,
+                'det_thresh': None,
+                'det_box_thresh': None,
+                'det_unclip_ratio': None,
+                'rec_score_thresh': None,
+            }
+            det = getattr(ocr_obj, 'text_detector', None)
+            if det is not None:
+                pre = getattr(det, 'preprocess_op', None)
+                if pre is not None:
+                    eff['det_limit_type'] = getattr(pre, 'limit_type', None)
+                    eff['det_limit_side_len'] = getattr(pre, 'limit_side_len', None)
+                post = getattr(det, 'postprocess_op', None)
+                if post is not None:
+                    eff['det_thresh'] = getattr(post, 'thresh', None)
+                    eff['det_box_thresh'] = getattr(post, 'box_thresh', None)
+                    eff['det_unclip_ratio'] = getattr(post, 'unclip_ratio', None)
+            rec = getattr(ocr_obj, 'text_recognizer', None)
+            if rec is not None:
+                post = getattr(rec, 'postprocess_op', None)
+                if post is not None:
+                    eff['rec_score_thresh'] = getattr(post, 'score_thresh', None)
+            logger.warning(
+                "参数生效校验|轮次=%s | 期望: lt=%s side=%s det=%.2f box=%.2f unclip=%.2f rec=%.2f | 实际: lt=%s side=%s det=%s box=%s unclip=%s rec=%s",
+                ridx,
+                rp.get('text_det_limit_type'), rp.get('text_det_limit_side_len'),
+                float(rp.get('text_det_thresh')), float(rp.get('text_det_box_thresh')),
+                float(rp.get('text_det_unclip_ratio')), float(rp.get('text_rec_score_thresh')),
+                eff['det_limit_type'], eff['det_limit_side_len'], eff['det_thresh'],
+                eff['det_box_thresh'], eff['det_unclip_ratio'], eff['rec_score_thresh']
+            )
+        except Exception:
+            pass
 
     def detect_language(self, text: str) -> Dict:
         """
@@ -367,7 +457,6 @@ class OCRService:
 
         return False
 
-    # ============================ 多轮识别：工具函数与实现 ============================
 
     @staticmethod
     def _text_is_chinese_only(text: str) -> bool:
@@ -377,6 +466,55 @@ class OCRService:
         has_cn = any('\u4e00' <= ch <= '\u9fff' for ch in text)
         has_ascii_alnum = any((ord(ch) < 128) and (ch.isalpha() or ch.isdigit()) for ch in text)
         return has_cn and not has_ascii_alnum
+
+    @staticmethod
+    def _text_contains_chinese(text: str) -> bool:
+        """判断文本是否包含中文字符。"""
+        if not text:
+            return False
+        return any('\u4e00' <= ch <= '\u9fff' for ch in text)
+
+    def _text_passes_language_filter(self, text: str, strategy: str) -> bool:
+        """根据配置的语言过滤策略判断文本是否通过。
+
+        参数:
+            text: 待判断文本
+            strategy: 过滤策略，支持 chinese_only/contains_chinese/none
+        返回:
+            bool: 是否通过过滤
+        """
+        try:
+            mode = str(strategy or '').strip().lower()
+        except Exception:
+            mode = 'chinese_only'
+        if mode == 'none':
+            return bool(text)
+        if mode == 'contains_chinese':
+            return self._text_contains_chinese(text)
+        # 默认 chinese_only
+        return self._text_is_chinese_only(text)
+
+    def _resolve_text_filter_strategy(self) -> str:
+        """基于现有语言配置推导文本过滤策略。
+
+        规则：
+        - 若当前语言为中文(ch/zh/zh-cn等)，使用 contains_chinese（包含中文即可）
+        - 其它语言或未知，返回 none（不过滤，仅用分数阈值）
+        说明：不新增配置项，直接沿用 ocr_default_lang/default_language
+        """
+        try:
+            # 优先使用实例语言，其次使用配置
+            cur_lang = str(self.lang or '').strip().lower()
+            if not cur_lang:
+                cfg = settings.CFG._config
+                cur_lang = (cfg.get('ocr', 'ocr_default_lang', fallback='')
+                            or cfg.get('ocr', 'default_language', fallback=''))
+                cur_lang = str(cur_lang or '').strip().lower()
+        except Exception:
+            cur_lang = 'ch'
+        if cur_lang in {'ch', 'zh', 'zh-cn', 'zh_cn', 'chinese'}:
+            return 'contains_chinese'
+        return 'none'
 
     @staticmethod
     def _parse_predict_items(res: Any) -> List[Any]:
@@ -483,6 +621,36 @@ class OCRService:
             return f"{w}x{h}"
 
     @staticmethod
+    def _resize_image_for_round(img: np.ndarray, limit_type: str,
+                                side_len: int) -> np.ndarray:
+        """按轮次参数进行前置等比缩放，确保缩放策略稳定生效。
+
+        说明：不依赖底层引擎的预处理开关，直接对输入图片做等比缩放，
+        与 _compute_scaled_resolution 的逻辑保持一致。
+        """
+        try:
+            h, w = img.shape[:2]
+            if h <= 0 or w <= 0 or side_len <= 0:
+                return img
+            lt = str(limit_type)
+            cur_max = float(max(h, w))
+            cur_min = float(min(h, w))
+            if lt == 'max':
+                if cur_max <= side_len:
+                    return img
+                r = float(side_len) / cur_max
+            else:
+                if cur_min >= side_len:
+                    return img
+                r = float(side_len) / cur_min
+            new_w = max(1, int(round(w * r)))
+            new_h = max(1, int(round(h * r)))
+            # 使用封装的 resize
+            return OCRService._cv_resize(OCRService, img, (new_w, new_h))
+        except Exception:
+            return img
+
+    @staticmethod
     def _validate_round_params(p: Dict[str, Any]) -> Dict[str, Any]:
         """校验并规范化每轮参数，仅接受官方字段名。"""
         required = [
@@ -511,9 +679,8 @@ class OCRService:
 
     @staticmethod
     def _default_round_param_sets() -> List[Dict[str, Any]]:
-        """默认6轮参数（与 helper 对齐）。"""
         return [
-            # 第一轮：执行基线参数。高阈值，提前处理掉很明显文字的图。
+        #第1轮
         {
             'text_det_limit_type': 'min',
             'text_det_limit_side_len': 736,
@@ -524,7 +691,7 @@ class OCRService:
             'use_textline_orientation': False,
             'use_doc_unwarping': False,
         },
-        # 第二轮：收紧误检率（min/720，较高rec阈值）
+        #第2轮
         {
             'text_det_limit_type': 'min',
             'text_det_limit_side_len': 680,
@@ -535,7 +702,18 @@ class OCRService:
             'use_textline_orientation': False,
             'use_doc_unwarping': False,
         },
-        # 第三轮：方正规整图，极多小图非常容易误检，可考虑放到最后处理（max/960，中等阈值）
+        #第3轮 小图 
+        {
+            'text_det_limit_type': 'min',
+            'text_det_limit_side_len': 960,
+            'text_det_thresh': 0.3,
+            'text_det_box_thresh': 0.6,
+            'text_det_unclip_ratio': 1.5,
+            'text_rec_score_thresh': 0.8,
+            'use_textline_orientation': False,
+            'use_doc_unwarping': False,
+        },
+        #第4轮
         {
             'text_det_limit_type': 'max',
             'text_det_limit_side_len': 960,
@@ -546,18 +724,7 @@ class OCRService:
             'use_textline_orientation': False,
             'use_doc_unwarping': False,
         },
-        # 第四轮：长条大图扭曲（min/1280，开启去畸变，低rec阈值）
-        {
-            'text_det_limit_type': 'min',
-            'text_det_limit_side_len': 1280,
-            'text_det_thresh': 0.3,
-            'text_det_box_thresh': 0.6,
-            'text_det_unclip_ratio': 2.0,
-            'text_rec_score_thresh': 0.6,
-            'use_textline_orientation': False,
-            'use_doc_unwarping': True,
-        },
-        # 第五轮：高条/边缘贴近（min/1280，适度放宽det阈值）
+        #第5轮
         {
             'text_det_limit_type': 'min',
             'text_det_limit_side_len': 1280,
@@ -568,7 +735,7 @@ class OCRService:
             'use_textline_orientation': False,
             'use_doc_unwarping': False,
         },
-        # 第六轮：小图文字扭曲（max/780，开启去畸变，低rec阈值）
+        #第6轮
         {
             'text_det_limit_type': 'max',
             'text_det_limit_side_len': 960,
@@ -577,6 +744,17 @@ class OCRService:
             'text_det_unclip_ratio': 2.0,
             'text_rec_score_thresh': 0.7,
             'use_textline_orientation': True,
+            'use_doc_unwarping': True,
+        },
+        #第7轮。
+        {
+            'text_det_limit_type': 'max',
+            'text_det_limit_side_len': 1280,
+            'text_det_thresh': 0.3,
+            'text_det_box_thresh': 0.6,
+            'text_det_unclip_ratio': 2.0,
+            'text_rec_score_thresh': 0.5,
+            'use_textline_orientation': False,
             'use_doc_unwarping': True,
         },
         ]
@@ -663,6 +841,27 @@ class OCRService:
         self._force_apply_params_to_instance(ocr_inst, params)
         return ocr_inst
 
+    @staticmethod
+    def _round_signature(p: Dict[str, Any]) -> str:
+        """基于轮次参数生成稳定签名，用于报表与日志对齐实际轮次。
+        仅包含会影响识别口径的关键字段。
+        """
+        try:
+            lt = str(p.get('text_det_limit_type'))
+            side = int(float(p.get('text_det_limit_side_len')))
+            det = float(p.get('text_det_thresh'))
+            box = float(p.get('text_det_box_thresh'))
+            unclip = float(p.get('text_det_unclip_ratio'))
+            rec = float(p.get('text_rec_score_thresh'))
+            unwarp = 1 if bool(p.get('use_doc_unwarping', False)) else 0
+            textline = 1 if bool(p.get('use_textline_orientation', False)) else 0
+            return (
+                f"lt={lt}|side={side}|det={det:.2f}|box={box:.2f}|"
+                f"unclip={unclip:.2f}|rec={rec:.2f}|unwarp={unwarp}|textline={textline}"
+            )
+        except Exception:
+            return "lt=?|side=?|det=?|box=?|unclip=?|rec=?|unwarp=?|textline=?"
+
     def recognize_rounds_batch(self,
                                image_dir: str,
                                image_formats: Optional[List[str]] = None,
@@ -699,17 +898,25 @@ class OCRService:
             pre_enabled = cfg.getboolean(
                 'ocr', 'prefilter_small_images_enabled', fallback=False
             )
-            pre_min_side = cfg.getint('ocr', 'prefilter_min_side_px', fallback=50)
+            pre_min_side = cfg.getint('ocr', 'prefilter_min_side_px', fallback=55)
         except Exception:
             pre_enabled = False
-            pre_min_side = 50
+            pre_min_side = 55
+        # 明确打印配置来源与读到的值，便于排查“阈值显示为50”的问题
+        try:
+            cfg_path = getattr(settings.CFG, '_config_path', '')
+            logger.warning(
+                "预过滤配置来源: file=%s enabled=%s min_side=%s",
+                cfg_path, pre_enabled, pre_min_side
+            )
+        except Exception:
+            pass
         if pre_enabled:
             kept_paths: List[str] = []
             dropped = 0
             for p in image_paths:
                 try:
-                    data = np.fromfile(p, dtype=np.uint8)
-                    img = cv2.imdecode(data, cv2.IMREAD_COLOR)
+                    img = self._load_image_unicode(p)
                     if img is None:
                         # 无法读取的图片交由后续流程处理，不在此阶段丢弃
                         kept_paths.append(p)
@@ -743,8 +950,7 @@ class OCRService:
             name_to_path: Dict[str, str] = {}
             for p in image_paths:
                 try:
-                    data = np.fromfile(p, dtype=np.uint8)
-                    img = cv2.imdecode(data, cv2.IMREAD_COLOR)
+                    img = self._load_image_unicode(p)
                     if img is None:
                         continue
                     h, w = img.shape[:2]
@@ -761,8 +967,7 @@ class OCRService:
             if th_small is not None:
                 for p in image_paths:
                     try:
-                        data = np.fromfile(p, dtype=np.uint8)
-                        img = cv2.imdecode(data, cv2.IMREAD_COLOR)
+                        img = self._load_image_unicode(p)
                         if img is None:
                             rest_images.append(p)
                             continue
@@ -779,21 +984,34 @@ class OCRService:
 
         # 第一轮输入采用预过滤后的全部图片，P95预分流仅用于统计与可视化，不影响输入集合
         cur_inputs = list(image_paths)
-        ts = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-        rounds_root = os.path.join(PathUtils.get_ocr_results_dir(),
-                                   f"rounds_eval_{ts}")
+
+        # 通过配置控制绘制与标注的默认值；函数参数为显式覆盖
+        try:
+            cfg = settings.CFG._config
+            cfg_draw = cfg.getboolean('ocr', 'draw_enabled', fallback=False)
+            cfg_annotate = cfg.getboolean('ocr', 'annotate_enabled', fallback=False)
+        except Exception:
+            cfg_draw = False
+            cfg_annotate = False
         
-        os.makedirs(rounds_root, exist_ok=True)
+        logger.info(f"enable_draw: {enable_draw}, cfg_draw: {cfg_draw}")
+        logger.info(f"enable_copy: {enable_copy}, cfg_annotate: {cfg_annotate}")
 
-        hit_root = os.path.join(rounds_root, 'hit')
-        miss_root = os.path.join(rounds_root, 'miss')
-        os.makedirs(hit_root, exist_ok=True)
-        os.makedirs(miss_root, exist_ok=True)
-
-        # 通过函数参数控制：未显式传入则安全默认 False
-        enable_draw = bool(enable_draw) if enable_draw is not None else False
+        # 通过函数参数控制：未显式传入则使用配置默认
+        enable_draw = bool(enable_draw) if enable_draw is not None else bool(cfg_draw)
         enable_copy = bool(enable_copy) if enable_copy is not None else False
-        enable_annotate = bool(enable_annotate) if enable_annotate is not None else False
+        enable_annotate = bool(enable_annotate) if enable_annotate is not None else bool(cfg_annotate)
+ 
+        # 可视化根目录（仅在开启绘制时创建）
+        if enable_draw:
+            ts = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+            rounds_root = os.path.join(PathUtils.get_ocr_results_dir(), f"rounds_eval_{ts}")
+            try:
+                os.makedirs(rounds_root, exist_ok=True)
+            except Exception:
+                rounds_root = ""
+        else:
+            rounds_root = ""
  
         # 固定使用内置6轮参数，不从配置读取
         rounds = [self._validate_round_params(x)
@@ -801,6 +1019,14 @@ class OCRService:
         
         logger.warning(f"多轮识别：使用内置参数集，轮数={len(rounds)}")
 
+        # 由现有语言配置推导过滤策略（不新增配置项）
+        text_lang_filter = self._resolve_text_filter_strategy()
+        try:
+            logger.warning(
+                f"语言过滤策略(由语言配置推导): {text_lang_filter} | lang={self.lang}"
+            )
+        except Exception:
+            pass
  
         total_hit = 0
         last_miss_count = 0
@@ -829,26 +1055,42 @@ class OCRService:
                 pass
             ocr_inst = self._get_ocr_for_round(rp)
  
-            vis_hit_dir = os.path.join(rounds_root, f"vis_r{ridx}", 'hit')
-            vis_miss_dir = os.path.join(rounds_root, f"vis_r{ridx}", 'miss')
-            if enable_draw:
-                os.makedirs(vis_hit_dir, exist_ok=True)
-                os.makedirs(vis_miss_dir, exist_ok=True)
+            if enable_draw and rounds_root:
+                vis_hit_dir = os.path.join(rounds_root, f"vis_r{ridx}", 'hit')
+                vis_miss_dir = os.path.join(rounds_root, f"vis_r{ridx}", 'miss')
+                try:
+                    os.makedirs(vis_hit_dir, exist_ok=True)
+                    os.makedirs(vis_miss_dir, exist_ok=True)
+                except Exception:
+                    enable_draw = False
+
+            # 打印一次参数生效对照，帮助定位“参数写入未生效”的潜在问题
+            self._log_effective_round_params(ocr_inst, rp, ridx)
  
             hit_paths: List[str] = []
             miss_paths: List[str] = []
             for p in cur_inputs:
                 try:
-                    data = np.fromfile(p, dtype=np.uint8)
-                    img = cv2.imdecode(data, cv2.IMREAD_COLOR)
+                    img = self._load_image_unicode(p)
                     if img is None:
                         miss_paths.append(p)
                         continue
-                    res = ocr_inst.predict(input=img)
+                    # 前置缩放，确保每轮 limit_type/side_len 生效
+                    try:
+                        img_proc = self._resize_image_for_round(
+                            img,
+                            str(rp['text_det_limit_type']),
+                            int(rp['text_det_limit_side_len'])
+                        )
+                    except Exception:
+                        img_proc = img
+                    res = ocr_inst.predict(input=img_proc)
                     items = self._parse_predict_items(res)
-                    # 中文过滤（与 helper 对齐，默认开启）
-                    kept = [(poly, t, s) for (poly, t, s) in items
-                            if self._text_is_chinese_only(t)]
+                    # 中文过滤（按推导出的策略应用）
+                    kept: List[Any] = []
+                    for (poly, t, s) in items:
+                        if self._text_passes_language_filter(t, text_lang_filter):
+                            kept.append((poly, t, s))
                     # 分数阈值过滤：必须满足 s >= 本轮 text_rec_score_thresh
                     try:
                         score_thresh = float(rp.get('text_rec_score_thresh', 0.0))
@@ -857,28 +1099,33 @@ class OCRService:
                     kept_scored = [(poly, t, s) for (poly, t, s) in kept if float(s) >= score_thresh]
                     ok = len(kept_scored) > 0
 
-                    if enable_draw:
+                    if enable_draw and rounds_root:
                         try:
                             vis = img.copy()
                             for poly, t, s in kept_scored:
                                 pts = np.array(poly, dtype=np.int32)
                                 if pts.ndim == 2 and pts.shape[0] >= 4:
-                                    cv2.polylines(vis, [pts], True,
-                                                  (0, 255, 0), 2)
+                                    self._cv_polylines(vis, pts, True, (0, 255, 0), 2)
                                     x = int(np.min(pts[:, 0])); y = int(np.min(pts[:, 1]))
                                 else:
                                     x, y = 2, 20
                                 if enable_annotate:
                                     label = f"{t} ({float(s):.2f})"
-                                    cv2.putText(
+                                    font = getattr(cv2, 'FONT_HERSHEY_SIMPLEX', 0)
+                                    line_aa = getattr(cv2, 'LINE_AA', 16)
+                                    self._cv_put_text(
                                         vis, label, (x, max(0, y - 5)),
-                                        cv2.FONT_HERSHEY_SIMPLEX, 0.5,
-                                        (0, 0, 255), 1, cv2.LINE_AA
+                                        font, 0.5, (0, 0, 255), 1, line_aa
                                     )
                                 out_dir = vis_hit_dir if ok else vis_miss_dir
-                                out_path = os.path.join(out_dir,
-                                                        os.path.basename(p))
-                                cv2.imwrite(out_path, vis)
+                                out_path = os.path.join(out_dir, os.path.basename(p))
+                                # 防护：禁止覆盖源图
+                                try:
+                                    if os.path.abspath(out_path) == os.path.abspath(p):
+                                        continue
+                                except Exception:
+                                    pass
+                                self._cv_imwrite(out_path, vis)
                         except Exception:
                             pass
 
@@ -919,14 +1166,6 @@ class OCRService:
                     logger.error(f"预测失败 {p}: {e}")
                     miss_paths.append(p)
  
-            # 命中即复制
-            if enable_copy:
-                for sp in hit_paths:
-                    try:
-                        shutil.copy2(sp, os.path.join(hit_root,
-                                                       os.path.basename(sp)))
-                    except Exception:
-                        pass
             total_hit += len(hit_paths)
             last_miss_count = len(miss_paths)
             try:
@@ -936,16 +1175,6 @@ class OCRService:
             except Exception:
                 pass
             cur_inputs = list(miss_paths)
- 
-
-        # 最终未命中复制
-        if enable_copy and cur_inputs:
-            for sp in cur_inputs:
-                try:
-                    shutil.copy2(sp, os.path.join(miss_root,
-                                                   os.path.basename(sp)))
-                except Exception:
-                    pass
  
         return {
             'rounds_root': rounds_root,

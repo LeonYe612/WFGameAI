@@ -219,8 +219,13 @@ def process_ocr_task(task_id):
             match_languages=target_languages  # 将命中判定语言动态传入，避免硬编码
         )
 
-        # 切换为：调用服务层多轮识别（内置6轮），并按需输出可视化/复制/标注
-        logger.warning(f"开始多轮识别目录(6轮): {check_dir}")
+        # 切换为：调用服务层多轮识别（基于内置参数集），并按需输出可视化/复制/标注
+        try:
+            _tmp_service = OCRService(lang="ch")
+            _rounds_num = len(_tmp_service._default_round_param_sets())
+        except Exception:
+            _rounds_num = 0
+        logger.warning(f"开始多轮识别目录({_rounds_num}轮): {check_dir}")
         start_time = time.time()
         # 初始化进度(以待处理图片总数为准)
         try:
