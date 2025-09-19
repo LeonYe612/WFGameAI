@@ -1,5 +1,8 @@
 import { ref, onUnmounted, readonly } from "vue";
 import { message } from "@/utils/message";
+import { baseUrlApi } from "@/api/utils";
+import { getToken } from "@/utils/auth";
+import { useUserStoreHook } from "@/store/modules/user";
 
 // 定义事件处理函数的类型
 type EventHandler<T = any> = (data: T) => void;
@@ -39,21 +42,92 @@ const pendingListeners = new Set<string>();
 // 响应式的连接状态
 const connectionState = ref<SSEState>(SSEState.CLOSED);
 
-// SSE 连接的 URL，请根据你的项目配置修改
-const SSE_URL = "/api/notifications/stream/";
+// 自动重连的定时器
+let reconnectTimer: NodeJS.Timeout | null = null;
+const reconnectInterval = 5000; // 5秒后重连
 
+// SSE 连接的 URL，请根据你的项目配置修改
+const getSSEUrl = (): string => {
+  const baseUrl = baseUrlApi("/notifications/stream/");
+  const tokenData = getToken();
+
+  if (tokenData?.accessToken) {
+    // 检查 token 是否过期
+    const now = new Date().getTime();
+    const expired = parseInt(tokenData.expires) - now <= 0;
+
+    if (!expired) {
+      const separator = baseUrl.includes("?") ? "&" : "?";
+      return `${baseUrl}${separator}token=${encodeURIComponent(
+        tokenData.accessToken
+      )}`;
+    }
+  }
+
+  return baseUrl;
+};
+
+/**
+ * 检查并刷新 token，然后重新连接 SSE
+ */
+const checkTokenAndReconnect = async (): Promise<boolean> => {
+  const tokenData = getToken();
+
+  if (!tokenData) {
+    console.log("No token available, cannot establish SSE connection");
+    return false;
+  }
+
+  const now = new Date().getTime();
+  const expired = parseInt(tokenData.expires) - now <= 0;
+
+  if (expired && tokenData.refreshToken) {
+    try {
+      console.log("Token expired, refreshing...");
+      await useUserStoreHook().handRefreshToken({
+        refreshToken: tokenData.refreshToken
+      });
+      console.log("Token refreshed successfully");
+      return true;
+    } catch (error) {
+      console.error("Failed to refresh token:", error);
+      return false;
+    }
+  }
+
+  return true;
+};
 /**
  * 初始化并管理全局唯一的 SSE 连接。
  * 这个函数只应在应用的主入口（如 App.vue）调用一次。
  */
-const connect = () => {
+const connect = async () => {
   // 如果已经连接或正在连接，则不执行任何操作
   if (eventSource && eventSource.readyState !== EventSource.CLOSED) {
     return;
   }
 
+  // 清除可能存在的重连定时器
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer);
+    reconnectTimer = null;
+  }
+
+  // 检查并刷新 token
+  const tokenValid = await checkTokenAndReconnect();
+  if (!tokenValid) {
+    console.log("Token validation failed, SSE connection aborted");
+    return;
+  }
+
   try {
-    eventSource = new EventSource(SSE_URL, { withCredentials: true });
+    const sseUrl = getSSEUrl();
+    console.log(
+      "Connecting to SSE:",
+      sseUrl.replace(/token=[^&]+/, "token=***")
+    ); // 隐藏token日志
+
+    eventSource = new EventSource(sseUrl, { withCredentials: true });
     connectionState.value = SSEState.CONNECTING;
 
     eventSource.onopen = () => {
@@ -64,8 +138,21 @@ const connect = () => {
     eventSource.onerror = error => {
       console.error("SSE connection error:", error);
       connectionState.value = SSEState.CLOSED;
-      eventSource?.close(); // 关闭实例，稍后可能会自动重连
-      message("⚠️ 与服务端的 SSE 通信出现错误，请检查网络或稍后重试。", {
+
+      if (eventSource) {
+        eventSource.close();
+        eventSource = null;
+      }
+
+      // 401 错误可能是 token 过期，尝试重新连接
+      if (!reconnectTimer) {
+        reconnectTimer = setTimeout(() => {
+          console.log("Attempting to reconnect SSE...");
+          connect();
+        }, reconnectInterval);
+      }
+
+      message("⚠️ 与服务端的 SSE 通信出现错误，正在尝试重新连接...", {
         type: "error"
       });
     };
@@ -100,6 +187,12 @@ const connect = () => {
  * 关闭 SSE 连接并清空所有监听器。
  */
 const disconnect = () => {
+  // 清除重连定时器
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer);
+    reconnectTimer = null;
+  }
+
   if (eventSource) {
     eventSource.close();
     eventSource = null;
@@ -139,9 +232,19 @@ const addServerEventListener = (eventName: string) => {
 };
 
 /**
+ * 手动重新连接 SSE
+ */
+const reconnect = async () => {
+  console.log("Manual reconnection requested");
+  disconnect();
+  await connect();
+};
+
+/**
  * Vue Composable - 用于在组件中使用 SSE。
  * @returns on: 用于注册事件监听器的函数
  * @returns connectionState: 只读的连接状态
+ * @returns reconnect: 手动重连函数
  */
 export function useSSE() {
   /**
@@ -179,9 +282,10 @@ export function useSSE() {
 
   return {
     on,
-    connectionState: readonly(connectionState) // 提供只读的状态
+    connectionState: readonly(connectionState), // 提供只读的状态
+    reconnect // 提供手动重连功能
   };
 }
 
 // 导出连接和断开函数，以便在应用根组件中控制
-export { connect, disconnect };
+export { connect, disconnect, reconnect };

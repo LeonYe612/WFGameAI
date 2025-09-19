@@ -12,6 +12,7 @@ import Motion from "./utils/motion";
 import { useRouter } from "vue-router";
 import { message } from "@/utils/message";
 import { loginRules } from "./utils/rule";
+import { ElMessageBox } from "element-plus";
 
 import TypeIt from "@/components/ReTypeit";
 
@@ -22,6 +23,7 @@ import { useLayout } from "@/layout/hooks/useLayout";
 import { useUserStoreHook } from "@/store/modules/user";
 import { initRouter, getTopMenu } from "@/router/utils";
 import { bg, avatar, illustration } from "./utils/static";
+import { getCurrentBackendHost, setCustomBackendHost } from "@/api/utils";
 
 import { useRenderIcon } from "@/components/ReIcon/src/hooks";
 
@@ -42,6 +44,10 @@ const router = useRouter();
 const loading = ref(false);
 const checked = ref(false);
 const ruleFormRef = ref<FormInstance>();
+
+// 点击计数相关
+const clickCount = ref(0);
+let clickTimer: NodeJS.Timeout | null = null;
 
 const { initStorage } = useLayout();
 initStorage();
@@ -131,6 +137,59 @@ const onSSOLogin = () => {
   router.push("/");
 };
 
+// 处理头像点击事件
+const handleAvatarClick = () => {
+  clickCount.value++;
+
+  // 清除之前的计时器
+  if (clickTimer) {
+    clearTimeout(clickTimer);
+  }
+
+  // 如果点击次数达到5次，显示配置窗口
+  if (clickCount.value >= 5) {
+    showBackendConfigDialog();
+    clickCount.value = 0; // 重置计数
+    return;
+  }
+
+  // 设置计时器，2秒后重置点击次数
+  clickTimer = setTimeout(() => {
+    clickCount.value = 0;
+  }, 2000);
+};
+
+// 显示后端配置对话框
+const showBackendConfigDialog = async () => {
+  // 只在非开发环境下显示配置窗口
+  // if (process.env.NODE_ENV === "development") {
+  //   message("开发环境下无法修改后端地址", { type: "warning" });
+  //   return;
+  // }
+
+  try {
+    const currentHost = getCurrentBackendHost();
+    const { value } = await ElMessageBox.prompt(
+      "请输入后端API地址",
+      "后端配置",
+      {
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
+        inputValue: currentHost,
+        inputPattern: /^https?:\/\/[^\s]+$/,
+        inputErrorMessage: "请输入有效的API地址，格式如: http://127.0.0.1:9000"
+      }
+    );
+
+    if (value && value.trim()) {
+      setCustomBackendHost(value.trim());
+      message(`后端地址已更新为: ${value.trim()}`, { type: "success" });
+    }
+  } catch (error) {
+    // 用户取消了操作
+  }
+};
+
 onMounted(() => {
   doLoginWithTicket();
   window.document.addEventListener("keypress", onkeypress);
@@ -138,6 +197,10 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.document.removeEventListener("keypress", onkeypress);
+  // 清理计时器
+  if (clickTimer) {
+    clearTimeout(clickTimer);
+  }
 });
 
 watch(checked, bool => {
@@ -167,7 +230,11 @@ watch(loginDay, value => {
       </div>
       <div class="login-box">
         <div class="login-form">
-          <avatar class="avatar" />
+          <avatar
+            class="avatar"
+            @click="handleAvatarClick"
+            style="cursor: pointer"
+          />
           <Motion>
             <h2 class="outline-none">
               <TypeIt

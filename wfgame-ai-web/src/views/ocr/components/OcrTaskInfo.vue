@@ -50,8 +50,15 @@
         label="备注"
         :span="2"
         label-class-name="desc-label"
-        >{{ task?.remark || "-" }}</el-descriptions-item
       >
+        <span
+          :class="{
+            'text-red-400': task?.remark
+          }"
+        >
+          {{ task?.remark || "-" }}
+        </span>
+      </el-descriptions-item>
     </el-descriptions>
   </el-card>
 </template>

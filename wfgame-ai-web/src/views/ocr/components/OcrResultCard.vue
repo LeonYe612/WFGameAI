@@ -27,10 +27,10 @@
           路径: {{ result.image_path || "-" }}
         </p>
         <el-radio-group
-          v-model="currentResultType"
+          :model-value="props.result.result_type"
           size="small"
           class="result-type-radios"
-          @change="handleResultTypeChange"
+          @update:model-value="handleResultTypeChange"
         >
           <el-radio-button
             v-for="item in resultTypes"
@@ -58,6 +58,7 @@ import { mediaUrl } from "@/api/utils";
 
 type Emits = {
   (e: "view-image", result: OcrResult): void;
+  (e: "update:result_type", value: string): void;
 };
 
 const emit = defineEmits<Emits>();
@@ -90,6 +91,10 @@ const getImgName = (imagePath: string) => {
 
 const handleResultTypeChange = async (newType: string) => {
   try {
+    // 先发送 emit 事件给父组件
+    emit("update:result_type", newType);
+
+    // 然后调用 API 更新
     await superRequest({
       apiFunc: ocrResultApi.update,
       apiParams: {
@@ -100,8 +105,8 @@ const handleResultTypeChange = async (newType: string) => {
       }
     });
   } catch (error) {
-    // Revert the change on failure
-    currentResultType.value = props.result.result_type;
+    // API 调用失败时，发送原来的值给父组件（回滚）
+    emit("update:result_type", props.result.result_type);
   }
 };
 </script>

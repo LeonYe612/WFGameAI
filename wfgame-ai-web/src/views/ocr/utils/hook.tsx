@@ -91,30 +91,25 @@ export const useOcr = () => {
   const downloadTask = async (taskId: string) => {
     try {
       const response: any = await ocrTaskApi.download(taskId);
-      // 兼容 axios/fetch 返回
-      const text = response.data;
-      const blob = new Blob([text], { type: "text/csv" });
-      const disposition = response.headers["content-disposition"];
+      // 创建一个下载链接
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
 
-      // 获取文件名
-      let filename = "download.csv";
-      if (disposition) {
-        const match = disposition.match(/filename=([^;]+)/i);
-        if (match) {
-          filename = decodeURIComponent(match[1].replace(/['"]/g, ""));
-        }
-      }
-      // 创建下载链接
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename || `ocr_results_${taskId}.csv`;
-      document.body.appendChild(a);
-      a.click();
+      // 从响应头获取文件名，或者使用默认文件名
+      const contentDisposition = response.headers["content-disposition"];
+      const fileNameMatch = contentDisposition.match(/filename=(.+)/);
+      const fileName = fileNameMatch ? fileNameMatch[1] : "export.xlsx";
+
+      link.href = url;
+      link.setAttribute("download", fileName);
+      document.body.appendChild(link);
+      link.click();
+
+      // 清理
+      document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      a.remove();
     } catch (error) {
-      message("下载任务结果失败", { type: "error" });
+      message("下载出错, 请在console中查看错误详情!", { type: "error" });
       console.error("downloadTask error:", error);
     }
   };

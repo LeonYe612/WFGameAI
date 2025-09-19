@@ -167,8 +167,45 @@ REST_FRAMEWORK = {
 }
 
 # CORS设置
-CORS_ALLOW_ALL_ORIGINS = True
+# 生产环境建议指定具体的允许域名
+CORS_ALLOW_ALL_ORIGINS = True  # 开发环境设置，生产环境应该改为False
 CORS_ALLOW_CREDENTIALS = True
+
+# 生产环境使用以下配置替代 CORS_ALLOW_ALL_ORIGINS = True
+# CORS_ALLOWED_ORIGINS = [
+#     "http://localhost:3000",
+#     "http://127.0.0.1:3000",
+#     "http://localhost:8080",
+#     "http://127.0.0.1:8080",
+# ]
+
+# CORS额外配置
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+    'x-frontend-version',  # 添加前端版本标识请求头
+    'x-api-version',       # 添加API版本请求头
+    'x-request-id',        # 添加请求ID请求头
+]
+
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+
+# 预检请求的缓存时间
+CORS_PREFLIGHT_MAX_AGE = 86400
 
 # 日志配置
 LOGGING = {
