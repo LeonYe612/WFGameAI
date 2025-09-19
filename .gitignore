@@ -21,6 +21,14 @@ docs/
 *.csv
 *.xlsx
 
+# 不忽略前端目录和Django静态文件目录下的图片资源
+!wfgame-ai-web/public/*.svg
+!wfgame-ai-web/public/*.png
+!wfgame-ai-web/src/assets/*/*.svg
+!wfgame-ai-web/src/assets/**/*.png
+
+!wfgame-ai-server/staticfiles/dist/*.svg
+
 # IDE
 .vscode/
 .idea/

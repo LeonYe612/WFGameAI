@@ -18,6 +18,11 @@ class AuthenticationMiddleware:
         "/pages/no_permission",
         "/pages/index_template.html",
     }
+    
+    # SSE等特殊API路径，需要认证但认证失败时不重定向到SSO，而是直接返回401
+    API_ONLY_AUTH = {
+        "/api/notifications/stream",
+    }
 
     SSO_WEB_HOST = settings.CFG.get("auth", "sso_web_host")
     ENABLE_PAGE_AUTH = settings.CFG.getboolean("auth", "enable_page_auth", fallback=True)
@@ -27,18 +32,36 @@ class AuthenticationMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
+        # 静态资源
+        if request.path.startswith(settings.STATIC_URL):
+            return self.get_response(request)
+        # media资源
+        if request.path.startswith(settings.MEDIA_URL):
+            return self.get_response(request)
+
         path = request.path.rstrip("/")
         if path in self.NO_AUTH:
             return self.get_response(request)
 
-        # 🙍‍♂️ 用户认证：支持两种认证方式
+        # 🙍‍♂️ 用户认证：支持三种认证方式
         # 1. JWT 机制（通过 Authorization 请求头传递 Bearer Token）
-        # 2. 默认的 Django Session & Cookie 机制
+        # 2. JWT 机制（通过查询参数 token 传递，主要用于 SSE 连接）
+        # 3. 默认的 Django Session & Cookie 机制
         user: AuthUser = getattr(request, "user", None)
         if not user.username:
+            token = None
+            
+            # 优先从 Authorization 请求头获取 token
             auth_header = request.META.get("HTTP_AUTHORIZATION", "")
             if auth_header.startswith("Bearer "):
                 token = auth_header.split(" ")[1]
+            
+            # 如果请求头没有 token，尝试从查询参数获取（主要用于 SSE 连接）
+            if not token:
+                token = request.GET.get("token", "")
+            
+            # 如果获取到了 token，进行 JWT 验证
+            if token:
                 payload, error = decode_token(token)
                 if error:
                     return api_response(code=401, msg=error)
@@ -50,7 +73,10 @@ class AuthenticationMiddleware:
                     return api_response(code=401, msg="用户不存在")
 
         if not user.username:
-            # 重定向到SSO平台的登录页面
+            # 对于特殊的API路径（如SSE流），认证失败时直接返回401，不重定向
+            if path in self.API_ONLY_AUTH:
+                return api_response(code=401, msg="认证失败，请提供有效的token")
+            # 其他路径重定向到SSO平台的登录页面
             return redirect(self.format_sso_login_url(request))
         else:
             setattr(request, "_user", user)  # 确保 request.user 可用

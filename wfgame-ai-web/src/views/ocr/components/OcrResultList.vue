@@ -9,7 +9,7 @@
             placeholder="输入关键字查找"
             :prefix-icon="Search"
             clearable
-            style="width: 300px"
+            style="width: 200px"
             @change="handleSearch"
           />
         </el-form-item>
@@ -43,6 +43,29 @@
             搜索
           </el-button>
           <el-button :icon="RefreshLeft" @click="handleReset"> 重置 </el-button>
+        </el-form-item>
+        <el-form-item>
+          <el-dropdown @command="handleCommand">
+            <el-button type="primary" plain style="width: 140px">
+              当前页标注为
+              <el-icon>
+                <ArrowDown class="ml-1" />
+              </el-icon>
+            </el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item
+                  v-for="item in sortedEnum(ocrResultTypeEnum, [
+                    ocrResultTypeEnum.ALL
+                  ])"
+                  :key="item.value"
+                  :command="item.value"
+                >
+                  {{ item.label }}
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
         </el-form-item>
       </el-form>
     </el-card>
@@ -80,7 +103,11 @@
                 :lg="6"
                 :xl="4"
               >
-                <OcrResultCard :result="item" @view-image="handleViewImage" />
+                <OcrResultCard
+                  :result="item"
+                  @update:result_type="updateResultType(item, $event)"
+                  @view-image="handleViewImage"
+                />
               </el-col>
             </el-row>
           </div>
@@ -112,12 +139,13 @@ import {
   ocrTaskApi,
   type TaskGetDetailsParams
 } from "@/api/ocr";
-import { Search, RefreshLeft } from "@element-plus/icons-vue";
+import { Search, RefreshLeft, ArrowDown } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 import { superRequest } from "@/utils/request";
 import OcrResultCard from "./OcrResultCard.vue";
 import { ocrResultTypeEnum, ocrIsMatchEnum, sortedEnum } from "@/utils/enums";
 import { mediaUrl } from "@/api/utils";
+import { ocrResultApi } from "@/api/ocr";
 
 const props = defineProps<{
   taskId: string;
@@ -142,6 +170,10 @@ const viewerIndex = ref(0);
 const viewerSrcList = computed(() =>
   results.value.map(item => mediaUrl(item.image_path))
 );
+
+const updateResultType = (item: OcrResult, newType: string) => {
+  item.result_type = newType;
+};
 
 const handleViewImage = (result: OcrResult) => {
   const index = results.value.findIndex(item => item.id === result.id);
@@ -196,6 +228,25 @@ const handleSizeChange = (size: number) => {
 const handlePageChange = (page: number) => {
   pagination.currentPage = page;
   fetchResults();
+};
+
+const handleCommand = async (command: string) => {
+  const resultType = String(command);
+  try {
+    await superRequest({
+      apiFunc: ocrResultApi.update,
+      apiParams: {
+        ids: results.value.reduce((acc, item) => {
+          acc[item.id] = resultType;
+          return acc;
+        }, {} as Record<string, string>)
+      },
+      enableSucceedMsg: true,
+      succeedMsgContent: "批量标准成功"
+    });
+  } finally {
+    fetchResults();
+  }
 };
 
 watch(() => props.taskId, fetchResults, { immediate: true });

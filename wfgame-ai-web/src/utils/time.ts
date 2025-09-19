@@ -54,6 +54,26 @@ export const TimeDefault = (
   return t.format(format);
 };
 
+/** 格式化时间戳或Date对象为指定格式的日期字符串 */
+export const formatDateTime = (
+  dateInput: number | Date,
+  format = "YYYY-MM-DD HH:mm:ss"
+): string => {
+  let date: Date;
+
+  if (typeof dateInput === "number") {
+    // 判断是10位时间戳（秒）还是13位时间戳（毫秒）
+    date =
+      dateInput > 9_999_999_999
+        ? new Date(dateInput)
+        : new Date(dateInput * 1000);
+  } else {
+    date = dateInput;
+  }
+
+  return daysj(date).format(format);
+};
+
 export const formatTimestamp = (ts: number): string => {
   // 10位时间戳（秒）转毫秒（13位）
   const date = ts > 9_999_999_999 ? new Date(ts) : new Date(ts * 1000);

@@ -198,7 +198,8 @@ export const ocrTaskApi = {
       "post",
       baseUrlApi("/ocr/history/"),
       {
-        data: { task_id, action: "download" }
+        data: { task_id, action: "download" },
+        responseType: "blob"
       },
       { getResponse: true }
     )
