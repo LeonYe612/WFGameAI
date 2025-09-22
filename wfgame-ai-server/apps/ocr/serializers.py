@@ -90,7 +90,7 @@ class OCRProcessGitSerializer(serializers.Serializer):
 
     project_id = serializers.IntegerField(required=True)
     repo_id = serializers.IntegerField(required=True)
-    branch = serializers.CharField(required=False, default="main")
+    branch = serializers.CharField(required=True)
     languages = serializers.ListField(
         child=serializers.CharField(), required=False, default=["ch"]
     )

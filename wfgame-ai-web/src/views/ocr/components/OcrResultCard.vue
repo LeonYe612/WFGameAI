@@ -10,7 +10,7 @@
           class="cursor-pointer"
           style="width: 100%; height: 250px"
           :src="mediaUrl(result.image_path)"
-          fit="cover"
+          fit="scale-down"
           lazy
           @click="handleImageClick(result)"
         />

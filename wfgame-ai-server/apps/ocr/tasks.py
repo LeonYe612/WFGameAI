@@ -183,7 +183,7 @@ def process_ocr_task(task_id):
                 )
                 result: DownloadResult = git_service.download_files_with_git_clone(
                     repo_base_dir=check_dir,
-                    branch=task_config.get("branch", "main"),
+                    branch=task_config.get("branch", "develop"),
                 )
                 if not result.success:
                     logger.error(f"Git仓库下载失败: {result.message}")
