@@ -9,7 +9,7 @@ import { LoginResult, RefreshTokenResult } from "@/api/user";
 import { useMultiTagsStoreHook } from "@/store/modules/multiTags";
 import { type DataInfo, setToken, removeToken, sessionKey } from "@/utils/auth";
 import { message } from "@/utils/message";
-import { disconnect } from "@/hooks/useSSE";
+import { disconnect } from "@/layout/components/sseState/useSSE";
 
 export const useUserStore = defineStore({
   id: "pure-user",

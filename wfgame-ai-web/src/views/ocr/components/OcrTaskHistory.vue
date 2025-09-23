@@ -85,27 +85,34 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="progress" label="进度" width="180">
+        <el-table-column prop="progress" label="进度" width="200">
           <template #default="{ row }">
-            <el-progress
-              v-if="row.status === 'running'"
-              :percentage="row.progress || 0"
-              :stroke-width="10"
-              striped
-              striped-flow
-            />
-            <el-progress
-              v-else-if="row.status === 'completed'"
-              :percentage="100"
-              status="success"
-              :stroke-width="10"
-            />
-            <span v-else>-</span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="duration" label="耗时" width="120">
-          <template #default="{ row }">
-            {{ row.duration || "-" }}
+            <div>
+              <el-progress
+                v-if="row.status === taskStatusEnum.RUNNING.value"
+                text-inside
+                :percentage="row.progress || 0"
+                :stroke-width="24"
+                striped
+                striped-flow
+                :duration="15"
+              />
+              <el-progress
+                v-else-if="row.status === taskStatusEnum.COMPLETED.value"
+                text-inside
+                :percentage="100"
+                status="success"
+                :stroke-width="24"
+              />
+              <el-progress
+                v-else-if="row.status === taskStatusEnum.FAILED.value"
+                text-inside
+                :percentage="100"
+                status="exception"
+                :stroke-width="24"
+              />
+              <div class="text-xs text-gray-500 mt-1">▪ {{ row.remark }}</div>
+            </div>
           </template>
         </el-table-column>
         <el-table-column prop="total_images" label="图片总数" width="100" />
@@ -118,6 +125,11 @@
         >
           <template #default="{ row }">
             <span>{{ `${row.match_rate}%` }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="duration" label="耗时" width="120">
+          <template #default="{ row }">
+            {{ row.duration || "-" }}
           </template>
         </el-table-column>
         <el-table-column
@@ -206,7 +218,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from "vue";
+import { ref, reactive } from "vue";
 import {
   Search,
   RefreshLeft,
@@ -374,10 +386,6 @@ const handleCreateTask = () => {
 const refresh = () => {
   loadData();
 };
-
-onMounted(() => {
-  loadData();
-});
 
 defineExpose({
   refresh

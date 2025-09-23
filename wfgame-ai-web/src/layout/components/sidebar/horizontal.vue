@@ -2,6 +2,7 @@
 import Search from "../search/index.vue";
 // import Notice from "../notice/index.vue";
 import ActiveTeam from "../activeTeam/index.vue";
+import SSEState from "@/layout/components/sseState/index.vue";
 import { ref, watch, nextTick } from "vue";
 import SidebarItem from "./sidebarItem.vue";
 import { useNav } from "@/layout/hooks/useNav";
@@ -68,6 +69,10 @@ watch(
       <!-- <Notice id="header-notice" /> -->
       <!-- 激活团队 -->
       <ActiveTeam />
+      <el-divider direction="vertical" />
+      <!-- SSE连接状态 -->
+      <SSEState />
+      <el-divider direction="vertical" />
       <!-- 退出登录 -->
       <el-dropdown trigger="click">
         <span class="el-dropdown-link navbar-bg-hover">

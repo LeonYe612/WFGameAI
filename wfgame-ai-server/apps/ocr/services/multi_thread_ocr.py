@@ -460,7 +460,8 @@ class MultiThreadOCR:
                 has_match=result.get('has_match', False),
                 confidence=result.get('confidence', 0.0),
                 processing_time=result.get('processing_time', 0),
-                pic_resolution=result.get('pic_resolution', '')
+                pic_resolution=result.get('pic_resolution', ''),
+                team_id=self.task.team_id
             )
             objs.append(obj)
         if objs:

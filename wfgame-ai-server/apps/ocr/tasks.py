@@ -25,6 +25,7 @@ from .services.gitlab import (
     GitLabService,
 )
 from .services.path_utils import PathUtils
+from apps.notifications.tasks import notify_ocr_task_progress
 
 # 配置日志
 logger = logging.getLogger(__name__)
@@ -132,11 +133,16 @@ def process_ocr_task(task_id):
     try:
         # step1. 获取任务信息
         task = OCRTask.objects.all_teams().filter(id=task_id).first()
+        if not task:
+            logger.error(f"OCR任务不存在: {task_id}")
+            return {"status": "error", "message": f"OCR任务不存在: {task_id}"}
 
         # 更新任务状态
-        task.status = 'running'
-        task.start_time = timezone.now()
-        task.save()
+        notify_ocr_task_progress({
+            "id": task_id,
+            "status": 'running',
+            "start_time": timezone.now(),
+        }, debounce=False)
 
         # 获取目标语言
         task_config = task.config or {}
@@ -181,32 +187,42 @@ def process_ocr_task(task_id):
                         access_token=task.git_repository.token,
                     )
                 )
+                notify_ocr_task_progress({
+                    "id": task_id,
+                    "remark": "正在下载Git仓库...",
+                }, debounce=False)
                 result: DownloadResult = git_service.download_files_with_git_clone(
                     repo_base_dir=check_dir,
                     branch=task_config.get("branch", "main"),
                 )
                 if not result.success:
                     logger.error(f"Git仓库下载失败: {result.message}")
-                    task.status = 'failed'
-                    task.end_time = timezone.now()
-                    task.remark = f"Git仓库下载失败: {result.message}"
-                    task.save()
+                    notify_ocr_task_progress({
+                        "id": task_id,
+                        "status": 'failed',
+                        "end_time": timezone.now(),
+                        "remark": f"Git仓库下载失败: {result.message}",
+                    }, debounce=False)
                     return {"status": "error", "message": f"Git仓库下载失败: {result.message}"}
             else:
                 logger.error(f"不支持的任务类型: {task.source_type}")
-                task.status = 'failed'
-                task.end_time = timezone.now()
-                task.remark = f"不支持的任务类型: {task.source_type}"
-                task.save()
+                notify_ocr_task_progress({
+                    "id": task_id,
+                    "status": 'failed',
+                    "end_time": timezone.now(),
+                    "remark": f"不支持的任务类型: {task.source_type}",
+                }, debounce=False)
                 return {"status": "error", "message": f"不支持的任务类型: {task.source_type}"}
 
         # 检查目标目录
         if not check_dir or not os.path.exists(check_dir):
             logger.error(f"OCR待检测目录不存在: {check_dir}")
-            task.status = 'failed'
-            task.end_time = timezone.now()
-            task.remark = f"OCR待检测目录不存在: {check_dir}"
-            task.save()
+            notify_ocr_task_progress({
+                "id": task_id,
+                "status": 'failed',
+                "end_time": timezone.now(),
+                "remark": f"OCR待检测目录不存在: {check_dir}",
+            }, debounce=False)
             return {"status": "error", "message": f"OCR待检测目录不存在: {check_dir}"}
 
         # step4. 执行主逻辑
@@ -265,10 +281,12 @@ def process_ocr_task(task_id):
 
         if isinstance(rounds_res, dict) and rounds_res.get('error'):
             logger.error(f"多轮识别失败: {rounds_res.get('error')}")
-            task.status = 'failed'
-            task.end_time = timezone.now()
-            task.remark = f"多轮识别失败: {rounds_res.get('error')}"
-            task.save()
+            notify_ocr_task_progress({
+                "id": task_id,
+                "status": 'failed',
+                "end_time": timezone.now(),
+                "remark": f"多轮识别失败: {rounds_res.get('error')}",
+            }, debounce=False)
             return {"status": "error", "message": rounds_res.get('error')}
 
         logger.warning(
@@ -384,6 +402,12 @@ def process_ocr_task(task_id):
         # 完成进度
         try:
             multi_thread_ocr.finish_progress('completed')
+            notify_ocr_task_progress({
+                "id": task_id,
+                "status": 'completed',
+                "end_time": timezone.now(),
+                "remark": "任务执行完毕！",
+            }, debounce=False)
         except Exception as _fin_err:
             logger.warning(f"完成进度更新失败(忽略): {_fin_err}")
 
@@ -397,11 +421,12 @@ def process_ocr_task(task_id):
 
         # 更新任务状态为失败
         try:
-            task = OCRTask.objects.get(id=task_id)
-            task.status = 'failed'
-            task.end_time = timezone.now()
-            task.remark = f"任务处理失败: {str(e)}"
-            task.save()
+            notify_ocr_task_progress({
+                "id": task_id,
+                "status": 'failed',
+                "end_time": timezone.now(),
+                "remark": f"任务处理失败: {str(e)}",
+            }, debounce=False)
         except Exception:
             pass
 

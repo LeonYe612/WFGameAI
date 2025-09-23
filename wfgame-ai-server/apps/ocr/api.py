@@ -845,6 +845,7 @@ class OCRHistoryAPIView(APIView):
             # 直接导出 helper 风格的 xlsx（替换旧CSV导出逻辑）
             xbytes, fname = _export_helper_xlsx(request, results, str(task_id), task_name=(task.name or str(task.id)))
             response = HttpResponse(xbytes, content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            response["Access-Control-Expose-Headers"] = "Content-Disposition"
             response["Content-Disposition"] = f"attachment; filename={fname}"
             return response
 

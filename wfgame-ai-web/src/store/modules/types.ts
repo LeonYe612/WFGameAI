@@ -50,6 +50,7 @@ export type userType = {
   currentPage?: number;
   isRemembered?: boolean;
   loginDay?: number;
+  sseState?: number;
 };
 
 export type teamType = {

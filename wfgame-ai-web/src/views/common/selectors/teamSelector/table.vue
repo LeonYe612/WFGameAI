@@ -5,7 +5,7 @@ import { ZoomIn, ZoomOut, Refresh } from "@element-plus/icons-vue";
 import FileIcon from "@/assets/svg/file.svg?component";
 import TeamIcon from "@/assets/svg/team.svg?component";
 import { useSysTeamManagement } from "@/views/sys/team/utils/hook";
-import { useTeamGlobalState } from "@/views/team/mine/utils/teamStoreStateHook";
+import { useTeamGlobalState } from "@/views/team/hooks/teamStoreStateHook";
 
 defineOptions({
   name: "TeamSelectorTable"

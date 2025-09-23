@@ -35,13 +35,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref } from "vue";
 import { Camera } from "@element-plus/icons-vue";
 import MainContent from "@/layout/components/mainContent/index.vue";
 import OcrTaskHistory from "./components/OcrTaskHistory.vue";
 import RepoManager from "./components/RepoManager.vue";
 import OcrTaskDialog from "./components/OcrTaskDialog.vue";
 import { useOcr } from "./utils/hook";
+import { useTeamGlobalState } from "@/views/team/hooks/teamStoreStateHook";
 
 const dialogVisible = ref(false);
 const taskHistoryRef = ref<InstanceType<typeof OcrTaskHistory> | null>(null);
@@ -59,7 +60,11 @@ const handleCreateTask = () => {
   dialogVisible.value = true;
 };
 
-onMounted(async () => {
+const refreshHistory = () => {
   taskHistoryRef.value?.refresh();
-});
+};
+
+// 监听团队切换
+const { initWatchTeamId } = useTeamGlobalState();
+initWatchTeamId(refreshHistory);
 </script>

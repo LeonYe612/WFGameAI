@@ -80,7 +80,7 @@
         v-loading="loading"
         element-loading-text="正在加载..."
       >
-        <el-scrollbar>
+        <el-scrollbar ref="scrollbarRef">
           <!-- 图片预览 -->
           <el-image-viewer
             ref="imageViewer"
@@ -133,7 +133,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch, computed } from "vue";
+import { ref, reactive, watch, computed, nextTick } from "vue";
 import {
   type OcrResult,
   ocrTaskApi,
@@ -166,10 +166,18 @@ const pagination = reactive({
 
 const showPreview = ref(false);
 const imageViewer = ref(null);
+const scrollbarRef = ref(null);
 const viewerIndex = ref(0);
 const viewerSrcList = computed(() =>
   results.value.map(item => mediaUrl(item.image_path))
 );
+
+// 滚动到顶部
+const scrollToTop = () => {
+  if (scrollbarRef.value) {
+    scrollbarRef.value.setScrollTop(0);
+  }
+};
 
 const updateResultType = (item: OcrResult, newType: string) => {
   item.result_type = newType;
@@ -219,15 +227,19 @@ const handleReset = () => {
   handleSearch();
 };
 
-const handleSizeChange = (size: number) => {
+const handleSizeChange = async (size: number) => {
   pagination.pageSize = size;
   pagination.currentPage = 1; // 回到第一页
-  fetchResults();
+  await fetchResults();
+  await nextTick(); // 等待 DOM 更新完成
+  scrollToTop(); // 滚动到顶部
 };
 
-const handlePageChange = (page: number) => {
+const handlePageChange = async (page: number) => {
   pagination.currentPage = page;
-  fetchResults();
+  await fetchResults();
+  await nextTick(); // 等待 DOM 更新完成
+  scrollToTop(); // 滚动到顶部
 };
 
 const handleCommand = async (command: string) => {

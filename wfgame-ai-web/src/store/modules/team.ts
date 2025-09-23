@@ -9,7 +9,7 @@ import { resetRouter } from "@/router";
 import { gmTypeEnum } from "@/utils/enums";
 import { useUserStore } from "./user";
 import { updateUserKey } from "@/utils/auth";
-import { connect } from "@/hooks/useSSE";
+import { connect } from "@/layout/components/sseState/useSSE";
 
 const userStore = useUserStore();
 

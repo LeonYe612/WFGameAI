@@ -7,7 +7,7 @@ import {
   CircleCloseFilled
 } from "@element-plus/icons-vue";
 import { ReNormalCountTo } from "@/components/ReCountTo";
-import { useTeamGlobalState } from "@/views/team/mine/utils/teamStoreStateHook";
+import { useTeamGlobalState } from "@/views/team/hooks/teamStoreStateHook";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 // import { superRequest } from "@/utils/request";

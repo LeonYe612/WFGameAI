@@ -27,7 +27,7 @@ docs/
 !wfgame-ai-web/src/assets/*/*.svg
 !wfgame-ai-web/src/assets/**/*.png
 
-!wfgame-ai-server/staticfiles/dist/*.svg
+wfgame-ai-server/staticfiles/dist/*.*
 
 # IDE
 .vscode/

@@ -8,6 +8,7 @@ import topCollapse from "./sidebar/topCollapse.vue";
 import LogoutCircleRLine from "@iconify-icons/ri/logout-circle-r-line";
 import Setting from "@iconify-icons/ri/settings-3-line";
 import ActiveTeam from "./activeTeam/index.vue";
+import SSEState from "@/layout/components/sseState/index.vue";
 import { toRaw } from "vue";
 
 const {
@@ -48,6 +49,10 @@ const {
       <!-- <Notice id="header-notice" /> -->
       <!-- 激活团队 -->
       <ActiveTeam />
+      <el-divider direction="vertical" />
+      <!-- SSE连接状态 -->
+      <SSEState />
+      <el-divider direction="vertical" />
       <!-- 退出登录 -->
       <el-dropdown trigger="click">
         <span class="select-none el-dropdown-link navbar-bg-hover">
