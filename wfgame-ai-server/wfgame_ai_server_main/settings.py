@@ -94,6 +94,9 @@ WSGI_APPLICATION = "wfgame_ai_server_main.wsgi.application"
 # 全局CONFIG单例对象
 CFG = ConfigManager()
 
+# 根据环境标识（由 AI_ENV 或启动脚本注入）
+ENV_NAME = (os.environ.get("AI_ENV", "dev") or "dev").strip()
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
@@ -168,15 +171,27 @@ REST_FRAMEWORK = {
 
 # CORS设置
 # 生产环境建议指定具体的允许域名
-CORS_ALLOW_ALL_ORIGINS = True  # 开发环境设置，生产环境应该改为False
+CORS_ALLOW_ALL_ORIGINS = True  # 开发环境默认放开
 CORS_ALLOW_CREDENTIALS = True
+
+# 根据环境收紧CORS/CSRF（从配置读取前端来源）
+try:
+    FRONT_ORIGIN = CFG.get('auth', 'sso_web_host', fallback='').strip()
+except Exception:
+    FRONT_ORIGIN = ''
+
+if ENV_NAME == 'prod':
+    CORS_ALLOW_ALL_ORIGINS = False
+    CORS_ALLOWED_ORIGINS = [FRONT_ORIGIN] if FRONT_ORIGIN else []
+    # CSRF 信任来源需包含 scheme
+    CSRF_TRUSTED_ORIGINS = [FRONT_ORIGIN] if FRONT_ORIGIN else []
+    # HTTPS 环境下开启安全Cookie
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
 
 # 生产环境使用以下配置替代 CORS_ALLOW_ALL_ORIGINS = True
 # CORS_ALLOWED_ORIGINS = [
-#     "http://localhost:3000",
-#     "http://127.0.0.1:3000",
-#     "http://localhost:8080",
-#     "http://127.0.0.1:8080",
+#     "https://your-frontend.example.com",
 # ]
 
 # CORS额外配置
@@ -279,5 +294,16 @@ YOLO_CONFIDENCE_THRESHOLD = 0.5
 # ai业务接口
 REDIS_CFG = get_redis_conn("redis")
 REDIS = RedisHelper(REDIS_CFG)
-# ai_celery配置
-CELERY_REDIS_CFG = get_redis_conn("celery")
+
+
+# ai_celery配置（基于环境隔离）
+# 优先尝试 [celery_{ENV_NAME}]（如 celery_dev/celery_prod），不存在再回退 [celery]
+CELERY_SECTION = f"celery_{ENV_NAME}"
+try:
+    CELERY_REDIS_CFG = get_redis_conn(CELERY_SECTION)
+except Exception as e:
+    print(f"警告: 未找到 {CELERY_SECTION} 配置，回退到 [celery] 配置: {e}")
+    CELERY_REDIS_CFG = get_redis_conn("celery")
+
+# 任务默认队列名带环境后缀，确保与 worker -Q 一致
+CELERY_TASK_DEFAULT_QUEUE = f"ai_queue_{ENV_NAME}"
