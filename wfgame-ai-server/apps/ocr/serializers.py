@@ -74,6 +74,7 @@ class OCRResultSerializer(serializers.ModelSerializer):
             "id",
             "task",
             "task_id",
+            "image_hash",
             "image_path",
             "texts",
             "languages",

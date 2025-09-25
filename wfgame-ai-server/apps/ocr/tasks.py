@@ -404,8 +404,10 @@ def process_ocr_task(task_id):
         new_results = []
         total_matches = 0
         for item in ocr_results:
+            img_full_path = os.path.join(media_root, item['image_path'])
             obj = OCRResult(
                 task=task,
+                image_hash=ocr_service.calculate_image_hash(img_full_path),
                 image_path=item.get('image_path', '').replace('\\', '/'),
                 texts=item.get('texts', []),
                 languages=item.get('languages', {}),

@@ -4,10 +4,10 @@
     class="result-card"
     :style="{ background: getCardColor(result.result_type) }"
   >
-    <div class="card-content">
+    <div class="card-content cursor-pointer">
       <div class="image-container">
         <el-image
-          class="cursor-pointer"
+          :title="mediaUrl(result.image_path)"
           style="width: 100%; height: 250px"
           :src="mediaUrl(result.image_path)"
           fit="scale-down"
@@ -19,10 +19,11 @@
         <h3 class="image-name" :title="getImgName(result.image_path)">
           {{ getImgName(result.image_path) }}
         </h3>
+
         <p class="info-item">
           识别结果:
           <span
-            class="text-orange-500 cursor-pointer"
+            class="text-orange-500"
             :title="getResultText(result)"
             @click="handleCopyText(getResultText(result))"
           >
@@ -41,11 +42,20 @@
             {{ result.languages || "-" }}
           </span>
         </p>
-        <p class="info-item" :title="result.image_path">
+        <p v-if="false" class="info-item" :title="result.image_path">
           路径:
           <a :href="mediaUrl(result.image_path)" target="_blank">
             {{ result.image_path || "-" }}
           </a>
+        </p>
+        <p class="info-item" :title="result.image_path">
+          哈希值:
+          <span
+            :title="result.image_hash"
+            @click="handleCopyText(result.image_hash)"
+          >
+            {{ result.image_hash || "-" }}
+          </span>
         </p>
         <el-radio-group
           :model-value="props.result.result_type"

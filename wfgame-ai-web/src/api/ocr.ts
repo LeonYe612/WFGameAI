@@ -55,6 +55,7 @@ export interface OcrResult {
   id: number;
   task_id: string;
   image_path: string;
+  image_hash: string;
   detected_text?: string[]; // 兼容旧字段
   texts: string[];
   languages: Record<string, any>;

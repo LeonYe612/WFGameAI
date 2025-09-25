@@ -129,7 +129,11 @@
             <el-text
               :title="row.remark"
               :type="getEnumEntry(taskStatusEnum, row.status)?.type"
-              style="font-size: 14px; line-height: normal"
+              style="
+                font-size: 14px;
+                line-height: normal;
+                white-space: pre-line;
+              "
             >
               {{ row.remark || "-" }}
             </el-text>
@@ -258,17 +262,20 @@ import { copyText } from "@/utils/utils";
 import { useNavigate } from "@/views/common/utils/navHook";
 import { useOcr } from "@/views/ocr/utils/hook";
 import { useSSE, SSEEvent } from "@/layout/components/sseState/useSSE";
+import { debounce } from "@/utils/utils";
 
 const { on } = useSSE();
 
+const updateTask = (updatedTask: OcrTask) => {
+  const index = tableData.value.findIndex(task => task.id === updatedTask.id);
+  if (index !== -1) {
+    tableData.value[index] = { ...tableData.value[index], ...updatedTask };
+  }
+};
 // 监听 OCR 任务更新事件
 on(SSEEvent.OCR_TASK_UPDATE, (data: OcrTask) => {
   console.log("收到 OCR 任务更新事件:", data);
-  // 如果当前任务在列表中，更新其状态
-  const index = tableData.value.findIndex(task => task.id === data.id);
-  if (index !== -1) {
-    tableData.value[index] = { ...tableData.value[index], ...data };
-  }
+  debounce(updateTask, 100)(data);
 });
 
 const { navigateToOcrResult } = useNavigate();

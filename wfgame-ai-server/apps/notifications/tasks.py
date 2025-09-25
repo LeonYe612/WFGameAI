@@ -83,5 +83,5 @@ def notify_ocr_task_progress_debounced(update_vals: dict, delay: int = 3):
     cache.set(cache_key, current_time, timeout=delay * 2)
     
     # 投递任务
-    return notify_ocr_task_progress_immediately.delay(update_vals.copy())
+    return notify_ocr_task_progress_immediately(update_vals.copy())
 

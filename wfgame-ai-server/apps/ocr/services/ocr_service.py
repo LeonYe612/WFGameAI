@@ -2,6 +2,7 @@
 OCR识别服务
 封装PP-OCRv5引擎，提供图片文字识别功能
 """
+import hashlib
 import os
 import configparser
 import logging
@@ -23,6 +24,7 @@ from .path_utils import PathUtils
 import threading
 from paddleocr import PaddleOCR
 import shutil
+from apps.notifications.tasks import notify_ocr_task_progress
 
 import warnings
 warnings.filterwarnings("ignore", message="iCCP: known incorrect sRGB profile")
@@ -220,14 +222,16 @@ class OCRService:
     _common_params_logged = False
     _common_params_task_id = None
 
-    def __init__(self, lang: str = "ch"):
+    def __init__(self, lang: str = "ch", id: Optional[str] = None):
         """
         初始化OCR服务
         
         Args:
             lang: 识别语言，默认为中文
+            id: OCR任务ID
         """
         self.lang = lang
+        self.id = id
 
         # 初始化OCR实例池
         self.ocr_pool = OCRInstancePool()
@@ -884,6 +888,19 @@ class OCRService:
         return ocr_inst
 
     @staticmethod
+    def calculate_image_hash(image_path) -> str:
+        """计算图片的MD5哈希值，用于唯一标识图片内容。"""
+        hash_md5 = hashlib.md5()
+        try:
+            with open(image_path, "rb") as f:
+                for chunk in iter(lambda: f.read(4096), b""):
+                    hash_md5.update(chunk)
+            return hash_md5.hexdigest()
+        except Exception:
+            return ""
+
+
+    @staticmethod
     def _round_signature(p: Dict[str, Any]) -> str:
         """基于轮次参数生成稳定签名，用于报表与日志对齐实际轮次。
         仅包含会影响识别口径的关键字段。
@@ -934,6 +951,7 @@ class OCRService:
         if not image_paths:
             return {"error": "未发现图片"}
 
+        total_images = len(image_paths)
         # 预处理：基于配置抛弃过小分辨率图片（按短边像素阈值）
         try:
             cfg = settings.CFG._config
@@ -972,10 +990,14 @@ class OCRService:
                     # 读取失败不影响主流程，保留以便后续统一按 miss 处理
                     kept_paths.append(p)
             try:
-                logger.warning(
-                    "预过滤：按短边阈值丢弃=%s 张，阈值=%s像素，保留=%s 张",
-                    int(dropped), int(pre_min_side), int(len(kept_paths))
-                )
+                remark = (f"预过滤：按短边阈值丢弃={int(dropped)} 张，"
+                          f"阈值={int(pre_min_side)}像素，保留={int(len(kept_paths))} 张")
+                logger.warning(remark)
+                notify_ocr_task_progress({
+                    "id": self.id,
+                    "processed_images": total_images - len(kept_paths),
+                    "remark": remark,
+                })
             except Exception:
                 pass
             image_paths = kept_paths
@@ -987,6 +1009,10 @@ class OCRService:
                 }
 
         # 预分流：按 min_side 的 P95
+        notify_ocr_task_progress({
+            "id": self.id,
+            "remark": f"正在 P95 预分流，共 {len(image_paths)} 张图片",
+        })
         try:
             min_sides: List[int] = []
             name_to_path: Dict[str, str] = {}
@@ -1090,8 +1116,15 @@ class OCRService:
         # 改为“按图片逐轮尝试”：每张图仅解码一次，命中立即早停
         remain_inputs = list(cur_inputs)
         final_miss_paths: List[str] = []
+        total_processed = 0
 
         for p in remain_inputs:
+            total_processed += 1
+            notify_ocr_task_progress({
+                "id": self.id,
+                "processed_images": total_processed,
+                "remark": f"正在识别第 {total_processed} 张 / 共 {total_images} 张",
+            }, debounce=True)
             try:
                 img = self._load_image_unicode(p)
                 if img is None:
@@ -1160,6 +1193,11 @@ class OCRService:
                     hit_round = ridx
                     round_hit_counter[ridx] = round_hit_counter.get(ridx, 0) + 1
                     total_hit += 1
+                    notify_ocr_task_progress({
+                        "id": self.id,
+                        "matched_images": total_hit,
+                    }, debounce=True)
+
                     if os.path.basename(p) not in first_hit_info:
                         try:
                             texts = [t for (_, t, s) in kept_scored]
