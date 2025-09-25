@@ -142,7 +142,7 @@ def process_ocr_task(task_id):
             "id": task_id,
             "status": 'running',
             "start_time": timezone.now(),
-        }, debounce=False)
+        })
 
         # 获取目标语言
         task_config = task.config or {}
@@ -189,8 +189,8 @@ def process_ocr_task(task_id):
                 )
                 notify_ocr_task_progress({
                     "id": task_id,
-                    "remark": "正在下载Git仓库...",
-                }, debounce=False)
+                    "remark": "正在同步 Git 仓库...",
+                })
                 result: DownloadResult = git_service.download_files_with_git_clone(
                     repo_base_dir=check_dir,
                     branch=task_config.get("branch", "main"),
@@ -202,7 +202,7 @@ def process_ocr_task(task_id):
                         "status": 'failed',
                         "end_time": timezone.now(),
                         "remark": f"Git仓库下载失败: {result.message}",
-                    }, debounce=False)
+                    })
                     return {"status": "error", "message": f"Git仓库下载失败: {result.message}"}
             else:
                 logger.error(f"不支持的任务类型: {task.source_type}")
@@ -211,7 +211,7 @@ def process_ocr_task(task_id):
                     "status": 'failed',
                     "end_time": timezone.now(),
                     "remark": f"不支持的任务类型: {task.source_type}",
-                }, debounce=False)
+                })
                 return {"status": "error", "message": f"不支持的任务类型: {task.source_type}"}
 
         # 检查目标目录
@@ -222,18 +222,18 @@ def process_ocr_task(task_id):
                 "status": 'failed',
                 "end_time": timezone.now(),
                 "remark": f"OCR待检测目录不存在: {check_dir}",
-            }, debounce=False)
+            })
             return {"status": "error", "message": f"OCR待检测目录不存在: {check_dir}"}
 
         # step4. 执行主逻辑
         # 初始化多线程OCR服务
         logger.warning(f"初始化多线程OCR服务 ( 最大工作线程: {ocr_max_workers})")
-        multi_thread_ocr = MultiThreadOCR(
-            task,
-            lang="ch",  # 默认使用中文模型
-            max_workers=ocr_max_workers,  # 使用配置的工作线程数
-            match_languages=target_languages  # 将命中判定语言动态传入，避免硬编码
-        )
+        # multi_thread_ocr = MultiThreadOCR(
+        #     task,
+        #     lang="ch",  # 默认使用中文模型
+        #     max_workers=ocr_max_workers,  # 使用配置的工作线程数
+        #     match_languages=target_languages  # 将命中判定语言动态传入，避免硬编码
+        # )
 
         # 切换为：调用服务层多轮识别（基于内置参数集），并按需输出可视化/复制/标注
         try:
@@ -244,14 +244,20 @@ def process_ocr_task(task_id):
         logger.warning(f"开始多轮识别目录({_rounds_num}轮): {check_dir}")
         start_time = time.time()
         # 初始化进度(以待处理图片总数为准)
+        total_images_for_progress = 0
         try:
             img_exts_init = {'.jpg', '.jpeg', '.png', '.bmp', '.webp', '.tif', '.tiff'}
-            total_images_for_progress = 0
             for root_dir, _, files in os.walk(check_dir):
                 for fname in files:
                     if os.path.splitext(fname)[1].lower() in img_exts_init:
                         total_images_for_progress += 1
-            multi_thread_ocr.init_progress(total_images_for_progress)
+            # 更新照片总数
+            notify_ocr_task_progress({
+                "id": task_id,
+                "total_images": total_images_for_progress,
+                "remark": f"共检测到 {total_images_for_progress} 张图片, 开始识别...",
+            })
+            # multi_thread_ocr.init_progress(total_images_for_progress)
         except Exception as _init_prog_err:
             logger.warning(f"初始化进度失败(忽略): {_init_prog_err}")
 
@@ -269,7 +275,7 @@ def process_ocr_task(task_id):
         except Exception:
             enable_annotate = False
 
-        ocr_service = OCRService(lang="ch")
+        ocr_service = OCRService(lang="ch", id=task_id)
         rounds_res = ocr_service.recognize_rounds_batch(
             check_dir,
             enable_draw=enable_draw,
@@ -286,13 +292,17 @@ def process_ocr_task(task_id):
                 "status": 'failed',
                 "end_time": timezone.now(),
                 "remark": f"多轮识别失败: {rounds_res.get('error')}",
-            }, debounce=False)
+            })
             return {"status": "error", "message": rounds_res.get('error')}
 
         logger.warning(
             f"多轮识别完成，总命中={int(rounds_res.get('total_hit', 0))} 最终未命中={int(rounds_res.get('final_miss', 0))}，"
             f"耗时 {elapsed_time:.2f} 秒，输出根目录={rounds_res.get('rounds_root')}"
         )
+        notify_ocr_task_progress({
+            "id": task_id,
+            "remark": f"多轮识别完成，耗时 {elapsed_time:.2f} 秒, 结果统计中...",
+        })
 
         # 构建与旧流程兼容的结果列表（用于写库与汇总）
         # 1) 收集目录内图片相对路径，建立 basename -> relative_path 映射
@@ -362,29 +372,6 @@ def process_ocr_task(task_id):
                 'pic_resolution': pic_resolution,
             })
 
-        # 3) 写库（复用原批量写库逻辑）
-        if ocr_results:
-            multi_thread_ocr.bulk_insert_to_db(ocr_results)
-            # 进度上报：逐条更新 executed/success/fail/matched
-            try:
-                for item in ocr_results:
-                    texts_present = bool(item.get('texts'))
-                    if texts_present:
-                        multi_thread_ocr.update_progress_success(
-                            bool(item.get('has_match', False))
-                        )
-                    else:
-                        multi_thread_ocr.update_progress_fail()
-            except Exception as _upd_err:
-                logger.warning(f"进度更新失败(忽略): {_upd_err}")
-        else:
-            logger.warning("多轮识别未生成任何结果项")
-
-        # 生成汇总报告
-        logger.warning("开始生成汇总报告")
-        _generate_summary_report(task, ocr_results, target_languages)
-        logger.warning("汇总报告生成完成")
-
         # 持久化首轮命中参数 first_hit_info，供导出填充
         try:
             first_hit_info = rounds_res.get('first_hit_info', {}) or {}
@@ -399,15 +386,61 @@ def process_ocr_task(task_id):
         except Exception as _fh_err:
             logger.warning(f"写入首轮命中参数失败(忽略): {_fh_err}")
 
-        # 完成进度
-        try:
-            multi_thread_ocr.finish_progress('completed')
+        if not ocr_results:
+            logger.warning("未检测到任何图片，任务结束")
             notify_ocr_task_progress({
                 "id": task_id,
                 "status": 'completed',
                 "end_time": timezone.now(),
-                "remark": "任务执行完毕！",
-            }, debounce=False)
+                "total_images": total_scanned,
+                "processed_images": 0,
+                "matched_images": 0,
+                "match_rate": 0.0,
+                "remark": "未检测到任何图片，任务结束",
+            })
+            return {"status": "success", "task_id": task_id}
+
+        # 批量记录 OCRResult & 统计最终命中数
+        new_results = []
+        total_matches = 0
+        for item in ocr_results:
+            obj = OCRResult(
+                task=task,
+                image_path=item.get('image_path', '').replace('\\', '/'),
+                texts=item.get('texts', []),
+                languages=item.get('languages', {}),
+                has_match=item.get('has_match', False),
+                confidence=item.get('confidence', 0.0),
+                processing_time=item.get('processing_time', 0),
+                pic_resolution=item.get('pic_resolution', ''),
+                team_id=task.team_id
+            )
+            new_results.append(obj)
+            texts_present = bool(item.get('texts'))
+            if texts_present and item.get('has_match', False):
+                total_matches += 1
+
+        OCRResult.objects.bulk_create(new_results)
+        logger.warning(f"批量插入 {len(new_results)} 条OCR结果到数据库")
+
+
+        # 生成汇总报告
+        logger.warning("开始生成汇总报告")
+        _generate_summary_report(task, ocr_results, target_languages)
+        logger.warning("汇总报告生成完成")
+
+        # 完成进度
+        try:
+            match_rate = round(total_matches / total_images_for_progress * 100, 2) if total_images_for_progress > 0 else 0.0
+            notify_ocr_task_progress({
+                "id": task_id,
+                "status": 'completed',
+                "end_time": timezone.now(),
+                "matched_images": total_matches,
+                "processed_images": total_images_for_progress,
+                "match_rate": match_rate,
+                "remark": "✅ 任务执行完毕",
+            })
         except Exception as _fin_err:
             logger.warning(f"完成进度更新失败(忽略): {_fin_err}")
 
@@ -426,7 +459,7 @@ def process_ocr_task(task_id):
                 "status": 'failed',
                 "end_time": timezone.now(),
                 "remark": f"任务处理失败: {str(e)}",
-            }, debounce=False)
+            })
         except Exception:
             pass
 

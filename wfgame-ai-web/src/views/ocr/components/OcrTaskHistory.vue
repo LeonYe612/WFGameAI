@@ -56,43 +56,51 @@
             </el-link>
           </template>
         </el-table-column>
-        <el-table-column
-          prop="source"
-          label="数据来源"
-          min-width="200"
-          show-overflow-tooltip
-        >
+        <el-table-column prop="source" label="数据来源" width="100">
           <template #default="{ row }">
             <div class="source-info">
-              <el-tag
-                :type="row.source_type === 'git' ? 'success' : 'warning'"
-                size="small"
-                class="source-type-tag"
+              <el-popover
+                placement="top"
+                trigger="hover"
+                width="300"
+                :content="getSourceDisplay(row)"
               >
-                {{ row.source_type === "git" ? "Git" : "Upload" }}
-              </el-tag>
-              <span>{{ getSourceDisplay(row) }}</span>
+                <template #reference>
+                  <el-tag
+                    :type="row.source_type === 'git' ? 'success' : 'warning'"
+                    size="small"
+                    effect="plain"
+                    class="source-type-tag"
+                  >
+                    {{ row.source_type === "git" ? "Git" : "Upload" }}
+                  </el-tag>
+                </template>
+              </el-popover>
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="status" label="状态" width="100">
+        <el-table-column prop="status" label="任务状态" width="120">
           <template #default="{ row }">
             <el-tag
-              :type="getEnumEntry(taskStatusEnum, row.status)?.type"
-              size="small"
+              style="width: 80px; padding: 4px"
+              :type="getEnumEntry(taskStatusEnum, row.status)?.type || 'info'"
+              effect="dark"
+              round
             >
               {{ getLabel(taskStatusEnum, row.status) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="progress" label="进度" width="200">
+        <el-table-column prop="progress" label="执行进度" width="240">
           <template #default="{ row }">
             <div>
               <el-progress
                 v-if="row.status === taskStatusEnum.RUNNING.value"
                 text-inside
-                :percentage="row.progress || 0"
-                :stroke-width="24"
+                :percentage="
+                  parseInt((row.processed_images / row.total_images) * 100) || 0
+                "
+                :stroke-width="25"
                 striped
                 striped-flow
                 :duration="15"
@@ -102,21 +110,33 @@
                 text-inside
                 :percentage="100"
                 status="success"
-                :stroke-width="24"
+                :stroke-width="25"
+                striped
               />
               <el-progress
                 v-else-if="row.status === taskStatusEnum.FAILED.value"
                 text-inside
                 :percentage="100"
                 status="exception"
-                :stroke-width="24"
+                :stroke-width="25"
+                striped
               />
-              <div class="text-xs text-gray-500 mt-1">▪ {{ row.remark }}</div>
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="total_images" label="图片总数" width="100" />
-        <el-table-column prop="matched_images" label="命中数" width="100" />
+        <el-table-column prop="remark" label="进度说明">
+          <template #default="{ row }">
+            <el-text
+              :title="row.remark"
+              :type="getEnumEntry(taskStatusEnum, row.status)?.type"
+              style="font-size: 14px; line-height: normal"
+            >
+              {{ row.remark || "-" }}
+            </el-text>
+          </template>
+        </el-table-column>
+        <el-table-column prop="total_images" label="总图片数" width="100" />
+        <el-table-column prop="matched_images" label="总命中数" width="100" />
         <el-table-column
           prop="match_rate"
           label="匹配率"
@@ -237,6 +257,19 @@ import {
 import { copyText } from "@/utils/utils";
 import { useNavigate } from "@/views/common/utils/navHook";
 import { useOcr } from "@/views/ocr/utils/hook";
+import { useSSE, SSEEvent } from "@/layout/components/sseState/useSSE";
+
+const { on } = useSSE();
+
+// 监听 OCR 任务更新事件
+on(SSEEvent.OCR_TASK_UPDATE, (data: OcrTask) => {
+  console.log("收到 OCR 任务更新事件:", data);
+  // 如果当前任务在列表中，更新其状态
+  const index = tableData.value.findIndex(task => task.id === data.id);
+  if (index !== -1) {
+    tableData.value[index] = { ...tableData.value[index], ...data };
+  }
+});
 
 const { navigateToOcrResult } = useNavigate();
 const { deleteTask, downloadTask } = useOcr();
@@ -423,6 +456,7 @@ defineExpose({
 }
 .source-type-tag {
   flex-shrink: 0;
+  cursor: pointer;
 }
 .creation-info {
   display: flex;

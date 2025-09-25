@@ -211,14 +211,7 @@ class OCRTaskAPIView(APIView):
         action = request.data.get("action", "")
 
         if action == "list":
-            project_id = request.data.get("project_id")
-            if project_id:
-                tasks = OCRTask.objects.filter(project_id=project_id).order_by(
-                    "-created_time"
-                )
-            else:
-                tasks = OCRTask.objects.all().order_by("-created_time")
-
+            tasks = OCRTask.objects.all().order_by("-created_time")
             serializer = OCRTaskSerializer(tasks, many=True)
             return api_response(data=serializer.data)
 
@@ -241,40 +234,40 @@ class OCRTaskAPIView(APIView):
                 task = OCRTask.objects.get(id=task_id)
                 serializer = OCRTaskSerializer(task)
 
-                # 获取实时进度数据
-                key = f'ai_ocr_progress:{task.id}'
-                progress_data = settings.REDIS.hgetall(key)
+                # # 获取实时进度数据
+                # key = f'ai_ocr_progress:{task.id}'
+                # progress_data = settings.REDIS.hgetall(key)
+                #
+                # total_images = int(progress_data.get('total', 0))
+                # matched_images = int(progress_data.get('matched', 0))
+                # executed_images = int(progress_data.get('executed', 0))
+                # match_rate = (matched_images / total_images * 100) if total_images > 0 else 0
+                # # 前 10% 用于准备阶段，后 90% 用于处理阶段
+                # font_default_progress = 10.0 # 默认进度10%
+                # progress = int(progress_data.get('executed', 0)) / total_images * 100 * 0.9 + font_default_progress if total_images > 0 else font_default_progress
+                # response_data = serializer.data
+                # response_data.update({
+                #     'status': progress_data.get('status', ''),
+                #     'total_images': total_images,
+                #     'matched_images': matched_images,
+                #     'executed_images': executed_images,
+                #     'match_rate': round(match_rate, 2),
+                #     'progress': round(progress, 2),
+                #     'start_time': float(progress_data.get('start_time', 0)),
+                #     'end_time': float(progress_data.get('end_time', 0))
+                # })
+                #
+                # # 汇总报告
+                # report_file = task.config.get('report_file')
+                # if report_file and os.path.exists(report_file):
+                #     with open(report_file, 'r', encoding='utf-8') as f:
+                #         report_content = f.read()
+                #     response_data['report'] = {
+                #         'content': report_content,
+                #         'file_path': report_file
+                #     }
 
-                total_images = int(progress_data.get('total', 0))
-                matched_images = int(progress_data.get('matched', 0))
-                executed_images = int(progress_data.get('executed', 0))
-                match_rate = (matched_images / total_images * 100) if total_images > 0 else 0
-                # 前 10% 用于准备阶段，后 90% 用于处理阶段
-                font_default_progress = 10.0 # 默认进度10%
-                progress = int(progress_data.get('executed', 0)) / total_images * 100 * 0.9 + font_default_progress if total_images > 0 else font_default_progress
-                response_data = serializer.data
-                response_data.update({
-                    'status': progress_data.get('status', ''),
-                    'total_images': total_images,
-                    'matched_images': matched_images,
-                    'executed_images': executed_images,
-                    'match_rate': round(match_rate, 2),
-                    'progress': round(progress, 2),
-                    'start_time': float(progress_data.get('start_time', 0)),
-                    'end_time': float(progress_data.get('end_time', 0))
-                })
-
-                # 汇总报告
-                report_file = task.config.get('report_file')
-                if report_file and os.path.exists(report_file):
-                    with open(report_file, 'r', encoding='utf-8') as f:
-                        report_content = f.read()
-                    response_data['report'] = {
-                        'content': report_content,
-                        'file_path': report_file
-                    }
-
-                return api_response(data=response_data)
+                return api_response(data=serializer.data)
             except OCRTask.DoesNotExist:
                 return api_response(
                     code=status.HTTP_404_NOT_FOUND,

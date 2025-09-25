@@ -9,7 +9,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def notify_ocr_task_progress(update_vals: dict, debounce: bool = True, delay: int = 3):
+def notify_ocr_task_progress(update_vals: dict, debounce: bool = False, delay: int = 2):
     """
     发送 OCR任务 进度通知
 
@@ -20,11 +20,11 @@ def notify_ocr_task_progress(update_vals: dict, debounce: bool = True, delay: in
     if debounce:
         return notify_ocr_task_progress_debounced(update_vals, delay=delay)
     else:
-        return notify_ocr_task_progress_immediately.delay(update_vals)
+        return notify_ocr_task_progress_immediately(update_vals)
 
 
-@shared_task(bind=True, max_retries=3)
-def notify_ocr_task_progress_immediately(self, update_vals: dict):
+@shared_task(queue="ai_queue")
+def notify_ocr_task_progress_immediately(update_vals: dict):
     """
     发送 OCR任务 进度通知
     :param update_vals: 更新值字典，包含进度等信息
@@ -47,12 +47,10 @@ def notify_ocr_task_progress_immediately(self, update_vals: dict):
         task.save()
 
         # 发送通知
-        send_message(OCRTaskSerializer(task).data, SSEEvent.OCR_TASK_UPDATE)
+        send_message(OCRTaskSerializer(task).data, SSEEvent.OCR_TASK_UPDATE.value)
         
     except Exception as exc:
         logger.error(f"Error in OCR task progress notification: {exc}")
-        # 重试任务
-        raise self.retry(exc=exc, countdown=60)
 
 
 def notify_ocr_task_progress_debounced(update_vals: dict, delay: int = 3):

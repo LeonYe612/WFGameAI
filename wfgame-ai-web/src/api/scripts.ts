@@ -1,4 +1,5 @@
 import { http } from "@/utils/http";
+import { baseUrlApi, ApiResult } from "./utils";
 
 // 脚本信息类型定义
 export interface ScriptInfo {
@@ -78,28 +79,28 @@ export interface ScriptSettings {
  * 获取脚本列表
  */
 export const listScripts = () => {
-  return http.request<ScriptInfo[]>("post", "/api/scripts/");
+  return http.request<ApiResult>("post", baseUrlApi("/scripts/"));
 };
 
 /**
  * 获取脚本分类列表
  */
 export const getScriptCategories = () => {
-  return http.request<ScriptCategory[]>("get", "/api/scripts/categories/");
+  return http.request<ApiResult>("get", baseUrlApi("/scripts/categories/"));
 };
 
 /**
  * 获取脚本统计信息
  */
 export const getScriptStats = () => {
-  return http.request<ScriptStats>("get", "/api/scripts/stats/");
+  return http.request<ApiResult>("get", baseUrlApi("/scripts/stats/"));
 };
 
 /**
  * 执行调试命令
  */
 export const executeDebugCommand = (command: string) => {
-  return http.request<CommandResult>("post", "/api/scripts/debug/", {
+  return http.request<ApiResult>("post", baseUrlApi("/scripts/debug/"), {
     data: { command }
   });
 };
@@ -108,7 +109,7 @@ export const executeDebugCommand = (command: string) => {
  * 回放脚本
  */
 export const replayScripts = (data: ReplayRequest) => {
-  return http.request<CommandResult>("post", "/api/scripts/replay/", {
+  return http.request<ApiResult>("post", baseUrlApi("/scripts/replay/"), {
     data
   });
 };
@@ -117,7 +118,7 @@ export const replayScripts = (data: ReplayRequest) => {
  * 获取脚本内容用于编辑
  */
 export const getScriptContent = (filename: string) => {
-  return http.request<ScriptInfo>("post", "/api/scripts/edit/", {
+  return http.request<ApiResult>("post", baseUrlApi("/scripts/edit/"), {
     data: { filename }
   });
 };
@@ -126,7 +127,7 @@ export const getScriptContent = (filename: string) => {
  * 保存脚本内容
  */
 export const saveScriptContent = (filename: string, content: string) => {
-  return http.request<CommandResult>("post", "/api/scripts/save/", {
+  return http.request<ApiResult>("post", baseUrlApi("/scripts/save/"), {
     data: { filename, content }
   });
 };
@@ -135,7 +136,7 @@ export const saveScriptContent = (filename: string, content: string) => {
  * 导入单个脚本
  */
 export const importScript = (formData: FormData) => {
-  return http.request<ImportResult>("post", "/api/scripts/import/", {
+  return http.request<ApiResult>("post", baseUrlApi("/scripts/import/"), {
     data: formData,
     headers: {
       "Content-Type": "multipart/form-data"
@@ -147,7 +148,7 @@ export const importScript = (formData: FormData) => {
  * 批量导入脚本
  */
 export const batchImportScripts = (formData: FormData) => {
-  return http.request<BatchImportResult>("post", "/api/scripts/import/", {
+  return http.request<ApiResult>("post", baseUrlApi("/scripts/import/"), {
     data: formData,
     headers: {
       "Content-Type": "multipart/form-data"
@@ -159,7 +160,7 @@ export const batchImportScripts = (formData: FormData) => {
  * 复制脚本
  */
 export const copyScript = (filename: string, newName: string) => {
-  return http.request<CommandResult>("post", "/api/scripts/copy/", {
+  return http.request<ApiResult>("post", baseUrlApi("/scripts/copy/"), {
     data: { filename, new_name: newName }
   });
 };
@@ -168,7 +169,7 @@ export const copyScript = (filename: string, newName: string) => {
  * 删除脚本
  */
 export const deleteScript = (filename: string) => {
-  return http.request<CommandResult>("post", "/api/scripts/delete/", {
+  return http.request<ApiResult>("post", baseUrlApi("/scripts/delete/"), {
     data: { filename }
   });
 };
@@ -180,9 +181,9 @@ export const updateScriptLogStatus = (
   filename: string,
   includeInLog: boolean
 ) => {
-  return http.request<CommandResult>(
+  return http.request<ApiResult>(
     "post",
-    "/api/scripts/update-log-status/",
+    baseUrlApi("/scripts/update-log-status/"),
     {
       data: { filename, include_in_log: includeInLog }
     }
