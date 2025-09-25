@@ -6,7 +6,7 @@ import os
 import configparser
 import logging
 from pathlib import Path
-from typing import List, Dict, Optional, Union, Any
+from typing import List, Dict, Optional, Union, Any, Tuple
 import datetime
 from django.conf import settings
 from django.utils import timezone
@@ -23,7 +23,6 @@ from .path_utils import PathUtils
 import threading
 from paddleocr import PaddleOCR
 import shutil
-from apps.notifications.tasks import notify_ocr_task_progress
 
 import warnings
 warnings.filterwarnings("ignore", message="iCCP: known incorrect sRGB profile")
@@ -221,16 +220,14 @@ class OCRService:
     _common_params_logged = False
     _common_params_task_id = None
 
-    def __init__(self, lang: str = "ch", id: str = None):
+    def __init__(self, lang: str = "ch"):
         """
         初始化OCR服务
         
         Args:
             lang: 识别语言，默认为中文
-            id: 任务ID，用于跟踪
         """
         self.lang = lang
-        self.id = id or str(uuid.uuid4())
 
         # 初始化OCR实例池
         self.ocr_pool = OCRInstancePool()
@@ -301,6 +298,48 @@ class OCRService:
             fn = getattr(cv2, 'imwrite', None)
             if fn is not None:
                 fn(path, img)
+        except Exception:
+            pass
+
+    def _draw_visualization(self,
+                            img: np.ndarray,
+                            items: List[Tuple[Any, Any, Any]],
+                            out_path: str,
+                            annotate: bool = False) -> None:
+        """绘制识别可视化结果并保存到指定路径。
+
+        Args:
+            img: 原始图像数组
+            items: 三元组列表 (poly, text, score)
+            out_path: 输出文件完整路径
+            annotate: 是否在图上标注文本与分数
+        """
+        try:
+            vis = img.copy()
+            for (poly, t, s) in items:
+                try:
+                    pts = np.array(poly, dtype=np.int32)
+                    if pts.ndim == 2 and pts.shape[0] >= 4:
+                        self._cv_polylines(vis, pts, True, (0, 255, 0), 2)
+                        x = int(np.min(pts[:, 0]))
+                        y = int(np.min(pts[:, 1]))
+                    else:
+                        x, y = 2, 20
+                    if annotate:
+                        label = f"{t} ({float(s):.2f})"
+                        font = getattr(cv2, 'FONT_HERSHEY_SIMPLEX', 0)
+                        line_aa = getattr(cv2, 'LINE_AA', 16)
+                        self._cv_put_text(
+                            vis, label, (x, max(0, y - 5)),
+                            font, 0.5, (0, 0, 255), 1, line_aa
+                        )
+                except Exception:
+                    continue
+            try:
+                os.makedirs(os.path.dirname(out_path), exist_ok=True)
+            except Exception:
+                pass
+            self._cv_imwrite(out_path, vis)
         except Exception:
             pass
 
@@ -895,9 +934,6 @@ class OCRService:
         if not image_paths:
             return {"error": "未发现图片"}
 
-        # 更新图片总数
-        total_images = len(image_paths)
-
         # 预处理：基于配置抛弃过小分辨率图片（按短边像素阈值）
         try:
             cfg = settings.CFG._config
@@ -936,14 +972,10 @@ class OCRService:
                     # 读取失败不影响主流程，保留以便后续统一按 miss 处理
                     kept_paths.append(p)
             try:
-                remark = (f"预过滤：按短边阈值丢弃={int(dropped)} 张，"
-                          f"阈值={int(pre_min_side)}像素，保留={int(len(kept_paths))} 张")
-                logger.warning(remark)
-                notify_ocr_task_progress({
-                    "id": self.id,
-                    "processed_images": total_images - len(kept_paths),
-                    "remark": remark,
-                })
+                logger.warning(
+                    "预过滤：按短边阈值丢弃=%s 张，阈值=%s像素，保留=%s 张",
+                    int(dropped), int(pre_min_side), int(len(kept_paths))
+                )
             except Exception:
                 pass
             image_paths = kept_paths
@@ -954,10 +986,6 @@ class OCRService:
                     )
                 }
 
-        notify_ocr_task_progress({
-            "id": self.id,
-            "remark": f"开始 P95 预分流，共 {len(image_paths)} 张图片",
-        })
         # 预分流：按 min_side 的 P95
         try:
             min_sides: List[int] = []
@@ -1033,6 +1061,17 @@ class OCRService:
         
         logger.warning(f"多轮识别：使用内置参数集，轮数={len(rounds)}")
 
+        # 预先打印每一轮的参数生效一次，避免在图片循环里反复穿插日志
+        try:
+            for ridx, rp in enumerate(rounds, start=1):
+                try:
+                    ocr_tmp = self._get_ocr_for_round(rp)
+                    self._log_effective_round_params(ocr_tmp, rp, ridx)
+                except Exception:
+                    continue
+        except Exception:
+            pass
+ 
         # 由现有语言配置推导过滤策略（不新增配置项）
         text_lang_filter = self._resolve_text_filter_strategy()
         try:
@@ -1042,173 +1081,141 @@ class OCRService:
         except Exception:
             pass
  
+        # 统计结构
         total_hit = 0
-        last_miss_count = 0
         first_hit_info: Dict[str, Dict[str, Any]] = {}
- 
-        for ridx, rp in enumerate(rounds, start=1):
-            if not cur_inputs:
-                logger.warning(f"多轮迭代：第{ridx}轮无输入，提前结束。")
-                break
-            try:
-                rp = self._validate_round_params(rp)
-            except Exception as ve:
-                logger.error(f"多轮迭代：参数缺失或非法(第{ridx}轮)：{ve}")
-                continue
-            try:
-                logger.warning(
-                    "多轮迭代：第%s轮开始，输入=%s | 参数: limit_type=%s side_len=%s det_thresh=%.2f box_thresh=%.2f unclip=%.2f rec_score=%.2f doc_unwarp=%s textline=%s",
-                    ridx, len(cur_inputs),
-                    rp.get('text_det_limit_type'), rp.get('text_det_limit_side_len'),
-                    float(rp.get('text_det_thresh')), float(rp.get('text_det_box_thresh')),
-                    float(rp.get('text_det_unclip_ratio')), float(rp.get('text_rec_score_thresh')),
-                    bool(rp.get('use_doc_unwarping', False)),
-                    bool(rp.get('use_textline_orientation', False))
-                )
-                notify_ocr_task_progress({
-                    "id": self.id,
-                    "remark": f"正在执行第 {ridx} 轮识别 / 共 {len(rounds)} 轮",
-                })
-            except Exception:
-                pass
-            ocr_inst = self._get_ocr_for_round(rp)
- 
-            if enable_draw and rounds_root:
-                vis_hit_dir = os.path.join(rounds_root, f"vis_r{ridx}", 'hit')
-                vis_miss_dir = os.path.join(rounds_root, f"vis_r{ridx}", 'miss')
-                try:
-                    os.makedirs(vis_hit_dir, exist_ok=True)
-                    os.makedirs(vis_miss_dir, exist_ok=True)
-                except Exception:
-                    enable_draw = False
+        # 记录各轮命中数，便于和旧日志口径对齐
+        round_hit_counter: Dict[int, int] = {i: 0 for i in range(1, len(rounds) + 1)}
 
-            # 打印一次参数生效对照，帮助定位“参数写入未生效”的潜在问题
-            self._log_effective_round_params(ocr_inst, rp, ridx)
- 
-            hit_paths: List[str] = []
-            miss_paths: List[str] = []
-            for p in cur_inputs:
+        # 改为“按图片逐轮尝试”：每张图仅解码一次，命中立即早停
+        remain_inputs = list(cur_inputs)
+        final_miss_paths: List[str] = []
+
+        for p in remain_inputs:
+            try:
+                img = self._load_image_unicode(p)
+                if img is None:
+                    final_miss_paths.append(p)
+                    continue
+            except Exception:
+                final_miss_paths.append(p)
+                continue
+
+            hit_round = 0
+            for ridx, rp in enumerate(rounds, start=1):
                 try:
-                    img = self._load_image_unicode(p)
-                    if img is None:
-                        miss_paths.append(p)
-                        continue
-                    # 前置缩放，确保每轮 limit_type/side_len 生效
+                    rp = self._validate_round_params(rp)
+                except Exception as ve:
+                    logger.debug(f"参数非法(第{ridx}轮，跳过)：{ve}")
+                    continue
+
+                # 懒创建可视化目录（按需）
+                vis_hit_dir, vis_miss_dir = "", ""
+                if enable_draw and rounds_root:
+                    vis_hit_dir = os.path.join(rounds_root, f"vis_r{ridx}", 'hit')
+                    vis_miss_dir = os.path.join(rounds_root, f"vis_r{ridx}", 'miss')
                     try:
-                        img_proc = self._resize_image_for_round(
-                            img,
-                            str(rp['text_det_limit_type']),
-                            int(rp['text_det_limit_side_len'])
-                        )
+                        os.makedirs(vis_hit_dir, exist_ok=True)
+                        os.makedirs(vis_miss_dir, exist_ok=True)
                     except Exception:
-                        img_proc = img
+                        enable_draw = False
+
+                # 获取实例（不再在此重复打印参数生效日志）
+                try:
+                    ocr_inst = self._get_ocr_for_round(rp)
+                except Exception:
+                    continue
+
+                # 前置缩放，确保每轮 limit_type/side_len 生效
+                try:
+                    img_proc = self._resize_image_for_round(
+                        img,
+                        str(rp['text_det_limit_type']),
+                        int(rp['text_det_limit_side_len'])
+                    )
+                except Exception:
+                    img_proc = img
+
+                try:
                     res = ocr_inst.predict(input=img_proc)
                     items = self._parse_predict_items(res)
-                    # 中文过滤（按推导出的策略应用）
-                    kept: List[Any] = []
-                    for (poly, t, s) in items:
-                        if self._text_passes_language_filter(t, text_lang_filter):
-                            kept.append((poly, t, s))
-                    # 分数阈值过滤：必须满足 s >= 本轮 text_rec_score_thresh
-                    try:
-                        score_thresh = float(rp.get('text_rec_score_thresh', 0.0))
-                    except Exception:
-                        score_thresh = 0.0
-                    kept_scored = [(poly, t, s) for (poly, t, s) in kept if float(s) >= score_thresh]
-                    ok = len(kept_scored) > 0
+                except Exception as pe:
+                    items = []
+                    logger.debug(f"预测失败(第{ridx}轮，跳过)：{pe}")
 
-                    if enable_draw and rounds_root:
+                # 语言与分数阈值过滤
+                kept: List[Any] = []
+                for (poly, t, s) in items:
+                    if self._text_passes_language_filter(t, text_lang_filter):
+                        kept.append((poly, t, s))
+                try:
+                    score_thresh = float(rp.get('text_rec_score_thresh', 0.0))
+                except Exception:
+                    score_thresh = 0.0
+                kept_scored = [
+                    (poly, t, s) for (poly, t, s) in kept if float(s) >= score_thresh
+                ]
+
+                if kept_scored:
+                    hit_round = ridx
+                    round_hit_counter[ridx] = round_hit_counter.get(ridx, 0) + 1
+                    total_hit += 1
+                    if os.path.basename(p) not in first_hit_info:
                         try:
-                            vis = img.copy()
-                            for poly, t, s in kept_scored:
-                                pts = np.array(poly, dtype=np.int32)
-                                if pts.ndim == 2 and pts.shape[0] >= 4:
-                                    self._cv_polylines(vis, pts, True, (0, 255, 0), 2)
-                                    x = int(np.min(pts[:, 0])); y = int(np.min(pts[:, 1]))
-                                else:
-                                    x, y = 2, 20
-                                if enable_annotate:
-                                    label = f"{t} ({float(s):.2f})"
-                                    font = getattr(cv2, 'FONT_HERSHEY_SIMPLEX', 0)
-                                    line_aa = getattr(cv2, 'LINE_AA', 16)
-                                    self._cv_put_text(
-                                        vis, label, (x, max(0, y - 5)),
-                                        font, 0.5, (0, 0, 255), 1, line_aa
-                                    )
-                                out_dir = vis_hit_dir if ok else vis_miss_dir
-                                out_path = os.path.join(out_dir, os.path.basename(p))
-                                # 防护：禁止覆盖源图
-                                try:
-                                    if os.path.abspath(out_path) == os.path.abspath(p):
-                                        continue
-                                except Exception:
-                                    pass
-                                self._cv_imwrite(out_path, vis)
+                            texts = [t for (_, t, s) in kept_scored]
+                            scores = [float(s) for (_, t, s) in kept_scored]
+                        except Exception:
+                            texts, scores = [], []
+                        first_hit_info[os.path.basename(p)] = {
+                            'round': ridx,
+                            'hit_texts': '|'.join(texts[:10]),
+                            'hit_scores': '|'.join([f"{x:.4f}" for x in scores[:10]])
+                        }
+                    if enable_draw and rounds_root and vis_hit_dir:
+                        try:
+                            self._draw_visualization(
+                                img, kept_scored,
+                                os.path.join(vis_hit_dir, os.path.basename(p))
+                            )
+                        except Exception:
+                            pass
+                    break  # 命中即早停，切换到下一张图片
+                else:
+                    if enable_draw and rounds_root and vis_miss_dir:
+                        try:
+                            self._draw_visualization(
+                                img, [],
+                                os.path.join(vis_miss_dir, os.path.basename(p))
+                            )
                         except Exception:
                             pass
 
-                    if ok:
-                        hit_paths.append(p)
-                        # 更新命中计数
-                        total_hit += 1
-                        notify_ocr_task_progress({
-                            "id": self.id,
-                            "matched_images": total_hit,
-                        }, debounce=True)
+            if hit_round == 0:
+                final_miss_paths.append(p)
 
-                        name = os.path.basename(p)
-                        if name not in first_hit_info:
-                            try:
-                                h, w = img.shape[:2]
-                                sr = self._compute_scaled_resolution(
-                                    h, w,
-                                    str(rp['text_det_limit_type']),
-                                    int(rp['text_det_limit_side_len'])
-                                )
-                                texts_str = "|".join([str(t) for (_, t, _) in kept_scored])
-                                scores_str = "|".join([
-                                    f"{float(s):.4f}" for (_, _, s) in kept_scored
-                                ])
-                                first_hit_info[name] = {
-                                    'round': ridx,
-                                    'text_det_limit_type': rp['text_det_limit_type'],
-                                    'text_det_limit_side_len': rp['text_det_limit_side_len'],
-                                    'text_det_thresh': rp['text_det_thresh'],
-                                    'text_det_box_thresh': rp['text_det_box_thresh'],
-                                    'text_det_unclip_ratio': rp['text_det_unclip_ratio'],
-                                    'text_rec_score_thresh': rp['text_rec_score_thresh'],
-                                    'use_doc_unwarping': bool(rp.get('use_doc_unwarping', False)),
-                                    'use_textline_orientation': bool(rp.get('use_textline_orientation', False)),
-                                    'hit_texts': texts_str,
-                                    'hit_scores': scores_str,
-                                    'scaled_resolution': sr,
-                                }
-                            except Exception:
-                                pass
-                    else:
-                        miss_paths.append(p)
-                except Exception as e:
-                    logger.error(f"预测失败 {p}: {e}")
-                    miss_paths.append(p)
- 
-            # total_hit += len(hit_paths)
-            last_miss_count = len(miss_paths)
+            # 每张图片仅输出一条日志：命中轮次或未命中
             try:
-                logger.warning(
-                    f"多轮迭代：第{ridx}轮结束，hit={len(hit_paths)} miss={len(miss_paths)}"
-                )
-                notify_ocr_task_progress({
-                    "id": self.id,
-                    "processed_images": total_images - len(miss_paths),
-                })
+                name_only = os.path.basename(p)
+                if hit_round > 0:
+                    logger.warning(f"图片命中 | 轮次={hit_round} | {name_only}")
+                else:
+                    logger.warning(f"图片未命中 | {name_only}")
             except Exception:
                 pass
-            cur_inputs = list(miss_paths)
- 
+
+        # 输出与旧日志口径兼容的分轮统计（取消显示，仅保留调试级别）
+        # for ridx in range(1, len(rounds) + 1):
+        #     try:
+        #         logger.debug(
+        #             f"多轮迭代：第{ridx}轮结束，hit={round_hit_counter.get(ridx, 0)}"
+        #         )
+        #     except Exception:
+        #         pass
+
         return {
-            'rounds_root': rounds_root,
+            'rounds_root': rounds_root, 
             'total_hit': int(total_hit),
-            'final_miss': int(last_miss_count),
+            'final_miss': int(len(final_miss_paths)),
             'first_hit_info': first_hit_info,
         }
 

@@ -80,7 +80,7 @@ export const useTeamStore = defineStore({
         apiFunc: switchTeam,
         apiParams: { id: teamId },
         onSucceed: (data: any) => {
-          connect();
+          // connect();
           this.SET_TEAM(data);
           // 总是消息弹窗提示太烦人，改成动画提醒
           this.animate = true;

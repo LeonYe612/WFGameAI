@@ -57,7 +57,8 @@ def initialize_project_monitor():
             projects = monitor_service.get_projects()
             if projects and len(projects) > 0:
                 print(f"✅ 已存在 {len(projects)} 个项目")
-                for project in projects:            print(f"   - ID: {project.id}, 名称: {project.name}")
+                for project in projects:            
+                    print(f"   - ID: {project.id}, 名称: {project.name}")
             else:
                 print("✅ 无数据：当前没有项目，等待用户创建项目")
 

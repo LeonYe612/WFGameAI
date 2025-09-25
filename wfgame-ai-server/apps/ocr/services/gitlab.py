@@ -1385,10 +1385,12 @@ class GitLabService:
             if progress_callback:
                 progress_callback(1, 4, 10.0, f"开始克隆仓库分支 {branch}...")
 
-            # 清理已存在的目录
-            if repo_dir.exists():
-                shutil.rmtree(repo_dir, ignore_errors=True)
+            # 避免无必要删除：若目录存在且为git仓库，则不在此函数中处理克隆
+            if repo_dir.exists() and (repo_dir / ".git").exists():
+                logger.warning(f"目标目录已是Git仓库，跳过删除与克隆: {repo_dir}")
+                return str(repo_dir)
 
+            # 确保克隆目标目录存在（为空目录）
             repo_dir.mkdir(parents=True, exist_ok=True)
 
             # 构建带认证的克隆URL
@@ -1669,11 +1671,9 @@ class GitLabService:
             return str(repo_dir)
 
         except Exception as e:
-            logger.error(f"增量更新失败: {e}，回退到全新克隆")
-            # 如果增量更新失败，回退到全新克隆
-            return self._clone_repository_with_progress(
-                repo_dir, branch, progress_callback
-            )
+            # 非必要禁止删除：增量更新失败时不回退到全新克隆，保留现有仓库
+            logger.error(f"增量更新失败: {e}，已保留现有仓库: {repo_dir}")
+            return str(repo_dir)
 
     def get_repo_name(self, repo_url: str) -> str:
         """

@@ -579,8 +579,8 @@ def parse_script_arguments(args_list):
     # 新增：多设备并发回放参数
     log_dir = None
     device_serial = None
-    account_user = None
-    account_pass = None
+    account = None
+    password = None
     i = 0
     while i < len(args_list):
         arg = args_list[i]
@@ -671,8 +671,6 @@ def parse_script_arguments(args_list):
         'account': account,
         'password': password
     }
-
-    return scripts
 
 
 def get_device_screenshot(device):
@@ -885,6 +883,10 @@ def process_priority_based_script(device, steps, meta, device_report_dir, action
     while max_duration is None or (time.time() - priority_start_time) <= max_duration:
         cycle_count += 1
         print_realtime(f"🔄 第 {cycle_count} 轮检测循环开始")
+
+        # 修复：初始化本轮匹配状态，避免未定义变量引用
+        matched_any_target = False
+        hit_step = None
 
         # 获取本轮通用截图用于AI检测和停滞检测
         try:
@@ -1619,10 +1621,14 @@ def main():
             print_realtime(f"   参数 {i}: '{arg}'")
         print_realtime("")
         print_realtime("📖 用法示例:")
-        print_realtime("  python replay_script.py --script testcase/scene1.json")
-        print_realtime("  python replay_script.py --show-screens --script testcase/scene1.json --loop-count 1")
-        print_realtime("  python replay_script.py --script testcase/scene1.json --loop-count 1 --script testcase/scene2.json --max-duration 30")
-        print_realtime("  python replay_script.py --log-dir /path/to/logs --device serial123 --script testcase/scene1.json")
+        print_realtime("  单设备基础调试:")
+        print_realtime("    python wfgame-ai-server/apps/scripts/replay_script.py --device <serial> --log-dir wfgame-ai-server/logs/replay --script testcase/scene1.json --loop-count 1 --confidence 0.6")
+        print_realtime("  多脚本并指定每个脚本时长/循环:")
+        print_realtime("    python wfgame-ai-server/apps/scripts/replay_script.py --device <serial> --log-dir wfgame-ai-server/logs/replay --script testcase/scene1.json --loop-count 1 --script testcase/scene2.json --max-duration 30")
+        print_realtime("  携带账号信息调试:")
+        print_realtime("    python wfgame-ai-server/apps/scripts/replay_script.py --device <serial> --log-dir wfgame-ai-server/logs/replay --account <user> --password <pass> --script testcase/scene1.json")
+        print_realtime("  多设备并发调试(自动并发):")
+        print_realtime("    python wfgame-ai-server/apps/scripts/replay_script.py --multi-device --log-dir wfgame-ai-server/logs/replay --script testcase/scene1.json")
         print_realtime("❌ 脚本退出: 缺少必要的 --script 参数")
         return
 

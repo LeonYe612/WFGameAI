@@ -3,7 +3,6 @@ OCR模块URL配置
 """
 
 from django.urls import path
-
 from . import api
 
 urlpatterns = [

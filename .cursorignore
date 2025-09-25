@@ -43,7 +43,7 @@ wfgame-ai-server/apps/scripts/screen_analysis_results/screen_analysis_results/
 wfgame-ai-server/apps/scripts/ui_detection_output/
 wfgame-ai-server/media/ocr/
 wfgame-ai-server/media/
-wfgame-ai-server/apps/scripts/
+wfgame-ai-server/apps/scripts/device_logs/
 wfgame-ai-server/apps/scripts/ui_structure_analysis/
 wfgame-ai-server/${project_root}
 wfgame-ai-server/${server_dir}

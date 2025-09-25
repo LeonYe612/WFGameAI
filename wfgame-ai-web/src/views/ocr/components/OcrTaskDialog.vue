@@ -107,8 +107,7 @@
             <el-checkbox-button
               v-for="lang in sortedEnum(ocrLanguageEnum)"
               :key="lang.value"
-              :label="lang.label"
-              :value="lang.value"
+              :label="lang.value"
             >
               {{ lang.label }}
             </el-checkbox-button>
@@ -217,7 +216,7 @@ const rules = ref<FormRules>({
   source_type: [
     { required: true, message: "请选择任务类型", trigger: "change" }
   ],
-  repository_id: [
+  repo_id: [
     {
       trigger: "blur",
       validator: (rule, value) => {
@@ -232,8 +231,17 @@ const rules = ref<FormRules>({
     {
       trigger: "blur",
       validator: (rule, value) => {
-        if (form.value.source_type === ocrSourceTypeEnum.GIT.value && !value) {
+        if (form.value.source_type !== ocrSourceTypeEnum.GIT.value) {
+          return true;
+        }
+        if (!value) {
           return new Error("请选择分支");
+        }
+        if (!branches.value || !branches.value.length) {
+          return new Error("请先选择仓库并加载分支");
+        }
+        if (!branches.value.includes(value)) {
+          return new Error("所选分支无效，请重新选择");
         }
         return true;
       }
@@ -309,6 +317,10 @@ const fetchBranches = async () => {
       apiParams: form.value.repo_id
     });
     branches.value = res?.data?.branches || [];
+    // 若当前选中分支不在列表中，则置空以触发校验
+    if (!branches.value.includes(form.value.branch)) {
+      form.value.branch = "";
+    }
   } catch (error) {
     console.error("获取分支列表失败:", error);
   } finally {

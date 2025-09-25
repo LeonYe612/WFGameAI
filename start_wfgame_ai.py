@@ -284,7 +284,7 @@ def wait_for_services(frontend_process, backend_process, port: int = 8000):
         else:
             print_colored("\n服务已成功启动！", 'green')
             print_colored("\n访问地址:", 'green')
-            print_colored(f"- 后端: http://localhost:{port}", 'cyan')
+            print_colored(f"- 后端: http://172.20.19.101:{port}", 'cyan')
             # print_colored("- API文档: http://localhost:8000/api/docs/", 'cyan')
 
             # 自动打开浏览器访问后端

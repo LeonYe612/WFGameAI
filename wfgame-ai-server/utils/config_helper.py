@@ -65,9 +65,18 @@ class ConfigManager:
             if "WFGAMEAI_CONFIG" in os.environ:
                 return os.environ["WFGAMEAI_CONFIG"]
 
-            # 如果设置了 AI_ENV，使用 config_{env}.ini，否则默认使用 config.ini
-            if "AI_ENV" in os.environ:
-                return  os.path.join(Path.cwd().parent, f"config_{os.environ.get('AI_ENV')}.ini")
+            # 根据 AI_ENV 选择配置文件
+            ai_env = os.environ.get("AI_ENV", "").strip().lower()
+            base_dir = Path.cwd().parent
+            if ai_env:
+                if ai_env == "prod":
+                    # 生产环境固定使用 config.ini
+                    return os.path.join(base_dir, "config.ini")
+                else:
+                    # 其它环境使用 config_{env}.ini（例如 dev -> config_dev.ini）
+                    return os.path.join(base_dir, f"config_{ai_env}.ini")
+
+            # 默认回退到 config.ini
             return self._config_path
         except Exception as e:
             logger.error(f"查找配置文件时出错，使用默认 config.ini: {e}")
