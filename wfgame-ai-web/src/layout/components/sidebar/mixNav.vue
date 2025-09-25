@@ -3,6 +3,7 @@ import extraIcon from "./extraIcon.vue";
 import Search from "../search/index.vue";
 // import Notice from "../notice/index.vue";
 import ActiveTeam from "../activeTeam/index.vue";
+import SSEState from "@/layout/components/sseState/index.vue";
 import { useNav } from "@/layout/hooks/useNav";
 import { ref, toRaw, watch, onMounted, nextTick } from "vue";
 import { useRenderIcon } from "@/components/ReIcon/src/hooks";
@@ -98,6 +99,10 @@ watch(
       <!-- <Notice id="header-notice" /> -->
       <!-- 激活团队 -->
       <ActiveTeam />
+      <el-divider direction="vertical" />
+      <!-- SSE连接状态 -->
+      <SSEState />
+      <el-divider direction="vertical" />
       <!-- 退出登录 -->
       <el-dropdown trigger="click">
         <span class="select-none el-dropdown-link navbar-bg-hover">

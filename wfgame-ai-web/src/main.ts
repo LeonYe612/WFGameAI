@@ -7,8 +7,6 @@ import { createApp, Directive } from "vue";
 import { MotionPlugin } from "@vueuse/motion";
 import { useEcharts } from "@/plugins/echarts";
 import { injectResponsiveStorage } from "@/utils/responsive";
-import CodeDiff from "v-code-diff";
-
 // import Table from "@pureadmin/table";
 // import PureDescriptions from "@pureadmin/descriptions";
 
@@ -50,7 +48,7 @@ getServerConfig(app).then(async config => {
   await router.isReady();
   injectResponsiveStorage(app, config);
   setupStore(app, router);
-  app.use(MotionPlugin).use(ElementPlus).use(useEcharts).use(CodeDiff);
+  app.use(MotionPlugin).use(ElementPlus).use(useEcharts);
   // .use(Table);
   // .use(PureDescriptions);
   app.mount("#app");

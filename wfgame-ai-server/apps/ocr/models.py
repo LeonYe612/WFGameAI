@@ -104,6 +104,7 @@ class OCRTask(TeamOwnedMixin):
     start_time = models.DateTimeField(null=True, blank=True, verbose_name="开始时间")
     end_time = models.DateTimeField(null=True, blank=True, verbose_name="结束时间")
     total_images = models.IntegerField(default=0, verbose_name="总图片数")
+    processed_images = models.IntegerField(default=0, verbose_name="已处理图片数")
     matched_images = models.IntegerField(default=0, verbose_name="匹配图片数")
     match_rate = models.DecimalField(
         max_digits=5, decimal_places=2, default=0.00, verbose_name="匹配率"
@@ -136,6 +137,7 @@ class OCRResult(TeamOwnedMixin):
         related_name="results",
         verbose_name="所属任务",
     )
+    image_hash = models.CharField(max_length=128, default="", verbose_name="图片哈希值")
     image_path = models.CharField(max_length=255, verbose_name="图片路径")
     texts = models.JSONField(verbose_name="识别文本")
     languages = models.JSONField(null=True, blank=True, verbose_name="识别语言")

@@ -123,7 +123,7 @@ const errorPages = ["/error/403", "/error/404", "/error/500"];
 const { VITE_HIDE_HOME } = import.meta.env;
 
 router.beforeEach((to: toRouteType, _from, next) => {
-  console.log("to", to);
+  // console.log("to", to);
   if (to.meta?.keepAlive) {
     handleAliveRoute(to, "add");
     // 页面整体刷新和点击标签页刷新

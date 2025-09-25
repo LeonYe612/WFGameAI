@@ -1,1 +1,0 @@
-import{aQ as s,aT as e}from"./index-41f05ddf.js";const r=()=>s.request("get",e("/users/mine-teams")),m=t=>s.request("post",e("/users/switch-team"),{data:t}),n=()=>s.request("get",e("/sys/teams/list")),u=t=>s.request("post",e("/sys/teams/del"),{data:t});export{n as a,u as d,r as l,m as s};

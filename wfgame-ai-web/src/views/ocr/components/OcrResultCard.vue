@@ -4,10 +4,10 @@
     class="result-card"
     :style="{ background: getCardColor(result.result_type) }"
   >
-    <div class="card-content">
+    <div class="card-content cursor-pointer">
       <div class="image-container">
         <el-image
-          class="cursor-pointer"
+          :title="mediaUrl(result.image_path)"
           style="width: 100%; height: 250px"
           :src="mediaUrl(result.image_path)"
           fit="scale-down"
@@ -19,12 +19,43 @@
         <h3 class="image-name" :title="getImgName(result.image_path)">
           {{ getImgName(result.image_path) }}
         </h3>
-        <p class="info-item text-gray">
-          分辨率: {{ result.pic_resolution || "-" }}
+
+        <p class="info-item">
+          识别结果:
+          <span
+            class="text-orange-500"
+            :title="getResultText(result)"
+            @click="handleCopyText(getResultText(result))"
+          >
+            {{ getResultText(result) || "-" }}
+          </span>
         </p>
-        <p class="info-item text-gray">语言: {{ result.languages || "-" }}</p>
-        <p class="info-item text-gray" :title="result.image_path">
-          路径: {{ result.image_path || "-" }}
+        <p class="info-item">
+          分辨率:
+          <span>
+            {{ result.pic_resolution || "-" }}
+          </span>
+        </p>
+        <p class="info-item">
+          语言:
+          <span>
+            {{ result.languages || "-" }}
+          </span>
+        </p>
+        <p v-if="false" class="info-item" :title="result.image_path">
+          路径:
+          <a :href="mediaUrl(result.image_path)" target="_blank">
+            {{ result.image_path || "-" }}
+          </a>
+        </p>
+        <p class="info-item" :title="result.image_path">
+          哈希值:
+          <span
+            :title="result.image_hash"
+            @click="handleCopyText(result.image_hash)"
+          >
+            {{ result.image_hash || "-" }}
+          </span>
         </p>
         <el-radio-group
           :model-value="props.result.result_type"
@@ -55,6 +86,7 @@ import { ocrResultTypeEnum } from "@/utils/enums";
 import { ref, computed } from "vue";
 import { superRequest } from "@/utils/request";
 import { mediaUrl } from "@/api/utils";
+import { copyText } from "@/utils/utils";
 
 type Emits = {
   (e: "view-image", result: OcrResult): void;
@@ -77,6 +109,20 @@ const getCardColor = (_resultType: string) => {
   // const entry = getEnumEntry(ocrResultTypeEnum, resultType);
   // return entry ? entry.color : "#F2F2F2";
   return "#FFFFFF";
+};
+
+const getResultText = (result: OcrResult) => {
+  if (!result.texts) return "";
+  if (Array.isArray(result.texts)) {
+    const texts = result.texts.map(s => s).join("");
+    return texts;
+  }
+  return result.texts;
+};
+
+const handleCopyText = (text: string) => {
+  if (!text) return;
+  copyText(text);
 };
 
 const handleImageClick = (result: OcrResult) => {
@@ -159,10 +205,7 @@ const handleResultTypeChange = async (newType: string) => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.text-gray {
-  color: #999;
+  color: grey;
 }
 
 .result-type-radios {

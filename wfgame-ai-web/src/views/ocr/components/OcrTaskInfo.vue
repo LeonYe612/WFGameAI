@@ -1,6 +1,11 @@
 <template>
   <el-card class="task-info-card">
     <el-descriptions title="任务信息" :column="1" border>
+      <template #extra>
+        <el-button type="warning" plain @click="downloadTask(props.taskId)"
+          >下载报告</el-button
+        >
+      </template>
       <el-descriptions-item
         label="任务ID"
         label-class-name="desc-label"
@@ -10,7 +15,7 @@
       </el-descriptions-item>
       <el-descriptions-item label="状态" label-class-name="desc-label">
         <el-tag
-          :type="getEnumEntry(taskStatusEnum, task?.status)?.type"
+          :type="getEnumEntry(taskStatusEnum, task?.status)?.type || 'info'"
           size="small"
         >
           {{ getLabel(taskStatusEnum, task?.status) }}
@@ -70,6 +75,9 @@ import { taskStatusEnum, getEnumEntry, getLabel } from "@/utils/enums";
 import { TimeDefault } from "@/utils/time";
 import { ocrTaskApi } from "@/api/ocr";
 import { superRequest } from "@/utils/request";
+import { useOcr } from "../utils/hook";
+
+const { downloadTask } = useOcr();
 
 const props = defineProps<{
   taskId: string;
@@ -78,7 +86,9 @@ const props = defineProps<{
 const task = ref<OcrTask | null>(null);
 const getSourceDisplay = (task: OcrTask) => {
   if (task?.source_type === "git") {
-    return `${task?.git_repository_url} (${task?.git_branch})`;
+    return `${task?.git_repository_url} ${
+      task?.git_branch ? `(${task?.git_branch})` : ""
+    }`;
   }
   return "文件上传";
 };
@@ -90,6 +100,7 @@ const refresh = async () => {
       apiFunc: ocrTaskApi.get,
       apiParams: props.taskId
     });
+    console.log("task details:", res.data);
     task.value = res?.data || null;
   } catch (error) {
     console.error(error);

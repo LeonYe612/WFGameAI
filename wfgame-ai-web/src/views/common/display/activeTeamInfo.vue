@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useTeamGlobalState } from "@/views/team/mine/utils/teamStoreStateHook";
+import { useTeamGlobalState } from "@/views/team/hooks/teamStoreStateHook";
 import TeamIcon from "@/assets/svg/team.svg?component";
 const { activeTeamFullName } = useTeamGlobalState();
 const props = defineProps({

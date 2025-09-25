@@ -39,8 +39,8 @@ export const gmTypeEnum: Record<string, EnumValue> = {
 
 /** 任务状态 */
 export const taskStatusEnum: Record<string, EnumValue> = {
-  PENDING: { label: "等待中", value: "pending", order: 1, type: "info" },
-  RUNNING: { label: "运行中", value: "running", order: 2, type: "warning" },
+  PENDING: { label: "等待中", value: "pending", order: 1, type: "warning" },
+  RUNNING: { label: "运行中", value: "running", order: 2, type: "primary" },
   COMPLETED: { label: "已完成", value: "completed", order: 3, type: "success" },
   FAILED: { label: "失败", value: "failed", order: 4, type: "danger" }
 };

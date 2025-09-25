@@ -97,7 +97,7 @@ export const useOcr = () => {
 
       // 从响应头获取文件名，或者使用默认文件名
       const contentDisposition = response.headers["content-disposition"];
-      const fileNameMatch = contentDisposition.match(/filename=(.+)/);
+      const fileNameMatch = contentDisposition?.match(/filename=(.+)/);
       const fileName = fileNameMatch ? fileNameMatch[1] : "export.xlsx";
 
       link.href = url;

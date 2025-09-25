@@ -127,7 +127,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed, onMounted } from "vue";
+import { ref, watch, computed } from "vue";
 import { UploadFilled } from "@element-plus/icons-vue";
 // 支持的文件类型
 const acceptTypes = ".zip,.tar.gz,.jpg,.jpeg,.png,.bmp,.gif,.webp";
@@ -177,6 +177,7 @@ import { superRequest } from "@/utils/request";
 import { ocrLanguageEnum, ocrSourceTypeEnum, sortedEnum } from "@/utils/enums";
 import { message } from "@/utils/message";
 import { Tools } from "@element-plus/icons-vue";
+import { useTeamGlobalState } from "@/views/team/hooks/teamStoreStateHook";
 
 interface Props {
   modelValue: boolean;
@@ -327,10 +328,6 @@ const fetchBranches = async () => {
   }
 };
 
-onMounted(() => {
-  fetchRepositories();
-});
-
 const handleFileChange = (file: any, fileList: any[]) => {
   form.value.files = fileList.map(f => f.raw);
 };
@@ -398,9 +395,9 @@ const submitForm = async () => {
   }
 };
 
-onMounted(() => {
-  fetchRepositories();
-});
+// 监听团队切换
+const { initWatchTeamId } = useTeamGlobalState();
+initWatchTeamId(fetchRepositories, true);
 
 defineExpose({
   fetchRepositories
