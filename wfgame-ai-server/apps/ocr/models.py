@@ -7,7 +7,7 @@ from django.db import models
 import uuid
 import datetime
 
-from apps.core.models.team import TeamOwnedMixin
+from apps.core.models.common import CommonFieldsMixin
 
 
 def generate_task_id():
@@ -18,7 +18,7 @@ def generate_task_id():
     time_str = now.strftime("%H-%M-%S")
     return f"task_{date_str}_{time_str}"
 
-
+# deprecated 系统根据 team_id 自动管理数据隔离
 class OCRProject(models.Model):
     """OCR项目模型"""
 
@@ -36,7 +36,7 @@ class OCRProject(models.Model):
         db_table = "ocr_project"
 
 
-class OCRGitRepository(TeamOwnedMixin):
+class OCRGitRepository(CommonFieldsMixin):
     """OCR Git仓库模型"""
 
     project = models.ForeignKey(
@@ -49,7 +49,6 @@ class OCRGitRepository(TeamOwnedMixin):
     url = models.CharField(max_length=255, verbose_name="仓库URL")
     branch = models.CharField(max_length=100, default="main", verbose_name="默认分支")
     token = models.CharField(max_length=255, default="", verbose_name="访问令牌")
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
 
     def __str__(self):
         return f"{self.url} ({self.branch})"
@@ -60,7 +59,7 @@ class OCRGitRepository(TeamOwnedMixin):
         db_table = "ocr_git_repository"
 
 
-class OCRTask(TeamOwnedMixin):
+class OCRTask(CommonFieldsMixin):
     """OCR任务模型"""
 
     STATUS_CHOICES = (
@@ -109,10 +108,6 @@ class OCRTask(TeamOwnedMixin):
     match_rate = models.DecimalField(
         max_digits=5, decimal_places=2, default=0.00, verbose_name="匹配率"
     )
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
-    remark = models.TextField(
-        blank=True, null=True, verbose_name="备注信息"
-    )
 
     def __str__(self):
         return self.id
@@ -123,7 +118,7 @@ class OCRTask(TeamOwnedMixin):
         db_table = "ocr_task"
 
 
-class OCRResult(TeamOwnedMixin):
+class OCRResult(CommonFieldsMixin):
     """OCR结果模型"""
     TYPE_CHOICES = (
         ("1", "正确"),
@@ -148,7 +143,6 @@ class OCRResult(TeamOwnedMixin):
     processing_time = models.DecimalField(
         max_digits=10, decimal_places=3, null=True, blank=True, verbose_name="处理时间"
     )
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
     result_type = models.IntegerField(
         choices=TYPE_CHOICES, default=1, verbose_name="识别结果类型"
     )

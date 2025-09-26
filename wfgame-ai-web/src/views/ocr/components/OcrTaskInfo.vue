@@ -46,7 +46,7 @@
         >{{ task?.match_rate || 0 }}%</el-descriptions-item
       >
       <el-descriptions-item label="创建者" label-class-name="desc-label">{{
-        task?.created_by || "-"
+        task?.creator_name || "-"
       }}</el-descriptions-item>
       <el-descriptions-item label="创建时间" label-class-name="desc-label">{{
         TimeDefault(task?.created_at)

@@ -173,7 +173,7 @@
         <el-table-column prop="created_at" label="创建信息" width="180">
           <template #default="{ row }">
             <div class="creation-info">
-              <span class="creator">{{ row.creator_username || "未知" }}</span>
+              <span class="creator">{{ row.creator_name || "未知" }}</span>
               <span class="create-time">{{ formatDate(row.created_at) }}</span>
             </div>
           </template>
@@ -274,7 +274,6 @@ const updateTask = (updatedTask: OcrTask) => {
 };
 // 监听 OCR 任务更新事件
 on(SSEEvent.OCR_TASK_UPDATE, (data: OcrTask) => {
-  console.log("收到 OCR 任务更新事件:", data);
   debounce(updateTask, 100)(data);
 });
 

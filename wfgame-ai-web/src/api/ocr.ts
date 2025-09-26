@@ -1,6 +1,7 @@
 import { http } from "@/utils/http";
 import { CommonQuery } from "./types";
 import { baseUrlApi, ApiResult } from "./utils";
+import { CommonFields } from "./types";
 
 // OCR 项目类型
 export interface OcrProject {
@@ -12,17 +13,15 @@ export interface OcrProject {
 }
 
 // OCR 仓库类型
-export interface OcrRepository {
+export interface OcrRepository extends CommonFields {
   id: string;
   url: string;
   branch: string;
   token: string;
-  created_at?: string;
-  team_id?: number;
 }
 
 // OCR 任务类型
-export interface OcrTask {
+export interface OcrTask extends CommonFields {
   id: string;
   project: number;
   project_name: string;
@@ -43,15 +42,12 @@ export interface OcrTask {
   total_images?: number;
   matched_images?: number;
   match_rate?: string;
-  created_at: string; // Renamed from created_time
-  created_by?: string; // Add created_by
   duration?: string;
   results_count?: number;
-  remark?: string | null;
 }
 
 // OCR 结果类型
-export interface OcrResult {
+export interface OcrResult extends CommonFields {
   id: number;
   task_id: string;
   image_path: string;
@@ -62,7 +58,6 @@ export interface OcrResult {
   has_match: boolean;
   confidence: string;
   processing_time: string;
-  created_at: string;
   result_type: string;
   pic_resolution: string;
 }

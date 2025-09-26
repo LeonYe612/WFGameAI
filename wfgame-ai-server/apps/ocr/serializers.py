@@ -20,7 +20,7 @@ class OCRGitRepositorySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = OCRGitRepository
-        fields = ["id", "project", "url", "branch", "token", "created_at"]
+        fields = "__all__"
 
 
 class OCRTaskSerializer(serializers.ModelSerializer):
@@ -34,26 +34,7 @@ class OCRTaskSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = OCRTask
-        fields = [
-            "id",
-            "project",
-            "project_name",
-            "source_type",
-            "git_repository",
-            "git_repository_url",
-            "status",
-            "config",
-            "start_time",
-            "end_time",
-            "total_images",
-            "processed_images",
-            "matched_images",
-            "match_rate",
-            "created_at",
-            "duration",
-            "remark",
-        ]
-        # name 字段已从数据库模型中移除
+        fields = "__all__"
 
     def get_duration(self, obj):
         """计算任务执行时长"""
@@ -206,29 +187,8 @@ class OCRTaskWithResultsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = OCRTask
-        fields = [
-            "id",
-            "project",
-            "project_name",
-            "source_type",
-            "git_repository",
-            "git_branch",
-            "git_repository_url",
-            "status",
-            "config",
-            "start_time",
-            "end_time",
-            "total_images",
-            "matched_images",
-            "processed_images",
-            "match_rate",
-            "created_at",
-            "duration",
-            "results_count",
-            "remark",
-        ]
-        # 排除 name 字段，直到数据库迁移完成
-        # fields 中已经不包含 name，这里明确排除以确保安全
+        # 排除字段
+        exclude = ["name"]
 
     def get_duration(self, obj):
         """计算任务执行时长"""
