@@ -72,7 +72,7 @@ output/ocr/results/predict/
 wfgame-ai-server/node_modules/*
 
 # configs
-config_dev.ini
+config_*.ini
 
 /wfgame-ai-web/node_modules/
 /.vscode/
