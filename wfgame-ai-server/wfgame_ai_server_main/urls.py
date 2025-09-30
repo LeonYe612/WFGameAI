@@ -54,6 +54,7 @@ urlpatterns = [
     path('api/project-monitor/', include('apps.project_monitor.urls')),
     path('api/reports/', include('apps.reports.urls')),
     path('api/notifications/', include('apps.notifications.urls')),
+    path('api/tasks/', include('apps.tasks.urls')),
 
     # OCR模块API
     path('api/ocr/', include('apps.ocr.urls')),

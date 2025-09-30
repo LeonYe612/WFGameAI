@@ -35,6 +35,9 @@ urlpatterns = [
 
     # OCR模块API
     path('api/ocr/', include('apps.ocr.urls')),
+
+    # Task 模块API
+    path('api/tasks/', include('apps.tasks.urls')),
 ]
 
 # 添加媒体文件URL
