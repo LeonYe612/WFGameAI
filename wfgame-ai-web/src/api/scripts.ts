@@ -86,7 +86,7 @@ export const listScripts = () => {
  * 获取脚本分类列表
  */
 export const getScriptCategories = () => {
-  return http.request<ApiResult>("get", baseUrlApi("/scripts/categories/"));
+  return http.request<ApiResult>("get", baseUrlApi("/scripts/categories"));
 };
 
 /**
