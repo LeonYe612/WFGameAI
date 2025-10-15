@@ -1,191 +1,244 @@
 import { http } from "@/utils/http";
 import { baseUrlApi, ApiResult } from "./utils";
+import { type CommonFields } from "./types";
 
-// 脚本信息类型定义
-export interface ScriptInfo {
-  id?: string;
-  filename: string;
-  category?: string;
-  description?: string;
-  size?: number;
-  created_at?: string;
-  modified_at?: string;
-  include_in_log?: boolean;
-  script_type?: string;
-  content?: string;
-}
-
-// 脚本统计信息
-export interface ScriptStats {
-  total: number;
-  included_in_log: number;
-  excluded_from_log: number;
-  categories: { [key: string]: number };
-}
-
-// 脚本分类信息
-export interface ScriptCategory {
-  id: string;
+// ====================== 目录管理接口 ==========================
+export interface CategoryItem {
+  id?: number;
   name: string;
-  description?: string;
+  parent: number | null;
+  sort_order: number;
 }
 
-// 回放配置
-export interface ReplayConfig {
-  script_filename: string;
-  delay?: number;
-  loop?: number;
-}
-
-// 回放请求
-export interface ReplayRequest {
-  scripts: ReplayConfig[];
-  show_screens?: boolean;
-  python_path?: string;
-}
-
-// 命令执行结果
-export interface CommandResult {
-  success: boolean;
-  message: string;
-  output?: string;
-  error?: string;
-}
-
-// 导入结果
-export interface ImportResult {
-  success: boolean;
-  message: string;
-  filename?: string;
-  error?: string;
-}
-
-// 批量导入结果
-export interface BatchImportResult {
-  success_count: number;
-  total_count: number;
-  results: ImportResult[];
-}
-
-// 脚本设置
-export interface ScriptSettings {
-  python_path: string;
-  debug_cmd: string;
-  record_cmd: string;
-  replay_cmd: string;
-}
-
-/**
- * 获取脚本列表
- */
-export const listScripts = () => {
-  return http.request<ApiResult>("post", baseUrlApi("/scripts/"));
+export const categoryApi = {
+  list: () =>
+    http.request<ApiResult>("get", baseUrlApi("/scripts/categories/")),
+  tree: (params?: { teamId?: number }) =>
+    http.request<ApiResult>("get", baseUrlApi("/scripts/categories/tree/"), {
+      params
+    }),
+  create: (data: CategoryItem) =>
+    http.request<ApiResult>("post", baseUrlApi("/scripts/categories/"), {
+      data
+    }),
+  update: (data: CategoryItem) =>
+    http.request<ApiResult>(
+      "put",
+      baseUrlApi(`/scripts/categories/${data.id}/`),
+      {
+        data
+      }
+    ),
+  delete: (data: CategoryItem) =>
+    http.request<ApiResult>(
+      "delete",
+      baseUrlApi(`/scripts/categories/${data.id}/`)
+    )
 };
 
-/**
- * 获取脚本分类列表
- */
-export const getScriptCategories = () => {
-  return http.request<ApiResult>("get", baseUrlApi("/scripts/categories/"));
+// ====================== 脚本管理接口 ==========================
+export interface ScriptItem {
+  id?: number; // 假设有主键
+  name: string;
+  type: "record" | "manual" | "generated";
+  category: number | null; // 分类ID，后端是外键
+  description: string;
+  version: string;
+  steps_count: number;
+  steps: any[]; // 步骤列表，具体类型可根据实际结构细化
+  meta: Record<string, any>; // 元数据
+  is_active: boolean;
+  include_in_log: boolean;
+  execution_count: number;
+}
+
+export const scriptApi = {
+  list: (params?: object) =>
+    http.request<ApiResult>("get", baseUrlApi("/scripts/scripts/"), {
+      params
+    }),
+  detail: (id: number) =>
+    http.request<ApiResult>("get", baseUrlApi(`/scripts/scripts/${id}/`)),
+  create: (data: ScriptItem) =>
+    http.request<ApiResult>("post", baseUrlApi("/scripts/scripts/"), {
+      data
+    }),
+  update: (data: ScriptItem) =>
+    http.request<ApiResult>("put", baseUrlApi(`/scripts/scripts/${data.id}/`), {
+      data
+    }),
+  delete: (data: ScriptItem) =>
+    http.request<ApiResult>(
+      "delete",
+      baseUrlApi(`/scripts/scripts/${data.id}/`)
+    ),
+  batchDelete: (data: { ids: number[] }) =>
+    http.request<ApiResult>("post", baseUrlApi("/scripts/scripts/delete/"), {
+      data
+    }),
+  move: (data: { category_id: number; script_ids: number[] }) =>
+    http.request<ApiResult>("post", baseUrlApi("/scripts/scripts/move/"), {
+      data
+    }),
+  copy: (data: {
+    copy_id: number;
+    script_ids?: number;
+    target_team_id?: number;
+    target_category_id?: number;
+  }) =>
+    http.request<ApiResult>("post", baseUrlApi("/scripts/scripts/copy/"), {
+      data
+    })
 };
 
-/**
- * 获取脚本统计信息
- */
-export const getScriptStats = () => {
-  return http.request<ApiResult>("get", baseUrlApi("/scripts/stats/"));
+// ====================== 脚本动作库接口 ======================
+export type ParamType =
+  | "string"
+  | "int"
+  | "float"
+  | "boolean"
+  | "array"
+  | "object"
+  | "enum"
+  | "json"
+  | "date"
+  | "datetime"
+  | "file"
+  | "image";
+
+export interface ActionParamItem extends CommonFields {
+  id?: number;
+  action_type: number; // Foreign Key to ActionType
+  name: string;
+  type: ParamType;
+  required: boolean;
+  default?: any | null;
+  description?: string | null;
+  description_en?: string | null;
+  visible: boolean;
+  editable: boolean;
+}
+
+export interface ActionTypeItem extends CommonFields {
+  id?: number;
+  action_type: string;
+  name: string;
+  description?: string | null;
+  icon?: string | null;
+  is_enabled: boolean;
+  version?: string | null;
+  params?: ActionParamItem[];
+}
+
+export const actionTypeApi = {
+  list: (params?: object) =>
+    http.request<ApiResult>("get", baseUrlApi("/scripts/action-types/"), {
+      params
+    }),
+  listWithParams: (params?: object) =>
+    http.request<ApiResult>(
+      "get",
+      baseUrlApi("/scripts/action-types/with-params/"),
+      {
+        params
+      }
+    ),
+  detail: (id: number) =>
+    http.request<ApiResult>("get", baseUrlApi(`/scripts/action-types/${id}/`)),
+  create: (data: ActionTypeItem) =>
+    http.request<ApiResult>("post", baseUrlApi("/scripts/action-types/"), {
+      data
+    }),
+  update: (data: ActionTypeItem) =>
+    http.request<ApiResult>(
+      "put",
+      baseUrlApi(`/scripts/action-types/${data.id}/`),
+      {
+        data
+      }
+    ),
+  delete: (id: number) =>
+    http.request<ApiResult>(
+      "delete",
+      baseUrlApi(`/scripts/action-types/${id}/`)
+    )
 };
 
-/**
- * 执行调试命令
- */
-export const executeDebugCommand = (command: string) => {
-  return http.request<ApiResult>("post", baseUrlApi("/scripts/debug/"), {
-    data: { command }
-  });
+export const actionParamApi = {
+  list: (params?: object) =>
+    http.request<ApiResult>("get", baseUrlApi("/scripts/action-params/"), {
+      params
+    }),
+  detail: (id: number) =>
+    http.request<ApiResult>("get", baseUrlApi(`/scripts/action-params/${id}/`)),
+  create: (data: ActionParamItem) =>
+    http.request<ApiResult>("post", baseUrlApi("/scripts/action-params/"), {
+      data
+    }),
+  update: (data: ActionParamItem) =>
+    http.request<ApiResult>(
+      "put",
+      baseUrlApi(`/scripts/action-params/${data.id}/`),
+      {
+        data
+      }
+    ),
+  delete: (id: number) =>
+    http.request<ApiResult>(
+      "delete",
+      baseUrlApi(`/scripts/action-params/${id}/`)
+    )
 };
 
-/**
- * 回放脚本
- */
-export const replayScripts = (data: ReplayRequest) => {
-  return http.request<ApiResult>("post", baseUrlApi("/scripts/replay/"), {
+export const actionSort = (data: {
+  sorted_ids: number[];
+  model: "action_type" | "action_param";
+}) => {
+  return http.request<ApiResult>("post", baseUrlApi("/scripts/action-sort/"), {
     data
   });
 };
 
-/**
- * 获取脚本内容用于编辑
- */
-export const getScriptContent = (filename: string) => {
-  return http.request<ApiResult>("post", baseUrlApi("/scripts/edit/"), {
-    data: { filename }
-  });
-};
+// ==========================================================
 
-/**
- * 保存脚本内容
- */
-export const saveScriptContent = (filename: string, content: string) => {
-  return http.request<ApiResult>("post", baseUrlApi("/scripts/save/"), {
-    data: { filename, content }
-  });
-};
+// /**
+//  * 执行调试命令
+//  */
+// export const executeDebugCommand = (command: string) => {
+//   return http.request<ApiResult>("post", baseUrlApi("/scripts/debug/"), {
+//     data: { command }
+//   });
+// };
 
-/**
- * 导入单个脚本
- */
-export const importScript = (formData: FormData) => {
-  return http.request<ApiResult>("post", baseUrlApi("/scripts/import/"), {
-    data: formData,
-    headers: {
-      "Content-Type": "multipart/form-data"
-    }
-  });
-};
+// /**
+//  * 回放脚本
+//  */
+// export const replayScripts = (data: ReplayRequest) => {
+//   return http.request<ApiResult>("post", baseUrlApi("/scripts/replay/"), {
+//     data
+//   });
+// };
 
-/**
- * 批量导入脚本
- */
-export const batchImportScripts = (formData: FormData) => {
-  return http.request<ApiResult>("post", baseUrlApi("/scripts/import/"), {
-    data: formData,
-    headers: {
-      "Content-Type": "multipart/form-data"
-    }
-  });
-};
+// /**
+//  * 导入单个脚本
+//  */
+// export const importScript = (formData: FormData) => {
+//   return http.request<ApiResult>("post", baseUrlApi("/scripts/import/"), {
+//     data: formData,
+//     headers: {
+//       "Content-Type": "multipart/form-data"
+//     }
+//   });
+// };
 
-/**
- * 复制脚本
- */
-export const copyScript = (filename: string, newName: string) => {
-  return http.request<ApiResult>("post", baseUrlApi("/scripts/copy/"), {
-    data: { filename, new_name: newName }
-  });
-};
-
-/**
- * 删除脚本
- */
-export const deleteScript = (filename: string) => {
-  return http.request<ApiResult>("post", baseUrlApi("/scripts/delete/"), {
-    data: { filename }
-  });
-};
-
-/**
- * 更新脚本的日志包含状态
- */
-export const updateScriptLogStatus = (
-  filename: string,
-  includeInLog: boolean
-) => {
-  return http.request<ApiResult>(
-    "post",
-    baseUrlApi("/scripts/update-log-status/"),
-    {
-      data: { filename, include_in_log: includeInLog }
-    }
-  );
-};
+// /**
+//  * 批量导入脚本
+//  */
+// export const batchImportScripts = (formData: FormData) => {
+//   return http.request<ApiResult>("post", baseUrlApi("/scripts/import/"), {
+//     data: formData,
+//     headers: {
+//       "Content-Type": "multipart/form-data"
+//     }
+//   });
+// };

@@ -5,11 +5,11 @@
 """
 
 from django.db import models
-from django.conf import settings
 from django.utils.translation import gettext_lazy as _
+from apps.core.models.common import CommonFieldsMixin
 
 
-class DataSource(models.Model):
+class DataSource(CommonFieldsMixin):
     """数据源"""
     TYPE_CHOICES = (
         ('excel', _('Excel文件')),
@@ -23,15 +23,9 @@ class DataSource(models.Model):
     config = models.JSONField(_('配置信息'), default=dict)
     description = models.TextField(_('描述'), blank=True)
     is_active = models.BooleanField(_('是否启用'), default=True)
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL,
-                                verbose_name=_('创建者'),
-                                on_delete=models.SET_NULL,
-                                null=True)
-    created_at = models.DateTimeField(_('创建时间'), auto_now_add=True)
-    updated_at = models.DateTimeField(_('更新时间'), auto_now=True)
 
     class Meta:
-        db_table = 'ai_data_source'
+        db_table = 'data_source'
         verbose_name = _('数据源')
         verbose_name_plural = _('数据源')
         ordering = ['-created_at']
@@ -40,7 +34,7 @@ class DataSource(models.Model):
         return f"{self.name} ({self.get_type_display()})"
 
 
-class TestData(models.Model):
+class DataItem(CommonFieldsMixin):
     """数据记录"""
     data_source = models.ForeignKey(DataSource,
                                  verbose_name=_('数据源'),
@@ -50,15 +44,9 @@ class TestData(models.Model):
     data = models.JSONField(_('数据内容'))
     tags = models.JSONField(_('标签'), default=list)
     is_active = models.BooleanField(_('是否启用'), default=True)
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL,
-                                verbose_name=_('创建者'),
-                                on_delete=models.SET_NULL,
-                                null=True)
-    created_at = models.DateTimeField(_('创建时间'), auto_now_add=True)
-    updated_at = models.DateTimeField(_('更新时间'), auto_now=True)
 
     class Meta:
-        db_table = 'ai_test_data'
+        db_table = 'data_item'
         verbose_name = _('数据记录')
         verbose_name_plural = _('数据记录')
         ordering = ['-created_at']
@@ -70,12 +58,12 @@ class TestData(models.Model):
         return self.name
 
 
-class DataUsageLog(models.Model):
+class DataUsageLog(CommonFieldsMixin):
     """数据使用日志"""
-    test_data = models.ForeignKey(TestData,
-                               verbose_name=_('数据记录'),
-                               on_delete=models.CASCADE,
-                               related_name='usage_logs')
+    test_data = models.ForeignKey(DataItem,
+                                  verbose_name=_('数据记录'),
+                                  on_delete=models.CASCADE,
+                                  related_name='usage_logs')
     script = models.ForeignKey('scripts.Script',
                             verbose_name=_('使用脚本'),
                             on_delete=models.SET_NULL,
@@ -89,7 +77,7 @@ class DataUsageLog(models.Model):
     error_message = models.TextField(_('错误信息'), blank=True)
 
     class Meta:
-        db_table = 'ai_data_usage_log'
+        db_table = 'data_usage_log'
         verbose_name = _('数据使用日志')
         verbose_name_plural = _('数据使用日志')
         ordering = ['-used_at']

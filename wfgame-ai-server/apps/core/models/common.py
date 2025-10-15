@@ -211,7 +211,7 @@ class CommonFilteredManager(models.Manager):
             unique_fields=unique_fields
         )
 
-    def bulk_update(self, objs, fields, batch_size=None):
+    def bulk_update(self, objs, fields, batch_size=100):
         """
         批量更新时：
         1. 不允许批量修改 team_id 字段
@@ -227,7 +227,7 @@ class CommonFilteredManager(models.Manager):
             fields.append('updater_id')
         if 'updater_name' not in fields:
             fields.append('updater_name')
-        return super().bulk_update(objs, fields, batch_size=batch_size)
+        return self.all_teams().bulk_update(objs, fields, batch_size=batch_size)
 
     def get_or_create(self, defaults=None, **kwargs):
         """
@@ -252,13 +252,14 @@ class CommonFieldsMixin(models.Model):
         db_index=True,
         verbose_name="团队ID",
         help_text="标识数据归属的团队",
+        editable=False
     )
-    created_at = models.DateTimeField(auto_now_add=True, db_index=True, verbose_name="创建时间")
-    creator_id = models.IntegerField(default=0, verbose_name="创建用户ID")
-    creator_name = models.CharField(max_length=50, default="system", verbose_name="创建用户名称")
-    updated_at = models.DateTimeField(auto_now=True, verbose_name="更新时间")
-    updater_id = models.IntegerField(default=0, verbose_name="更新用户ID")
-    updater_name = models.CharField(max_length=50, default="system", verbose_name="更新用户名称")
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True, verbose_name="创建时间", editable=False)
+    creator_id = models.IntegerField(default=0, verbose_name="创建用户ID", editable=False)
+    creator_name = models.CharField(max_length=50, default="system", verbose_name="创建用户名称", editable=False)
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="更新时间", editable=False)
+    updater_id = models.IntegerField(default=0, verbose_name="更新用户ID", editable=False)
+    updater_name = models.CharField(max_length=50, default="system", verbose_name="更新用户名称", editable=False)
     sort_order = models.IntegerField(default=0, db_index=True, verbose_name="排序值")
     lock_version = models.IntegerField(default=0, verbose_name="乐观锁版本号")
     remark = models.TextField(blank=True, null=True, verbose_name="备注信息")

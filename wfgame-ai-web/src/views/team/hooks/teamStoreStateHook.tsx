@@ -33,7 +33,6 @@ export function useTeamGlobalState() {
   //   immediate = true,
   //   onMountedFunc?: Function
   // ) => {
-  //   debugger;
   //   let unwatch = null; // 用于存储 watch 的取消方法
   //   // const instance = getCurrentInstance();
   //   // const componentName = instance?.type.name;
@@ -77,7 +76,7 @@ export function useTeamGlobalState() {
     }
 
     onMounted(() => {
-      console.log(`组件 onMounted: 添加 teamId Watcher`);
+      // console.log(`组件 onMounted: 添加 teamId Watcher`);
       // 直接返回 watch，让组件自己管理生命周期
       unwatch = watch(
         () => useTeamStoreHook()?.teamId,
@@ -92,12 +91,12 @@ export function useTeamGlobalState() {
     });
 
     onUnmounted(() => {
-      console.log(`组件 onUnmounted: 移除 teamId Watcher`);
+      //console.log(`组件 onUnmounted: 移除 teamId Watcher`);
       unwatch && unwatch(); // 组件卸载时取消 watch
     });
 
     onDeactivated(() => {
-      console.log(`组件 onDeactivated: 移除 teamId Watcher`);
+      //console.log(`组件 onDeactivated: 移除 teamId Watcher`);
       unwatch && unwatch(); // 组件停用时取消 watch
     });
 

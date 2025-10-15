@@ -91,24 +91,23 @@ export function useNavigate() {
     }
   }
 
-  function navigateToTestcaseDetail(id?: number, version?: number) {
+  function navigateToScriptDetail(id?: number, blank = false) {
     let title = "";
     if (!id) {
-      // 新增用例
+      // 新增
       id = 0;
-      version = 0;
-      title = "新增用例";
+      title = "新增脚本";
     } else {
       // 编辑用例
-      title = `ID.${id} - 编辑用例`;
+      title = `ID.${id} - 编辑脚本`;
     }
     navigateTo({
       parameter: {
-        id: id,
-        version: version
+        id: id
       },
-      componentName: "TestcaseDetail",
-      tagTitle: title
+      componentName: "AI-SCRIPTS-DETAIL",
+      tagTitle: title,
+      blank
     });
   }
 
@@ -264,7 +263,7 @@ export function useNavigate() {
   return {
     navigateTo,
     navigateToTestcaseList,
-    navigateToTestcaseDetail,
+    navigateToScriptDetail,
     navigateToPlanList,
     navigateToPlanDetail,
     navigateToReportDetail,

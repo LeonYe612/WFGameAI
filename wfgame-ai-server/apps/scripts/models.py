@@ -10,20 +10,20 @@ Version: 1.0
 ===============================
 """
 
-import os
 from django.db import models
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
+from apps.core.models.common import CommonFieldsMixin
 
 
-class ScriptCategory(models.Model):
+class ScriptCategory(CommonFieldsMixin):
     """
     脚本分类模型
 
     用于对测试脚本进行分类管理，如登录流程、战斗流程、UI测试等
     """
 
-    name = models.CharField(_("分类名称"), max_length=100, unique=True)
+    name = models.CharField(_("分类名称"), max_length=100)
     description = models.TextField(_("分类描述"), blank=True, null=True)
     parent = models.ForeignKey(
         "self",
@@ -33,20 +33,80 @@ class ScriptCategory(models.Model):
         blank=True,
         related_name="children",
     )
-    created_at = models.DateTimeField(_("创建时间"), auto_now_add=True)
-    updated_at = models.DateTimeField(_("更新时间"), auto_now=True)
 
     class Meta:
-        db_table = "ai_script_category"
+        db_table = "script_category"
         verbose_name = _("脚本分类")
         verbose_name_plural = _("脚本分类")
-        ordering = ["name"]
 
     def __str__(self):
         return self.name
 
+class ActionType(CommonFieldsMixin):
+    """
+    操作类型定义表
+    """
+    action_type = models.CharField(_("操作类型"), max_length=50, unique=True)
+    name = models.CharField(_("操作名称"), max_length=100)
+    description = models.TextField(_("操作描述"), blank=True, null=True)
+    icon = models.CharField(_("操作图标"), max_length=100, blank=True, null=True)
+    is_enabled = models.BooleanField(_("是否启用"), default=True)
+    version = models.CharField(_("版本"), max_length=20, blank=True, null=True)
 
-class Script(models.Model):
+    class Meta:
+        db_table = "script_action_type"
+        verbose_name = _("操作类型库")
+        verbose_name_plural = _("操作类型库")
+        ordering = ["sort_order", "id"]
+
+    def __str__(self):
+        return self.name
+
+class ActionParam(CommonFieldsMixin):
+    """
+    动作参数定义表
+    """
+    class ParamType(models.TextChoices):
+        STRING = "string", _("字符串")
+        INT = "int", _("整数")
+        FLOAT = "float", _("小数")
+        BOOLEAN = "boolean", _("布尔")
+        ARRAY = "array", _("数组")
+        OBJECT = "object", _("对象")
+        ENUM = "enum", _("枚举")
+        JSON = "json", _("JSON")
+        DATE = "date", _("日期")
+        DATETIME = "datetime", _("日期时间")
+        FILE = "file", _("文件")
+        IMAGE = "image", _("图片")
+        # 可根据实际前端控件类型继续扩展
+
+    action_library = models.ForeignKey(
+        ActionType,
+        verbose_name=_("所属操作类型"),
+        on_delete=models.CASCADE,
+        related_name="params",
+    )
+    name = models.CharField(_("参数名"), max_length=100)
+    type = models.CharField(_("参数类型"), max_length=20, choices=ParamType.choices)
+    required = models.BooleanField(_("是否必填"), default=False)
+    default = models.JSONField(_("默认值"), blank=True, null=True)
+    description = models.TextField(_("参数描述"), blank=True, null=True)
+    description_en = models.TextField(_("参数英文描述"), blank=True, null=True)
+    visible = models.BooleanField(_("是否前端可见"), default=True)
+    editable = models.BooleanField(_("是否可编辑"), default=True)
+
+    class Meta:
+        db_table = "script_action_param"
+        verbose_name = _("动作参数")
+        verbose_name_plural = _("动作参数")
+        ordering = ["action_library", "sort_order", "id"]
+        unique_together = ("action_library", "name")
+
+    def __str__(self):
+        return f"{self.action_library.name} - {self.name}"
+
+class Script(CommonFieldsMixin):
     """
     测试脚本模型
 
@@ -70,25 +130,19 @@ class Script(models.Model):
         null=True,
         related_name="scripts",
     )
-    content = models.TextField(_("脚本内容"))
     description = models.TextField(_("脚本描述"), blank=True)
-    author = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        verbose_name=_("创建者"),
-        on_delete=models.SET_NULL,
-        null=True,
-        related_name="created_scripts",
-    )
+    version = models.CharField(_("版本"), max_length=50, default="1.0")
+    steps_count = models.IntegerField(_("步骤数量"), default=0)
+    steps = models.JSONField(_("步骤列表"), default=list, blank=True)
+    meta = models.JSONField(_("元数据"), default=dict, blank=True)
     is_active = models.BooleanField(_("是否启用"), default=True)
     include_in_log = models.BooleanField(
         _("加入日志"), default=True, help_text=_("是否将执行结果包含在测试报告中")
     )
     execution_count = models.IntegerField(_("执行次数"), default=0)
-    created_at = models.DateTimeField(_("创建时间"), auto_now_add=True)
-    updated_at = models.DateTimeField(_("更新时间"), auto_now=True)
 
     class Meta:
-        db_table = "ai_script"
+        db_table = "script_script"
         verbose_name = _("测试脚本")
         verbose_name_plural = _("测试脚本")
         ordering = ["-updated_at"]
@@ -101,6 +155,7 @@ class Script(models.Model):
         return self.name
 
 
+# Deprecated: ScriptFile 计划逐步废弃，推荐使用 Script 模型
 class ScriptFile(models.Model):
     """
     脚本文件模型
@@ -198,7 +253,7 @@ class ScriptExecution(models.Model):
     created_at = models.DateTimeField(_("创建时间"), auto_now_add=True)
 
     class Meta:
-        db_table = "ai_script_execution"
+        db_table = "script_execution"
         verbose_name = _("脚本执行记录")
         verbose_name_plural = _("脚本执行记录")
         ordering = ["-created_at"]
@@ -229,7 +284,7 @@ class ScriptVersion(models.Model):
     )
 
     class Meta:
-        db_table = "ai_script_version"
+        db_table = "script_version"
         verbose_name = _("脚本版本")
         verbose_name_plural = _("脚本版本")
         ordering = ["-created_at"]

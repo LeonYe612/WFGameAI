@@ -7,11 +7,10 @@ import { superRequest } from "@/utils/request";
 import { initRouter } from "@/router/utils";
 import { resetRouter } from "@/router";
 import { gmTypeEnum } from "@/utils/enums";
-import { useUserStore } from "./user";
 import { updateUserKey } from "@/utils/auth";
 import { connect } from "@/layout/components/sseState/useSSE";
-
-const userStore = useUserStore();
+import { nextTick } from "vue";
+import { useUserStoreHook } from "./user";
 
 export const useTeamStore = defineStore({
   id: "current-team",
@@ -49,7 +48,6 @@ export const useTeamStore = defineStore({
       this.teamFullNames = data.full_name || ["未选择团队"];
       if (data?.perms) {
         // 更新当前团队的权限到用户权限里
-        userStore.SET_PERMS(data.perms);
         updateUserKey({ perms: data.perms });
       }
     },
@@ -79,7 +77,8 @@ export const useTeamStore = defineStore({
       await superRequest({
         apiFunc: switchTeam,
         apiParams: { id: teamId },
-        onSucceed: (data: any) => {
+        onSucceed: async (data: any) => {
+          // SSE 创建连接
           connect();
           this.SET_TEAM(data);
           // 总是消息弹窗提示太烦人，改成动画提醒
@@ -88,10 +87,9 @@ export const useTeamStore = defineStore({
             this.animate = false;
           }, 1000);
           // 刷新路由: 只有id传递具体值指定切换团队的时候，再进行路由刷新
-          if (teamId && refreshRouter) {
+          if (teamId || refreshRouter) {
             resetRouter();
             initRouter();
-            // location.reload();
           }
         }
       });

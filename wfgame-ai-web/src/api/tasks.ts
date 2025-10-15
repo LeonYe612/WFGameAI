@@ -50,14 +50,14 @@ export interface CreateTaskParams {
 
 // 获取任务列表
 export const getTaskList = (params?: TaskQueryParams) => {
-  return http.request<ApiResult>("get", baseUrlApi("/api/tasks/"), {
+  return http.request<ApiResult>("get", baseUrlApi("/tasks/"), {
     params
   });
 };
 
 // 创建任务
 export const createTask = (data: CreateTaskParams) => {
-  return http.request<ApiResult>("post", baseUrlApi("/api/tasks/"), { data });
+  return http.request<ApiResult>("post", baseUrlApi("/api/tasks"), { data });
 };
 
 // 获取任务详情

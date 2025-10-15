@@ -119,6 +119,38 @@ class AuthUser(AbstractUser):
             return None
         return _find_default_team(joined_teams, [])
 
+    def get_active_team_perms(self, scope: Literal["all", "menu", "api", "action", "link"] = "all") -> List[str]:
+        """
+        获取用户当前激活团队的指定范围权限列表
+        :param scope: 权限范围
+        可选值: "all" (所有)、"menu" (菜单), "api" (接口), "action" (操作), "link" (外链)
+        :return: 权限代码列表
+        说明:
+        - 如果用户是超级管理员或SSO管理员, 则返回 ["*"] 表示所有权限
+        - 如果scope为"all", 则返回所有权限的合集
+        - 如果scope指定具体类型, 则仅返回对应范围内的权限列表
+        - 如果scope值无效, 则抛出ValueError异常
+        """
+        if self.is_superuser or self.is_sso_admin:
+            return ["*"]
+        curr_team_key = f"team_{self.active_team_id}"
+        curr_team_perms = self.sso_permissions.get(curr_team_key, {
+            "menu": [],
+            "api": [],
+            "action": [],
+            "link": []
+        })
+
+        if scope == "all":
+            all_perms = set()
+            for perms in curr_team_perms.values():
+                all_perms.update(perms)
+            return list(all_perms)
+        elif scope in curr_team_perms:
+            return curr_team_perms.get(scope, [])
+        else:
+            raise ValueError(f"Invalid scope value: {scope}")
+
     def get_active_team_menu_perms(self) -> List[str]:
         """
         获取用户当前激活团队的菜单权限

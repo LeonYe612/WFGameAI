@@ -14,6 +14,8 @@ class SSEEvent(Enum):
     BROADCAST = 'broadcast'
     # OCR TASK 更新
     OCR_TASK_UPDATE = 'ocr_task_update'
+    # 动作库更新
+    ACTION_UPDATE = 'action_update'
 
 
 class SSEConnectionManager:
