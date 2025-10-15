@@ -24,27 +24,25 @@ from .serializers import (
     TaskCreateSerializer, TaskUpdateSerializer, TaskScriptSerializer,
     TaskDeviceSerializer
 )
+from ..core.utils.response import api_response, CustomResponseModelViewSet
 
 logger = logging.getLogger(__name__)
 
 
 class TaskGroupViewSet(viewsets.ModelViewSet):
-    """任务组管理视图集"""
     queryset = TaskGroup.objects.all()
     serializer_class = TaskGroupSerializer
     permission_classes = (AllowAny,)
-    http_method_names = ['post']
+    http_method_names = ['get', 'post', 'put', 'patch', 'delete']
 
     def perform_create(self, serializer):
-        """创建任务组时设置创建者"""
         serializer.save(created_by=self.request.user if self.request.user.is_authenticated else None)
 
-
-class TaskViewSet(viewsets.ModelViewSet):
+class TaskViewSet(CustomResponseModelViewSet):
     """任务管理视图集"""
     queryset = Task.objects.all()
     permission_classes = (AllowAny,)
-    http_method_names = ['post']
+    http_method_names = ['get', 'post', 'put', 'patch', 'delete']
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['status', 'priority', 'group']
     search_fields = ['name', 'description']
@@ -52,19 +50,13 @@ class TaskViewSet(viewsets.ModelViewSet):
     ordering = ['-created_at']
 
     def get_serializer_class(self):
-        """根据操作类型返回不同的序列化器"""
         if self.action == 'list':
-            return TaskListSerializer
+            return api_response(data=TaskListSerializer)
         elif self.action == 'create':
             return TaskCreateSerializer
         elif self.action in ['update', 'partial_update']:
             return TaskUpdateSerializer
         return TaskDetailSerializer
-
-    def perform_create(self, serializer):
-        """创建任务时设置创建者"""
-        serializer.save(created_by=self.request.user if self.request.user.is_authenticated else None)
-        logger.info(f"任务已创建: {serializer.instance.name}")
 
     @action(detail=True, methods=['post'])
     def start(self, request, pk=None):
@@ -73,9 +65,9 @@ class TaskViewSet(viewsets.ModelViewSet):
 
         # 检查任务状态
         if task.status == 'running':
-            return Response(
-                {"error": "任务已在执行中"},
-                status=status.HTTP_400_BAD_REQUEST
+            return api_response(
+                msg="任务已在执行中",
+                code=status.HTTP_400_BAD_REQUEST
             )
 
         try:
@@ -102,16 +94,18 @@ class TaskViewSet(viewsets.ModelViewSet):
 
                 # 返回任务信息
                 serializer = self.get_serializer(task)
-                return Response({
+                return api_response(
+                    msg="任务启动成功",
+                    data={
                     "message": "任务启动成功",
                     "task": serializer.data
                 })
 
         except Exception as e:
             logger.error(f"启动任务失败: {str(e)}")
-            return Response(
-                {"error": f"启动任务失败: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            return api_response(
+                msg=f"启动任务失败: {str(e)}",
+                code=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
     @action(detail=True, methods=['post'])
@@ -120,9 +114,9 @@ class TaskViewSet(viewsets.ModelViewSet):
         task = self.get_object()
 
         if task.status != 'running':
-            return Response(
-                {"error": "任务未在执行中"},
-                status=status.HTTP_400_BAD_REQUEST
+            return api_response(
+                msg="任务未在执行中",
+                code=status.HTTP_400_BAD_REQUEST
             )
 
         try:
@@ -146,16 +140,18 @@ class TaskViewSet(viewsets.ModelViewSet):
                 logger.info(f"任务已停止: {task.name}")
 
                 serializer = self.get_serializer(task)
-                return Response({
+                return api_response(
+                    msg="任务停止成功",
+                    data={
                     "message": "任务停止成功",
                     "task": serializer.data
                 })
 
         except Exception as e:
             logger.error(f"停止任务失败: {str(e)}")
-            return Response(
-                {"error": f"停止任务失败: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            return api_response(
+                msg= f"停止任务失败: {str(e)}",
+                code=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
     @action(detail=True, methods=['post'])
@@ -188,9 +184,9 @@ class TaskViewSet(viewsets.ModelViewSet):
 
         except Exception as e:
             logger.error(f"重新执行任务失败: {str(e)}")
-            return Response(
-                {"error": f"重新执行任务失败: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            return api_response(
+                msg=f"重新执行任务失败: {str(e)}",
+                code=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
     @action(detail=True, methods=['post'])
@@ -199,7 +195,7 @@ class TaskViewSet(viewsets.ModelViewSet):
         task = self.get_object()
         task_scripts = TaskScript.objects.filter(task=task).order_by('order')
         serializer = TaskScriptSerializer(task_scripts, many=True)
-        return Response(serializer.data)
+        return api_response(data=serializer.data)
 
     @action(detail=True, methods=['post'])
     def devices(self, request, pk=None):
@@ -207,7 +203,7 @@ class TaskViewSet(viewsets.ModelViewSet):
         task = self.get_object()
         task_devices = TaskDevice.objects.filter(task=task)
         serializer = TaskDeviceSerializer(task_devices, many=True)
-        return Response(serializer.data)
+        return api_response(data=serializer.data)
 
     @action(detail=True, methods=['post'])
     def status_update(self, request, pk=None):
@@ -217,9 +213,9 @@ class TaskViewSet(viewsets.ModelViewSet):
         error_message = request.data.get('error_message', '')
 
         if new_status not in [choice[0] for choice in Task.STATUS_CHOICES]:
-            return Response(
-                {"error": "无效的状态"},
-                status=status.HTTP_400_BAD_REQUEST
+            return api_response(
+                msg="无效的状态",
+                code=status.HTTP_400_BAD_REQUEST
             )
 
         try:
@@ -242,13 +238,14 @@ class TaskViewSet(viewsets.ModelViewSet):
                     logger.error(f"任务错误信息: {task.name} - {error_message}")
 
                 serializer = self.get_serializer(task)
-                return Response(serializer.data)
+                return api_response(data=serializer.data)
 
         except Exception as e:
             logger.error(f"更新任务状态失败: {str(e)}")
-            return Response(
-                {"error": f"更新任务状态失败: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            return api_response(
+                msg=f"更新任务状态失败: {str(e)}",
+                data={"error": f"更新任务状态失败: {str(e)}"},
+                code=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
 
@@ -260,16 +257,16 @@ def task_bulk_operations(request):
     task_ids = request.data.get('task_ids', [])
 
     if not operation or not task_ids:
-        return Response(
-            {"error": "缺少操作类型或任务ID"},
-            status=status.HTTP_400_BAD_REQUEST
+        return api_response(
+            msg="缺少操作类型或任务ID",
+            code=status.HTTP_400_BAD_REQUEST
         )
 
     tasks = Task.objects.filter(id__in=task_ids)
     if not tasks.exists():
-        return Response(
-            {"error": "未找到指定的任务"},
-            status=status.HTTP_404_NOT_FOUND
+        return api_response(
+            msg="未找到指定的任务",
+            code=status.HTTP_404_NOT_FOUND
         )
 
     try:
@@ -302,8 +299,9 @@ def task_bulk_operations(request):
                     logger.error(f"批量操作任务失败: {task.name} - {str(e)}")
                     error_count += 1
 
-            return Response({
-                "message": f"批量操作完成",
+            return api_response(
+                msg=f"批量操作完成",
+                data={
                 "success_count": success_count,
                 "error_count": error_count,
                 "operation": operation
@@ -311,9 +309,9 @@ def task_bulk_operations(request):
 
     except Exception as e:
         logger.error(f"批量操作失败: {str(e)}")
-        return Response(
-            {"error": f"批量操作失败: {str(e)}"},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        return api_response(
+            msg=f"批量操作失败: {str(e)}",
+            code=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
 
@@ -340,7 +338,8 @@ def task_execution_logs(request, task_id):
         }
     ]
 
-    return Response({
+    return api_response(
+        data={
         "task_id": task_id,
         "task_name": task.name,
         "logs": logs

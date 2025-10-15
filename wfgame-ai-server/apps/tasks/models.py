@@ -8,17 +8,13 @@ from django.db import models
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 
+from apps.core.models.common import CommonFieldsMixin
 
-class TaskGroup(models.Model):
+
+class TaskGroup(CommonFieldsMixin):
     """任务组"""
     name = models.CharField(_('组名'), max_length=100)
     description = models.TextField(_('描述'), blank=True)
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL,
-                                verbose_name=_('创建者'),
-                                on_delete=models.SET_NULL,
-                                null=True)
-    created_at = models.DateTimeField(_('创建时间'), auto_now_add=True)
-    updated_at = models.DateTimeField(_('更新时间'), auto_now=True)
 
     class Meta:
         db_table = 'ai_task_group'
@@ -30,7 +26,7 @@ class TaskGroup(models.Model):
         return self.name
 
 
-class Task(models.Model):
+class Task(CommonFieldsMixin):
     """测试任务"""
     STATUS_CHOICES = (
         ('pending', _('等待中')),
@@ -44,6 +40,11 @@ class Task(models.Model):
         (0, _('低')),
         (1, _('中')),
         (2, _('高')),
+    )
+
+    TASK_CHOICES = (
+        (0, _('调试任务')),
+        (1, _('普通任务')),
     )
 
     name = models.CharField(_('任务名称'), max_length=255)
@@ -66,13 +67,7 @@ class Task(models.Model):
     start_time = models.DateTimeField(_('开始时间'), null=True, blank=True)
     end_time = models.DateTimeField(_('结束时间'), null=True, blank=True)
     execution_time = models.FloatField(_('执行时长(秒)'), null=True, blank=True)
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL,
-                                verbose_name=_('创建者'),
-                                on_delete=models.SET_NULL,
-                                null=True,
-                                related_name='created_tasks')
-    created_at = models.DateTimeField(_('创建时间'), auto_now_add=True)
-    updated_at = models.DateTimeField(_('更新时间'), auto_now=True)
+    type = models.IntegerField(_('任务类型'), choices=TASK_CHOICES, default=0)
 
     class Meta:
         db_table = 'ai_task'
@@ -88,7 +83,7 @@ class Task(models.Model):
         return f"{self.name} ({self.get_status_display()})"
 
 
-class TaskScript(models.Model):
+class TaskScript(CommonFieldsMixin):
     """任务-脚本关联"""
     task = models.ForeignKey(Task,
                           verbose_name=_('任务'),
@@ -99,7 +94,6 @@ class TaskScript(models.Model):
     order = models.IntegerField(_('执行顺序'), default=0)
     timeout = models.IntegerField(_('超时时间(秒)'), default=3600)
     retry_count = models.IntegerField(_('重试次数'), default=0)
-    created_at = models.DateTimeField(_('创建时间'), auto_now_add=True)
 
     class Meta:
         db_table = 'ai_task_script'
@@ -112,7 +106,7 @@ class TaskScript(models.Model):
         return f"{self.task.name} - {self.script.name} ({self.order})"
 
 
-class TaskDevice(models.Model):
+class TaskDevice(CommonFieldsMixin):
     """任务-设备关联"""
     STATUS_CHOICES = (
         ('pending', _('等待中')),
@@ -133,7 +127,6 @@ class TaskDevice(models.Model):
     end_time = models.DateTimeField(_('结束时间'), null=True, blank=True)
     execution_time = models.FloatField(_('执行时长(秒)'), null=True, blank=True)
     error_message = models.TextField(_('错误信息'), blank=True)
-    created_at = models.DateTimeField(_('创建时间'), auto_now_add=True)
 
     class Meta:
         db_table = 'ai_task_device'

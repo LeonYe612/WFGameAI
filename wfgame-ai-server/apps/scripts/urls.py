@@ -67,7 +67,7 @@ from .app_lifecycle_api import (
 )
 
 # 创建路由器并注册视图集
-router = DefaultRouter(trailing_slash=False)
+router = DefaultRouter(trailing_slash='/?')
 router.register(r'categories', ScriptCategoryViewSet)
 router.register(r'scripts', ScriptViewSet)
 router.register(r'history', ScriptVersionViewSet)
