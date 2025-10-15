@@ -113,6 +113,7 @@ const onQueryChanged = (value: any, key: string) => {
 // 【重置按钮】点击事件
 const handleResetClick = () => {
   resetQueryForm();
+  clearSelection();
   if (query.value.category) {
     // 如果当前重置时选择了目录，则需要重置目录选择器
     // 目录选择器变更时，会自动 fetchData

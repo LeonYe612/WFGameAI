@@ -68,22 +68,22 @@ from .app_lifecycle_api import (
 
 # 创建路由器并注册视图集
 router = DefaultRouter(trailing_slash='/?')
-router.register(r'categories', ScriptCategoryViewSet)
-router.register(r'scripts', ScriptViewSet)
+# router.register(r'categories', ScriptCategoryViewSet)
+# router.register(r'scripts', ScriptViewSet)
 router.register(r'history', ScriptVersionViewSet)
 router.register(r'executions', ScriptExecutionViewSet)
 
 # API URL配置
 urlpatterns = [
     # 只允许POST的主路由，修改为list而非create
-    path('', ScriptViewSet.as_view({'post': 'list'})),
+    # path('', ScriptViewSet.as_view({'post': 'list'})),
     # 包含路由器生成的其他URL
     path('', include(router.urls)),
 
-    # 脚本分类 api
+    # 脚本目录 api
     path('categories/', CategoryListView.as_view(), name='category-list'),
     path('categories/<int:pk>/', CategoryDetailView.as_view(), name='category-detail'),
-    path('categories/tree/', CategoryTreeView.as_view()),
+    path('categories/tree/', CategoryTreeView.as_view(), name='category-tree'),
 
     # 脚本管理 api
     path('scripts/', ScriptListView.as_view(), name='script-list'),
