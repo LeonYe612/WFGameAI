@@ -43,26 +43,32 @@ export function useSettingsManagement() {
       icon: "Setting",
       component: "GeneralSettings"
     },
+    // {
+    //   id: "python",
+    //   label: "Python环境",
+    //   icon: "Monitor",
+    //   component: "PythonSettings"
+    // },
     {
-      id: "python",
-      label: "Python环境",
-      icon: "Monitor",
-      component: "PythonSettings"
+      id: "action-library",
+      label: "动作库管理",
+      icon: "Menu",
+      component: "ActionSettings"
     },
-    {
-      id: "user",
-      label: "用户管理",
-      icon: "User",
-      component: "UserManagement"
-    },
-    { id: "ai", label: "AI设置", icon: "MagicStick", component: "AISettings" },
-    {
-      id: "backup",
-      label: "备份与恢复",
-      icon: "Download",
-      component: "BackupRestore"
-    },
-    { id: "log", label: "系统日志", icon: "Document", component: "SystemLog" },
+    // {
+    //   id: "user",
+    //   label: "用户管理",
+    //   icon: "User",
+    //   component: "UserManagement"
+    // },
+    // { id: "ai", label: "AI设置", icon: "MagicStick", component: "AISettings" },
+    // {
+    //   id: "backup",
+    //   label: "备份与恢复",
+    //   icon: "Download",
+    //   component: "BackupRestore"
+    // },
+    // { id: "log", label: "系统日志", icon: "Document", component: "SystemLog" },
     { id: "api", label: "API配置", icon: "Link", component: "APISettings" }
   ];
 

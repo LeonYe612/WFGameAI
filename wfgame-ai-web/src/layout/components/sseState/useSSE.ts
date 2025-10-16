@@ -27,7 +27,8 @@ export enum SSEEvent {
   HEARTBEAT = "heartbeat", // 心跳
   NOTIFICATION = "notification", // 通用弹窗消息
   // ============= 更多自定义业务事件 =============
-  OCR_TASK_UPDATE = "ocr_task_update" // OCR 任务更新
+  OCR_TASK_UPDATE = "ocr_task_update", // OCR 任务更新
+  ACTION_UPDATE = "action_update" // 动作库更新
 }
 
 // --- 模块级变量，确保全局只有一个 EventSource 实例和监听器集合 ---

@@ -46,6 +46,24 @@ export default ({ command, mode }: ConfigEnv): UserConfigExport => {
       proxy: {}
     },
     plugins: getPluginsList(command, VITE_CDN, VITE_COMPRESSION),
+    css: {
+      preprocessorOptions: {
+        scss: {
+          quietDeps: true, // 如果警告来自 node_modules，请取消注释此行
+          // 如果上述选项无效，请使用下面的 logger 配置
+          logger: {
+            warn(message, options) {
+              // 忽略 @import 弃用警告
+              if (options.deprecation) {
+                return;
+              }
+              // 为其他所有警告调用默认的 logger
+              options.defaultHandler(message, options);
+            }
+          }
+        }
+      }
+    },
     // https://cn.vitejs.dev/config/dep-optimization-options.html#dep-optimization-options
     optimizeDeps: {
       include,

@@ -4,6 +4,7 @@ import MainContent from "@/layout/components/mainContent/index.vue";
 import SettingsMenu from "./components/settingsMenu.vue";
 import GeneralSettings from "./components/generalSettings.vue";
 import PythonSettings from "./components/pythonSettings.vue";
+import ActionSettings from "./components/actionSettings.vue";
 import PlaceholderSettings from "./components/placeholderSettings.vue";
 import { useSettingsManagement } from "./utils/hook";
 
@@ -20,7 +21,7 @@ const {
   pythonEnvError,
   menuItems,
   timeZoneOptions,
-  fetchSystemSettings,
+  // fetchSystemSettings,
   saveSettings,
   resetSettings,
   fetchPythonEnvironments,
@@ -29,7 +30,7 @@ const {
 } = useSettingsManagement();
 
 onMounted(() => {
-  fetchSystemSettings();
+  // fetchSystemSettings();
 });
 
 // 处理菜单切换
@@ -59,7 +60,16 @@ const updateSystemSettings = (newSettings: any) => {
 </script>
 
 <template>
-  <MainContent title="系统设置">
+  <MainContent :show-team-info="false">
+    <template #custom-header>
+      <div class="flex items-center mr-2">
+        <h2 class="mr-2" style="letter-spacing: 1px">系统设置</h2>
+        <el-divider direction="vertical" />
+        <span class="text-gray-400">
+          配置平台的各项全局参数，在所有团队中生效，请谨慎修改
+        </span>
+      </div>
+    </template>
     <div class="settings-layout">
       <!-- 左侧菜单 -->
       <div class="settings-sidebar">
@@ -93,45 +103,11 @@ const updateSystemSettings = (newSettings: any) => {
           @switch="handlePythonEnvSwitch"
         />
 
-        <!-- 用户管理 -->
-        <PlaceholderSettings
-          v-else-if="activeMenu === 'user'"
-          title="用户管理"
-          icon="User"
-          description="用户管理功能正在开发中，敬请期待..."
-        />
+        <!-- 动作库管理 -->
+        <ActionSettings v-else-if="activeMenu === 'action-library'" />
 
-        <!-- AI设置 -->
-        <PlaceholderSettings
-          v-else-if="activeMenu === 'ai'"
-          title="AI设置"
-          icon="MagicStick"
-          description="AI设置功能正在开发中，敬请期待..."
-        />
-
-        <!-- 备份与恢复 -->
-        <PlaceholderSettings
-          v-else-if="activeMenu === 'backup'"
-          title="备份与恢复"
-          icon="Download"
-          description="备份与恢复功能正在开发中，敬请期待..."
-        />
-
-        <!-- 系统日志 -->
-        <PlaceholderSettings
-          v-else-if="activeMenu === 'log'"
-          title="系统日志"
-          icon="Document"
-          description="系统日志功能正在开发中，敬请期待..."
-        />
-
-        <!-- API配置 -->
-        <PlaceholderSettings
-          v-else-if="activeMenu === 'api'"
-          title="API配置"
-          icon="Link"
-          description="API配置功能正在开发中，敬请期待..."
-        />
+        <!-- 占位符 -->
+        <PlaceholderSettings title="" icon="" v-else />
       </div>
     </div>
   </MainContent>

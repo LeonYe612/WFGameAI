@@ -36,6 +36,23 @@ from .views import (
     delete_script  # 添加删除脚本视图函数
 )
 
+from .apis.category import CategoryListView, CategoryDetailView, CategoryTreeView
+from .apis.action import (
+    ActionTypeListView,
+    ActionTypeDetailView,
+    ActionParamListView,
+    ActionParamDetailView,
+    ActionTypeWithParamsView,
+    ActionSortView
+)
+from .apis.script import (
+    ScriptListView,
+    ScriptDetailView,
+    ScriptDeleteView,
+    ScriptMoveView,
+    ScriptCopyView
+)
+
 # 应用生命周期管理API
 from .app_lifecycle_api import (
     get_app_templates,
@@ -51,17 +68,37 @@ from .app_lifecycle_api import (
 
 # 创建路由器并注册视图集
 router = DefaultRouter(trailing_slash='/?')
-router.register(r'categories', ScriptCategoryViewSet)
-router.register(r'scripts', ScriptViewSet)
+# router.register(r'categories', ScriptCategoryViewSet)
+# router.register(r'scripts', ScriptViewSet)
 router.register(r'history', ScriptVersionViewSet)
 router.register(r'executions', ScriptExecutionViewSet)
 
 # API URL配置
 urlpatterns = [
     # 只允许POST的主路由，修改为list而非create
-    path('', ScriptViewSet.as_view({'post': 'list'})),
+    # path('', ScriptViewSet.as_view({'post': 'list'})),
     # 包含路由器生成的其他URL
     path('', include(router.urls)),
+
+    # 脚本目录 api
+    path('categories/', CategoryListView.as_view(), name='category-list'),
+    path('categories/<int:pk>/', CategoryDetailView.as_view(), name='category-detail'),
+    path('categories/tree/', CategoryTreeView.as_view(), name='category-tree'),
+
+    # 脚本管理 api
+    path('scripts/', ScriptListView.as_view(), name='script-list'),
+    path('scripts/<int:pk>/', ScriptDetailView.as_view(), name='script-detail'),
+    path('scripts/delete/', ScriptDeleteView.as_view(), name='script-delete'),
+    path('scripts/move/', ScriptMoveView.as_view(), name='script-move'),
+    path('scripts/copy/', ScriptCopyView.as_view(), name='script-copy'),
+
+    # 操作类型和参数 api
+    path('action-types/', ActionTypeListView.as_view(), name='action-type-list'),
+    path('action-types/<int:pk>/', ActionTypeDetailView.as_view(), name='action-type-detail'),
+    path('action-types/with-params/', ActionTypeWithParamsView.as_view(), name='action-type-with-params'),
+    path('action-params/', ActionParamListView.as_view(), name='action-param-list'),
+    path('action-params/<int:pk>/', ActionParamDetailView.as_view(), name='action-param-detail'),
+    path('action-sort/', ActionSortView.as_view(), name='action-sort'),
 
     # 自定义API端点
     path('devices/', get_devices, name='get-devices'),

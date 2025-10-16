@@ -14,7 +14,8 @@ import {
   isAllEmpty,
   intersection,
   storageSession,
-  isIncludeAllChildren
+  isIncludeAllChildren,
+  is
 } from "@pureadmin/utils";
 import { getConfig } from "@/config";
 import { menuType } from "@/layout/types";
@@ -31,6 +32,7 @@ import defaultRoutes from "@/router/defaultRoutes";
 
 // 动态路由
 import { getAsyncRoutes } from "@/api/routes";
+import { useUserStoreHook } from "@/store/modules/user";
 
 function handRank(routeInfo: any) {
   const { name, path, parentId, meta } = routeInfo;
@@ -207,7 +209,8 @@ function initRouter() {
   } else {
     return new Promise(resolve => {
       getAsyncRoutes().then(({ data }) => {
-        data = data && data.length > 0 ? data : defaultRoutes;
+        // data = data && data.length > 0 ? data : defaultRoutes;
+        data = data && data.length > 0 ? data : [];
         handleAsyncRoutes(cloneDeep(data));
         resolve(router);
       });
@@ -352,7 +355,7 @@ function getAuths(): Array<string> {
 }
 
 /** 是否有按钮级别的权限 */
-function hasAuth(value: string | Array<string>): boolean {
+function hasAuthBak(value: string | Array<string>): boolean {
   // 如果前端未启用权限验证，则直接返回true
   if (VITE_ENABLED_AUTH_COMPONENT === "false") return true;
   if (!value) return false;
@@ -363,6 +366,22 @@ function hasAuth(value: string | Array<string>): boolean {
     ? metaAuths.includes(value)
     : isIncludeAllChildren(value, metaAuths);
   return isAuths ? true : false;
+}
+
+/** 是否有按钮级别的权限 */
+function hasAuth(value: string | Array<string>): boolean {
+  // 如果前端未启用权限验证，则直接返回true
+  if (VITE_ENABLED_AUTH_COMPONENT === "false") return true;
+  // 无效值直接返回 false
+  if (!value) return false;
+  // 读取用户权限集合
+  const userPermsSet = useUserStoreHook()?.permsSet;
+  if (!userPermsSet || userPermsSet.size === 0) return false;
+  if (userPermsSet.has("*")) return true;
+  if (isString(value)) {
+    return userPermsSet.has(value);
+  }
+  return value.every(v => userPermsSet.has(v));
 }
 
 /** 获取所有菜单中的第一个菜单（顶级菜单）*/

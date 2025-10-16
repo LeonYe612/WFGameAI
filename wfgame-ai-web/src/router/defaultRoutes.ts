@@ -112,13 +112,34 @@ export default [
         id: 80,
         parent_id: 79,
         genre: 1,
-        path: "/scripts/index",
-        component: "/scripts/index",
-        name: "AI-SCRIPTS-INDEX",
+        path: "/scripts/list",
+        component: "/scripts/list/index",
+        name: "AI-SCRIPTS-LIST",
         queue: 0,
         meta: {
           title: "脚本管理",
           showLink: true,
+          showParent: false,
+          keepAlive: true,
+          frameLoading: false,
+          hiddenTag: false,
+          transition: {
+            enterTransition: "animate__fadeIn animate__faster",
+            leaveTransition: "animate__fadeOut animate__faster"
+          }
+        }
+      },
+      {
+        id: 81,
+        parent_id: 79,
+        genre: 1,
+        path: "/scripts/detail",
+        component: "/scripts/detail/index",
+        name: "AI-SCRIPTS-DETAIL",
+        queue: 0,
+        meta: {
+          title: "脚本详情",
+          showLink: false,
           showParent: false,
           keepAlive: true,
           frameLoading: false,
@@ -288,9 +309,9 @@ export default [
         id: 89,
         parent_id: 88,
         genre: 1,
-        path: "/ocr/index",
-        component: "/ocr/index",
-        name: "AI-OCR-INDEX",
+        path: "/ocr/list",
+        component: "/ocr/list/index",
+        name: "AI-OCR-LIST",
         queue: 0,
         meta: {
           title: "OCR识别",
@@ -310,7 +331,7 @@ export default [
         parent_id: 88,
         genre: 1,
         path: "/ocr/result",
-        component: "/ocr/result",
+        component: "/ocr/result/index",
         name: "AI-OCR-RESULT",
         queue: 0,
         meta: {

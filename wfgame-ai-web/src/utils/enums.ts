@@ -100,3 +100,15 @@ export const ocrIsMatchEnum: Record<string, EnumValue> = {
     order: 3
   }
 };
+
+/** 脚本类型 */
+export const scriptTypeEnum: Record<string, EnumValue> = {
+  MANUAL: { label: "手动脚本", value: "manual", order: 2 },
+  RECORD: { label: "录制脚本", value: "record", order: 3 }
+};
+
+/** 加入日志 */
+export const includeInLogEnum: Record<string, EnumValue> = {
+  YES: { label: "是", value: true, order: 2, type: "success" },
+  NO: { label: "否", value: false, order: 3, type: "info" }
+};

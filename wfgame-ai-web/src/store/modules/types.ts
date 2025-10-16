@@ -46,6 +46,7 @@ export type userType = {
   username?: string;
   roles?: Array<string>;
   perms?: Array<string>;
+  permsSet?: Set<string>;
   verifyCode?: string;
   currentPage?: number;
   isRemembered?: boolean;

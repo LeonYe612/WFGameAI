@@ -5,11 +5,11 @@
 """
 
 from django.db import models
-from django.conf import settings
 from django.utils.translation import gettext_lazy as _
+from apps.core.models.common import CommonFieldsMixin
 
 
-class Report(models.Model):
+class Report(CommonFieldsMixin):
     """测试报告"""
     STATUS_CHOICES = (
         ('generating', _('生成中')),
@@ -35,15 +35,9 @@ class Report(models.Model):
     error_cases = models.IntegerField(_('错误用例数'), default=0)
     skipped_cases = models.IntegerField(_('跳过用例数'), default=0)
     success_rate = models.FloatField(_('成功率'), default=0)
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL,
-                                verbose_name=_('创建者'),
-                                on_delete=models.SET_NULL,
-                                null=True)
-    created_at = models.DateTimeField(_('创建时间'), auto_now_add=True)
-    updated_at = models.DateTimeField(_('更新时间'), auto_now=True)
 
     class Meta:
-        db_table = 'ai_report'
+        db_table = 'report_report'
         verbose_name = _('测试报告')
         verbose_name_plural = _('测试报告')
         ordering = ['-created_at']
@@ -56,7 +50,7 @@ class Report(models.Model):
         return self.name
 
 
-class ReportDetail(models.Model):
+class ReportDetail(CommonFieldsMixin):
     """报告详情"""
     report = models.ForeignKey(Report,
                             verbose_name=_('报告'),
@@ -77,10 +71,9 @@ class ReportDetail(models.Model):
     error_message = models.TextField(_('错误信息'), blank=True)
     screenshot_path = models.CharField(_('截图路径'), max_length=500, blank=True)
     log_path = models.CharField(_('日志路径'), max_length=500, blank=True)
-    created_at = models.DateTimeField(_('创建时间'), auto_now_add=True)
 
     class Meta:
-        db_table = 'ai_report_detail'
+        db_table = 'report_detail'
         verbose_name = _('报告详情')
         verbose_name_plural = _('报告详情')
         ordering = ['start_time']

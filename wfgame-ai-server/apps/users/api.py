@@ -211,7 +211,7 @@ class SwitchTeamView(APIView):
             "id": team_info["id"],
             "name": team_info["name"][-1],
             "full_name": team_info["name"],
-            "perms": user.get_active_team_menu_perms(),
+            "perms": user.get_active_team_perms(scope="all"),
         })
 
 

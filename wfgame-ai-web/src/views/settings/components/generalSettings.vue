@@ -45,7 +45,7 @@ const updateSettings = (key: keyof SystemSettings, value: any) => {
 </script>
 
 <template>
-  <el-card shadow="never">
+  <el-card shadow="never" class="h-full">
     <template #header>
       <div class="card-header">
         <el-icon><Setting /></el-icon>
