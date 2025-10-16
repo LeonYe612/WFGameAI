@@ -15,6 +15,8 @@ import { Refresh, CirclePlusFilled } from "@element-plus/icons-vue";
 import ActiveTeamInfo from "@/views/common/display/activeTeamInfo.vue";
 import ScriptMoveDialog from "@/views/scripts/list/components/scriptMoveDialog.vue";
 import AcrossTeamCategorySelector from "@/views/scripts/list/components/crossTeamCategorySelector.vue";
+import DebugIcon from "@iconify-icons/codicon/debug";
+import { useRenderIcon } from "@/components/ReIcon/src/hooks";
 import { computed, ref } from "vue";
 import { perms } from "@/utils/permsCode";
 import { hasAuth } from "@/router/utils";
@@ -368,23 +370,29 @@ defineExpose({
         <el-table-column
           fixed="right"
           label="操作"
-          width="180px"
+          width="220px"
           align="center"
           v-if="!props.readonly"
         >
           <template #default="{ row }">
-            <div @click.stop>
+            <div @click.stop v-if="hasAuth(perms.script.list.edit)">
               <el-button
-                v-if="hasAuth(perms.script.list.edit)"
-                title="回放脚本"
+                title="调试脚本"
+                :icon="useRenderIcon(DebugIcon)"
+                type="warning"
+                plain
+                circle
+                @click="handleExecute(row, 1)"
+              />
+              <el-button
+                title="运行脚本"
                 :icon="CaretRight"
                 type="success"
                 plain
                 circle
-                @click="handleExecute(row)"
+                @click="handleExecute(row, 2)"
               />
               <el-button
-                v-if="hasAuth(perms.script.list.edit)"
                 title="编辑脚本"
                 :icon="Edit"
                 type="primary"
@@ -393,16 +401,20 @@ defineExpose({
                 @click="handleEditNew(row, '_dialog')"
               />
               <el-dropdown @command="handleMoreOperation($event, row)">
-                <el-button class="ml-3" type="warning" plain circle>
-                  <el-icon><ArrowDown /></el-icon>
-                </el-button>
+                <el-button
+                  class="ml-3"
+                  :icon="ArrowDown"
+                  type="info"
+                  plain
+                  circle
+                />
                 <template #dropdown>
                   <el-dropdown-menu>
-                    <el-dropdown-item command="copy">
-                      复制当前脚本
-                    </el-dropdown-item>
                     <el-dropdown-item command="edit">
                       在新窗口编辑
+                    </el-dropdown-item>
+                    <el-dropdown-item command="copy">
+                      复制当前脚本
                     </el-dropdown-item>
                     <el-dropdown-item command="delete">
                       删除当前脚本

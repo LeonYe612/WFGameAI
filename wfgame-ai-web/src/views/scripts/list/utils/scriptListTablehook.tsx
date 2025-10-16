@@ -20,7 +20,8 @@ export const useScriptListTable = (props?: any) => {
   const {
     navigateToScriptDetail,
     // navigateToReportDetail,
-    navigateToDebugReportList
+    navigateToDebugReportList,
+    navigateToTasksPage
   } = useNavigate();
 
   const _scriptStore = useScriptStore();
@@ -46,9 +47,14 @@ export const useScriptListTable = (props?: any) => {
   /** 调试用例 */
   const handleDebug = _row => {};
 
-  /** 执行用例 */
-  const handleExecute = async _row => {
-    message("回放功能开发中，敬请期待！", { type: "info" });
+  /** 执行脚本 */
+  const handleExecute = async (_row, run_type: number) => {
+    const queryParams = {
+      script_ids: [_row.id],
+      task_type: 1, // 回放类型 - todo: 定义枚举
+      run_type: run_type // 调试类型 - todo: 定义枚举
+    };
+    navigateToTasksPage(queryParams);
     return;
   };
 

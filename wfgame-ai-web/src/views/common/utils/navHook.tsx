@@ -119,6 +119,18 @@ export function useNavigate() {
     router.push({ name: "PlanManagement" });
   }
 
+  function navigateToTasksPage(params = {}, blank = false) {
+    if (blank) {
+      const href = router.resolve({
+        name: "AI-TASKS",
+        query: { ...params }
+      }).href;
+      window.open(href, "_blank");
+      return;
+    }
+    router.push({ name: "AI-TASKS", query: { ...params } });
+  }
+
   function navigateToExecutorDownload() {
     navigateTo({
       parameter: { showTag: "true" },
@@ -272,6 +284,7 @@ export function useNavigate() {
     navigateToDebugReportList,
     navigateToPlanReportList,
     navigateToExecutorDownload,
+    navigateToTasksPage,
     toDetail,
     initToDetail,
     getParameter,
