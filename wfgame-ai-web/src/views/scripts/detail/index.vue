@@ -4,8 +4,9 @@ import ScriptActionLibrary from "./components/scriptActionLibrary.vue";
 import ScriptStepsList from "./components/scriptStepsList.vue";
 import ScriptStepsJson from "./components/scriptStepsJson.vue";
 import scriptBaseInfo from "./components/scriptBaseInfo.vue";
+import ScriptStepImporter from "./components/scriptStepImporter.vue";
 import { useNavigate } from "@/views/common/utils/navHook";
-import { computed, watch } from "vue";
+import { computed, watch, ref } from "vue";
 import { useScriptStoreHook } from "@/store/modules/script";
 const scriptStore = useScriptStoreHook();
 
@@ -41,6 +42,16 @@ const emit = defineEmits<{
 const onSave = () => {
   emit("save");
 };
+
+const scriptStepImporterRef = ref(null);
+
+const openImporter = () => {
+  scriptStepImporterRef.value?.open();
+};
+
+const handleStepsImport = (steps: any[]) => {
+  scriptStore.insertSteps(steps);
+};
 </script>
 
 <template>
@@ -56,7 +67,7 @@ const onSave = () => {
       </el-col>
       <el-col :span="9">
         <div class="component-wrapper">
-          <ScriptStepsList class="h-full" />
+          <ScriptStepsList class="h-full" @open-importer="openImporter" />
         </div>
       </el-col>
       <el-col :span="8">
@@ -65,6 +76,10 @@ const onSave = () => {
         </div>
       </el-col>
     </el-row>
+    <ScriptStepImporter
+      ref="scriptStepImporterRef"
+      @import="handleStepsImport"
+    />
   </MainContent>
 </template>
 

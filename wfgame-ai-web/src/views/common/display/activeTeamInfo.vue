@@ -6,6 +6,11 @@ const props = defineProps({
   title: {
     type: String,
     default: ""
+  },
+  // 是否显示团队信息
+  showTeamInfo: {
+    type: Boolean,
+    default: true
   }
 });
 </script>
@@ -18,7 +23,7 @@ const props = defineProps({
       <h2 class="mr-2" style="letter-spacing: 1px">{{ props.title }}</h2>
       <el-divider direction="vertical" />
     </div>
-    <div class="flex items-center">
+    <div class="flex items-center" v-if="props.showTeamInfo">
       <el-icon size="30">
         <TeamIcon />
       </el-icon>

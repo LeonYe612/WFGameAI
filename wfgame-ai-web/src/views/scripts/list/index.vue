@@ -59,6 +59,7 @@ const onReset = () => {
     </el-aside>
     <el-main style="padding: 0 0 0 10px">
       <ScriptListTable
+        select-mode="multiple"
         class="w-full h-full"
         ref="ScriptListTableRef"
         @reset="onReset"

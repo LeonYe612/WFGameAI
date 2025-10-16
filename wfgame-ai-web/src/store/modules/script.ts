@@ -126,6 +126,18 @@ export const useScriptStore = defineStore({
       this.activeStep = this.scriptItem.steps.length - 1;
       this.setActiveFocus(this.activeStep, null);
     },
+    /** 向当前选中索引后方，插入 steps */
+    insertSteps(steps: any[], changeActive = false) {
+      const insertIndex =
+        this.activeStep !== null
+          ? this.activeStep + 1
+          : this.scriptItem.steps.length;
+      this.scriptItem.steps.splice(insertIndex, 0, ...steps);
+      if (changeActive && steps.length > 0) {
+        this.activeStep = insertIndex;
+        this.setActiveFocus(this.activeStep, null);
+      }
+    },
     /** 保存（创建或更新）脚本 */
     async saveScript() {
       try {

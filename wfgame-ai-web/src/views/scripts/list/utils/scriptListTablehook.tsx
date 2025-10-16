@@ -164,6 +164,7 @@ export const useScriptListTable = (props?: any) => {
 
   const clearSelection = () => {
     tableRef.value?.clearSelection();
+    tableRef.value?.setCurrentRow(null);
   };
 
   // 获取选中行的总行数

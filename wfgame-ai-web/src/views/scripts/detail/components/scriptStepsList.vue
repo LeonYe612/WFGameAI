@@ -2,11 +2,12 @@
 import { computed, ref, watch, nextTick } from "vue";
 import { useScriptStoreHook } from "@/store/modules/script";
 import draggable from "vuedraggable";
-import { Close, Delete, Download } from "@element-plus/icons-vue";
+import { Close, Delete, Download, CopyDocument } from "@element-plus/icons-vue";
 
 defineOptions({
   name: "ScriptStepsList"
 });
+defineEmits(["open-importer"]);
 
 const scriptStore = useScriptStoreHook();
 const activeStep = computed(() => scriptStore.getActiveStep); // 控制展开项
@@ -51,6 +52,18 @@ const removeStep = (event: MouseEvent, index: number) => {
   }
 };
 
+const copyStep = (event: MouseEvent, index: number) => {
+  event.stopPropagation();
+  const stepToCopy = steps.value[index];
+  // 深拷贝
+  const copiedStep = JSON.parse(JSON.stringify(stepToCopy));
+  // 可以在备注中添加 " (复制)" 以作区分
+  copiedStep.remark = `${copiedStep.remark}`;
+  steps.value.splice(index + 1, 0, copiedStep);
+  // 激活新复制的步骤
+  scriptStore.setActiveFocus(index + 1);
+};
+
 const clearSteps = () => {
   steps.value.splice(0, steps.value.length);
   scriptStore.setActiveFocus(null);
@@ -87,7 +100,12 @@ watch(
       <h4 class="text-gray-500">共 {{ steps.length || 0 }} 步</h4>
       <!-- 按钮组操作栏 -->
       <el-button-group class="ml-auto">
-        <el-button v-if="false" size="small" :icon="Download" plain>
+        <el-button
+          size="small"
+          :icon="Download"
+          plain
+          @click="$emit('open-importer')"
+        >
           导入步骤
         </el-button>
         <el-button size="small" :icon="Delete" plain @click="clearSteps">
@@ -120,10 +138,22 @@ watch(
               />
               <span class="step-index">步骤 {{ index + 1 }} </span>
               <el-divider direction="vertical" />
-              <span class="step-title"> {{ element.remark }}</span>
+              <span class="step-title" :title="element.remark">
+                {{ element.remark }}</span
+              >
               <el-tag size="small" effect="plain" class="mx-2">{{
                 element.action
               }}</el-tag>
+              <el-button
+                type="primary"
+                :icon="CopyDocument"
+                circle
+                plain
+                size="small"
+                class="copy-btn"
+                title="复制步骤"
+                @click="copyStep($event, index)"
+              />
               <el-button
                 type="danger"
                 :icon="Close"
@@ -315,13 +345,15 @@ watch(
     margin-right: 10px;
   }
 
-  .delete-btn {
+  .delete-btn,
+  .copy-btn {
     margin-left: 10px;
     opacity: 0;
     transition: opacity 0.2s ease-in-out;
   }
 
-  .step-header:hover .delete-btn {
+  .step-header:hover .delete-btn,
+  .step-header:hover .copy-btn {
     opacity: 1;
   }
 
