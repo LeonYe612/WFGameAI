@@ -4,6 +4,7 @@ import { scriptApi, actionTypeApi, type ScriptItem } from "@/api/scripts";
 import { ref, computed } from "vue";
 import { message } from "@/utils/message";
 import { scriptTypeEnum } from "@/utils/enums";
+import { superRequest } from "@/utils/request";
 
 export const useScriptStore = defineStore({
   id: "pure-script",
@@ -142,15 +143,31 @@ export const useScriptStore = defineStore({
     /** 保存（创建或更新）脚本 */
     async saveScript() {
       try {
-        let response;
-        if (this.isEditMode) {
-          response = await scriptApi.update(this.scriptItem as ScriptItem);
-          message("保存成功", { type: "success" });
+        let apiFunc;
+        let succeedMsgContent;
+        const isEditMode = this.isEditMode;
+        if (isEditMode) {
+          apiFunc = scriptApi.update;
+          succeedMsgContent = "保存成功";
         } else {
-          response = await scriptApi.create(this.scriptItem as ScriptItem);
-          message("创建成功", { type: "success" });
+          apiFunc = scriptApi.create;
+          succeedMsgContent = "创建成功";
         }
-        return response.data;
+        await superRequest({
+          apiFunc: apiFunc,
+          apiParams: this.scriptItem as ScriptItem,
+          enableSucceedMsg: true,
+          succeedMsgContent: succeedMsgContent,
+          onSucceed: data => {
+            if (!isEditMode) {
+              this.scriptItem.id = data.id;
+            }
+          }
+        });
+        return {
+          isCreated: !isEditMode,
+          scriptId: this.scriptItem.id
+        };
       } catch (error) {
         console.error("Failed to save script:", error);
         message("保存脚本失败，请在控制台查看错误详情", { type: "error" });

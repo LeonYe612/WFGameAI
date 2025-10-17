@@ -74,7 +74,7 @@ class ScriptListView(APIView):
             steps = request.data.get('steps', [])
             serializer.validated_data['steps_count'] = len(steps)
             instance = serializer.save()
-            return api_response(data=ScriptSerializer(instance).data, code=status.HTTP_201_CREATED)
+            return api_response(data=ScriptSerializer(instance).data)
         return api_response(code=status.HTTP_400_BAD_REQUEST, msg=serializer.errors)
 
     @staticmethod
