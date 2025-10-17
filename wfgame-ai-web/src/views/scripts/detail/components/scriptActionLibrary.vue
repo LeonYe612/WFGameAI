@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from "vue";
 import { useScriptStoreHook } from "@/store/modules/script";
 import draggable from "vuedraggable";
 import { InfoFilled, Plus, Search } from "@element-plus/icons-vue";
+import { message } from "@/utils/message";
 import { useSSE, SSEEvent } from "@/layout/components/sseState/useSSE";
 const { on } = useSSE();
 
@@ -69,6 +70,24 @@ const showActionDetails = action => {
 const addActionToSteps = action => {
   scriptStore.addStep(action);
 };
+
+// 根据动作名称显示详情
+const showActionDetailsByName = actionType => {
+  const action = scriptStore.actionLibrary.find(
+    act => act.action_type === actionType
+  );
+  if (!action) {
+    message(`未在动作库中找到类型为 [${actionType}] 的动作！`, {
+      type: "error"
+    });
+    return;
+  }
+  showActionDetails(action);
+};
+
+defineExpose({
+  showActionDetailsByName
+});
 </script>
 
 <template>
@@ -94,34 +113,45 @@ const addActionToSteps = action => {
       >
         <template #item="{ element }">
           <div class="action-item">
-            <span class="drag-handle">⠿</span>
-            <IconifyIconOnline
-              v-if="element.icon"
-              :icon="element.icon"
-              class="action-icon"
-            />
-            <span class="action-name">{{ element.name }}</span>
-            <el-tag size="small" effect="plain" class="mr-auto ml-2">{{
-              element.action_type
-            }}</el-tag>
-            <div class="action-buttons">
-              <el-button
-                size="small"
-                :icon="InfoFilled"
-                round
-                plain
-                @click.stop="showActionDetails(element)"
+            <div class="action-content">
+              <span class="drag-handle">⠿</span>
+              <IconifyIconOnline
+                v-if="element.icon"
+                :icon="element.icon"
+                class="action-icon text-primary"
               />
-              <el-button
-                v-if="!readonly"
+              <span class="action-name">{{ element.name }}</span>
+              <el-tag
                 size="small"
-                type="success"
-                :icon="Plus"
-                round
-                plain
-                @click.stop="addActionToSteps(element)"
-              />
+                effect="plain"
+                class="ml-auto mr-2 action-tag"
+                >{{ element.action_type }}</el-tag
+              >
+              <div class="action-buttons">
+                <el-button
+                  type="text"
+                  circle
+                  plain
+                  @click.stop="showActionDetails(element)"
+                >
+                  <el-icon size="20">
+                    <InfoFilled class="text-gray-400" />
+                  </el-icon>
+                </el-button>
+              </div>
             </div>
+            <el-button
+              v-if="!readonly"
+              size="small"
+              type="primary"
+              class="add-button"
+              plain
+              @click.stop="addActionToSteps(element)"
+            >
+              <el-icon size="20">
+                <Plus />
+              </el-icon>
+            </el-button>
           </div>
         </template>
       </draggable>
@@ -173,10 +203,10 @@ const addActionToSteps = action => {
 
   .action-item {
     display: flex;
-    align-items: center;
+    align-items: stretch; // 改为 stretch 以便子元素撑满高度
     width: 100%;
     height: 40px;
-    padding: 0 12px;
+    padding: 0; // 移除 padding，移到 action-content
     background-color: #f5f7fa;
     border: 1px solid #e4e7ed;
     border-radius: 6px;
@@ -184,18 +214,40 @@ const addActionToSteps = action => {
     user-select: none;
     margin-bottom: 6px;
     transition: all 0.2s ease-in-out;
+    position: relative;
+    overflow: hidden; // 隐藏子元素的超出部分，确保圆角效果
+    &:hover {
+      border-color: #c0c4cc;
+      background-color: #f5f7fa;
+    }
+  }
+
+  .action-content {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    position: relative;
+    min-width: 0;
+  }
+
+  .add-button {
+    flex-shrink: 0;
+    width: 50px;
+    height: 100%;
+    border-radius: 0;
+    border: none;
+    border-left: 1px solid #e4e7ed;
+    margin: 0;
+  }
+
+  .action-item:hover .add-button {
+    border-left-color: #c0c4cc;
   }
 
   .action-buttons {
     display: flex;
     align-items: center;
-    gap: 6px;
-    opacity: 0;
-    transition: opacity 0.2s ease-in-out;
-  }
-
-  .action-item:hover .action-buttons {
-    opacity: 1;
   }
 
   .drag-handle {
@@ -207,7 +259,6 @@ const addActionToSteps = action => {
   .action-icon {
     font-size: 18px;
     margin-right: 8px;
-    color: #409eff;
   }
 
   .action-name {

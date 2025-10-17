@@ -6,6 +6,7 @@ import {
   Close,
   Delete,
   Download,
+  InfoFilled,
   CopyDocument,
   MagicStick
 } from "@element-plus/icons-vue";
@@ -13,7 +14,11 @@ import {
 defineOptions({
   name: "ScriptStepsList"
 });
-defineEmits(["open-step-importer", "open-yolo-selector"]);
+defineEmits([
+  "open-step-importer",
+  "open-yolo-selector",
+  "open-action-details"
+]);
 
 const scriptStore = useScriptStoreHook();
 const activeStep = computed(() => scriptStore.getActiveStep); // 控制展开项
@@ -140,35 +145,47 @@ watch(
               <IconifyIconOnline
                 v-if="getActionInfo(element.action)?.icon"
                 :icon="getActionInfo(element.action).icon"
-                class="action-icon"
+                class="action-icon text-primary"
               />
-              <span class="step-index">步骤 {{ index + 1 }} </span>
+              <span class="step-index text-primary">步骤 {{ index + 1 }} </span>
               <el-divider direction="vertical" />
               <span class="step-title" :title="element.remark">
                 {{ element.remark }}</span
               >
-              <el-tag size="small" effect="plain" class="mx-2">{{
+              <el-tag size="small" effect="plain" class="step-action-tag">{{
                 element.action
               }}</el-tag>
-              <el-button
-                type="primary"
-                :icon="CopyDocument"
-                circle
-                plain
-                size="small"
-                class="copy-btn"
-                title="复制步骤"
-                @click="copyStep($event, index)"
-              />
-              <el-button
-                type="danger"
-                :icon="Close"
-                circle
-                plain
-                size="small"
-                class="delete-btn"
-                @click="removeStep($event, index)"
-              />
+              <div class="step-buttons">
+                <el-button
+                  type="info"
+                  :icon="InfoFilled"
+                  circle
+                  plain
+                  size="small"
+                  class="info-btn"
+                  title="动作信息"
+                  @click.stop="$emit('open-action-details', element.action)"
+                />
+                <el-button
+                  type="primary"
+                  :icon="CopyDocument"
+                  circle
+                  plain
+                  size="small"
+                  class="copy-btn"
+                  title="复制步骤"
+                  @click.stop="copyStep($event, index)"
+                />
+                <el-button
+                  type="danger"
+                  :icon="Close"
+                  circle
+                  plain
+                  size="small"
+                  class="delete-btn"
+                  @click.stop="removeStep($event, index)"
+                />
+              </div>
             </div>
             <el-collapse-transition>
               <el-form
@@ -321,10 +338,15 @@ watch(
     cursor: pointer;
     user-select: none;
     transition: all 0.2s;
+    position: relative;
 
     &:hover {
       border-color: #cdd0d6;
       background-color: #f4f4f5;
+
+      .step-buttons {
+        background-color: #f4f4f5;
+      }
     }
 
     &.is-active {
@@ -332,7 +354,19 @@ watch(
       background-color: #ecf5ff;
       border-bottom-left-radius: 0;
       border-bottom-right-radius: 0;
+      &:hover .step-buttons {
+        background-color: #ecf5ff;
+      }
     }
+  }
+  .step-buttons {
+    position: absolute;
+    right: 12px;
+    display: flex;
+    align-items: center;
+    padding: 5px 0px;
+    border-radius: 8px;
+    transition: background-color 0.2s;
   }
   .drag-handle {
     cursor: grab;
@@ -343,13 +377,11 @@ watch(
   .step-index {
     font-weight: bold;
     margin-right: 10px;
-    color: #409eff;
   }
 
   .action-icon {
     font-size: 18px;
     margin-right: 8px;
-    color: #409eff;
   }
 
   .step-title {
@@ -362,16 +394,37 @@ watch(
     margin-right: 10px;
   }
 
+  .info-btn,
   .delete-btn,
   .copy-btn {
     margin-left: 10px;
     opacity: 0;
-    transition: opacity 0.2s ease-in-out;
+    transform: translateX(10px);
+    transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+    pointer-events: none;
+  }
+  .delete-btn {
+    margin-right: 5px;
   }
 
-  .step-header:hover .delete-btn,
-  .step-header:hover .copy-btn {
+  .step-header:hover .step-buttons .info-btn,
+  .step-header:hover .step-buttons .delete-btn,
+  .step-header:hover .step-buttons .copy-btn {
     opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+
+  .step-action-tag {
+    margin: 0 4px;
+    opacity: 1;
+    transform: translateX(0);
+    transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+  }
+  .step-header:hover .step-action-tag {
+    opacity: 0;
+    transform: translateX(-10px);
+    pointer-events: none;
   }
 
   .step-form {

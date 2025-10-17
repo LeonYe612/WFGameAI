@@ -5,6 +5,7 @@ import CategorySelector from "@/views/scripts/list/components/categorySelector.v
 import { scriptApi, type ScriptItem } from "@/api/scripts";
 import { message } from "@/utils/message";
 import { superRequest } from "@/utils/request";
+import { cloneDeep } from "@pureadmin/utils";
 
 defineOptions({
   name: "ScriptStepImporter"
@@ -86,7 +87,7 @@ const fetchScriptSteps = async (scriptId: number) => {
 
 const handleImport = () => {
   const stepsToImport = selectedStepIds.value.map(id => {
-    const item = scriptSteps.value?.[id];
+    const item = cloneDeep(scriptSteps.value?.[id]);
     delete item?.originalIndex;
     delete item?.step;
     return { ...item };
