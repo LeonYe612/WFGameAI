@@ -12,8 +12,10 @@ import { categoryApi } from "@/api/scripts";
 import { scriptTypeEnum, sortedEnum } from "@/utils/enums";
 import { ref } from "vue";
 import CategoryEditorDialog from "@/views/common/editor/categoryEditor/dialog.vue";
+import { useNavigate } from "@/views/common/utils/navHook";
 
 const scriptStore = useScriptStoreHook();
+const { navigateToScriptDetail } = useNavigate();
 
 defineOptions({
   name: "ScriptBaseInfo"
@@ -59,7 +61,10 @@ onUnmounted(() => {
 });
 
 const handleSave = async () => {
-  await scriptStore.saveScript();
+  const { isCreated = false } = await scriptStore.saveScript();
+  if (isCreated) {
+    navigateToScriptDetail(scriptItem.value.id!, false);
+  }
   emit("save");
 };
 </script>
