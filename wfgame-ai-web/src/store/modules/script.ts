@@ -3,6 +3,7 @@ import { store } from "@/store";
 import { scriptApi, actionTypeApi, type ScriptItem } from "@/api/scripts";
 import { ref, computed } from "vue";
 import { message } from "@/utils/message";
+import { scriptTypeEnum } from "@/utils/enums";
 
 export const useScriptStore = defineStore({
   id: "pure-script",
@@ -10,13 +11,13 @@ export const useScriptStore = defineStore({
     // 当前正在编辑的脚本对象
     scriptItem: ref<Partial<ScriptItem>>({
       name: "",
-      type: "manual",
+      type: scriptTypeEnum.MANUAL.value,
       category: null,
       description: "",
       steps: [],
       meta: {},
       is_active: true,
-      include_in_log: false
+      include_in_log: true
     }),
     // 动作库列表
     actionLibrary: ref([]),
@@ -74,13 +75,13 @@ export const useScriptStore = defineStore({
     resetScriptItem() {
       this.scriptItem = {
         name: "",
-        type: "manual",
+        type: scriptTypeEnum.MANUAL.value,
         category: null,
         description: "",
         steps: [],
         meta: {},
         is_active: true,
-        include_in_log: false
+        include_in_log: true
       };
       this.activeStep = null;
       this.activeFocus = null;

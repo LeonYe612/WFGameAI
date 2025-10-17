@@ -8,6 +8,7 @@ import ScriptStepImporter from "./components/scriptStepImporter.vue";
 import { useNavigate } from "@/views/common/utils/navHook";
 import { computed, watch, ref } from "vue";
 import { useScriptStoreHook } from "@/store/modules/script";
+import { message } from "@/utils/message";
 const scriptStore = useScriptStoreHook();
 
 defineOptions({
@@ -43,14 +44,13 @@ const onSave = () => {
   emit("save");
 };
 
-const scriptStepImporterRef = ref(null);
-
-const openImporter = () => {
-  scriptStepImporterRef.value?.open();
-};
-
+const showScriptStepImporter = ref(false);
 const handleStepsImport = (steps: any[]) => {
   scriptStore.insertSteps(steps);
+};
+
+const handleOpenYoloSelector = () => {
+  message("该功能正在开发中，敬请期待！", { type: "warning" });
 };
 </script>
 
@@ -67,7 +67,11 @@ const handleStepsImport = (steps: any[]) => {
       </el-col>
       <el-col :span="9">
         <div class="component-wrapper">
-          <ScriptStepsList class="h-full" @open-importer="openImporter" />
+          <ScriptStepsList
+            class="h-full"
+            @open-step-importer="showScriptStepImporter = true"
+            @open-yolo-selector="handleOpenYoloSelector"
+          />
         </div>
       </el-col>
       <el-col :span="8">
@@ -77,7 +81,7 @@ const handleStepsImport = (steps: any[]) => {
       </el-col>
     </el-row>
     <ScriptStepImporter
-      ref="scriptStepImporterRef"
+      v-model="showScriptStepImporter"
       @import="handleStepsImport"
     />
   </MainContent>

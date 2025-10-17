@@ -10,9 +10,20 @@ defineOptions({
   name: "ScriptStepImporter"
 });
 
-const emit = defineEmits(["import"]);
+const props = defineProps({
+  modelValue: {
+    type: Boolean,
+    default: false
+  }
+});
 
-const dialogVisible = ref(false);
+const emit = defineEmits(["import", "update:modelValue"]);
+
+const dialogVisible = computed({
+  get: () => props.modelValue,
+  set: val => emit("update:modelValue", val)
+});
+
 const selectedScript = ref<ScriptItem | null>(null);
 const scriptSteps = ref([]);
 const selectedStepIds = ref([]);
@@ -43,15 +54,11 @@ const _resetSelection = () => {
   scriptListRef.value?.clearSelection();
 };
 
-const open = () => {
-  dialogVisible.value = true;
-  // resetSelection();
-};
-
 // 脚本表格的行选中事件
 const handleSingleSelectionChange = (script: ScriptItem) => {
   if (script && script.id !== selectedScript.value?.id) {
     selectedScript.value = script;
+    selectedStepIds.value = [];
     fetchScriptSteps(script.id);
   }
 };
@@ -78,9 +85,12 @@ const fetchScriptSteps = async (scriptId: number) => {
 };
 
 const handleImport = () => {
-  const stepsToImport = selectedStepIds.value.map(
-    id => scriptSteps.value?.[id]
-  );
+  const stepsToImport = selectedStepIds.value.map(id => {
+    const item = scriptSteps.value?.[id];
+    delete item?.originalIndex;
+    delete item?.step;
+    return { ...item };
+  });
   if (stepsToImport.length === 0) {
     message("请先选择要导入的步骤", { type: "warning" });
     return;
@@ -104,9 +114,7 @@ const allStepsSelected = computed({
   }
 });
 
-defineExpose({
-  open
-});
+defineExpose({});
 </script>
 
 <template>

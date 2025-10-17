@@ -2,12 +2,18 @@
 import { computed, ref, watch, nextTick } from "vue";
 import { useScriptStoreHook } from "@/store/modules/script";
 import draggable from "vuedraggable";
-import { Close, Delete, Download, CopyDocument } from "@element-plus/icons-vue";
+import {
+  Close,
+  Delete,
+  Download,
+  CopyDocument,
+  MagicStick
+} from "@element-plus/icons-vue";
 
 defineOptions({
   name: "ScriptStepsList"
 });
-defineEmits(["open-importer"]);
+defineEmits(["open-step-importer", "open-yolo-selector"]);
 
 const scriptStore = useScriptStoreHook();
 const activeStep = computed(() => scriptStore.getActiveStep); // 控制展开项
@@ -104,7 +110,7 @@ watch(
           size="small"
           :icon="Download"
           plain
-          @click="$emit('open-importer')"
+          @click="$emit('open-step-importer')"
         >
           导入步骤
         </el-button>
@@ -167,6 +173,7 @@ watch(
             <el-collapse-transition>
               <el-form
                 v-if="activeStep === index"
+                label-width="auto"
                 inline
                 class="step-form"
                 @click.stop
@@ -212,6 +219,7 @@ watch(
                     controls-position="right"
                     class="w-full"
                     @change="updateActiveFocus(index, param.name)"
+                    @focus="updateActiveFocus(index, param.name)"
                   />
                   <el-switch
                     v-else-if="param.type === 'boolean'"
@@ -260,6 +268,15 @@ watch(
                     :placeholder="`未知类型: ${param.type}`"
                     @focus="updateActiveFocus(index, param.name)"
                   />
+                  <!-- yolo class 弹出按钮-->
+                  <el-button
+                    v-if="param.name === 'yolo_class'"
+                    :icon="MagicStick"
+                    type="text"
+                    @click.stop="$emit('open-yolo-selector')"
+                  >
+                    辅助选择
+                  </el-button>
                 </el-form-item>
               </el-form>
             </el-collapse-transition>
