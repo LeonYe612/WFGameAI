@@ -52,6 +52,11 @@ const handleStepsImport = (steps: any[]) => {
 const handleOpenYoloSelector = () => {
   message("该功能正在开发中，敬请期待！", { type: "warning" });
 };
+
+const ScriptActionLibraryRef = ref(null);
+const handleOpenActionDetails = (actionType: string) => {
+  ScriptActionLibraryRef.value?.showActionDetailsByName(actionType);
+};
 </script>
 
 <template>
@@ -62,7 +67,7 @@ const handleOpenYoloSelector = () => {
     <el-row :gutter="10" class="component-row">
       <el-col :span="7">
         <div class="component-wrapper">
-          <ScriptActionLibrary class="h-full" />
+          <ScriptActionLibrary ref="ScriptActionLibraryRef" class="h-full" />
         </div>
       </el-col>
       <el-col :span="9">
@@ -71,6 +76,7 @@ const handleOpenYoloSelector = () => {
             class="h-full"
             @open-step-importer="showScriptStepImporter = true"
             @open-yolo-selector="handleOpenYoloSelector"
+            @open-action-details="handleOpenActionDetails"
           />
         </div>
       </el-col>

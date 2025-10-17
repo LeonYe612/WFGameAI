@@ -10,7 +10,7 @@ export const createRef = (defaultVal: any = null) => {
 export const copyText = (text: string) => {
   const success = copyTextToClipboard(text);
   success
-    ? message(`📑 已复制到系统剪切板！`, { type: "success" })
+    ? message(`已复制到系统剪切板！`, { type: "success" })
     : message("复制到系统剪切板失败！", { type: "error" });
 };
 

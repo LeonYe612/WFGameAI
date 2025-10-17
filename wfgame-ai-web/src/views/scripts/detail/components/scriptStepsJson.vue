@@ -6,6 +6,8 @@ import type { Editor } from "codemirror";
 import "codemirror/mode/javascript/javascript.js";
 import "codemirror/theme/dracula.css";
 import "codemirror/addon/selection/active-line.js";
+import { CopyDocument } from "@element-plus/icons-vue";
+import { copyText } from "@/utils/utils";
 
 defineOptions({
   name: "ScriptStepsJson"
@@ -169,11 +171,29 @@ const findStepFromLineNumber = (
 
   return { stepIndex, paramName };
 };
+
+const handleCopyJson = () => {
+  copyText(code.value);
+};
 </script>
 
 <template>
   <div class="json-editor">
-    <h3 class="font-bold mb-2 text-white h-[34px]">📋 JSON</h3>
+    <div class="flex">
+      <h3 class="font-bold mb-2 text-white h-[34px]">📋 JSON</h3>
+      <!-- 复制按钮 -->
+      <el-button
+        class="ml-auto mr-2"
+        type="text"
+        title="复制"
+        plain
+        @click="handleCopyJson"
+      >
+        <el-icon :size="20">
+          <CopyDocument />
+        </el-icon>
+      </el-button>
+    </div>
     <Codemirror
       ref="cmEditorRef"
       class="cm-editor"
