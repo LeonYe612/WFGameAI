@@ -20,6 +20,8 @@ export const useScriptStore = defineStore({
       is_active: true,
       include_in_log: true
     }),
+    // json 格式是否错误
+    isWrongJson: ref(false),
     // 动作库列表
     actionLibrary: ref([]),
     // 当前激活的步骤索引
@@ -93,6 +95,10 @@ export const useScriptStore = defineStore({
         this.scriptItem.steps = newSteps;
       }
     },
+    /** 设置 isWrongJson */
+    setIsWrongJson(value: boolean) {
+      this.isWrongJson = value;
+    },
     /** 设置当前激活的步骤 */
     setActiveStep(index: number | null) {
       this.activeStep = index;
@@ -142,6 +148,13 @@ export const useScriptStore = defineStore({
     },
     /** 保存（创建或更新）脚本 */
     async saveScript() {
+      if (this.isWrongJson) {
+        return {
+          isCreated: false,
+          scriptId: null,
+          error: "JSON格式有误, 请先修正错误再保存"
+        };
+      }
       try {
         let apiFunc;
         let succeedMsgContent;
@@ -166,12 +179,17 @@ export const useScriptStore = defineStore({
         });
         return {
           isCreated: !isEditMode,
-          scriptId: this.scriptItem.id
+          scriptId: this.scriptItem.id,
+          error: null
         };
       } catch (error) {
         console.error("Failed to save script:", error);
         message("保存脚本失败，请在控制台查看错误详情", { type: "error" });
-        return null;
+        return {
+          isCreated: false,
+          scriptId: null,
+          error: error instanceof Error ? error.message : String(error)
+        };
       }
     }
   }
