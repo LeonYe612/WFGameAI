@@ -16,6 +16,16 @@ const props = defineProps({
   title: {
     type: String,
     default: "请选择："
+  },
+  // allow caller to specify dialog width (e.g. '60vw' or '800px')
+  width: {
+    type: String,
+    default: "80vw"
+  },
+  // allow caller to specify inner content height to avoid auto-stretch
+  contentHeight: {
+    type: String,
+    default: "60vh"
   }
 });
 const emit = defineEmits<{
@@ -65,11 +75,12 @@ const onConfirm = () => {
     class="script-selector-dialog"
     v-model="dialogVisible"
     :title="title"
-    width="80vw"
+    :width="width"
     :draggable="true"
     align-center
+    :style="{ '--script-selector-content-height': contentHeight }"
   >
-    <el-container class="w-full h-full">
+  <el-container class="w-full h-full" style="height: var(--script-selector-content-height)">
       <el-aside width="20%">
         <el-card
           class="category-card h-full cursor-pointer flex flex-col"
@@ -87,7 +98,7 @@ const onConfirm = () => {
           </template>
         </el-card>
       </el-aside>
-      <el-main style="padding: 0 0 0 10px">
+      <el-main style="padding: 0 0 0 10px; overflow: auto">
         <ScriptListTable
           readonly
           class="w-full h-full"

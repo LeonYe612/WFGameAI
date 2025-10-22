@@ -88,6 +88,7 @@ class CustomResponseModelViewSet(viewsets.ModelViewSet):
             )
         kwargs.setdefault('context', self.get_serializer_context())
         return serializer_class(*args, **kwargs)
+
     def finalize_response(self, request, response, *args, **kwargs):
         # 1) 已经是 api_response(JsonResponse) 并带标记，直接返回
         if getattr(response, VALID_JSON_RESPONSE_ATTR, False):
