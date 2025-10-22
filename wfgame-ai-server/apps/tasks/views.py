@@ -25,22 +25,24 @@ from .serializers import (
     TaskDeviceSerializer
 )
 from ..core.utils.response import api_response, CustomResponseModelViewSet
+from apps.core.models.common import get_current_user, get_current_team_id
 
 logger = logging.getLogger(__name__)
 
 
 class TaskGroupViewSet(viewsets.ModelViewSet):
-    queryset = TaskGroup.objects.all()
+    queryset = TaskGroup.objects.all_teams()
     serializer_class = TaskGroupSerializer
     permission_classes = (AllowAny,)
     http_method_names = ['get', 'post', 'put', 'patch', 'delete']
+
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user if self.request.user.is_authenticated else None)
 
 class TaskViewSet(CustomResponseModelViewSet):
     """任务管理视图集"""
-    queryset = Task.objects.all()
+    queryset = Task.objects.all_teams()
     permission_classes = (AllowAny,)
     http_method_names = ['get', 'post', 'put', 'patch', 'delete']
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
@@ -50,10 +52,10 @@ class TaskViewSet(CustomResponseModelViewSet):
     ordering = ['-created_at']
 
     def get_serializer_class(self):
-        if self.action == 'list':
-            return api_response(data=TaskListSerializer)
+        if self.action in ['list', 'destroy']:
+            return api_response(data=TaskListSerializer, msg="查询任务列表成功")
         elif self.action == 'create':
-            return TaskCreateSerializer
+            return api_response(data=TaskCreateSerializer, msg="创建任务成功")
         elif self.action in ['update', 'partial_update']:
             return TaskUpdateSerializer
         return TaskDetailSerializer
@@ -248,6 +250,33 @@ class TaskViewSet(CustomResponseModelViewSet):
                 code=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
+    @action(detail=True, methods=['post'])
+    def duplicate(self, request, pk=None):
+        """复制任务接口：入参为任务id，复制任务及其关联设备和脚本"""
+        orig_task = self.get_object()
+        # 复制字段（可根据需要调整）
+        copy_fields = [
+            'name', 'group', 'status', 'priority', 'description',
+            'schedule_time', 'task_type', 'run_type', 'run_info'
+        ]
+        new_data = {field: getattr(orig_task, field) for field in copy_fields}
+        # 名称加后缀
+        new_data['name'] = f"{orig_task.name}_副本"
+        # 复制脚本和设备
+        script_ids = list(orig_task.taskscript_set.order_by('order').values_list('script_id', flat=True))
+        device_ids = list(orig_task.taskdevice_set.values_list('device_id', flat=True))
+        new_data['script_ids'] = script_ids
+        new_data['device_ids'] = device_ids
+        # 创建新任务
+        serializer = TaskCreateSerializer(data=new_data)
+        serializer.is_valid(raise_exception=True)
+        new_task = serializer.save()
+        # 返回完整详情
+        detail_serializer = TaskDetailSerializer(new_task)
+        return api_response(
+            msg=f"任务 [{orig_task.id}] 复制成功, 新任务ID: [{new_task.id}]",
+            data=detail_serializer.data
+        )
 
 @api_view(['POST'])
 @permission_classes((AllowAny,))

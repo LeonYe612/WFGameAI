@@ -13,10 +13,55 @@ import re
 import time
 import subprocess
 import uiautomator2 as u2
+import logging
 
 from typing import Optional
 from PIL import Image
+from dataclasses import dataclass, field
+from typing import Any
 
+
+@dataclass
+class AndroidConfig:
+    """Lightweight config object for Android tools.
+
+    Use this to create a config with sensible defaults. The `AndroidBase`
+    initializer will supply a minimal fallback logger if `logger` is None.
+    """
+    device_id: Optional[str] = None
+    u2_tools: Any = None
+    device_path: Optional[str] = None
+    logger: Any = None
+
+
+# Small logger adapter to provide a `success` method and safe passthrough to
+# the standard logging.Logger (or any user-provided logger-like object).
+class _CompatLogger:
+    def __init__(self, base_logger):
+        self._base = base_logger
+
+    def info(self, *args, **kwargs):
+        return getattr(self._base, 'info')(*args, **kwargs)
+
+    def warning(self, *args, **kwargs):
+        return getattr(self._base, 'warning')(*args, **kwargs)
+
+    def error(self, *args, **kwargs):
+        return getattr(self._base, 'error')(*args, **kwargs)
+
+    def debug(self, *args, **kwargs):
+        # some loggers may not implement debug
+        return getattr(self._base, 'debug', getattr(self._base, 'info'))(*args, **kwargs)
+
+    def exception(self, *args, **kwargs):
+        return getattr(self._base, 'exception', getattr(self._base, 'error'))(*args, **kwargs)
+
+    def success(self, *args, **kwargs):
+        # map to info (or custom level) so existing code calling success() keeps working
+        return getattr(self._base, 'info')(*args, **kwargs)
+
+    def __getattr__(self, item):
+        return getattr(self._base, item)
 
 class AndroidBase:
     """
@@ -27,8 +72,21 @@ class AndroidBase:
 
     def __init__(self, config):
         self.config = config
-        self.device_id = self.config.device_id
-        self.u2_device = self.config.u2_device
+        # ensure config has sensible defaults to avoid AttributeError when user omits fields
+        if not hasattr(self.config, 'device_id'):
+            self.config.device_id = None
+        if not hasattr(self.config, 'u2_tools'):
+            self.config.u2_tools = None
+        if not hasattr(self.config, 'device_path'):
+            self.config.device_path = None
+        # use standard logging if no logger provided; wrap to ensure `.success()` exists
+        if not hasattr(self.config, 'logger') or self.config.logger is None:
+            self.config.logger = _CompatLogger(logging.getLogger(__name__))
+        else:
+            # wrap user-provided logger to ensure compatibility
+            self.config.logger = _CompatLogger(self.config.logger)
+
+        self.u2_tools = self.config.u2_tools
         self._get_device_id()
         self._get_u2_device()
 
@@ -38,10 +96,10 @@ class AndroidBase:
         如果已在配置中指定，则直接使用。
         如果未指定，则自动发现。如果发现多个，默认选择第一个。
         """
-        # 如果 self.device_id 已经有值，我们假设它是用户指定的，直接返回
-        if self.device_id and self.device_id != "UNKNOWN":
-            self.config.logger.info(f"使用配置中指定的设备 ID: {self.device_id}")
-            return self.device_id
+        # 如果 self.config.device_id 已经有值，我们假设它是用户指定的，直接返回
+        if self.config.device_id and self.config.device_id != "UNKNOWN":
+            self.config.logger.info(f"使用配置中指定的设备 ID: {self.config.device_id}")
+            return self.config.device_id
 
         # 如果没有指定，则自动发现
         self.config.logger.info("未指定设备 ID，开始自动发现设备...")
@@ -64,9 +122,9 @@ class AndroidBase:
             if len(devices) > 1:
                 self.config.logger.warning(f"发现多个设备: {devices}。将自动选择第一个设备: {devices[0]}")
 
-            self.device_id = devices[0]
-            self.config.logger.success(f"已自动选择设备: {self.device_id}")
-            return self.device_id
+            self.config.device_id = devices[0]
+            self.config.logger.success(f"已自动选择设备: {self.config.device_id}")
+            return self.config.device_id
 
         except Exception as e:
             self.config.logger.error(f"自动发现设备时发生严重错误: {e}")
@@ -77,18 +135,18 @@ class AndroidBase:
         使用 uiautomator2 连接设备，并返回 uiautomator2.Device 对象
         """
         try:
-            if not self.device_id or self.device_id == "UNKNOWN":
+            if not self.config.device_id and self.config.device_id == "UNKNOWN":
                 self.config.logger.warning("设备 ID 获取异常, uiautomator2 实例创建失败, 尝试重新获取设备 ID...")
                 self._get_device_id()
 
-            if not self.config.u2_device:
+            if not self.config.u2_tools:
                 self.config.logger.warning("尝试连接 uiautomator2 设备...")
                 # 尝试连接到指定的设备
-                self.config.u2_device = u2.connect(self.device_id)
-                if self.config.u2_device:
-                    self.config.logger.success(f"成功连接到 uiautomator2 设备: {self.device_id}")
-                    return self.config.u2_device
-                self.config.logger.error(f"无法连接到 uiautomator2 设备: {self.device_id}")
+                self.config.u2_tools = u2.connect(self.config.device_id)
+                if self.config.u2_tools:
+                    self.config.logger.success(f"成功连接到 uiautomator2 设备: {self.config.device_id}")
+                    return self.config.u2_tools
+                self.config.logger.error(f"无法连接到 uiautomator2 设备: {self.config.device_id}")
                 return None
         except Exception as e:
             self.config.logger.error(f"获取 uiautomator2 设备失败: {e}")
@@ -97,10 +155,10 @@ class AndroidBase:
 
 class ADBTools(AndroidBase):
     """
-
+    基于 ADB 命令封装的安卓设备操作工具类
     """
-    def __init__(self):
-        pass
+    def __init__(self, config):
+        super().__init__(config)
 
     def _run_adb(self, adb_args: str) -> tuple:
         """
@@ -108,7 +166,7 @@ class ADBTools(AndroidBase):
         :param adb_args: adb -s <device_id> 后面的所有参数字符串。
         """
         error_re = re.compile(r'(?i)\b(error|fail|failed|exception)\b')
-        full_command_str = f"adb -s {self.device_id} {adb_args}"
+        full_command_str = f"adb -s {self.config.device_id} {adb_args}"
 
         try:
             # self.config.logger.debug(f"执行adb命令: {full_command_str}")
@@ -139,27 +197,6 @@ class ADBTools(AndroidBase):
         运行 adb shell 命令 (通过调用底层的 _run_adb 实现)。
         """
         return self._run_adb(f"shell {command}")
-
-    def get_device_resolution(self):
-        """
-        获取设备分辨率信息
-        """
-        try:
-            code, result = self._shell("wm size")
-            if code is False:
-                self.config.logger.error(f"获取设备分辨率失败: {result}")
-                return 0, 0
-            # 解析结果，通常格式为 "Physical size: 1080x2400"
-            for line in result.strip().split('\n'):
-                if 'Physical size:' in line:
-                    size_str = line.split(':')[1].strip()
-                    width, height = map(int, size_str.split('x'))
-                    print(f"🔔 设备 {self.device_id} 分辨率: {width} x {height}")
-                    return width, height
-            return 0, 0
-        except Exception as err:
-            self.config.logger.error(f"获取设备分辨率异常: {err}")
-            return 0, 0
 
     def _is_path_writable(self, path: str) -> bool:
         """
@@ -236,7 +273,7 @@ class ADBTools(AndroidBase):
             self.config.logger.error(f"获取可用路径异常: {str(err)}")
             return "/tmp"
 
-    def _get_screenshot_adb(self) -> Optional[Image.Image]:
+    def get_screenshot_adb(self) -> Optional[Image.Image]:
 
         """
         使用 adb 截图，并以 PIL.Image 对象返回
@@ -262,7 +299,7 @@ class ADBTools(AndroidBase):
 
             # 3. 拉取到本地 (使用 _run_adb)
             # 构造一个在当前工作目录下的唯一本地文件名
-            local_temp_path = f"screenshot_{self.device_id}_{int(time.time_ns())}.png"
+            local_temp_path = f"screenshot_{self.config.device_id}_{int(time.time_ns())}.png"
             pull_success, pull_err = self._run_adb(f"pull {device_temp_path} {local_temp_path}")
             if not pull_success:
                 self.config.logger.error(f"拉取截图失败: {pull_err}")
@@ -293,7 +330,7 @@ class ADBTools(AndroidBase):
                 self._shell(f"rm {device_temp_path}")
                 self.config.logger.debug(f"已清理设备临时文件: {device_temp_path}")
 
-    def _get_ui_dump_adb(self) -> Optional[str]:
+    def get_ui_dump_adb(self) -> Optional[str]:
         """
         获取设备 UI 层次结构，并以字符串形式返回。
         此方法完全复用类内部的 _shell, _run_adb, get_useful_device_path 方法。
@@ -335,7 +372,7 @@ class ADBTools(AndroidBase):
 
             # --- Step 3: 将 UI dump 文件拉取到本地 ---
             # 构造一个唯一的本地临时文件名
-            local_file = f"ui_dump_{self.device_id}_{int(time.time_ns())}.xml"
+            local_file = f"ui_dump_{self.config.device_id}_{int(time.time_ns())}.xml"
             self.config.logger.info(f"[Step 3] 准备将远程文件 {remote_path} 拉取到本地 {local_file}...")
 
             # 使用 _run_adb 因为 'pull' 不是一个 shell 命令
@@ -377,40 +414,236 @@ class ADBTools(AndroidBase):
                 except OSError as ex:
                     self.config.logger.error(f"[Step 5] 清理本地文件异常: {ex}")
 
+    def _get_device_brand_and_model(self):
+        """
+        获取设备品牌和型号 (brand, model)
+        """
+        try:
+            # brand
+            keys = [
+                'ro.product.brand',
+                'ro.product.manufacturer',
+                'ro.product.vendor.brand',
+                'ro.product.name'
+            ]
+            brand = None
+            for k in keys:
+                try:
+                    success, out = self._shell(f"getprop {k}")
+                except Exception:
+                    success, out = False, None
+
+                if success and out:
+                    brand = out.strip()
+                    break
+
+            # model
+            model = self._get_prop('ro.product.model') or self._get_prop('ro.product.device') or ''
+
+            if not brand:
+                self.config.logger.warning("通过 getprop 未能获取到品牌信息，使用 device_id 作为备用信息。")
+                brand = self.config.device_id or "unknown"
+
+            return brand, model
+        except Exception as e:
+            self.config.logger.error(f"获取设备品牌/型号信息失败: {e}")
+            return None, None
+
+    def _get_device_resolution(self):
+        """
+        获取设备分辨率信息
+        """
+        try:
+            code, result = self._shell("wm size")
+            if code is False:
+                self.config.logger.error(f"获取设备分辨率失败: {result}")
+                return 0, 0
+            # 解析结果，通常格式为 "Physical size: 1080x2400"
+            for line in result.strip().split('\n'):
+                if 'Physical size:' in line:
+                    size_str = line.split(':')[1].strip()
+                    width, height = map(int, size_str.split('x'))
+                    self.config.logger.info(f"设备 {self.config.device_id} 分辨率: {width} x {height}")
+                    return width, height
+            return 0, 0
+        except Exception as err:
+            self.config.logger.error(f"获取设备分辨率异常: {err}")
+            return 0, 0
+
+    def _get_prop(self, prop_name: str) -> Optional[str]:
+        """Helper: read a single property via adb getprop."""
+        try:
+            success, out = self._shell(f"getprop {prop_name}")
+            if success and out:
+                return out.strip()
+            return None
+        except Exception:
+            return None
+
+    def get_device_infos(self)-> dict:
+        """
+        获取设备基础信息：
+        序列号、品牌、型号、系统版本、SDK版本、分辨率
+        """
+        try:
+            serial = self.config.device_id or self._get_prop('ro.serialno') or ''
+            brand, model = self._get_device_brand_and_model()
+            brand = brand or ''
+            model = model or ''
+            manufacturer = self._get_prop('ro.product.manufacturer') or ''
+            release = self._get_prop('ro.build.version.release') or ''
+            sdk = self._get_prop('ro.build.version.sdk') or ''
+            width, height = self._get_device_resolution()
+
+            info = {
+                'serial': serial,
+                'brand': brand,
+                'model': model,
+                'manufacturer': manufacturer,
+                'release': release,
+                'sdk': sdk,
+                'width': width,
+                'height': height,
+            }
+            self.config.logger.info(f"ADB 收集到设备信息: {info}")
+            return info
+        except Exception as e:
+            self.config.logger.error(f"通过 ADB 获取设备信息失败: {e}")
+            return {}
 
 class U2Tools(AndroidBase):
     """
-
+    基于 uiautomator2 命令封装的安卓设备操作工具类
     """
-    def __init__(self):
-        pass
+    def __init__(self, config):
+        super().__init__(config)
 
-    def _get_screenshot_u2(self) -> Optional[Image.Image]:
+    def get_screenshot_u2(self) -> Optional[Image.Image]:
         """
         使用 u2 截图，并以 PIL.Image 对象返回
         """
         self.config.logger.info("尝试使用 uiautomator2 截图...")
         try:
-            screenshot = self.config.u2_device.screenshot()
+            screenshot = self.config.u2_tools.screenshot()
             # screenshot.save("screenshot.png")
             return screenshot
         except Exception as err:
             self.config.logger.error(f"[U2] 截图失败: {err}")
             return None
 
-    def _get_ui_dump_u2(self) -> Optional[str]:
+    def get_ui_dump_u2(self) -> Optional[str]:
         """
         使用 u2 获取 UI dump
         """
         # todo 后续考虑基于 uiautomator2 封装对应操作类，把当前函数拆分出去
         try:
-            xml = self.config.u2_device.dump_hierarchy(compressed=False)
+            xml = self.config.u2_tools.dump_hierarchy(compressed=False)
             return xml
 
         except Exception as e:
             self.config.logger.error(f"[U2] 获取 UI dump异常: {e}")
             return None
 
+    def click_with_text(self, text)-> Optional[str]:
+        self.u2_tools(text=text).click()
+
+    def _get_device_brand_and_model(self):
+        """
+        获取设备品牌和型号 (brand, model)
+        """
+        try:
+            info = {}
+            if self.config.u2_tools:
+                try:
+                    info = getattr(self.config.u2_tools, 'info', None) or getattr(self.config.u2_tools, 'device_info', lambda: {})()
+                except Exception:
+                    info = {}
+            brand = ''
+            model = ''
+            if isinstance(info, dict):
+                brand = info.get('brand') or info.get('product') or info.get('manufacturer') or ''
+                model = info.get('model') or info.get('device') or info.get('product_model') or ''
+
+            return brand, model
+        except Exception as e:
+            self.config.logger.error(f"[U2] 获取设备品牌/型号信息失败: {e}")
+            return None, None
+
+    def _get_device_resolution(self):
+        """
+        获取设备分辨率信息
+        """
+        try:
+            # 首先尝试 u2 提供的 API
+            info = {}
+            if self.config.u2_tools:
+                try:
+                    info = getattr(self.config.u2_tools, 'info', None) or getattr(self.config.u2_tools, 'device_info', lambda: {})()
+                except Exception:
+                    info = {}
+
+            if isinstance(info, dict) and info:
+                # 尝试从常见字段获取宽高
+                if 'display' in info and isinstance(info['display'], dict):
+                    d = info['display']
+                    w = d.get('width') or d.get('widthPixels')
+                    h = d.get('height') or d.get('heightPixels')
+                    if w and h:
+                        return int(w), int(h)
+                if 'width' in info and 'height' in info:
+                    return int(info['width']), int(info['height'])
+
+            # 最后回退到 adb
+            res = subprocess.run(f"adb -s {self.config.device_id} shell wm size", shell=True, capture_output=True, text=True, timeout=5)
+            if res.returncode == 0:
+                for line in res.stdout.splitlines():
+                    if 'Physical size:' in line:
+                        size_str = line.split(':', 1)[1].strip()
+                        w, h = map(int, size_str.split('x'))
+                        return w, h
+            return 0, 0
+        except Exception as e:
+            self.config.logger.error(f"[U2] 获取设备分辨率失败: {e}")
+            return 0, 0
+
+    def get_device_infos(self)-> dict:
+        """
+        获取设备基础信息：
+        序列号、品牌、型号、系统版本、SDK版本、分辨率
+        """
+        try:
+            u2_info = {}
+            if self.config.u2_tools:
+                try:
+                    u2_info = getattr(self.config.u2_tools, 'info', None) or getattr(self.config.u2_tools, 'device_info', lambda: {})()
+                except Exception:
+                    u2_info = {}
+
+            serial = self.config.device_id or u2_info.get('serial') or ''
+            brand, model = self._get_device_brand_and_model()
+            brand = brand or u2_info.get('brand') or u2_info.get('product') or u2_info.get('manufacturer') or ''
+            model = model or u2_info.get('model') or u2_info.get('device') or u2_info.get('product_model') or ''
+            # manufacturer / release / sdk: use u2 fields only (adb fallback is handled by AndroidTools)
+            manufacturer = u2_info.get('manufacturer') or u2_info.get('vendor') or ''
+            release = u2_info.get('release') or u2_info.get('version') or ''
+            sdk = u2_info.get('sdk') or u2_info.get('platformVersion') or ''
+            width, height = self._get_device_resolution()
+
+            info = {
+                'serial': serial,
+                'brand': brand,
+                'model': model,
+                'manufacturer': manufacturer,
+                'release': release,
+                'sdk': sdk,
+                'width': width,
+                'height': height,
+            }
+            self.config.logger.info(f"U2 收集到设备信息: {info}")
+            return info
+        except Exception as e:
+            self.config.logger.error(f"[U2] 通过 uiautomator2 获取设备信息失败: {e}")
+            return {}
 
 class AndroidTools:
     """
@@ -419,8 +652,10 @@ class AndroidTools:
     2. 使用 uiautomator2 封装的工具类
     """
 
-    def __init__(self):
-        pass
+    def __init__(self, config):
+        self.config = config
+        self.adb_tools = ADBTools(config)
+        self.u2_tools = U2Tools(config)
 
     def get_device_id(self) -> str:
         """
@@ -428,44 +663,7 @@ class AndroidTools:
         如果已在配置中指定，则直接使用。
         如果未指定，则自动发现。如果发现多个，默认选择第一个。
         """
-        # 如果 self.device_id 已经有值，我们假设它是用户指定的，直接返回
-        if self.device_id and self.device_id != "UNKNOWN":
-            self.config.logger.info(f"使用配置中指定的设备 ID: {self.device_id}")
-            return self.device_id
-
-        # 如果没有指定，则自动发现
-        self.config.logger.info("未指定设备 ID，开始自动发现设备...")
-        try:
-            # 注意：这里不能用 self._run_adb，因为它依赖 self.device_id，会造成死循环。
-            # 我们需要直接调用 subprocess 来执行不带 -s 参数的 adb 命令。
-            result = subprocess.run("adb devices", shell=True, capture_output=True, text=True, timeout=5)
-            if result.returncode != 0:
-                raise RuntimeError(f"执行 'adb devices' 失败: {result.stderr}")
-
-            output = result.stdout
-            devices = []
-            lines = output.strip().split('\n')
-            # 从第二行开始解析，跳过 "List of devices attached"
-            for line in lines[1:]:
-                if '\tdevice' in line:
-                    devices.append(line.split('\t')[0])
-
-            if not devices:
-                self.config.logger.error("未发现任何已连接的安卓设备。请检查设备连接或 ADB 驱动。")
-                raise ConnectionError("No Android devices found.")
-
-            if len(devices) > 1:
-                self.config.logger.warning(f"发现多个设备: {devices}。将自动选择第一个设备: {devices[0]}")
-
-            discovered_id = devices[0]
-            self.config.logger.info(f"已自动选择设备: {discovered_id}")
-            self.device_id = discovered_id
-            self.config.device_id = discovered_id
-            return discovered_id
-
-        except Exception as e:
-            self.config.logger.error(f"自动发现设备时发生严重错误: {e}")
-            raise  # 重新抛出异常，让程序在无法找到设备时停止
+        return self.adb_tools._get_device_id()
 
     def get_u2_device(self) -> Optional[u2.Device]:
         """
@@ -473,16 +671,16 @@ class AndroidTools:
         如果设备未连接或无法访问，则返回 None。
         """
         try:
-            if not self.device_id or self.device_id == "UNKNOWN":
+            if not self.config.device_id or self.config.device_id == "UNKNOWN":
                 self.config.logger.warning("设备 ID 获取异常, uiautomator2 实例创建失败, 尝试重新获取设备 ID...")
                 self.get_device_id()
 
-            if not self.config.u2_device:
+            if not self.config.u2_tools:
                 self.config.logger.warning("尝试连接 uiautomator2 设备...")
                 # 尝试连接到指定的设备
-                device = u2.connect(self.device_id)
-                self.config.u2_device = device
-                self.config.logger.info(f"成功连接到 uiautomator2 设备: {self.device_id}")
+                device = u2.connect(self.config.device_id)
+                self.config.u2_tools = device
+                self.config.logger.info(f"成功连接到 uiautomator2 设备: {self.config.device_id}")
                 return device
         except Exception as e:
             self.config.logger.error(f"获取 uiautomator2 设备失败: {e}")
@@ -495,13 +693,19 @@ class AndroidTools:
         2. 如果失败，则使用 adb 命令截图
         """
         try:
-            img = self._get_screenshot_u2()
+            # prefer u2 screenshot API if available
+            img = None
+            try:
+                img = self.u2_tools.get_screenshot_u2()
+            except Exception:
+                img = None
+
             if img is None:
-                return self._get_screenshot_adb()
+                img = self.adb_tools.get_screenshot_adb()
             return img
         except Exception as e:
             self.config.logger.error(f"使用 uiautomator2 截图失败: {e}")
-            return self._get_screenshot_adb()
+            return self.adb_tools.get_screenshot_adb()
 
     def get_ui_dump(self):
         """
@@ -511,30 +715,78 @@ class AndroidTools:
         # todo 增加重试次数
         try:
             self.config.logger.info("尝试使用 uiautomator2 获取 UI dump...")
-            xml = self._get_ui_dump_u2()
-            if xml:
-                return xml
-            else:
+            xml = None
+            try:
+                xml = self.u2_tools.get_ui_dump_u2()
+            except Exception:
+                xml = None
+
+            if not xml:
                 self.config.logger.warning("uiautomator2 获取 UI dump 失败，尝试使用 adb 命令获取...")
-                return self._get_ui_dump_adb()
+                xml = self.adb_tools.get_ui_dump_adb()
+            return xml
         except Exception as e:
             self.config.logger.error(f"获取 UI dump 过程中发生异常: {e}")
             return None
 
+    def get_useful_device_path(self) -> str:
+        return self.adb_tools.get_useful_device_path()
+
+    def click_with_text(self, text):
+        return self.u2_tools.click_with_text(text)
+
+    def get_device_infos(self):
+        """
+        获取设备基础信息：
+        序列号、品牌、型号、系统版本、SDK版本、分辨率
+        """
+        # 优先使用 u2 收集信息（更丰富），回退到 adb；两者合并以补齐缺失字段
+        try:
+            u2_info = {}
+            adb_info = {}
+
+            try:
+                u2_info = self.u2_tools.get_device_infos() or {}
+            except Exception:
+                u2_info = {}
+
+            try:
+                adb_info = self.adb_tools.get_device_infos() or {}
+            except Exception:
+                adb_info = {}
+
+            # 合并，优先使用 u2 的字段，adb 作为回退
+            keys = ['serial', 'brand', 'model', 'manufacturer', 'release', 'sdk', 'width', 'height']
+            merged = {}
+            for k in keys:
+                merged[k] = u2_info.get(k) or adb_info.get(k) or ''
+
+            self.config.logger.info(f"合并设备信息 (u2优先，adb回退): {merged}")
+            return merged
+        except Exception as e:
+            self.config.logger.error(f"获取设备信息失败: {e}")
+            return {}
 
 if __name__ == '__main__':
-    pass
-    # from main import AutomationConfig
-    #
-    # config = AutomationConfig()
-    # config._init_ai_configs()
-    # # 替换设备id
-    # # config.device_id = "65WGZT7P9XHEKN7D"
-    # android_tools = AndroidTools(config=config)
-    # # android_tools.get_device_resolution()
-    # # android_tools.get_useful_device_path()
-    # android_tools.get_device_screenshot()
-    # xml = android_tools.get_ui_dump()
-    # print("====> xml : \r\n", xml)
-    # xml = android_tools._get_ui_dump_u2()
-    # print("xml2 : ", xml)
+    # Simple demo showing how to instantiate the tools with defaults.
+    cfg = AndroidConfig(device_id="65WGZT7P9XHEKN7D")
+    android_tools = AndroidTools(cfg)
+
+    # Example usages (commented out by default so running the file doesn't
+    # require a connected device). Uncomment when you want to run against a
+    # real device.
+    # img = android_tools.get_device_screenshot()
+    # print('screenshot:', type(img))
+    # xml_str = android_tools.get_ui_dump()
+    # print('ui dump length:', len(xml_str) if xml_str else 0)
+
+    # 解析XML字符串
+    # import xml.etree.ElementTree as ET
+    # root = ET.fromstring(xml_str)
+    # for node in root.iter('node'):
+    #     print("text:", node.attrib.get('text'), "desc:", node.attrib.get('content-desc'), "res:",
+    #           node.attrib.get('resource-id'))
+
+    # 获取设备分辨率
+    device_info = android_tools.get_device_infos()
+    print('device info:', device_info)

@@ -43,7 +43,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",  # Django静态文件处理
-    'django_extensions',
+    "django_extensions",
     # 第三方应用
     "rest_framework",
     "drf_yasg",
