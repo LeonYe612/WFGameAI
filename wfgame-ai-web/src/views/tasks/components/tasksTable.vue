@@ -7,64 +7,159 @@
       style="width: 100%"
       @sort-change="handleSortChange"
     >
-      <el-table-column prop="name" label="任务名称" min-width="200" sortable>
+      <el-table-column prop="id" label="任务ID" width="100" align="center">
         <template #default="{ row }">
-          <div class="task-name">
-            <span>{{ row.name }}</span>
+          <div class="cell-center">
+            {{ row.id }}
+          </div>
+        </template>
+      </el-table-column>
+
+      <el-table-column prop="name" label="任务名称" min-width="160">
+        <template #default="{ row }">
+          <el-tooltip effect="dark" :content="row.name" placement="top">
+            <span class="task-name-ellipsis">{{ row.name }}</span>
+          </el-tooltip>
+        </template>
+      </el-table-column>
+
+      <el-table-column
+        prop="status"
+        label="执行状态"
+        width="140"
+        align="center"
+      >
+        <template #default="{ row }">
+          <div class="cell-center">
             <el-tag
-              v-if="row.description"
-              size="small"
-              type="info"
-              class="description-tag"
+              v-if="taskStatusConfig[row.status]"
+              :type="taskStatusConfig[row.status].type"
+              size="default"
+              effect="light"
+              class="status-tag-large"
             >
-              {{ row.description }}
+              <el-icon class="status-icon">
+                <component :is="taskStatusConfig[row.status].icon" />
+              </el-icon>
+              <span class="status-text-large">{{ taskStatusConfig[row.status].label }}</span>
             </el-tag>
+            <span v-else class="status-text-large">{{ row.status }}</span>
+          </div>
+        </template>
+      </el-table-column>
+      <!-- 后续加入点击显示具体设备名称     -->
+      <el-table-column
+        prop="device_count"
+        label="设备信息"
+        width="120"
+        align="center"
+      >
+        <template #default="{ row }">
+          <div class="cell-center">{{ row.device_count !== undefined ? row.device_count + " 台" : "--" }}</div>
+        </template>
+      </el-table-column>
+
+      <el-table-column
+        prop="priority"
+        label="优先级"
+        width="100"
+        align="center"
+      >
+        <template #default="{ row }">
+          <div class="cell-center">
+            <el-tag
+              v-if="priorityConfig[row.priority]"
+              :type="priorityConfig[row.priority].type"
+              size="default"
+              effect="light"
+              class="priority-tag-large"
+            >
+              <span class="priority-text-large">{{ priorityConfig[row.priority].label }}</span>
+            </el-tag>
+            <span v-else class="priority-text-large">{{ row.priority_display || row.priority }}</span>
           </div>
         </template>
       </el-table-column>
 
-      <el-table-column prop="status" label="状态" width="120" align="center">
+      <el-table-column prop="task_type" label="任务类型" width="120" align="center">
         <template #default="{ row }">
-          <el-tag :type="taskStatusConfig[row.status]?.type" size="small">
-            <el-icon class="status-icon">
-              <component :is="taskStatusConfig[row.status]?.icon" />
-            </el-icon>
-            {{ taskStatusConfig[row.status]?.label }}
-          </el-tag>
-        </template>
-      </el-table-column>
-
-      <el-table-column prop="type" label="类型" width="120" align="center">
-        <template #default="{ row }">
-          <div class="task-type">
-            <el-icon>
-              <component :is="taskTypeConfig[row.type]?.icon" />
-            </el-icon>
-            {{ taskTypeConfig[row.type]?.label }}
+          <div class="cell-center">
+            {{ taskTypeConfig[row.task_type]?.label || row.task_type }}
           </div>
         </template>
       </el-table-column>
 
-      <el-table-column prop="device" label="设备" width="180">
+      <el-table-column
+        prop="run_type"
+        label="运行类型"
+        width="120"
+        align="center"
+      >
         <template #default="{ row }">
-          <div class="device-info">
-            <el-icon>
-              <Iphone />
-            </el-icon>
-            {{ row.device }}
+          <div class="cell-center">
+            <el-tag
+              v-if="runTypeConfig[row.run_type]"
+              :type="runTypeConfig[row.run_type].type"
+              size="default"
+              effect="light"
+              class="status-tag-large"
+            >
+              <span class="status-text-large">{{ runTypeConfig[row.run_type].label }}</span>
+            </el-tag>
+            <span v-else class="status-text-large">{{ row.run_type }}</span>
           </div>
         </template>
       </el-table-column>
 
-      <el-table-column prop="startTime" label="开始时间" width="160" sortable>
+      <el-table-column
+        prop="creator_name"
+        label="创建人"
+        width="140"
+        align="center"
+      >
         <template #default="{ row }">
-          {{ formatDateTime(row.startTime) }}
+          <div class="cell-center">
+            {{ row.creator_name || "--" }}
+          </div>
         </template>
       </el-table-column>
 
-      <el-table-column prop="duration" label="耗时" width="120" align="center">
+      <el-table-column
+        prop="created_at"
+        label="创建时间"
+        width="180"
+        align="center"
+      >
         <template #default="{ row }">
-          {{ row.duration || "--" }}
+          <div class="cell-center">
+            {{ formatDateShort(row.created_at) }}
+          </div>
+        </template>
+      </el-table-column>
+
+      <el-table-column
+        prop="updater_name"
+        label="更新人"
+        width="140"
+        align="center"
+      >
+        <template #default="{ row }">
+          <div class="cell-center">
+            {{ row.updater_name || "--" }}
+          </div>
+        </template>
+      </el-table-column>
+
+      <el-table-column
+        prop="updated_at"
+        label="更新时间"
+        width="180"
+        align="center"
+      >
+        <template #default="{ row }">
+          <div class="cell-center">
+            {{ formatDateShort(row.updated_at) }}
+          </div>
         </template>
       </el-table-column>
 
@@ -117,32 +212,36 @@
               </el-icon>
             </el-button>
 
-            <!-- 更多操作 -->
-            <el-dropdown
-              @command="(action: string) => handleAction(action as TaskAction, row)"
+            <!-- 可见的复制按钮（确认弹窗） -->
+            <el-popconfirm
+              title="确定复制该任务吗?"
+              confirm-button-text="复制"
+              cancel-button-text="取消"
+              @confirm="() => handleAction('duplicate', row)"
             >
-              <el-button size="small" type="default">
-                <el-icon>
-                  <MoreFilled />
-                </el-icon>
-              </el-button>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item command="duplicate">
-                    <el-icon>
-                      <CopyDocument />
-                    </el-icon>
-                    复制任务
-                  </el-dropdown-item>
-                  <el-dropdown-item command="delete" divided>
-                    <el-icon>
-                      <Delete />
-                    </el-icon>
-                    删除任务
-                  </el-dropdown-item>
-                </el-dropdown-menu>
+              <template #reference>
+                <el-button size="small" type="primary">
+                  <el-icon>
+                    <CopyDocument />
+                  </el-icon>
+                </el-button>
               </template>
-            </el-dropdown>
+            </el-popconfirm>
+            <!-- 可见的删除按钮（确认弹窗） -->
+            <el-popconfirm
+              title="确定删除该任务吗?"
+              confirm-button-text="删除"
+              cancel-button-text="取消"
+              @confirm="() => handleAction('delete', row)"
+            >
+              <template #reference>
+                <el-button size="small" type="danger">
+                  <el-icon>
+                    <Delete />
+                  </el-icon>
+                </el-button>
+              </template>
+            </el-popconfirm>
           </div>
         </template>
       </el-table-column>
@@ -165,25 +264,49 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from "vue";
 import {
-  VideoPlay,
-  VideoPause,
-  View,
-  Refresh,
-  Delete,
-  CopyDocument,
-  MoreFilled,
-  Iphone
+    CircleCheck,
+    CircleClose,
+    Clock,
+    CopyDocument,
+    DataLine,
+    Delete,
+    Files,
+    Loading,
+    Refresh,
+    Timer,
+    VideoPause,
+    VideoPlay,
+    View,
+    Warning
 } from "@element-plus/icons-vue";
-import { TaskStatus } from "@/api/tasks";
-import { taskStatusConfig, taskTypeConfig } from "../utils/rules";
+import { ref, watch } from "vue";
+import { TaskStatus } from "../utils/enums";
+import {
+    priorityConfig,
+    runTypeConfig,
+    taskStatusConfig,
+    taskTypeConfig
+} from "../utils/rules";
 import type {
-  TasksTableProps,
-  TasksTableEmits,
-  TaskAction,
-  PaginationInfo
+    PaginationInfo,
+    TaskAction,
+    TasksTableEmits,
+    TasksTableProps
 } from "../utils/types";
+
+// 将配置中的图标名映射为实际组件
+const iconMap = {
+  Loading,
+  Clock,
+  CircleCheck,
+  CircleClose,
+  Files,
+  DataLine,
+  Timer,
+  Warning,
+};
+const getIcon = (name: string) => iconMap[name as keyof typeof iconMap] || null;
 
 // Props
 const props = withDefaults(defineProps<TasksTableProps>(), {
@@ -227,7 +350,7 @@ const handleSizeChange = (size: number) => {
 };
 
 // 格式化日期时间
-const formatDateTime = (dateTime: string) => {
+const _formatDateTime = (dateTime: string) => {
   if (!dateTime) return "--";
   return new Date(dateTime).toLocaleString("zh-CN", {
     year: "numeric",
@@ -237,9 +360,50 @@ const formatDateTime = (dateTime: string) => {
     minute: "2-digit"
   });
 };
+
+// 短格式日期（用于表格列）
+const formatDateShort = (dateTime: string) => {
+  if (!dateTime) return "--";
+  const d = new Date(dateTime);
+  const Y = d.getFullYear();
+  const M = String(d.getMonth() + 1).padStart(2, "0");
+  const D = String(d.getDate()).padStart(2, "0");
+  const h = String(d.getHours()).padStart(2, "0");
+  const m = String(d.getMinutes()).padStart(2, "0");
+  return `${Y}-${M}-${D} ${h}:${m}`;
+};
+
+// 格式化耗时（秒 -> H:MM:SS 或 mm:ss），空值返回 "--"
+const _formatDuration = (seconds: number | null | undefined) => {
+  if (seconds === null || seconds === undefined) return "--";
+  const s = Math.floor(Number(seconds) || 0);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  if (h > 0) {
+    return `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
+  }
+  return `${m}:${String(sec).padStart(2, "0")}`;
+};
+
+// ...existing code...
 </script>
 
 <style scoped>
+.priority-tag-large {
+  font-size: 15px !important;
+  padding: 3px 10px !important;
+}
+.priority-text-large {
+  font-size: 15px !important;
+}
+.status-tag-large {
+  font-size: 15px !important;
+  padding: 3px 10px !important;
+}
+.status-text-large {
+  font-size: 15px !important;
+}
 .tasks-table {
   background: white;
   border-radius: 8px;
@@ -273,10 +437,69 @@ const formatDateTime = (dateTime: string) => {
   justify-content: center;
 }
 
+/* 新增列样式，保证对齐与省略 */
+.col-name {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.col-name .title {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.col-device .device-name,
+.type-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-block;
+  max-width: 100%;
+}
+.cell-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.col-status .el-tag,
+.col-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.col-duration,
+.col-starttime {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .pagination-wrapper {
   display: flex;
   justify-content: center;
   padding: 20px;
   border-top: 1px solid var(--el-border-color-light);
+}
+
+.priority-bg-low {
+  background: #43d18b !important;
+}
+.priority-bg-medium {
+  background: #ffc107 !important;
+  color: #333 !important;
+}
+.priority-bg-high {
+  background: #f44336 !important;
+}
+
+/* 任务名称超长省略但可悬浮显示完整 */
+.task-name-ellipsis {
+  display: inline-block;
+  max-width: 400px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
 }
 </style>

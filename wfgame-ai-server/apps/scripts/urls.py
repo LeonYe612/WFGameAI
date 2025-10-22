@@ -67,7 +67,7 @@ from .app_lifecycle_api import (
 )
 
 # 创建路由器并注册视图集
-router = DefaultRouter(trailing_slash='/?')
+router = DefaultRouter(trailing_slash=False)
 # router.register(r'categories', ScriptCategoryViewSet)
 # router.register(r'scripts', ScriptViewSet)
 router.register(r'history', ScriptVersionViewSet)
@@ -106,7 +106,7 @@ urlpatterns = [
     path('reports/', get_reports, name='get-reports'),
     path('latest-report/', get_latest_report, name='get-latest-report'),
     path('record/', record_script, name='record-script'),
-    path('replay/', replay_script, name='replay-script'),    # 新增API端点
+    path('replay/', replay_script, name='replay-script'),  # 新增API端点
     path('replay/status/', replay_status, name='replay-status'),
     path('replay/cancel/', replay_cancel, name='replay-cancel'),
     path('storage/status/', storage_status, name='storage-status'),

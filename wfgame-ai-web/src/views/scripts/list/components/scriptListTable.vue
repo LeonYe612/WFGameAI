@@ -24,6 +24,7 @@ import { useScriptStoreHook } from "@/store/modules/script";
 import { scriptTypeEnum, sortedEnum, includeInLogEnum } from "@/utils/enums";
 
 import ScriptEditor from "@/views/common/editor/scriptEditor/index.vue";
+import { TaskRunType } from "@/views/tasks/utils/enums";
 const ScriptEditorRef = ref<InstanceType<typeof ScriptEditor> | null>(null);
 
 const props = defineProps({
@@ -413,7 +414,7 @@ defineExpose({
               type="warning"
               plain
               circle
-              @click="handleExecute(row, 1)"
+              @click="handleExecute(row, TaskRunType.DEBUG)"
             />
             <el-button
               title="运行脚本"
@@ -421,7 +422,7 @@ defineExpose({
               type="success"
               plain
               circle
-              @click="handleExecute(row, 2)"
+              @click="handleExecute(row, TaskRunType.SINGLE)"
             />
             <el-button
               title="编辑脚本"
