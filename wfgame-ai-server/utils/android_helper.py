@@ -34,6 +34,24 @@ class AndroidConfig:
     logger: Any = None
 
 
+@dataclass
+class DeviceInfo:
+    """设备信息结构体：用于统一承载打印所需的常用字段。"""
+    serial: str
+    state: str = 'unknown'
+    brand: str = ''
+    model: str = ''
+    manufacturer: str = ''
+    release: str = ''
+    sdk: str = ''
+    width: int = 0
+    height: int = 0
+    battery: Any = 'N/A'
+    temperature: Any = 'N/A'
+    cpu_arch: Any = 'N/A'
+    android_tool: Any = None
+
+
 # Small logger adapter to provide a `success` method and safe passthrough to
 # the standard logging.Logger (or any user-provided logger-like object).
 class _CompatLogger:
@@ -77,6 +95,8 @@ class AndroidBase:
             self.config.device_id = None
         if not hasattr(self.config, 'u2_tools'):
             self.config.u2_tools = None
+        if not hasattr(self.config, 'device_list'):
+            self.config.device_list = None
         if not hasattr(self.config, 'device_path'):
             self.config.device_path = None
         # use standard logging if no logger provided; wrap to ensure `.success()` exists
@@ -104,25 +124,48 @@ class AndroidBase:
         # 如果没有指定，则自动发现
         self.config.logger.info("未指定设备 ID，开始自动发现设备...")
         try:
+            # 通过 adb devices 获取所有设备及其状态
             result = subprocess.run("adb devices", shell=True, capture_output=True, text=True, timeout=5)
             if result.returncode != 0:
                 raise RuntimeError(f"执行 'adb devices' 失败: {result.stderr}")
 
-            output = result.stdout
-            devices = []
+            output = result.stdout or ''
+            devices_with_state = []  # [{'serial': xxx, 'state': yyy}, ...]
             lines = output.strip().split('\n')
             for line in lines[1:]:
-                if '\tdevice' in line:
-                    devices.append(line.split('\t')[0])
+                line = line.strip()
+                if not line:
+                    continue
+                # 行格式通常为: <serial>    <state>
+                m = re.match(r'^(\S+)\s+(\S+)', line)
+                if m:
+                    devices_with_state.append({'serial': m.group(1), 'state': m.group(2)})
 
-            if not devices:
+            # 保存到实例属性与全局配置，便于后续在任意位置使用（例如展示设备列表及状态）
+            self.device_list = devices_with_state
+            try:
+                self.config.device_list = devices_with_state
+            except Exception:
+                pass
+
+            if not devices_with_state:
                 self.config.logger.error("未发现任何已连接的安卓设备。请检查设备连接或 ADB 驱动。")
                 raise ConnectionError("No Android devices found.")
 
-            if len(devices) > 1:
-                self.config.logger.warning(f"发现多个设备: {devices}。将自动选择第一个设备: {devices[0]}")
+            # 首选 state 为 'device' 的设备，否则使用第一台
+            preferred = None
+            for d in devices_with_state:
+                if d.get('state') == 'device':
+                    preferred = d.get('serial')
+                    break
+            if not preferred:
+                preferred = devices_with_state[0].get('serial')
 
-            self.config.device_id = devices[0]
+            if len(devices_with_state) > 1:
+                self.config.logger.warning(
+                    f"发现多个设备: {[d.get('serial') for d in devices_with_state]}，将自动选择: {preferred}")
+
+            self.config.device_id = preferred
             self.config.logger.success(f"已自动选择设备: {self.config.device_id}")
             return self.config.device_id
 
@@ -135,9 +178,23 @@ class AndroidBase:
         使用 uiautomator2 连接设备，并返回 uiautomator2.Device 对象
         """
         try:
-            if not self.config.device_id and self.config.device_id == "UNKNOWN":
-                self.config.logger.warning("设备 ID 获取异常, uiautomator2 实例创建失败, 尝试重新获取设备 ID...")
+            # 设备 ID 缺失或为 UNKNOWN 时，尝试重新获取
+            if not self.config.device_id or self.config.device_id == "UNKNOWN":
+                self.config.logger.warning("设备 ID 缺失或为 UNKNOWN，尝试重新获取设备 ID...")
                 self._get_device_id()
+
+            # 在尝试 u2.connect 之前检查设备连接状态，若不是 'device' 则直接返回 None，避免无谓重试
+            state = None
+            try:
+                for d in (self.config.device_list or []):
+                    if d.get('serial') == self.config.device_id:
+                        state = d.get('state')
+                        break
+            except Exception:
+                state = None
+            if state and state != 'device':
+                self.config.logger.warning(f"设备 {self.config.device_id} 当前状态为 '{state}'，跳过 uiautomator2 连接")
+                return None
 
             if not self.config.u2_tools:
                 self.config.logger.warning("尝试连接 uiautomator2 设备...")
@@ -160,12 +217,70 @@ class ADBTools(AndroidBase):
     def __init__(self, config):
         super().__init__(config)
 
+    # 类内装饰器：仅对 ADBTools 的方法生效，避免通用函数导致的覆盖副作用
+    def gate():
+        def decorator(fn):
+            def wrapped(self, *args, **kwargs):
+                cfg = self.config
+                dev_id = cfg.device_id
+                # 从全局设备列表中查找当前设备状态
+                state = None
+                try:
+                    if cfg.device_list:
+                        for d in cfg.device_list:
+                            if d.get('serial') == (dev_id or ''):
+                                state = d.get('state')
+                                break
+                except Exception:
+                    state = None
+
+                # 设备 ID 缺失
+                if not dev_id or dev_id == 'UNKNOWN':
+                    reason = f"设备ID 未设置或 UNKNOWN，跳过 {fn.__name__} 执行"
+                    cfg.logger.warning(reason)
+                    if fn.__name__ in ('_run_adb', '_shell', 'run_adb', 'shell'):
+                        return False, reason
+                    if fn.__name__ == 'get_useful_device_path':
+                        return '/tmp'
+                    return None
+
+                # 设备未授权/离线等
+                if state and state != 'device':
+                    reason = f"设备 {dev_id} 当前状态为 '{state}'，跳过 adb 方法 {fn.__name__}"
+                    cfg.logger.warning(reason)
+                    if fn.__name__ in ('_run_adb', '_shell', 'run_adb', 'shell'):
+                        return False, reason
+                    if fn.__name__ == 'get_useful_device_path':
+                        return '/tmp'
+                    return None
+
+                return fn(self, *args, **kwargs)
+            return wrapped
+        return decorator
+
+    @gate()
     def _run_adb(self, adb_args: str) -> tuple:
         """
         【核心】运行任何 adb 命令的底层方法 (如 pull, push, shell 等)。
         :param adb_args: adb -s <device_id> 后面的所有参数字符串。
         """
         error_re = re.compile(r'(?i)\b(error|fail|failed|exception)\b')
+        # 1) 设备 ID 必须有效
+        if not getattr(self.config, 'device_id', None):
+            self.config.logger.error(f"设备 ID 未设置，无法执行 adb 命令: {adb_args}")
+            return False, "device_id is not set"
+
+        # 2) 如全局配置中已存在设备状态，且不是 'device'，则直接返回，避免在未授权/离线设备上执行命令
+        try:
+            for d in (getattr(self.config, 'device_list', None) or []):
+                if d.get('serial') == self.config.device_id:
+                    st = d.get('state')
+                    if st and st != 'device':
+                        self.config.logger.warning(f"设备 {self.config.device_id} 状态为 '{st}'，跳过执行 adb 命令: {adb_args}")
+                        return False, f"device state is '{st}'"
+                    break
+        except Exception:
+            pass
         full_command_str = f"adb -s {self.config.device_id} {adb_args}"
 
         try:
@@ -192,6 +307,7 @@ class ADBTools(AndroidBase):
             self.config.logger.error(f"执行adb命令异常: {full_command_str}, 错误信息: {str(e)}")
             return False, str(e)
 
+    @gate()
     def _shell(self, command: str) -> tuple:
         """
         运行 adb shell 命令 (通过调用底层的 _run_adb 实现)。
@@ -231,6 +347,43 @@ class ADBTools(AndroidBase):
         """Public wrapper to run a full adb command (args string after device selection)."""
         return self._run_adb(adb_args)
 
+    def get_ip_address(self) -> Optional[str]:
+        """
+        获取设备的 IP 地址。
+        优先解析 `ip route get 8.8.8.8` 输出中的 src 字段；
+        回退到 `ip addr show wlan0/rmnet_data0` 或 getprop。
+        仅在设备处于授权状态下才有可能成功。
+        """
+        try:
+            # 1) ip route get 8.8.8.8 -> ... src X.X.X.X ...
+            ok, out = self._shell("ip route get 8.8.8.8")
+            if ok and out:
+                m = re.search(r"\bsrc\s+(\d+\.\d+\.\d+\.\d+)\b", out)
+                if m:
+                    return m.group(1)
+
+            # 2) ip addr show wlan0 / rmnet_data0
+            for iface in ["wlan0", "rmnet_data0", "eth0"]:
+                ok, out = self._shell(f"ip addr show {iface}")
+                if ok and out:
+                    m = re.search(r"\binet\s+(\d+\.\d+\.\d+\.\d+)", out)
+                    if m:
+                        return m.group(1)
+
+            # 3) getprop 常见键
+            for prop in [
+                'dhcp.wlan0.ipaddress',
+                'dhcp.eth0.ipaddress',
+                'net.hostname',
+                'sys.wlan.ip'
+            ]:
+                val = self._get_prop(prop)
+                if val and re.match(r"^\d+\.\d+\.\d+\.\d+$", val.strip()):
+                    return val.strip()
+        except Exception:
+            pass
+        return None
+
     def _is_path_writable(self, path: str) -> bool:
         """
         检查设备上的某个目录是否可写。
@@ -249,6 +402,7 @@ class ADBTools(AndroidBase):
 
         return success
 
+    @gate()
     def get_useful_device_path(self) -> str:
         """
         获取设备上最佳且可写的路径。
@@ -306,6 +460,7 @@ class ADBTools(AndroidBase):
             self.config.logger.error(f"获取可用路径异常: {str(err)}")
             return "/tmp"
 
+    @gate()
     def get_screenshot_adb(self) -> Optional[Image.Image]:
 
         """
@@ -363,6 +518,7 @@ class ADBTools(AndroidBase):
                 self._shell(f"rm {device_temp_path}")
                 self.config.logger.debug(f"已清理设备临时文件: {device_temp_path}")
 
+    @gate()
     def get_ui_dump_adb(self) -> Optional[str]:
         """
         获取设备 UI 层次结构，并以字符串形式返回。
@@ -676,7 +832,34 @@ class ADBTools(AndroidBase):
         序列号、品牌、型号、系统版本、SDK版本、分辨率
         """
         try:
-            serial = self.config.device_id or self._get_prop('ro.serialno')
+            # 若已知设备状态且非 'device'，则返回最小信息，避免执行设备侧命令
+            try:
+                cur_state = None
+                for d in (getattr(self.config, 'device_list', None) or []):
+                    if d.get('serial') == (self.config.device_id or ''):
+                        cur_state = d.get('state')
+                        break
+                if cur_state and cur_state != 'device':
+                    info_min = {
+                        'device_id': self.config.device_id or '',
+                        'brand': '',
+                        'model': '',
+                        'manufacturer': '',
+                        'android_version': '',
+                        'sdk': '',
+                        'battery': 'N/A',
+                        'temperature': 'N/A',
+                        'cpu_arch': 'N/A',
+                        'width': '',
+                        'height': '',
+                        'status': cur_state,
+                        'ip_address': 'N/A',
+                    }
+                    self.config.logger.info(f"设备 {self.config.device_id} 状态为 '{cur_state}'，返回最小信息")
+                    return info_min
+            except Exception:
+                pass
+            device_id = self.config.device_id or self._get_prop('ro.serialno')
             brand, model = self._get_device_brand_and_model()
             brand = brand
             model = model
@@ -687,19 +870,32 @@ class ADBTools(AndroidBase):
             battery = self.get_battery_level()
             temperature = self.get_device_temperature()
             cpu_arch = self.get_cpu_architecture()
+            # 获取 IP 地址（仅在授权设备上尝试）
+            ip_address = self.get_ip_address() or 'N/A'
+            # 补充状态字段（若可用）
+            status = None
+            try:
+                for d in (getattr(self.config, 'device_list', None) or []):
+                    if d.get('serial') == (device_id or ''):
+                        status = d.get('state')
+                        break
+            except Exception:
+                status = None
 
             info = {
-                'serial': serial,
+                'device_id': device_id,
                 'brand': brand,
                 'model': model,
                 'manufacturer': manufacturer,
-                'release': release,
+                'android_version': release,
                 'sdk': sdk,
                 'battery': battery,
                 'temperature': temperature,
                 'cpu_arch': cpu_arch,
                 'width': width,
                 'height': height,
+                'ip_address': ip_address,
+                'status': status or 'device',
             }
 
             self.config.logger.info(f"ADB 收集到设备信息: {info}")
@@ -732,6 +928,42 @@ class U2Tools(AndroidBase):
     def __init__(self, config):
         super().__init__(config)
 
+    # 类内装饰器：仅对 U2Tools 的方法生效
+    def gate():
+        def decorator(fn):
+            def wrapped(self, *args, **kwargs):
+                cfg = self.config
+                dev_id = cfg.device_id
+                state = None
+                try:
+                    if cfg.device_list:
+                        for d in cfg.device_list:
+                            if d.get('serial') == (dev_id or ''):
+                                state = d.get('state')
+                                break
+                except Exception:
+                    state = None
+
+                # 设备未指定或未知
+                if not dev_id or dev_id == 'UNKNOWN':
+                    cfg.logger.warning(f"设备ID 未设置或 UNKNOWN，跳过 {fn.__name__}")
+                    return None
+
+                # 未授权/离线
+                if state and state != 'device':
+                    cfg.logger.warning(f"设备 {dev_id} 当前状态为 '{state}'，跳过 u2 方法 {fn.__name__}")
+                    return None
+
+                # u2 未连接
+                if not cfg.u2_tools:
+                    cfg.logger.warning(f"uiautomator2 未连接，跳过方法 {fn.__name__}")
+                    return None
+
+                return fn(self, *args, **kwargs)
+            return wrapped
+        return decorator
+
+    @gate()
     def get_screenshot_u2(self) -> Optional[Image.Image]:
         """
         使用 u2 截图，并以 PIL.Image 对象返回
@@ -745,6 +977,7 @@ class U2Tools(AndroidBase):
             self.config.logger.error(f"[U2] 截图失败: {err}")
             return None
 
+    @gate()
     def get_ui_dump_u2(self) -> Optional[str]:
         """
         使用 u2 获取 UI dump
@@ -833,24 +1066,24 @@ class U2Tools(AndroidBase):
                 except Exception:
                     u2_info = {}
 
-            serial = self.config.device_id or u2_info.get('serial') or ''
+            device_id = self.config.device_id or u2_info.get('serial') or ''
             brand, model = self._get_device_brand_and_model()
             brand = brand or u2_info.get('brand') or u2_info.get('product') or u2_info.get('manufacturer') or ''
             model = model or u2_info.get('model') or u2_info.get('device') or u2_info.get('product_model') or ''
             # manufacturer / release / sdk: use u2 fields only (adb fallback is handled by AndroidTools)
             manufacturer = u2_info.get('manufacturer') or u2_info.get('vendor') or ''
-            release = u2_info.get('release') or u2_info.get('version') or ''
+            android_version = u2_info.get('release') or u2_info.get('version') or ''
             sdk = u2_info.get('sdk') or u2_info.get('platformVersion') or ''
             width, height = self._get_device_resolution()
             battery = self.get_battery_level()
             temperature = self.get_device_temperature()
             cpu_arch = self.get_cpu_architecture()
             info = {
-                'serial': serial,
+                'device_id': device_id,
                 'brand': brand,
                 'model': model,
                 'manufacturer': manufacturer,
-                'release': release,
+                'android_version': android_version,
                 'sdk': sdk,
                 'battery': battery,
                 'temperature': temperature,
@@ -923,8 +1156,8 @@ class AndroidTools:
         如果已在配置中指定，则直接使用。
         如果未指定，则自动发现。如果发现多个，默认选择第一个。
         """
-
-        return self.adb_tools.get_device_infos().get("serial", "UNKNOWN")
+        # 通过合并后的信息返回统一的 device_id
+        return (self._merge_device_info() or {}).get("device_id", "UNKNOWN")
 
     def get_u2_device(self) -> Optional[u2.Device]:
         """
@@ -1011,30 +1244,49 @@ class AndroidTools:
 
         优先使用 u2 收集信息（更丰富），回退到 adb；两者合并以补齐缺失字段
         """
-        try:
-            u2_info = {}
-            adb_info = {}
+        # 统一封装：优先使用 u2，失败回退到 adb，并在此处完成字段合并
+        return self._merge_device_info()
 
+    def _merge_device_info(self) -> dict:
+        """通用信息合并函数：
+        - 优先使用 u2 获取信息（字段更丰富）
+        - 如果 u2 失败或缺字段，用 adb 的信息进行补全
+        """
+        try:
+            # 分别尝试从 u2 和 adb 获取信息
             try:
-                u2_info = (self.u2_tools.get_device_info() if hasattr(self.u2_tools, 'get_device_info') else self.u2_tools.get_device_infos()) or {}
+                u2_info = self.u2_tools.get_device_info() or {}
             except Exception:
                 u2_info = {}
-
             try:
                 adb_info = self.adb_tools.get_device_info() or {}
             except Exception:
                 adb_info = {}
 
-            # 合并，优先使用 u2 的字段，adb 作为回退
-            keys = ['serial', 'brand', 'model', 'manufacturer', 'release', 'sdk', 'width', 'height', 'battery', 'temperature', 'cpu_arch']
+            # 需要合并的字段集合（统一命名）
+            keys = ['device_id', 'brand', 'model', 'manufacturer', 'android_version', 'sdk',
+                    'width', 'height', 'battery', 'temperature', 'cpu_arch', 'ip_address', 'status']
+
             merged = {}
             for k in keys:
-                merged[k] = (u2_info.get(k) if isinstance(u2_info, dict) else None) or adb_info.get(k) or ''
+                val = (u2_info.get(k) if isinstance(u2_info, dict) else None) or adb_info.get(k)
+                merged[k] = val if val is not None else ''
 
-            self.config.logger.info(f"合并设备信息 (u2优先，adb回退): {merged}")
+            # status 兜底：从全局设备列表补充
+            if not merged.get('status'):
+                try:
+                    dev_id = merged.get('device_id') or (self.config.device_id or '')
+                    for d in (getattr(self.config, 'device_list', None) or []):
+                        if d.get('serial') == dev_id:
+                            merged['status'] = d.get('state')
+                            break
+                except Exception:
+                    pass
+
+            self.config.logger.info(f"合并设备信息（u2 优先，adb 回退）: {merged}")
             return merged
         except Exception as e:
-            self.config.logger.error(f"获取设备信息失败: {e}")
+            self.config.logger.error(f"设备信息合并失败: {e}")
             return {}
 
     def get_devices_infos_list(self):
@@ -1049,21 +1301,50 @@ class AndroidTools:
         枚举主机上所有通过 adb 可见的设备，为每个设备创建一个独立的 AndroidTools 实例，
         并收集该设备的合并信息（u2 优先，adb 回退）。
 
-        返回：列表，元素为 { 'serial', 'info', 'android_tool', 'adb_tools', 'u2_tools' }
+    返回：列表，元素为 { 'device_id', 'status', 'info', 'android_tool', 'adb_tools', 'u2_tools' }
         """
         results = []
-        try:
-            serials = self.adb_tools.get_device_list()
-        except Exception:
-            serials = []
+        # 优先使用全局配置中的设备列表（包含 state），否则解析 adb devices
+        devices_with_state = []
+        if isinstance(getattr(self.config, 'device_list', None), list) and self.config.device_list:
+            devices_with_state = self.config.device_list
+        else:
+            try:
+                r = subprocess.run("adb devices", shell=True, capture_output=True, text=True, timeout=5)
+                if r.returncode == 0 and (r.stdout or '').strip():
+                    for line in (r.stdout or '').strip().split('\n')[1:]:
+                        line = line.strip()
+                        if not line:
+                            continue
+                        m = re.match(r'^(\S+)\s+(\S+)', line)
+                        if m:
+                            devices_with_state.append({'serial': m.group(1), 'state': m.group(2)})
+            except Exception as e:
+                self.config.logger.error(f"解析 adb devices 输出失败: {e}")
 
-        for serial in serials:
+        for entry in devices_with_state:
+            serial = entry.get('serial')
+            state = entry.get('state')
             try:
                 dev_cfg = AndroidConfig(device_id=serial, u2_tools=None, device_path=None, logger=self.config.logger)
+                # 传递完整的设备状态列表，便于子实例在未授权/离线时做前置判断
+                try:
+                    dev_cfg.device_list = devices_with_state
+                except Exception:
+                    pass
                 per_tool = AndroidTools(dev_cfg)
                 info = per_tool.get_device_info() or {}
+                # 确保 info 中包含 status 字段（新命名）；兼容旧字段 state
+                info.setdefault('status', state)
+                if 'state' not in info:
+                    info['state'] = state
                 results.append({
+                    # 新命名
+                    'device_id': serial,
+                    'status': state,
+                    # 兼容旧命名
                     'serial': serial,
+                    'state': state,
                     'info': info,
                     'android_tool': per_tool,
                     'adb_tools': per_tool.adb_tools,
@@ -1071,7 +1352,7 @@ class AndroidTools:
                 })
             except Exception as e:
                 self.config.logger.error(f"为设备 {serial} 创建 AndroidTools 实例或获取信息时出错: {e}")
-                results.append({'serial': serial, 'info': {}, 'android_tool': None, 'adb_tools': None, 'u2_tools': None})
+                results.append({'serial': serial, 'state': state, 'info': {}, 'android_tool': None, 'adb_tools': None, 'u2_tools': None})
         return results
 
 
@@ -1082,36 +1363,45 @@ if __name__ == '__main__':
     # 获取单个设备信息
     device_info = android_tools.get_device_info()
     print('当前设备 信息: ')
-    print(' - 序列号 serial:', device_info.get('serial'))
+    print(' - 设备ID device_id:', device_info.get('device_id'))
     print(' - 品牌 brand:', device_info.get('brand'))
     print(' - 型号 model:', device_info.get('model'))
     print(' - 制造商 manufacturer:', device_info.get('manufacturer'))
-    print(' - 系统版本 release:', device_info.get('release'))
+    print(' - 系统版本 android_version:', device_info.get('android_version'))
     print(' - SDK版本 sdk:', device_info.get('sdk'))
     print(' - 分辨率 width x height:', f"{device_info.get('width')} x {device_info.get('height')}")
+    print(' - 状态 status:', device_info.get('status', 'unknown'))
+    print(' - IP 地址 ip_address:', device_info.get('ip_address', 'N/A'))
     # 获取所有设备信息列表
     device_infos = android_tools.get_device_info_list()
     print(f'当前所有设备 共 {len(device_infos)} 个， 设备信息: ')
     for index, dev in enumerate(device_infos):
         info = dev.get('info', {})
-        print("info " , info)
+        print("info ", info)
         print(f"设备 {index + 1}:")
-        print(' - 序列号 serial:', info.get('serial', 'N/A'))
+        print(' - 设备ID device_id:', info.get('device_id', info.get('serial', 'N/A')))
         print(' - 品牌 brand:', info.get('brand', 'N/A'))
         print(' - 型号 model:', info.get('model', 'N/A'))
         print(' - 制造商 manufacturer:', info.get('manufacturer', 'N/A'))
-        print(' - 系统版本 release:', info.get('release', 'N/A'))
+        print(' - 系统版本 android_version:', info.get('android_version', info.get('release', 'N/A')))
         print(' - SDK版本 sdk:', info.get('sdk', 'N/A'))
         print(' - 分辨率 width x height:', f"{info.get('width', 'N/A')} x {info.get('height', 'N/A')}")
         print(' - 电量 battery level:', info.get('battery', 'N/A'))
         print(' - 温度 device temperature:', info.get('temperature', 'N/A'))
         print(' - CPU架构 cpu architecture:', info.get('cpu_arch', 'N/A'))
+        print(' - 状态 status:', info.get('status', info.get('state', 'unknown')))
+        print(' - IP 地址 ip_address:', info.get('ip_address', 'N/A'))
         # android_tool is stored at the top-level of each device entry (dev), not inside info
         print(' - android_tool:', dev.get('android_tool'))
 
     # 获取最后一个设备信息列表对象
-    android_tool = device_infos[0].get('android_tool')
-    print("android_tool:", android_tool)
-    img = android_tool.get_device_screenshot()
-    img.show()
-    print("img : ", img)
+    if device_infos:
+        android_tool = device_infos[0].get('android_tool')
+        print("android_tool:", android_tool)
+        if android_tool:
+            img = android_tool.get_device_screenshot()
+            print("img : ", img)
+            if img:
+                img.show()
+    else:
+        print("无可用设备，跳过截图演示。")
