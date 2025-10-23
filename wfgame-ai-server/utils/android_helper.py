@@ -17,7 +17,7 @@ import logging
 
 from typing import Optional
 from PIL import Image
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 
@@ -198,6 +198,39 @@ class ADBTools(AndroidBase):
         """
         return self._run_adb(f"shell {command}")
 
+    # Public wrappers (exposed so AndroidTools or external callers can use them)
+    def shell(self, command: str) -> tuple:
+        """Public wrapper to run adb-related commands.
+
+        - 如果 command == 'devices' 或以 'adb ' 开头，则作为顶层 adb 命令执行（不带 -s），
+          例如: self.shell('devices') -> 列出所有设备。
+        - 否则视作对当前配置设备执行 adb shell <command>（带 -s）。
+        返回 (success: bool, output: str)
+        """
+        cmd = (command or '').strip()
+        if not cmd:
+            return False, ''
+
+        # 顶层 adb 命令（不加 -s）
+        if cmd == 'devices' or cmd.startswith('adb '):
+            parts = cmd.split()
+            if parts[0] != 'adb':
+                parts = ['adb'] + parts
+            try:
+                r = subprocess.run(parts, capture_output=True, text=True, timeout=5)
+                if r.returncode != 0:
+                    return False, (r.stderr or '').strip()
+                return True, (r.stdout or '').strip()
+            except Exception as e:
+                return False, str(e)
+
+        # 默认视作对当前设备执行 shell
+        return self._shell(cmd)
+
+    def run_adb(self, adb_args: str) -> tuple:
+        """Public wrapper to run a full adb command (args string after device selection)."""
+        return self._run_adb(adb_args)
+
     def _is_path_writable(self, path: str) -> bool:
         """
         检查设备上的某个目录是否可写。
@@ -228,9 +261,9 @@ class ADBTools(AndroidBase):
             # 尝试通过 df 命令获取按可用空间排序的路径
             success, df_output = self._shell("df")
 
-            if success:
+            if success and df_output:
                 mounts = []
-                for line in df_output.splitlines():
+                for line in (df_output or '').splitlines():
                     parts = line.split()
                     if len(parts) < 6:
                         continue
@@ -246,7 +279,7 @@ class ADBTools(AndroidBase):
                         continue
 
                 # 将按空间大小排序后的路径加入候选列表的最前面
-                sorted_paths = [mount for avail, mount in sorted(mounts, key=lambda x: x[0], reverse=True)]
+                sorted_paths = [m for avail, m in sorted(mounts, key=lambda x: x[0], reverse=True)]
                 # 使用 set 去重并保持顺序
                 candidate_paths = list(dict.fromkeys(sorted_paths + candidate_paths))
             else:
@@ -480,20 +513,180 @@ class ADBTools(AndroidBase):
         except Exception:
             return None
 
-    def get_device_infos(self)-> dict:
+    # Hardware info helpers
+    def get_battery_level(self) -> Optional[int]:
+        """Return battery level as integer percent (0-100) via adb.
+        Falls back to reading dumpsys battery if needed.
+        """
+        try:
+            # 1) dumpsys battery
+            success, out = self._shell("dumpsys battery")
+            if success and out:
+                # common patterns: 'level: 85' or 'Battery level: 85'
+                m = re.search(r'level:\s*(\d+)', out)
+                if not m:
+                    m = re.search(r'Battery level:\s*(\d+)', out)
+                if m:
+                    return int(m.group(1))
+
+            # 2) check standard sysfs paths via adb
+            try:
+                ok, cat_out = self._shell("cat /sys/class/power_supply/*/capacity")
+                if ok and cat_out:
+                    for line in cat_out.splitlines():
+                        s = line.strip()
+                        if s.isdigit():
+                            return int(s)
+            except Exception:
+                pass
+
+            # 3) getprop fallback
+            success, out = self._shell("getprop battery.capacity")
+            if success and out and out.strip().isdigit():
+                return int(out.strip())
+
+            # 4) some devices expose capacity in /sys/class/power_supply/battery/uevent
+            try:
+                ok, u = self._shell("cat /sys/class/power_supply/*/uevent")
+                if ok and u:
+                    m = re.search(r'POWER_SUPPLY_CAPACITY=(\d+)', u)
+                    if m:
+                        return int(m.group(1))
+            except Exception:
+                pass
+
+            return None
+        except Exception as e:
+            self.config.logger.debug(f"get_battery_level adb error: {e}")
+            return None
+
+    def get_device_temperature(self) -> Optional[float]:
+        """Return device temperature in Celsius if available. Tries dumpsys battery and thermal zones."""
+        try:
+            # 1) Try dumpsys battery, look for integer or float temperature
+            success, out = self._shell("dumpsys battery")
+            if success and out:
+                # patterns: 'temperature: 358' or 'temperature: 35.8' or 'temp: 35.8'
+                m = re.search(r'temperature:\s*([0-9]+(?:\.[0-9]+)?)', out)
+                if not m:
+                    m = re.search(r'temp(?:erature)?:\s*([0-9]+(?:\.[0-9]+)?)', out)
+                if m:
+                    raw = m.group(1)
+                    # if integer and large, assume tenths or millidegrees
+                    if re.match(r'^\d+$', raw):
+                        t = int(raw)
+                        if t > 10000:
+                            return float(t) / 1000.0
+                        if t > 1000:
+                            return float(t) / 10.0
+                        if t > 100:
+                            return float(t) / 10.0
+                        return float(t)
+                    else:
+                        return float(raw)
+
+            # 2) thermal zones: try several zones
+            for i in range(0, 8):
+                try:
+                    ok, out = self._shell(f"cat /sys/class/thermal/thermal_zone{i}/temp")
+                    if ok and out:
+                        s = out.strip()
+                        if re.match(r'^\d+$', s):
+                            v = int(s)
+                            if v > 1000:
+                                return float(v) / 1000.0
+                            return float(v)
+                        try:
+                            return float(s)
+                        except Exception:
+                            continue
+                except Exception:
+                    continue
+
+            # 3) generic sysfs battery temperature
+            try:
+                ok, out = self._shell("cat /sys/class/power_supply/*/temp")
+                if ok and out:
+                    for line in out.splitlines():
+                        s = line.strip()
+                        if re.match(r'^\d+$', s):
+                            v = int(s)
+                            if v > 1000:
+                                return float(v) / 1000.0
+                            return float(v)
+                        try:
+                            return float(s)
+                        except Exception:
+                            continue
+            except Exception:
+                pass
+
+            return None
+        except Exception as e:
+            self.config.logger.debug(f"get_device_temperature adb error: {e}")
+            return None
+
+    def get_cpu_architecture(self) -> Optional[str]:
+        """Return CPU architecture (e.g., armeabi-v7a, arm64-v8a, x86) via getprop or uname -m."""
+        try:
+            # try ro.product.cpu.abi
+            abi = self._get_prop('ro.product.cpu.abi') or self._get_prop('ro.product.cpu.abilist') or self._get_prop('ro.product.cpu.abilist32')
+            if abi:
+                return abi.split(',')[0]
+
+            # fallback to ro.product.cpu.arch
+            arch = self._get_prop('ro.product.cpu.arch')
+            if arch:
+                return arch
+
+            # fallback to uname -m
+            success, out = self._shell('uname -m')
+            if success and out:
+                return out.strip()
+            return None
+        except Exception as e:
+            self.config.logger.debug(f"get_cpu_architecture adb error: {e}")
+            return None
+
+    def get_device_list(self):
+        """
+        获取所有已连接设备的基础信息列表
+        """
+        try:
+            ok, output = self.shell("adb devices")
+            if not ok:
+                self.config.logger.error(f"执行 'adb devices' 失败: {output}")
+                return []
+
+            devices = []
+            lines = (output or "").strip().split('\n')
+            for line in lines[1:]:
+                if '\tdevice' in line:
+                    serial = line.split('\t')[0].strip()
+                    if serial:
+                        devices.append(serial)
+            return devices
+        except Exception as e:
+            self.config.logger.error(f"获取所有设备列表失败: {e}")
+            return []
+
+    def get_device_info(self)-> dict:
         """
         获取设备基础信息：
         序列号、品牌、型号、系统版本、SDK版本、分辨率
         """
         try:
-            serial = self.config.device_id or self._get_prop('ro.serialno') or ''
+            serial = self.config.device_id or self._get_prop('ro.serialno')
             brand, model = self._get_device_brand_and_model()
-            brand = brand or ''
-            model = model or ''
-            manufacturer = self._get_prop('ro.product.manufacturer') or ''
-            release = self._get_prop('ro.build.version.release') or ''
-            sdk = self._get_prop('ro.build.version.sdk') or ''
+            brand = brand
+            model = model
+            manufacturer = self._get_prop('ro.product.manufacturer')
+            release = self._get_prop('ro.build.version.release')
+            sdk = self._get_prop('ro.build.version.sdk')
             width, height = self._get_device_resolution()
+            battery = self.get_battery_level()
+            temperature = self.get_device_temperature()
+            cpu_arch = self.get_cpu_architecture()
 
             info = {
                 'serial': serial,
@@ -502,14 +695,35 @@ class ADBTools(AndroidBase):
                 'manufacturer': manufacturer,
                 'release': release,
                 'sdk': sdk,
+                'battery': battery,
+                'temperature': temperature,
+                'cpu_arch': cpu_arch,
                 'width': width,
                 'height': height,
             }
+
             self.config.logger.info(f"ADB 收集到设备信息: {info}")
             return info
         except Exception as e:
             self.config.logger.error(f"通过 ADB 获取设备信息失败: {e}")
             return {}
+
+    def get_device_info_list(self):
+        """
+        获取所有已连接设备的基础信息列表
+        """
+        results = []
+        for serial in self.get_device_list():
+            try:
+                cfg = AndroidConfig(device_id=serial, u2_tools=None, device_path=None, logger=self.config.logger)
+                adb_inst = AndroidTools(cfg)
+                info = adb_inst.get_device_info() or {}
+                results.append({'serial': serial, 'adb_tool': adb_inst, 'info': info})
+            except Exception as e:
+                self.config.logger.error(f"为设备 {serial} 创建 ADBTools 实例或获取信息时出错: {e}")
+                results.append({'serial': serial, 'adb_tool': None, 'info': {}})
+        return results
+
 
 class U2Tools(AndroidBase):
     """
@@ -606,7 +820,7 @@ class U2Tools(AndroidBase):
             self.config.logger.error(f"[U2] 获取设备分辨率失败: {e}")
             return 0, 0
 
-    def get_device_infos(self)-> dict:
+    def get_device_info(self)-> dict:
         """
         获取设备基础信息：
         序列号、品牌、型号、系统版本、SDK版本、分辨率
@@ -628,7 +842,9 @@ class U2Tools(AndroidBase):
             release = u2_info.get('release') or u2_info.get('version') or ''
             sdk = u2_info.get('sdk') or u2_info.get('platformVersion') or ''
             width, height = self._get_device_resolution()
-
+            battery = self.get_battery_level()
+            temperature = self.get_device_temperature()
+            cpu_arch = self.get_cpu_architecture()
             info = {
                 'serial': serial,
                 'brand': brand,
@@ -636,14 +852,58 @@ class U2Tools(AndroidBase):
                 'manufacturer': manufacturer,
                 'release': release,
                 'sdk': sdk,
+                'battery': battery,
+                'temperature': temperature,
+                'cpu_arch': cpu_arch,
                 'width': width,
                 'height': height,
             }
+
             self.config.logger.info(f"U2 收集到设备信息: {info}")
             return info
         except Exception as e:
             self.config.logger.error(f"[U2] 通过 uiautomator2 获取设备信息失败: {e}")
             return {}
+
+    # Light hardware info fallbacks using uiautomator2 device info where possible
+    def get_battery_level(self) -> Optional[int]:
+        try:
+            if self.config.u2_tools:
+                info = getattr(self.config.u2_tools, 'info', None) or getattr(self.config.u2_tools, 'device_info', lambda: {})()
+                if isinstance(info, dict):
+                    level = info.get('battery') or info.get('batteryLevel') or info.get('battery_level')
+                    if isinstance(level, (int, float)):
+                        return int(level)
+                    if isinstance(level, str) and level.isdigit():
+                        return int(level)
+            return None
+        except Exception:
+            return None
+
+    def get_device_temperature(self) -> Optional[float]:
+        try:
+            if self.config.u2_tools:
+                info = getattr(self.config.u2_tools, 'info', None) or getattr(self.config.u2_tools, 'device_info', lambda: {})()
+                if isinstance(info, dict):
+                    t = info.get('temperature') or info.get('temp')
+                    if isinstance(t, (int, float)):
+                        return float(t)
+                    if isinstance(t, str) and re.match(r'^\d+(\.\d+)?$', t):
+                        return float(t)
+            return None
+        except Exception:
+            return None
+
+    def get_cpu_architecture(self) -> Optional[str]:
+        try:
+            if self.config.u2_tools:
+                info = getattr(self.config.u2_tools, 'info', None) or getattr(self.config.u2_tools, 'device_info', lambda: {})()
+                if isinstance(info, dict):
+                    return info.get('abi') or info.get('cpuAbi') or info.get('arch')
+            return None
+        except Exception:
+            return None
+
 
 class AndroidTools:
     """
@@ -663,7 +923,8 @@ class AndroidTools:
         如果已在配置中指定，则直接使用。
         如果未指定，则自动发现。如果发现多个，默认选择第一个。
         """
-        return self.adb_tools._get_device_id()
+
+        return self.adb_tools.get_device_infos().get("serial", "UNKNOWN")
 
     def get_u2_device(self) -> Optional[u2.Device]:
         """
@@ -735,31 +996,40 @@ class AndroidTools:
     def click_with_text(self, text):
         return self.u2_tools.click_with_text(text)
 
-    def get_device_infos(self):
+    def shell(self, command: str) -> tuple:
+        """Public wrapper to run an adb shell command on this tool's device."""
+        return self.adb_tools.shell(command)
+
+    def run_adb(self, adb_args: str) -> tuple:
+        """Public wrapper to run a full adb command (args string after device selection)."""
+        return self.adb_tools.run_adb(adb_args)
+
+    def get_device_info(self):
         """
         获取设备基础信息：
         序列号、品牌、型号、系统版本、SDK版本、分辨率
+
+        优先使用 u2 收集信息（更丰富），回退到 adb；两者合并以补齐缺失字段
         """
-        # 优先使用 u2 收集信息（更丰富），回退到 adb；两者合并以补齐缺失字段
         try:
             u2_info = {}
             adb_info = {}
 
             try:
-                u2_info = self.u2_tools.get_device_infos() or {}
+                u2_info = (self.u2_tools.get_device_info() if hasattr(self.u2_tools, 'get_device_info') else self.u2_tools.get_device_infos()) or {}
             except Exception:
                 u2_info = {}
 
             try:
-                adb_info = self.adb_tools.get_device_infos() or {}
+                adb_info = self.adb_tools.get_device_info() or {}
             except Exception:
                 adb_info = {}
 
             # 合并，优先使用 u2 的字段，adb 作为回退
-            keys = ['serial', 'brand', 'model', 'manufacturer', 'release', 'sdk', 'width', 'height']
+            keys = ['serial', 'brand', 'model', 'manufacturer', 'release', 'sdk', 'width', 'height', 'battery', 'temperature', 'cpu_arch']
             merged = {}
             for k in keys:
-                merged[k] = u2_info.get(k) or adb_info.get(k) or ''
+                merged[k] = (u2_info.get(k) if isinstance(u2_info, dict) else None) or adb_info.get(k) or ''
 
             self.config.logger.info(f"合并设备信息 (u2优先，adb回退): {merged}")
             return merged
@@ -767,26 +1037,81 @@ class AndroidTools:
             self.config.logger.error(f"获取设备信息失败: {e}")
             return {}
 
+    def get_devices_infos_list(self):
+        """
+        返回所有连接设备的 info + per-device ADBTools 实例列表，格式与 ADBTools.get_device_info_list 保持一致。
+        """
+        # kept for backward compatibility; prefer get_device_info_list()
+        return self.get_device_info_list()
+
+    def get_device_info_list(self):
+        """
+        枚举主机上所有通过 adb 可见的设备，为每个设备创建一个独立的 AndroidTools 实例，
+        并收集该设备的合并信息（u2 优先，adb 回退）。
+
+        返回：列表，元素为 { 'serial', 'info', 'android_tool', 'adb_tools', 'u2_tools' }
+        """
+        results = []
+        try:
+            serials = self.adb_tools.get_device_list()
+        except Exception:
+            serials = []
+
+        for serial in serials:
+            try:
+                dev_cfg = AndroidConfig(device_id=serial, u2_tools=None, device_path=None, logger=self.config.logger)
+                per_tool = AndroidTools(dev_cfg)
+                info = per_tool.get_device_info() or {}
+                results.append({
+                    'serial': serial,
+                    'info': info,
+                    'android_tool': per_tool,
+                    'adb_tools': per_tool.adb_tools,
+                    'u2_tools': per_tool.u2_tools,
+                })
+            except Exception as e:
+                self.config.logger.error(f"为设备 {serial} 创建 AndroidTools 实例或获取信息时出错: {e}")
+                results.append({'serial': serial, 'info': {}, 'android_tool': None, 'adb_tools': None, 'u2_tools': None})
+        return results
+
+
 if __name__ == '__main__':
     # Simple demo showing how to instantiate the tools with defaults.
-    cfg = AndroidConfig(device_id="65WGZT7P9XHEKN7D")
+    cfg = AndroidConfig()
     android_tools = AndroidTools(cfg)
+    # 获取单个设备信息
+    device_info = android_tools.get_device_info()
+    print('当前设备 信息: ')
+    print(' - 序列号 serial:', device_info.get('serial'))
+    print(' - 品牌 brand:', device_info.get('brand'))
+    print(' - 型号 model:', device_info.get('model'))
+    print(' - 制造商 manufacturer:', device_info.get('manufacturer'))
+    print(' - 系统版本 release:', device_info.get('release'))
+    print(' - SDK版本 sdk:', device_info.get('sdk'))
+    print(' - 分辨率 width x height:', f"{device_info.get('width')} x {device_info.get('height')}")
+    # 获取所有设备信息列表
+    device_infos = android_tools.get_device_info_list()
+    print(f'当前所有设备 共 {len(device_infos)} 个， 设备信息: ')
+    for index, dev in enumerate(device_infos):
+        info = dev.get('info', {})
+        print("info " , info)
+        print(f"设备 {index + 1}:")
+        print(' - 序列号 serial:', info.get('serial', 'N/A'))
+        print(' - 品牌 brand:', info.get('brand', 'N/A'))
+        print(' - 型号 model:', info.get('model', 'N/A'))
+        print(' - 制造商 manufacturer:', info.get('manufacturer', 'N/A'))
+        print(' - 系统版本 release:', info.get('release', 'N/A'))
+        print(' - SDK版本 sdk:', info.get('sdk', 'N/A'))
+        print(' - 分辨率 width x height:', f"{info.get('width', 'N/A')} x {info.get('height', 'N/A')}")
+        print(' - 电量 battery level:', info.get('battery', 'N/A'))
+        print(' - 温度 device temperature:', info.get('temperature', 'N/A'))
+        print(' - CPU架构 cpu architecture:', info.get('cpu_arch', 'N/A'))
+        # android_tool is stored at the top-level of each device entry (dev), not inside info
+        print(' - android_tool:', dev.get('android_tool'))
 
-    # Example usages (commented out by default so running the file doesn't
-    # require a connected device). Uncomment when you want to run against a
-    # real device.
-    # img = android_tools.get_device_screenshot()
-    # print('screenshot:', type(img))
-    # xml_str = android_tools.get_ui_dump()
-    # print('ui dump length:', len(xml_str) if xml_str else 0)
-
-    # 解析XML字符串
-    # import xml.etree.ElementTree as ET
-    # root = ET.fromstring(xml_str)
-    # for node in root.iter('node'):
-    #     print("text:", node.attrib.get('text'), "desc:", node.attrib.get('content-desc'), "res:",
-    #           node.attrib.get('resource-id'))
-
-    # 获取设备分辨率
-    device_info = android_tools.get_device_infos()
-    print('device info:', device_info)
+    # 获取最后一个设备信息列表对象
+    android_tool = device_infos[0].get('android_tool')
+    print("android_tool:", android_tool)
+    img = android_tool.get_device_screenshot()
+    img.show()
+    print("img : ", img)
