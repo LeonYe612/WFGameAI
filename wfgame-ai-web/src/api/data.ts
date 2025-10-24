@@ -1,4 +1,5 @@
 import { http } from "@/utils/http";
+import { baseUrlApi } from "./utils";
 
 // 数据源相关类型定义
 export interface DataSource {
@@ -41,40 +42,40 @@ export interface DataStats {
 
 // 数据源列表
 export const listDataSources = () => {
-  return http.request<DataSource[]>("get", "/api/data/sources");
+  return http.request<DataSource[]>("get", baseUrlApi("/data/sources"));
 };
 
 // 创建数据源
 export const createDataSource = (data: Omit<DataSource, "id">) => {
-  return http.request<DataSource>("post", "/api/data/sources", { data });
+  return http.request<DataSource>("post", baseUrlApi("/data/sources"), { data });
 };
 
 // 更新数据源
 export const updateDataSource = (id: string, data: Partial<DataSource>) => {
-  return http.request<DataSource>("put", `/api/data/sources/${id}`, { data });
+  return http.request<DataSource>("put", baseUrlApi(`/data/sources/${id}`), { data });
 };
 
 // 删除数据源
 export const deleteDataSource = (id: string) => {
-  return http.request<void>("delete", `/api/data/sources/${id}`);
+  return http.request<void>("delete", baseUrlApi(`/data/sources/${id}`));
 };
 
 // 测试数据源连接
 export const testDataSourceConnection = (id: string) => {
   return http.request<{ success: boolean; message: string }>(
     "post",
-    `/api/data/sources/${id}/test`
+    baseUrlApi(`/data/sources/${id}/test`)
   );
 };
 
 // 刷新数据源
 export const refreshDataSource = (id: string) => {
-  return http.request<DataSource>("post", `/api/data/sources/${id}/refresh`);
+  return http.request<DataSource>("post", baseUrlApi(`/data/sources/${id}/refresh`));
 };
 
 // 获取测试数据
 export const getTestData = (dataSourceId: string) => {
-  return http.request<TestData[]>("get", `/api/data/test-data/${dataSourceId}`);
+  return http.request<TestData[]>("get", baseUrlApi(`/data/test-data/${dataSourceId}`));
 };
 
 // 导入数据
@@ -89,14 +90,14 @@ export const importData = (file: File, sourceId?: string) => {
     success: boolean;
     message: string;
     recordCount: number;
-  }>("post", "/api/data/import", { data: formData });
+  }>("post", baseUrlApi("/data/import"), { data: formData });
 };
 
 // 导出数据
 export const exportData = (sourceId: string, format: "excel" | "csv") => {
   return http.request<Blob>(
     "get",
-    `/api/data/export/${sourceId}?format=${format}`,
+    baseUrlApi(`/data/export/${sourceId}?format=${format}`),
     {
       responseType: "blob"
     }

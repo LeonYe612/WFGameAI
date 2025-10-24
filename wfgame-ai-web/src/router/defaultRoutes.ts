@@ -68,9 +68,9 @@ export default [
         id: 78,
         parent_id: 77,
         genre: 1,
-        path: "/devices/index",
-        component: "/devices/index",
-        name: "AI-DEVICES-INDEX",
+        path: "/devices/list/index",
+        component: "/devices/list/index",
+        name: "AI-DEVICES-LIST",
         queue: 0,
         meta: {
           title: "设备管理",

@@ -21,8 +21,8 @@ urlpatterns = [
     # 自定义操作 - 确保所有API都支持POST
     path('devices/<int:pk>/connect/', views.ConnectDeviceView.as_view(), name='device-connect'),
     path('devices/<int:pk>/disconnect/', views.DisconnectDeviceView.as_view(), name='device-disconnect'),
-    path('devices/<int:pk>/reserve/', views.ReserveDeviceView.as_view(), name='device-reserve'),
-    path('devices/<int:pk>/release/', views.ReleaseDeviceView.as_view(), name='device-release'),
+    path('devices/<pk>/reserve/', views.ReserveDeviceView.as_view(), name='device-reserve'),
+    path('devices/<pk>/release/', views.ReleaseDeviceView.as_view(), name='device-release'),
 
     # 创建路由器并注册视图集
     # 注意：路由器注册顺序放在最后，避免通配符路径覆盖具体路径

@@ -2,7 +2,7 @@
 import { ref } from "vue";
 import { Document, Loading } from "@element-plus/icons-vue";
 import { generateDeviceReport } from "@/api/devices";
-import type { DeviceInfo, DeviceReport } from "@/api/devices";
+import type { DeviceItem, DeviceReport } from "@/api/devices";
 import { superRequest } from "@/utils/request";
 import { message } from "@/utils/message";
 
@@ -12,10 +12,10 @@ defineOptions({
 
 const dialogVisible = ref(false);
 const loading = ref(false);
-const selectedDevice = ref<DeviceInfo | null>(null);
+const selectedDevice = ref<DeviceItem | null>(null);
 const reportData = ref<DeviceReport | null>(null);
 
-const showDialog = (device?: DeviceInfo) => {
+const showDialog = (device?: DeviceItem) => {
   selectedDevice.value = device || null;
   reportData.value = null;
   dialogVisible.value = true;

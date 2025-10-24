@@ -13,6 +13,7 @@ import { scriptTypeEnum, sortedEnum } from "@/utils/enums";
 import { ref } from "vue";
 import CategoryEditorDialog from "@/views/common/editor/categoryEditor/dialog.vue";
 import { useNavigate } from "@/views/common/utils/navHook";
+import { message } from "@/utils/message";
 
 const scriptStore = useScriptStoreHook();
 const { navigateToScriptDetail } = useNavigate();
@@ -61,10 +62,17 @@ onUnmounted(() => {
 });
 
 const handleSave = async () => {
-  const { isCreated = false } = await scriptStore.saveScript();
+  const { isCreated = false, error = null } = await scriptStore.saveScript();
+  // 异常时错误提醒
+  if (error) {
+    message(error, { type: "error" });
+    return;
+  }
+  // 如果是新创建的脚本，跳转到详情页
   if (isCreated) {
     navigateToScriptDetail(scriptItem.value.id!, false);
   }
+  // 触发保存成功事件
   emit("save");
 };
 </script>

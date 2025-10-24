@@ -16,6 +16,8 @@ class SSEEvent(Enum):
     OCR_TASK_UPDATE = 'ocr_task_update'
     # 动作库更新
     ACTION_UPDATE = 'action_update'
+    # 设备更新
+    DEVICE_UPDATE = 'device_update'
 
 
 class SSEConnectionManager:

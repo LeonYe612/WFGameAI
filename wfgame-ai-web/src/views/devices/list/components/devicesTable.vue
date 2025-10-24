@@ -7,31 +7,41 @@ import {
   Document,
   Monitor,
   Grid,
-  List
+  List,
+  Lock,
+  Unlock
 } from "@element-plus/icons-vue";
-import type { DeviceInfo, DeviceStats } from "@/api/devices";
-import DeviceReportDialog from "./deviceReportDialog.vue";
-import UsbCheckDialog from "./usbCheckDialog.vue";
+import type { DeviceItem, DeviceStats } from "@/api/devices";
+// import DeviceReportDialog from "./deviceReportDialog.vue";
+// import UsbCheckDialog from "./usbCheckDialog.vue";
+import { getEnumEntry, deviceStatusEnum } from "@/utils/enums";
+import { TimeDefault } from "@/utils/time";
+import { useUserStore } from "@/store/modules/user";
+const userStore = useUserStore();
+
+const loginedUsername = computed(() => userStore.username || "");
 
 defineOptions({
   name: "DevicesTable"
 });
 
 const props = defineProps<{
-  devices: DeviceInfo[];
+  devices: DeviceItem[];
   loading: boolean;
   error: string;
   stats: DeviceStats;
   searchQuery: string;
   statusFilter: string;
   viewMode: string;
-  filteredSortedDevices: DeviceInfo[];
+  filteredSortedDevices: DeviceItem[];
 }>();
 
 const emit = defineEmits([
   "connect",
   "generate-report",
   "refresh",
+  "reserve",
+  "release",
   "update:search-query",
   "update:status-filter",
   "update:view-mode"
@@ -41,30 +51,6 @@ const reportDialogRef = ref();
 const usbDialogRef = ref();
 const sortField = ref("device_id");
 const sortDirection = ref("asc");
-
-// 获取状态显示文本
-const getStatusText = (status: string) => {
-  const statusMap = {
-    online: "在线",
-    offline: "离线",
-    device: "已连接",
-    busy: "忙碌",
-    unauthorized: "未授权"
-  };
-  return statusMap[status] || status;
-};
-
-// 获取状态标签类型
-const getStatusType = (status: string) => {
-  const typeMap = {
-    online: "success",
-    device: "success",
-    offline: "danger",
-    busy: "warning",
-    unauthorized: "warning"
-  };
-  return typeMap[status] || "info";
-};
 
 // 排序处理
 const sortBy = (field: string) => {
@@ -109,13 +95,23 @@ const filteredAndSortedDevices = computed(() => {
   return filtered;
 });
 
+// 占用设备
+const handleReserve = (device: DeviceItem) => {
+  emit("reserve", device.id || device.device_id);
+};
+
+// 释放设备
+const handleRelease = (device: DeviceItem) => {
+  emit("release", device.id || device.device_id);
+};
+
 // 连接设备
-const handleConnect = (device: DeviceInfo) => {
+const handleConnect = (device: DeviceItem) => {
   emit("connect", device.id || device.device_id);
 };
 
 // 生成报告
-const handleGenerateReport = (device: DeviceInfo) => {
+const handleGenerateReport = (device: DeviceItem) => {
   reportDialogRef.value?.showDialog(device);
 };
 
@@ -134,10 +130,7 @@ const showUsbCheck = () => {
 <template>
   <div>
     <!-- 搜索和筛选工具栏 -->
-    <div
-      v-if="!loading && devices.length > 0"
-      class="flex items-center justify-between mb-4"
-    >
+    <div class="flex items-center justify-between mb-4">
       <div class="flex items-center space-x-4">
         <el-input
           :model-value="searchQuery"
@@ -148,20 +141,12 @@ const showUsbCheck = () => {
           clearable
         />
 
-        <el-select
-          :model-value="statusFilter"
-          @update:model-value="emit('update:status-filter', $event)"
-          placeholder="所有状态"
-          style="width: 150px"
-          clearable
+        <el-button
+          v-if="false"
+          :icon="Connection"
+          type="warning"
+          @click="showUsbCheck"
         >
-          <el-option label="在线" value="online" />
-          <el-option label="已连接" value="device" />
-          <el-option label="离线" value="offline" />
-          <el-option label="未授权" value="unauthorized" />
-        </el-select>
-
-        <el-button :icon="Connection" type="warning" @click="showUsbCheck">
           USB检查
         </el-button>
       </div>
@@ -174,93 +159,29 @@ const showUsbCheck = () => {
           {{ viewMode === "table" ? "卡片视图" : "表格视图" }}
         </el-button>
 
-        <el-button :icon="Refresh" type="primary" @click="emit('refresh')">
+        <el-button
+          v-if="false"
+          :icon="Refresh"
+          type="primary"
+          @click="emit('refresh')"
+        >
           刷新
         </el-button>
       </div>
     </div>
 
-    <!-- 加载状态 -->
-    <div v-if="loading" class="text-center py-12">
-      <el-icon class="animate-spin text-4xl text-primary mb-4">
-        <Refresh />
-      </el-icon>
-      <p class="text-gray-500">正在加载设备列表...</p>
-    </div>
-
     <!-- 错误信息 -->
     <el-alert v-if="error" :title="error" type="error" class="mb-4" show-icon />
 
-    <!-- 无设备提示 -->
-    <el-empty
-      v-if="!loading && devices.length === 0"
-      description="暂无设备，请检查设备连接状态"
-      class="py-12"
-    />
-
     <!-- 表格视图 -->
     <el-table
-      v-if="!loading && devices.length > 0 && viewMode === 'table'"
+      v-if="viewMode === 'table'"
       :data="filteredAndSortedDevices"
       stripe
       style="width: 100%"
+      empty-text="请连接设备后点击扫描按钮"
       class="devices-table"
     >
-      <el-table-column
-        prop="device_id"
-        label="设备ID"
-        width="120"
-        sortable
-        @click="sortBy('device_id')"
-      >
-        <template #default="{ row }">
-          <el-tag type="info">{{ row.device_id }}</el-tag>
-        </template>
-      </el-table-column>
-
-      <el-table-column
-        prop="brand"
-        label="品牌"
-        width="100"
-        sortable
-        @click="sortBy('brand')"
-      />
-
-      <el-table-column
-        prop="model"
-        label="型号"
-        width="150"
-        sortable
-        @click="sortBy('model')"
-      />
-
-      <el-table-column
-        prop="android_version"
-        label="系统版本"
-        width="120"
-        sortable
-        @click="sortBy('android_version')"
-      >
-        <template #default="{ row }">
-          <el-tag v-if="row.android_version" size="small">
-            {{ row.android_version }}
-          </el-tag>
-          <span v-else class="text-gray-400">-</span>
-        </template>
-      </el-table-column>
-
-      <el-table-column
-        prop="occupied_personnel"
-        label="占用人员"
-        width="120"
-        sortable
-        @click="sortBy('occupied_personnel')"
-      >
-        <template #default="{ row }">
-          {{ row.occupied_personnel || "-" }}
-        </template>
-      </el-table-column>
-
       <el-table-column
         prop="status"
         label="状态"
@@ -269,21 +190,86 @@ const showUsbCheck = () => {
         @click="sortBy('status')"
       >
         <template #default="{ row }">
-          <el-tag :type="getStatusType(row.status)">
-            {{ getStatusText(row.status) }}
+          <el-tag
+            :type="getEnumEntry(deviceStatusEnum, row.status)?.type"
+            effect="dark"
+          >
+            {{ getEnumEntry(deviceStatusEnum, row.status)?.label || "未知" }}
           </el-tag>
         </template>
       </el-table-column>
 
-      <el-table-column prop="ip_address" label="IP地址" width="140">
+      <el-table-column
+        prop="device_id"
+        label="设备ID"
+        width="200"
+        sortable
+        @click="sortBy('device_id')"
+      >
+        <template #default="{ row }">
+          <el-tag type="info" effect="plain">{{ row.device_id }}</el-tag>
+        </template>
+      </el-table-column>
+
+      <el-table-column
+        prop="model"
+        label="型号"
+        width="180"
+        sortable
+        @click="sortBy('model')"
+      />
+
+      <el-table-column
+        prop="brand"
+        label="品牌"
+        sortable
+        @click="sortBy('brand')"
+      />
+
+      <el-table-column
+        prop="android_version"
+        label="系统版本"
+        width="180"
+        sortable
+        @click="sortBy('android_version')"
+      >
+        <template #default="{ row }">
+          <el-tag v-if="row.android_version" type="info">
+            {{ row.android_version }}
+          </el-tag>
+          <span v-else class="text-gray-400">-</span>
+        </template>
+      </el-table-column>
+
+      <el-table-column
+        prop="current_user_name"
+        label="占用人员"
+        sortable
+        @click="sortBy('current_user_name')"
+      >
+        <template #default="{ row }">
+          <el-tag v-if="row.current_user" type="warning" effect="dark">
+            <span class="text-white">🔒{{ row.current_user_name }}</span>
+          </el-tag>
+          <span v-else class="text-gray-400">-</span>
+        </template>
+      </el-table-column>
+
+      <el-table-column prop="resolution" label="分辨率">
+        <template #default="{ row }">
+          {{ row.resolution || "-" }}
+        </template>
+      </el-table-column>
+
+      <el-table-column prop="ip_address" label="IP地址">
         <template #default="{ row }">
           {{ row.ip_address || "-" }}
         </template>
       </el-table-column>
 
-      <el-table-column prop="last_online" label="最后在线" width="120">
+      <el-table-column prop="last_online" label="最后在线">
         <template #default="{ row }">
-          {{ row.last_online || "刚刚" }}
+          {{ TimeDefault(row.last_online) || "-" }}
         </template>
       </el-table-column>
 
@@ -291,7 +277,32 @@ const showUsbCheck = () => {
         <template #default="{ row }">
           <div class="flex space-x-1">
             <el-button
-              size="small"
+              v-if="
+                !row.current_user &&
+                row.status === deviceStatusEnum.ONLINE.value
+              "
+              :icon="Lock"
+              type="warning"
+              plain
+              @click="handleReserve(row)"
+            >
+              占用
+            </el-button>
+            <el-button
+              v-if="
+                row.current_user_username === loginedUsername &&
+                row.status === deviceStatusEnum.ONLINE.value
+              "
+              :icon="Unlock"
+              type="success"
+              plain
+              @click="handleRelease(row)"
+            >
+              释放
+            </el-button>
+
+            <el-button
+              v-if="false"
               type="success"
               :icon="Connection"
               :disabled="row.status === 'online' || row.status === 'device'"
@@ -301,7 +312,7 @@ const showUsbCheck = () => {
             </el-button>
 
             <el-button
-              size="small"
+              v-if="false"
               type="primary"
               :icon="Document"
               @click="handleGenerateReport(row)"
@@ -309,7 +320,7 @@ const showUsbCheck = () => {
               报告
             </el-button>
 
-            <el-button size="small" type="info" :icon="Monitor" disabled>
+            <el-button v-if="false" type="info" :icon="Monitor" disabled>
               屏幕
             </el-button>
           </div>
@@ -319,7 +330,7 @@ const showUsbCheck = () => {
 
     <!-- 卡片视图 -->
     <div
-      v-if="!loading && devices.length > 0 && viewMode === 'card'"
+      v-if="viewMode === 'card'"
       class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
     >
       <el-card
@@ -335,45 +346,32 @@ const showUsbCheck = () => {
                 class="w-3 h-3 rounded-full mr-2"
                 :class="{
                   'bg-green-500':
-                    device.status === 'online' || device.status === 'device',
-                  'bg-red-500': device.status === 'offline',
-                  'bg-yellow-500': device.status === 'busy',
-                  'bg-orange-500': device.status === 'unauthorized'
+                    device.status === deviceStatusEnum.ONLINE.value,
+                  'bg-red-500':
+                    device.status === deviceStatusEnum.OFFLINE.value,
+                  'bg-orange-500':
+                    device.status === deviceStatusEnum.UNAUTHORIZED.value
                 }"
               />
               <span class="font-medium">
                 {{ device.brand }} {{ device.model }}
               </span>
             </div>
-            <el-tag :type="getStatusType(device.status)" size="small">
-              {{ getStatusText(device.status) }}
+            <el-tag :type="getEnumEntry(deviceStatusEnum, device.status)?.type">
+              {{
+                getEnumEntry(deviceStatusEnum, device.status)?.label || "未知"
+              }}
             </el-tag>
           </div>
         </template>
-
-        <div class="space-y-2 text-sm">
-          <div class="flex justify-between">
-            <span class="text-gray-500">设备ID:</span>
-            <el-tag type="info" size="small">{{ device.device_id }}</el-tag>
-          </div>
-          <div class="flex justify-between">
-            <span class="text-gray-500">品牌:</span>
-            <span>{{ device.brand || "-" }}</span>
-          </div>
-          <div class="flex justify-between">
-            <span class="text-gray-500">型号:</span>
-            <span>{{ device.model || "-" }}</span>
-          </div>
-          <div class="flex justify-between">
-            <span class="text-gray-500">系统版本:</span>
-            <el-tag v-if="device.android_version" size="small">
-              {{ device.android_version }}
-            </el-tag>
-            <span v-else>-</span>
-          </div>
-          <div class="flex justify-between">
+        <div class="mb-4">
+          <div class="flex justify-between items-center">
             <span class="text-gray-500">占用人员:</span>
-            <span>{{ device.occupied_personnel || "-" }}</span>
+            <span>{{ device.current_user_name || "-" }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-500">分辨率:</span>
+            <span>{{ device.resolution || "-" }}</span>
           </div>
           <div class="flex justify-between">
             <span class="text-gray-500">IP地址:</span>
@@ -381,35 +379,35 @@ const showUsbCheck = () => {
           </div>
           <div class="flex justify-between">
             <span class="text-gray-500">最后在线:</span>
-            <span>{{ device.last_online || "刚刚" }}</span>
+            <span>{{ TimeDefault(device.last_online) }}</span>
           </div>
         </div>
 
         <template #footer>
-          <div class="flex justify-between">
+          <div class="flex justify-end space-x-2">
             <el-button
-              size="small"
-              type="success"
-              :icon="Connection"
-              :disabled="
-                device.status === 'online' || device.status === 'device'
+              v-if="
+                !device.current_user &&
+                device.status === deviceStatusEnum.ONLINE.value
               "
-              @click="handleConnect(device)"
+              :icon="Lock"
+              type="warning"
+              plain
+              @click="handleReserve(device)"
             >
-              连接
+              占用
             </el-button>
-
             <el-button
-              size="small"
-              type="primary"
-              :icon="Document"
-              @click="handleGenerateReport(device)"
+              v-if="
+                device.current_user_username === loginedUsername &&
+                device.status === deviceStatusEnum.ONLINE.value
+              "
+              :icon="Unlock"
+              type="success"
+              plain
+              @click="handleRelease(device)"
             >
-              报告
-            </el-button>
-
-            <el-button size="small" type="info" :icon="Monitor" disabled>
-              屏幕
+              释放
             </el-button>
           </div>
         </template>
@@ -417,10 +415,10 @@ const showUsbCheck = () => {
     </div>
 
     <!-- 设备报告对话框 -->
-    <DeviceReportDialog ref="reportDialogRef" />
+    <!-- <DeviceReportDialog ref="reportDialogRef" /> -->
 
     <!-- USB检查对话框 -->
-    <UsbCheckDialog ref="usbDialogRef" />
+    <!-- <UsbCheckDialog ref="usbDialogRef" /> -->
   </div>
 </template>
 

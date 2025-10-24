@@ -49,7 +49,8 @@ class DeviceSerializer(serializers.ModelSerializer):
     type_name = serializers.ReadOnlyField(source='type.name')
     status_display = serializers.SerializerMethodField()
     owner_name = serializers.ReadOnlyField(source='owner.username')
-    current_user_name = serializers.ReadOnlyField(source='current_user.username')
+    current_user_name = serializers.ReadOnlyField(source='current_user.chinese_name')
+    current_user_username = serializers.ReadOnlyField(source='current_user.username')
     occupied_personnel = serializers.ReadOnlyField(source='current_user.username')  # 占用人员字段，引用当前使用者
 
     # 覆盖原始字段以显示增强信息
@@ -62,14 +63,15 @@ class DeviceSerializer(serializers.ModelSerializer):
     enhanced_brand = serializers.SerializerMethodField()
     device_series = serializers.SerializerMethodField()
     device_category = serializers.SerializerMethodField()
+    resolution = serializers.SerializerMethodField()
 
     class Meta:
         model = Device
         fields = ['id', 'name', 'device_id', 'brand', 'model', 'android_version',
-                 'type', 'type_name', 'status', 'status_display', 'ip_address',
+                 'type', 'type_name', 'status', 'status_display', 'ip_address', 'width', 'height',
                  'last_online', 'owner', 'owner_name', 'current_user',
-                 'current_user_name', 'occupied_personnel', 'created_at', 'updated_at',
-                 'commercial_name', 'display_name', 'enhanced_brand', 'device_series', 'device_category']
+                 'current_user_name', 'current_user_username', 'occupied_personnel', 'created_at', 'updated_at',
+                 'commercial_name', 'display_name', 'enhanced_brand', 'device_series', 'device_category', 'resolution']
         read_only_fields = ['created_at', 'updated_at', 'last_online']
 
     def get_status_display(self, obj):
@@ -140,6 +142,12 @@ class DeviceSerializer(serializers.ModelSerializer):
         """获取设备分类"""
         enhanced_info = self._get_enhanced_info(obj)
         return enhanced_info.get('category', '智能手机')
+
+    def get_resolution(self, obj):
+        """获取设备分辨率"""
+        if obj.width and obj.height:
+            return f"{obj.width} * {obj.height}"
+        return "未知分辨率"
 
 
 class DeviceDetailSerializer(serializers.ModelSerializer):

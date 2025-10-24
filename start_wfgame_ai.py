@@ -229,6 +229,33 @@ def start_backend(config_path: str = None, port: int = 8000):
     print_colored(f"注意: 服务绑定到{bind}，推荐使用localhost:{port}访问", 'cyan')
     return process
 
+def start_usb_monitor(config_path: str = None):
+    """
+    启动USB设备监控脚本
+
+    Returns:
+        subprocess.Popen: 监控进程对象
+    """
+    print_colored("\n====== 启动USB设备监控 ======", 'yellow')
+
+    monitor_script = os.path.join(get_project_root(), "wfgame-ai-server", "scripts", "monitor_usb.py")
+
+    if not os.path.exists(monitor_script):
+        print_colored(f"错误: USB监控脚本不存在: {monitor_script}", 'red')
+        return None
+
+    # 配置文件环境变量
+    env_vars = {}
+    if config_path:
+        env_vars['WFGAMEAI_CONFIG'] = config_path
+        print_colored(f"使用配置文件: {config_path}", 'cyan')
+
+    command = [sys.executable, monitor_script]
+    process = run_command(command, cwd=get_project_root(), name="USB监控", env_vars=env_vars)
+
+    print_colored("USB设备监控启动中，请稍后...", 'yellow')
+    return process
+
 def start_frontend():
     """
     启动Vue前端服务
@@ -382,6 +409,12 @@ def main():
 
         # 预处理设备
         prepare_devices()
+
+        # 启动USB设备监控服务
+        usb_monitor_process = start_usb_monitor(config_path=selected_config)
+        if not usb_monitor_process:
+            print_colored("USB设备监控服务启动失败", 'red')
+            return
 
         # 等待服务启动
         wait_for_services(frontend_process, backend_process, port=port)

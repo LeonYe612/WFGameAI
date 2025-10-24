@@ -32,6 +32,7 @@ const cmOptions = {
 
 const stepsJson = computed(() => JSON.stringify(scriptStore.getSteps, null, 2));
 const activeFocus = computed(() => scriptStore.getActiveFocus);
+const isWrongJson = computed(() => scriptStore.isWrongJson);
 
 const highlightLine = (stepIndex: number, paramName: string) => {
   if (!editor) return;
@@ -79,8 +80,10 @@ const onCodeChange = newCode => {
   try {
     const newSteps = JSON.parse(newCode);
     scriptStore.updateSteps(newSteps);
+    scriptStore.setIsWrongJson(false);
   } catch (e) {
     // 忽略无效的JSON
+    scriptStore.setIsWrongJson(true);
   }
 };
 
@@ -179,11 +182,17 @@ const handleCopyJson = () => {
 
 <template>
   <div class="json-editor">
-    <div class="flex">
-      <h3 class="font-bold mb-2 text-white h-[34px]">📋 JSON</h3>
+    <div class="h-[34px] flex justify-between items-center mb-2">
+      <h3 class="font-bold text-white">📋 JSON</h3>
+      <span
+        v-if="isWrongJson"
+        class="bg-red-200 text-red-500 p-1 rounded-sm font-semibold heartbeat"
+      >
+        ❌ JSON格式有误, 请检查修改！
+      </span>
       <!-- 复制按钮 -->
       <el-button
-        class="ml-auto mr-2"
+        class="mr-2"
         type="text"
         title="复制"
         plain
