@@ -173,7 +173,7 @@ class CommonPagination(PageNumberPagination):
             }
         )
 
-    def paginate_response(self, queryset, request, view=None, serializer_class=None, serializer_kwargs=None, raise_exception=False):
+    def paginate_response(self, queryset, request, view=None, serializer_class=None, serializer_kwargs=None, raise_exception=True):
         if serializer_kwargs is None:
             serializer_kwargs = {}
         try:

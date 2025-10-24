@@ -26,11 +26,14 @@ class DeviceType(models.Model):
 
 class Device(models.Model):
     """设备"""
+    ONLINE = 'online'
+    OFFLINE = 'offline'
+    UNAUTHORIZED = 'unauthorized'
+
     STATUS_CHOICES = (
-        ('online', _('在线')),
-        ('offline', _('离线')),
-        ('busy', _('占用中')),
-        ('error', _('故障')),
+        (ONLINE, _('在线')),
+        (OFFLINE, _('离线')),
+        (UNAUTHORIZED, _('未授权')),
     )
 
     name = models.CharField(_('设备名称'), max_length=255)
@@ -45,6 +48,8 @@ class Device(models.Model):
                             related_name='devices')
     status = models.CharField(_('状态'), max_length=20, choices=STATUS_CHOICES, default='offline')
     ip_address = models.CharField(_('IP地址'), max_length=50, blank=True)
+    width = models.IntegerField(_('屏幕宽度'), default=0)
+    height = models.IntegerField(_('屏幕高度'), default=0)
     last_online = models.DateTimeField(_('最后在线时间'), null=True, blank=True)
     description = models.TextField(_('设备描述'), blank=True)
     owner = models.ForeignKey(settings.AUTH_USER_MODEL,

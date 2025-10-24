@@ -1,8 +1,14 @@
+import { EpPropMergeType } from "element-plus/es/utils";
+
 type EnumValue = {
   label: string;
   value: any;
   order: number;
-  type?: "success" | "warning" | "info" | "danger" | "";
+  type?: EpPropMergeType<
+    StringConstructor,
+    "warning" | "primary" | "success" | "danger" | "info",
+    unknown
+  >;
   color?: string;
 };
 
@@ -111,4 +117,16 @@ export const scriptTypeEnum: Record<string, EnumValue> = {
 export const includeInLogEnum: Record<string, EnumValue> = {
   YES: { label: "是", value: true, order: 2, type: "success" },
   NO: { label: "否", value: false, order: 3, type: "info" }
+};
+
+/** 设备状态 */
+export const deviceStatusEnum: Record<string, EnumValue> = {
+  ONLINE: { label: "在线", value: "online", order: 1, type: "success" },
+  OFFLINE: { label: "离线", value: "offline", order: 2, type: "danger" },
+  UNAUTHORIZED: {
+    label: "未授权",
+    value: "unauthorized",
+    order: 3,
+    type: "warning"
+  }
 };

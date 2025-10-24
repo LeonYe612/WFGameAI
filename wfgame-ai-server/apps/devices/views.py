@@ -12,7 +12,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, status, views
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import AllowAny
 from django.conf import settings
 
 from .models import DeviceType, Device, DeviceLog
@@ -22,6 +22,9 @@ from .serializers import (
     DeviceDetailSerializer,
     DeviceLogSerializer
 )
+from apps.core.utils.response import CustomResponseModelViewSet, api_response
+from apps.devices.services import scan, reserve, release
+from ..users.models import AuthUser
 
 # === UTF-8编码环境强制设置 ===
 # 强制设置UTF-8环境变量
@@ -169,21 +172,23 @@ class DeviceTypeViewSet(viewsets.ModelViewSet):
     serializer_class = DeviceTypeSerializer
     permission_classes = [AllowAny]  # 允许所有用户访问
     http_method_names = ['post']  # 只允许POST方法
+    pagination_class = None
 
 
-class DeviceViewSet(viewsets.ModelViewSet):
+class DeviceViewSet(CustomResponseModelViewSet):
     """设备视图集"""
     queryset = Device.objects.all()
     permission_classes = [AllowAny]  # 允许所有用户访问
-    filterset_fields = ['status', 'type']
+    filterset_fields = ['status', 'type', 'current_user']
     search_fields = ['name', 'device_id', 'ip_address']
-    http_method_names = ['post']  # 只允许POST方法
+    pagination_class = None
+    # http_method_names = ['post']  # 只允许POST方法
 
     def get_serializer_class(self):
         """根据操作选择适当的序列化器"""
         if self.action == 'retrieve' or self.action == 'create' or self.action == 'update':
-            return DeviceDetailSerializer
-        return DeviceSerializer
+            return api_response(data=DeviceDetailSerializer)
+        return api_response(data=DeviceSerializer)
 
     @action(detail=True, methods=['post'])
     def logs(self, request, pk=None):
@@ -195,10 +200,10 @@ class DeviceViewSet(viewsets.ModelViewSet):
             serializer = DeviceLogSerializer(page, many=True)
             return self.get_paginated_response(serializer.data)
         serializer = DeviceLogSerializer(logs, many=True)
-        return Response(serializer.data)
+        return api_response(serializer.data)
 
 
-class DeviceLogViewSet(viewsets.ReadOnlyModelViewSet):
+class DeviceLogViewSet(CustomResponseModelViewSet):
     """设备日志视图集 - 只读"""
     queryset = DeviceLog.objects.all()
     serializer_class = DeviceLogSerializer
@@ -340,37 +345,17 @@ class DisconnectDeviceView(views.APIView):
 
 
 class ReserveDeviceView(views.APIView):
-    """预约设备"""
+    """占用设备"""
     permission_classes = [AllowAny]  # 允许所有用户访问
     http_method_names = ['post']  # 只允许POST方法
 
     def post(self, request, pk):
-        device = get_object_or_404(Device, pk=pk)
-
-        # 检查设备是否已被预约
-        if device.status == 'busy' and device.current_user != request.user:
-            return Response(
-                {"detail": "设备已被其他用户预约"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        # 预约设备
-        device.status = 'busy'
-        device.current_user = request.user if request.user.is_authenticated else None
-        device.save()
-
-        # 创建日志
-        DeviceLog.objects.create(
-            device=device,
-            level='info',
-            message=f"设备 '{device.name}' 已被预约"
-        )
-
-        # 返回成功响应
-        return Response(
-            {"detail": "设备预约成功"},
-            status=status.HTTP_200_OK
-        )
+        try:
+            reserve(request._user, key=pk)
+            return api_response()
+        except Exception as e:
+            logger.error(e)
+            return api_response(code=403, msg=str(e))
 
 
 class ReleaseDeviceView(views.APIView):
@@ -379,43 +364,15 @@ class ReleaseDeviceView(views.APIView):
     http_method_names = ['post']  # 只允许POST方法
 
     def post(self, request, pk):
-        device = get_object_or_404(Device, pk=pk)
-
-        # 检查设备是否已被预约
-        if device.status != 'busy':
-            return Response(
-                {"detail": "设备未被预约"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        # 检查是否有权限释放设备
-        if device.current_user != request.user and not request.user.is_staff:
-            return Response(
-                {"detail": "无权释放此设备"},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
-        # 释放设备
-        old_user = device.current_user
-        device.status = 'online' if device.last_online and (timezone.now() - device.last_online).total_seconds() < 3600 else 'offline'
-        device.current_user = None
-        device.save()
-
-        # 创建日志
-        DeviceLog.objects.create(
-            device=device,
-            level='info',
-            message=f"设备 '{device.name}' 已被用户 '{request.user.username}' 释放，之前由用户 '{old_user.username if old_user else 'unknown'}' 使用"
-        )
-
-        # 返回成功响应
-        return Response(
-            {"detail": "设备释放成功"},
-            status=status.HTTP_200_OK
-        )
+        try:
+            release(request._user, key=pk)
+            return api_response()
+        except Exception as e:
+            logger.error(e)
+            return api_response(code=403, msg=str(e))
 
 
-class ScanDevicesView(views.APIView):
+class ScanDevicesViewBak(views.APIView):
     """扫描设备（集成：USB连接检查和设备状态扫描）"""
     permission_classes = [AllowAny]  # 允许所有用户访问
     http_method_names = ['post']  # 只允许POST方法
@@ -717,6 +674,21 @@ class ScanDevicesView(views.APIView):
         except Exception as e:
             raise Exception(f"ADB check failed: {str(e)}")
 
+class ScanDevicesView(views.APIView):
+    """扫描设备（集成：USB连接检查和设备状态扫描）"""
+    permission_classes = [AllowAny]  # 允许所有用户访问
+    http_method_names = ['post']  # 只允许POST方法
+
+    def post(self, request):
+        try:
+            scan()
+            return api_response()
+        except Exception as e:
+            logger.error(f"扫描设备失败: {str(e)}")
+            return api_response(
+                code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                msg=f"扫描设备失败: {str(e)}",
+            )
 
 class USBConnectionCheckView(views.APIView):
     """USB连接检查API"""

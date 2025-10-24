@@ -74,9 +74,7 @@ class JsonErrorHandlerMiddleware:
 
         if is_api_request:
             # 返回JSON格式的错误响应
-            return JsonResponse(
-                {"detail": f"服务器内部错误: {str(exception)}"}, status=500
-            )
+            return api_response(code=500, msg=f"服务器内部错误: {str(exception)}")
         return None  # 让Django继续处理异常
 
     def _is_api_request(self, request):

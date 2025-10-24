@@ -1,16 +1,15 @@
 import { http } from "@/utils/http";
+import { baseUrlApi, ApiResult } from "./utils";
 
 // 设备状态枚举
 export enum DeviceStatus {
   ONLINE = "online",
   OFFLINE = "offline",
-  DEVICE = "device",
-  BUSY = "busy",
   UNAUTHORIZED = "unauthorized"
 }
 
 // 设备信息接口
-export interface DeviceInfo {
+export interface DeviceItem {
   id?: number;
   device_id: string;
   brand?: string;
@@ -19,7 +18,15 @@ export interface DeviceInfo {
   occupied_personnel?: string;
   status: DeviceStatus;
   ip_address?: string;
+  width?: number;
+  height?: number;
+  resolution?: string;
+  owner?: number;
+  current_user?: number;
+  current_user_name?: string;
+  current_user_username?: string;
   last_online?: string;
+  description?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -33,85 +40,38 @@ export interface DeviceStats {
   busy: number;
 }
 
-// USB检查结果接口
-export interface UsbCheckResult {
-  success: boolean;
-  devices: Array<{
-    device_id: string;
-    status: string;
-    message?: string;
-  }>;
-  message?: string;
-}
+// 扫描设备列表(adb扫描并更新数据库)
+export const scanDevices = () => {
+  return http.request<ApiResult>("post", baseUrlApi("/devices/devices/scan/"));
+};
 
-// 设备报告接口
-export interface DeviceReport {
-  device_id: string;
-  report_data: any;
-  generated_at: string;
-}
-
-// 获取设备列表
+// 获取设备列表(纯查询数据库)
 export const listDevices = (params?: any) => {
-  return http.request<DeviceInfo[]>("get", "/api/devices/", { params });
+  return http.request<ApiResult>("get", baseUrlApi("/devices/devices/"), {
+    params
+  });
 };
 
 // 获取设备详情
 export const getDevice = (deviceId: string) => {
-  return http.request<DeviceInfo>("get", `/api/devices/${deviceId}/`);
-};
-
-// 连接设备
-export const connectDevice = (deviceId: string) => {
-  return http.request<{ success: boolean; message: string }>(
-    "post",
-    `/api/devices/${deviceId}/connect/`
+  return http.request<ApiResult>(
+    "get",
+    baseUrlApi(`/devices/devices/${deviceId}/`)
   );
 };
 
-// 断开设备连接
-export const disconnectDevice = (deviceId: string) => {
-  return http.request<{ success: boolean; message: string }>(
+// 占用设备
+export const reserveDevice = (deviceKey: number | string) => {
+  return http.request<ApiResult>(
     "post",
-    `/api/devices/${deviceId}/disconnect/`
+    baseUrlApi(`/devices/devices/${deviceKey}/reserve/`)
   );
 };
 
-// 刷新设备列表
-export const refreshDevices = () => {
-  return http.request<{ success: boolean; message: string }>(
+// 释放设备
+export const releaseDevice = (deviceKey: number | string) => {
+  return http.request<ApiResult>(
     "post",
-    "/api/devices/refresh/"
-  );
-};
-
-// USB连接检查
-export const checkUsbConnection = () => {
-  return http.request<UsbCheckResult>("post", "/api/devices/usb-check/");
-};
-
-// 生成设备报告
-export const generateDeviceReport = (deviceId?: string) => {
-  const url = deviceId
-    ? `/api/devices/${deviceId}/report/`
-    : "/api/devices/report/";
-  return http.request<DeviceReport>("post", url);
-};
-
-// 获取设备统计
-export const getDeviceStats = () => {
-  return http.request<DeviceStats>("get", "/api/devices/stats/");
-};
-
-// 更新设备信息
-export const updateDevice = (deviceId: string, data: Partial<DeviceInfo>) => {
-  return http.request<DeviceInfo>("put", `/api/devices/${deviceId}/`, { data });
-};
-
-// 删除设备
-export const deleteDevice = (deviceId: string) => {
-  return http.request<{ success: boolean; message: string }>(
-    "delete",
-    `/api/devices/${deviceId}/`
+    baseUrlApi(`/devices/devices/${deviceKey}/release/`)
   );
 };

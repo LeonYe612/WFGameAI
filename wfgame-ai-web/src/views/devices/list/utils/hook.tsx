@@ -1,23 +1,16 @@
 import { ref, computed } from "vue";
 import {
   listDevices,
-  connectDevice as apiConnectDevice,
-  refreshDevices as apiRefreshDevices,
-  checkUsbConnection,
-  generateDeviceReport as apiGenerateDeviceReport
+  scanDevices as scanDevicesApi,
+  reserveDevice as reserveDeviceApi,
+  releaseDevice as releaseDeviceApi
 } from "@/api/devices";
-import type {
-  DeviceInfo,
-  DeviceStats,
-  UsbCheckResult,
-  DeviceReport
-} from "@/api/devices";
+import type { DeviceItem, DeviceStats } from "@/api/devices";
 import { superRequest } from "@/utils/request";
-import { message } from "@/utils/message";
 
 export function useDevicesManagement() {
   // 响应式数据
-  const devices = ref<DeviceInfo[]>([]);
+  const devices = ref<DeviceItem[]>([]);
   const loading = ref(false);
   const error = ref("");
   const stats = ref<DeviceStats>({
@@ -40,21 +33,33 @@ export function useDevicesManagement() {
   // 计算统计数据
   const computedStats = computed(() => {
     const total = devices.value.length;
-    const online = devices.value.filter(
-      d => d.status === "online" || d.status === "device"
-    ).length;
-    const offline = devices.value.filter(d => d.status === "offline").length;
-    const unauthorized = devices.value.filter(
-      d => d.status === "unauthorized"
-    ).length;
-    const busy = devices.value.filter(d => d.status === "busy").length;
+    let online = 0;
+    let offline = 0;
+    let unauthorized = 0;
+    let busy = 0;
 
+    devices.value.forEach(device => {
+      switch (device.status) {
+        case "online":
+          online += 1;
+          if (device.current_user) {
+            busy += 1;
+          }
+          break;
+        case "offline":
+          offline += 1;
+          break;
+        case "unauthorized":
+          unauthorized += 1;
+          break;
+      }
+    });
     return { total, online, offline, unauthorized, busy };
   });
 
   // 过滤和排序的设备列表
   const filteredAndSortedDevices = computed(() => {
-    let filtered = [...devices.value];
+    let filtered = devices.value;
 
     // 搜索过滤
     if (searchQuery.value) {
@@ -76,7 +81,7 @@ export function useDevicesManagement() {
 
     // 排序
     if (sortField.value) {
-      filtered = filtered.sort((a, b) => {
+      filtered = [...filtered].sort((a, b) => {
         const aVal = a[sortField.value] || "";
         const bVal = b[sortField.value] || "";
         const result = aVal.toString().localeCompare(bVal.toString());
@@ -95,13 +100,13 @@ export function useDevicesManagement() {
         loading.value = true;
         error.value = "";
       },
-      onSucceed: (data: DeviceInfo[]) => {
-        devices.value = data;
+      onSucceed: (data: DeviceItem[]) => {
+        devices.value = data || [];
         // 更新统计数据
         stats.value = computedStats.value;
       },
-      onFailed: (err: any) => {
-        error.value = err.message || "获取设备列表失败";
+      onFailed: (_data: any, msg: string) => {
+        error.value = msg || "获取设备列表失败";
         devices.value = [];
       },
       onCompleted: () => {
@@ -110,102 +115,37 @@ export function useDevicesManagement() {
     });
   };
 
-  // 刷新设备列表
-  const refreshDevices = async () => {
+  // 扫描设备
+  const scanDevices = async () => {
     await superRequest({
-      apiFunc: apiRefreshDevices,
+      apiFunc: scanDevicesApi,
       enableSucceedMsg: true,
       succeedMsgContent: "设备列表刷新成功！",
       onSucceed: () => {
         // 刷新成功后重新获取设备列表
         fetchDevices();
-      },
-      onFailed: () => {
-        message("刷新设备列表失败", { type: "error" });
       }
     });
   };
 
-  // 连接设备
-  const connectDevice = async (deviceId: string) => {
+  // 占用设备
+  const reserveDevice = async (key: number | string) => {
     await superRequest({
-      apiFunc: apiConnectDevice,
-      apiParams: deviceId,
-      enableSucceedMsg: true,
-      succeedMsgContent: "设备连接成功！",
-      onSucceed: () => {
-        // 连接成功后刷新设备列表
-        fetchDevices();
-      },
-      onFailed: () => {
-        message("设备连接失败", { type: "error" });
-      }
+      apiFunc: reserveDeviceApi,
+      apiParams: key,
+      enableSucceedMsg: false,
+      succeedMsgContent: "设备占用成功！"
     });
   };
 
-  // 执行USB连接检查
-  const performUsbCheck = async (): Promise<UsbCheckResult | null> => {
-    let result: UsbCheckResult | null = null;
-
+  // 释放设备
+  const releaseDevice = async (key: number | string) => {
     await superRequest({
-      apiFunc: checkUsbConnection,
-      enableSucceedMsg: true,
-      succeedMsgContent: "USB连接检查完成！",
-      onSucceed: (data: UsbCheckResult) => {
-        result = data;
-      },
-      onFailed: () => {
-        message("USB连接检查失败", { type: "error" });
-      }
+      apiFunc: releaseDeviceApi,
+      apiParams: key,
+      enableSucceedMsg: false,
+      succeedMsgContent: "设备释放成功！"
     });
-
-    return result;
-  };
-
-  // 生成设备报告
-  const generateDeviceReport = async (
-    deviceId?: string
-  ): Promise<DeviceReport | null> => {
-    let result: DeviceReport | null = null;
-
-    await superRequest({
-      apiFunc: apiGenerateDeviceReport,
-      apiParams: deviceId,
-      enableSucceedMsg: true,
-      succeedMsgContent: "设备报告生成成功！",
-      onSucceed: (data: DeviceReport) => {
-        result = data;
-      },
-      onFailed: () => {
-        message("生成设备报告失败", { type: "error" });
-      }
-    });
-
-    return result;
-  };
-
-  // 获取设备状态显示文本
-  const getStatusText = (status: string) => {
-    const statusMap = {
-      online: "在线",
-      offline: "离线",
-      device: "已连接",
-      busy: "忙碌",
-      unauthorized: "未授权"
-    };
-    return statusMap[status] || status;
-  };
-
-  // 获取状态标签类型
-  const getStatusType = (status: string) => {
-    const typeMap = {
-      online: "success",
-      device: "success",
-      offline: "danger",
-      busy: "warning",
-      unauthorized: "warning"
-    };
-    return typeMap[status] || "info";
   };
 
   // 排序处理
@@ -236,12 +176,9 @@ export function useDevicesManagement() {
 
     // 方法
     fetchDevices,
-    refreshDevices,
-    connectDevice,
-    performUsbCheck,
-    generateDeviceReport,
-    getStatusText,
-    getStatusType,
+    scanDevices,
+    reserveDevice,
+    releaseDevice,
     sortBy
   };
 }

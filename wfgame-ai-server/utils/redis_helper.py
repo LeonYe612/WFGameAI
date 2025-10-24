@@ -94,6 +94,23 @@ class RedisHelper:
         pool = RedisPoolManager.get_pool(redis_config)
         self.client = redis.StrictRedis(connection_pool=pool)
 
+    def lock(self, key: str, ex: int = 10) -> bool:
+        """
+        获取一个简单的分布式锁
+        :param key: 锁的 key
+        :param ex: 锁的过期时间（秒）
+        :return: 是否成功获取锁
+        """
+        return self.client.set(key, "locked", nx=True, ex=ex)
+
+    def unlock(self, key: str) -> int:
+        """
+        释放锁
+        :param key: 锁的 key
+        :return: 是否成功释放
+        """
+        return self.client.delete(key)
+
     # ========== 字符串操作 ==========
     def set(self, key: str, value: Any, ex: Optional[int] = None) -> bool:
         """

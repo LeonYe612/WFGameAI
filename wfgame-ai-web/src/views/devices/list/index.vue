@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { onMounted } from "vue";
-import { Refresh, Plus, Connection } from "@element-plus/icons-vue";
+import { Search } from "@element-plus/icons-vue";
 import MainContent from "@/layout/components/mainContent/index.vue";
 import DevicesStats from "./components/devicesStats.vue";
 import DevicesTable from "./components/devicesTable.vue";
 import { useDevicesManagement } from "./utils/hook";
+import { useSSE, SSEEvent } from "@/layout/components/sseState/useSSE";
+const { on } = useSSE();
 
 defineOptions({
   name: "DevicesManagement"
@@ -20,14 +22,17 @@ const {
   viewMode,
   filteredAndSortedDevices,
   fetchDevices,
-  refreshDevices,
-  connectDevice,
-  performUsbCheck,
-  generateDeviceReport
+  scanDevices,
+  reserveDevice,
+  releaseDevice
 } = useDevicesManagement();
 
 onMounted(() => {
   fetchDevices();
+  // 监听设备更新事件
+  on(SSEEvent.DEVICE_UPDATE, () => {
+    fetchDevices();
+  });
 });
 </script>
 
@@ -38,25 +43,13 @@ onMounted(() => {
       <div class="flex items-center justify-between">
         <div class="flex items-center space-x-2 ml-auto">
           <el-button
-            :icon="Connection"
-            size="large"
-            type="warning"
-            plain
-            @click="performUsbCheck"
-          >
-            USB检查
-          </el-button>
-          <el-button
-            :icon="Refresh"
+            :icon="Search"
             size="large"
             type="primary"
             plain
-            @click="refreshDevices"
+            @click="scanDevices"
           >
-            刷新设备
-          </el-button>
-          <el-button :icon="Plus" size="large" type="success" disabled plain>
-            添加设备
+            扫描设备
           </el-button>
         </div>
       </div>
@@ -65,7 +58,12 @@ onMounted(() => {
     <!-- 页面内容 -->
     <div class="devices-content">
       <!-- 统计卡片 -->
-      <DevicesStats :stats="stats" :loading="loading" />
+      <DevicesStats
+        :loading="false"
+        :stats="stats"
+        :status-filter="statusFilter"
+        @update:status-filter="statusFilter = $event"
+      />
 
       <!-- 设备表格/卡片视图 -->
       <DevicesTable
@@ -77,11 +75,10 @@ onMounted(() => {
         :status-filter="statusFilter"
         :view-mode="viewMode"
         :filtered-sorted-devices="filteredAndSortedDevices"
-        @connect="connectDevice"
-        @generate-report="generateDeviceReport"
         @refresh="fetchDevices"
+        @reserve="reserveDevice"
+        @release="releaseDevice"
         @update:search-query="searchQuery = $event"
-        @update:status-filter="statusFilter = $event"
         @update:view-mode="viewMode = $event"
       />
     </div>
