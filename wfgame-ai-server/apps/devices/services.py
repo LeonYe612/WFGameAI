@@ -77,6 +77,8 @@ def scan():
             else:
                 update_data = device_info.dict()
                 update_data['last_online'] = timezone.now()
+                # name 字段不更新，因为用户可能会手动修改设备名称
+                update_data.pop('name', None)
                 for field, value in update_data.items():
                     if getattr(device, field) != value:
                         setattr(device, field, value)

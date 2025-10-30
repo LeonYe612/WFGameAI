@@ -51,7 +51,7 @@ def list_devices(with_details=True) -> list[DeviceInfo]:
             w, h = dev.window_size()
             ip = dev.wlan_ip()
         ret.append(DeviceInfo(
-            name=dev.prop.name,
+            name=dev.prop.get("ro.product.marketname") or dev.prop.name,
             device_id=dev.serial,
             brand=dev.prop.get("ro.product.brand"),
             model=dev.prop.model,

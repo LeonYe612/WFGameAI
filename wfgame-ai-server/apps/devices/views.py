@@ -22,7 +22,7 @@ from .serializers import (
     DeviceDetailSerializer,
     DeviceLogSerializer
 )
-from apps.core.utils.response import CustomResponseModelViewSet, api_response
+from apps.core.utils.response import CustomResponseModelViewSet, api_response, CommonPagination
 from apps.devices.services import scan, reserve, release
 from ..users.models import AuthUser
 
@@ -209,7 +209,9 @@ class DeviceLogViewSet(CustomResponseModelViewSet):
     serializer_class = DeviceLogSerializer
     permission_classes = [AllowAny]  # 允许所有用户访问
     filterset_fields = ['device', 'level']
-    http_method_names = ['post']  # 只允许POST方法
+    http_method_names = ['get']  # 只允许POST方法
+    pagination_class = CommonPagination
+    ordering_fields = ['-id']
 
 
 class ConnectDeviceView(views.APIView):

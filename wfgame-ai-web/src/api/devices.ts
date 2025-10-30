@@ -11,6 +11,7 @@ export enum DeviceStatus {
 // 设备信息接口
 export interface DeviceItem {
   id?: number;
+  name: string;
   device_id: string;
   brand?: string;
   model?: string;
@@ -40,6 +41,16 @@ export interface DeviceStats {
   busy: number;
 }
 
+// 设备日志
+export interface DeviceLogItem {
+  id: number;
+  device: number;
+  level: string;
+  level_display: string;
+  message: string;
+  created_at: string;
+}
+
 // 扫描设备列表(adb扫描并更新数据库)
 export const scanDevices = () => {
   return http.request<ApiResult>("post", baseUrlApi("/devices/devices/scan/"));
@@ -50,6 +61,17 @@ export const listDevices = (params?: any) => {
   return http.request<ApiResult>("get", baseUrlApi("/devices/devices/"), {
     params
   });
+};
+
+// 更新设备信息
+export const updateDevice = (data: DeviceItem) => {
+  return http.request<ApiResult>(
+    "patch",
+    baseUrlApi(`/devices/devices/${data.id}/`),
+    {
+      data
+    }
+  );
 };
 
 // 获取设备详情
@@ -74,4 +96,11 @@ export const releaseDevice = (deviceKey: number | string) => {
     "post",
     baseUrlApi(`/devices/devices/${deviceKey}/release/`)
   );
+};
+
+// 查询日志
+export const getDeviceLogs = (params: any) => {
+  return http.request<ApiResult>("get", baseUrlApi("/devices/logs/"), {
+    params
+  });
 };
