@@ -45,7 +45,7 @@ class NotificationSendView(APIView):
                     'all_connections': all_connections if msg_to else None
                 })
             else:
-                return api_response(code=404, msg="No active connections found for the target")
+                return api_response(code=404, msg=f"用户 {msg_to} 不在线，无法发送消息")
         except Exception as e:
             logger.error(f"Error sending notification: {e}")
             return api_response(msg=f"Error sending notification: {e}", code=500)

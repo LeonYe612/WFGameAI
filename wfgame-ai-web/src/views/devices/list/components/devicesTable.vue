@@ -9,7 +9,11 @@ import {
   Grid,
   List,
   Lock,
-  Unlock
+  Unlock,
+  Message,
+  Edit,
+  Check,
+  Close
 } from "@element-plus/icons-vue";
 import type { DeviceItem, DeviceStats } from "@/api/devices";
 // import DeviceReportDialog from "./deviceReportDialog.vue";
@@ -17,6 +21,7 @@ import type { DeviceItem, DeviceStats } from "@/api/devices";
 import { getEnumEntry, deviceStatusEnum } from "@/utils/enums";
 import { TimeDefault } from "@/utils/time";
 import { useUserStore } from "@/store/modules/user";
+// import { hasAuth } from "@/router/utils";
 const userStore = useUserStore();
 
 const loginedUsername = computed(() => userStore.username || "");
@@ -44,13 +49,20 @@ const emit = defineEmits([
   "release",
   "update:search-query",
   "update:status-filter",
-  "update:view-mode"
+  "update:view-mode",
+  "view-log",
+  "remind",
+  "update-device-name"
 ]);
 
 const reportDialogRef = ref();
 const usbDialogRef = ref();
 const sortField = ref("device_id");
 const sortDirection = ref("asc");
+
+// 名称编辑状态管理
+const editingDeviceId = ref<string | number | null>(null);
+const editingName = ref("");
 
 // 排序处理
 const sortBy = (field: string) => {
@@ -95,6 +107,11 @@ const filteredAndSortedDevices = computed(() => {
   return filtered;
 });
 
+// 查看日志
+const handleViewLog = (device: DeviceItem) => {
+  emit("view-log", device);
+};
+
 // 占用设备
 const handleReserve = (device: DeviceItem) => {
   emit("reserve", device.id || device.device_id);
@@ -103,6 +120,11 @@ const handleReserve = (device: DeviceItem) => {
 // 释放设备
 const handleRelease = (device: DeviceItem) => {
   emit("release", device.id || device.device_id);
+};
+
+// 提醒占用者
+const handleRemind = (device: DeviceItem) => {
+  emit("remind", device);
 };
 
 // 连接设备
@@ -124,6 +146,38 @@ const toggleViewMode = () => {
 // 显示USB检查对话框
 const showUsbCheck = () => {
   usbDialogRef.value?.showDialog();
+};
+
+// 开始编辑设备名称
+const startEditName = (device: DeviceItem) => {
+  editingDeviceId.value = device.id || device.device_id;
+  editingName.value = device.name || device.device_id || "";
+};
+
+// 保存设备名称
+const saveDeviceName = (device: DeviceItem) => {
+  const newName = editingName.value.trim();
+  if (newName) {
+    emit("update-device-name", {
+      id: device.id,
+      name: newName,
+      onsucceed: () => {
+        device.name = newName;
+      }
+    });
+  }
+  cancelEditName();
+};
+
+// 取消编辑名称
+const cancelEditName = () => {
+  editingDeviceId.value = null;
+  editingName.value = "";
+};
+
+// 判断是否正在编辑该设备的名称
+const isEditingName = (device: DeviceItem) => {
+  return editingDeviceId.value === (device.id || device.device_id);
 };
 </script>
 
@@ -181,6 +235,7 @@ const showUsbCheck = () => {
       style="width: 100%"
       empty-text="请连接设备后点击扫描按钮"
       class="devices-table"
+      @row-dblclick="handleViewLog"
     >
       <el-table-column
         prop="status"
@@ -208,6 +263,61 @@ const showUsbCheck = () => {
       >
         <template #default="{ row }">
           <el-tag type="info" effect="plain">{{ row.device_id }}</el-tag>
+        </template>
+      </el-table-column>
+
+      <el-table-column
+        prop="name"
+        label="名称"
+        width="240"
+        sortable
+        @click="sortBy('name')"
+      >
+        <template #default="{ row }">
+          <div class="flex items-center">
+            <!-- 编辑状态 -->
+            <div
+              v-if="isEditingName(row)"
+              class="flex items-center space-x-1 w-full"
+            >
+              <el-input
+                v-model="editingName"
+                size="default"
+                placeholder="请输入设备名称"
+                @keyup.enter="saveDeviceName(row)"
+                @keyup.esc="cancelEditName"
+                style="flex: 1"
+              />
+              <el-button
+                :icon="Check"
+                type="success"
+                size="small"
+                circle
+                @click="saveDeviceName(row)"
+              />
+              <el-button
+                :icon="Close"
+                type="danger"
+                size="small"
+                circle
+                @click="cancelEditName"
+              />
+            </div>
+            <!-- 显示状态 -->
+            <div v-else class="flex items-center space-x-2 w-full">
+              <span class="flex-1">{{
+                row.name || row.device_id || "未命名"
+              }}</span>
+              <el-button
+                :icon="Edit"
+                type="primary"
+                size="small"
+                circle
+                plain
+                @click="startEditName(row)"
+              />
+            </div>
+          </div>
         </template>
       </el-table-column>
 
@@ -246,6 +356,7 @@ const showUsbCheck = () => {
         label="占用人员"
         sortable
         @click="sortBy('current_user_name')"
+        width="120"
       >
         <template #default="{ row }">
           <el-tag v-if="row.current_user" type="warning" effect="dark">
@@ -289,16 +400,25 @@ const showUsbCheck = () => {
               占用
             </el-button>
             <el-button
-              v-if="
-                row.current_user_username === loginedUsername &&
-                row.status === deviceStatusEnum.ONLINE.value
-              "
+              v-if="row.current_user_username === loginedUsername"
               :icon="Unlock"
               type="success"
               plain
               @click="handleRelease(row)"
             >
               释放
+            </el-button>
+            <el-button
+              v-if="
+                row.current_user &&
+                row.current_user_username !== loginedUsername
+              "
+              :icon="Message"
+              type="primary"
+              plain
+              @click.stop="handleRemind(row)"
+            >
+              提醒
             </el-button>
 
             <el-button
@@ -365,6 +485,49 @@ const showUsbCheck = () => {
           </div>
         </template>
         <div class="mb-4">
+          <div class="flex justify-between items-center mb-2">
+            <span class="text-gray-500">名称:</span>
+            <!-- 编辑状态 -->
+            <div
+              v-if="isEditingName(device)"
+              class="flex items-center space-x-1"
+            >
+              <el-input
+                v-model="editingName"
+                size="small"
+                placeholder="请输入设备名称"
+                @keyup.enter="saveDeviceName(device)"
+                @keyup.esc="cancelEditName"
+                style="width: 120px"
+              />
+              <el-button
+                :icon="Check"
+                type="success"
+                size="small"
+                circle
+                @click="saveDeviceName(device)"
+              />
+              <el-button
+                :icon="Close"
+                type="danger"
+                size="small"
+                circle
+                @click="cancelEditName"
+              />
+            </div>
+            <!-- 显示状态 -->
+            <div v-else class="flex items-center space-x-1">
+              <span>{{ device.name || device.device_id || "未命名" }}</span>
+              <el-button
+                :icon="Edit"
+                type="primary"
+                size="small"
+                circle
+                plain
+                @click="startEditName(device)"
+              />
+            </div>
+          </div>
           <div class="flex justify-between items-center">
             <span class="text-gray-500">占用人员:</span>
             <span>{{ device.current_user_name || "-" }}</span>
@@ -398,16 +561,25 @@ const showUsbCheck = () => {
               占用
             </el-button>
             <el-button
-              v-if="
-                device.current_user_username === loginedUsername &&
-                device.status === deviceStatusEnum.ONLINE.value
-              "
+              v-if="device.current_user_username === loginedUsername"
               :icon="Unlock"
               type="success"
               plain
               @click="handleRelease(device)"
             >
               释放
+            </el-button>
+            <el-button
+              v-if="
+                device.current_user &&
+                device.current_user_username !== loginedUsername
+              "
+              :icon="Message"
+              type="primary"
+              plain
+              @click.stop="handleRemind(device)"
+            >
+              提醒
             </el-button>
           </div>
         </template>

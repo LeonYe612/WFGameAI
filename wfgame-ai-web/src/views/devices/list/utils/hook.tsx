@@ -3,10 +3,15 @@ import {
   listDevices,
   scanDevices as scanDevicesApi,
   reserveDevice as reserveDeviceApi,
-  releaseDevice as releaseDeviceApi
+  releaseDevice as releaseDeviceApi,
+  updateDevice
 } from "@/api/devices";
+import { sendSSEMessage } from "@/api/notifications";
 import type { DeviceItem, DeviceStats } from "@/api/devices";
 import { superRequest } from "@/utils/request";
+import { SSEEvent } from "@/layout/components/sseState/useSSE";
+import { useUserStore } from "@/store/modules/user";
+const userStore = useUserStore();
 
 export function useDevicesManagement() {
   // 响应式数据
@@ -136,6 +141,22 @@ export function useDevicesManagement() {
       enableSucceedMsg: false,
       succeedMsgContent: "设备占用成功！"
     });
+
+    // ✅ 已通过并发测试
+    // Promise.all([
+    //   superRequest({
+    //     apiFunc: reserveDeviceApi,
+    //     apiParams: key,
+    //     enableSucceedMsg: false,
+    //     succeedMsgContent: "1-设备占用成功！"
+    //   }),
+    //   superRequest({
+    //     apiFunc: reserveDeviceApi,
+    //     apiParams: key,
+    //     enableSucceedMsg: false,
+    //     succeedMsgContent: "2-设备占用成功！"
+    //   })
+    // ]);
   };
 
   // 释放设备
@@ -145,6 +166,46 @@ export function useDevicesManagement() {
       apiParams: key,
       enableSucceedMsg: false,
       succeedMsgContent: "设备释放成功！"
+    });
+  };
+
+  // 提醒占用者 - key: 设备 ID 或 设备主键
+  const remindOccupant = async (device: DeviceItem) => {
+    const senderName =
+      userStore.chineseName || userStore.username || "系统管理员";
+    await superRequest({
+      apiFunc: sendSSEMessage,
+      apiParams: {
+        to: device.current_user_username,
+        event: SSEEvent.NOTIFICATION,
+        data: {
+          title: `来自 ${senderName} 的提醒`,
+          message: `您当前占用的设备 [${device.name}] 若无需使用，请及时释放 💖`,
+          type: "warning"
+        }
+      },
+      enableSucceedMsg: true,
+      succeedMsgContent: "发送提醒成功！"
+    });
+  };
+
+  // 更新设备名称
+  const updateDeviceName = async (data: {
+    id: number;
+    name: string;
+    onsucceed: () => void;
+  }) => {
+    await superRequest({
+      apiFunc: updateDevice,
+      apiParams: {
+        id: data.id,
+        name: data.name
+      },
+      enableSucceedMsg: true,
+      succeedMsgContent: "设备名称更新成功！",
+      onSucceed: () => {
+        data?.onsucceed();
+      }
     });
   };
 
@@ -158,6 +219,18 @@ export function useDevicesManagement() {
     }
   };
 
+  // 设备日志抽屉相关状态
+  const logDrawerVisible = ref(false);
+  const currentDeviceId = ref<number | null>(null);
+
+  // 查看设备日志
+  const handleViewLog = (device: DeviceItem) => {
+    if (currentDeviceId.value !== device.id) {
+      currentDeviceId.value = device.id;
+    }
+    logDrawerVisible.value = true;
+  };
+
   return {
     // 响应式数据
     devices,
@@ -169,6 +242,8 @@ export function useDevicesManagement() {
     viewMode,
     sortField,
     sortDirection,
+    logDrawerVisible,
+    currentDeviceId,
 
     // 计算属性
     computedStats,
@@ -179,6 +254,9 @@ export function useDevicesManagement() {
     scanDevices,
     reserveDevice,
     releaseDevice,
-    sortBy
+    remindOccupant,
+    updateDeviceName,
+    sortBy,
+    handleViewLog
   };
 }

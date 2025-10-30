@@ -4,6 +4,7 @@ import { Search } from "@element-plus/icons-vue";
 import MainContent from "@/layout/components/mainContent/index.vue";
 import DevicesStats from "./components/devicesStats.vue";
 import DevicesTable from "./components/devicesTable.vue";
+import DeviceLogDrawer from "./components/deviceLogDrawer.vue";
 import { useDevicesManagement } from "./utils/hook";
 import { useSSE, SSEEvent } from "@/layout/components/sseState/useSSE";
 const { on } = useSSE();
@@ -24,7 +25,12 @@ const {
   fetchDevices,
   scanDevices,
   reserveDevice,
-  releaseDevice
+  releaseDevice,
+  remindOccupant,
+  updateDeviceName,
+  logDrawerVisible,
+  currentDeviceId,
+  handleViewLog
 } = useDevicesManagement();
 
 onMounted(() => {
@@ -78,10 +84,16 @@ onMounted(() => {
         @refresh="fetchDevices"
         @reserve="reserveDevice"
         @release="releaseDevice"
+        @remind="remindOccupant"
         @update:search-query="searchQuery = $event"
         @update:view-mode="viewMode = $event"
+        @update-device-name="updateDeviceName"
+        @view-log="handleViewLog"
       />
     </div>
+
+    <!-- 设备日志抽屉 -->
+    <DeviceLogDrawer v-model="logDrawerVisible" :device-id="currentDeviceId" />
   </MainContent>
 </template>
 
