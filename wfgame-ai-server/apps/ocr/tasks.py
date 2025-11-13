@@ -13,10 +13,7 @@ import traceback
 import datetime
 import time
 
-from regex import F
-from sympy import false
-
-from .models import OCRTask, OCRResult, OCRGitRepository
+from .models import OCRTask, OCRResult, OCRGitRepository, OCRCache, OCRCacheHit
 from .services.ocr_service import OCRService
 from .services.multi_thread_ocr import MultiThreadOCR
 from .services.gitlab import (
@@ -132,7 +129,7 @@ def process_ocr_task(task_id):
 
     try:
         # step1. 获取任务信息
-        task = OCRTask.objects.all_teams().filter(id=task_id).first()
+        task: OCRTask  = OCRTask.objects.all_teams().filter(id=task_id).first()
         if not task:
             logger.error(f"OCR任务不存在: {task_id}")
             return {"status": "error", "message": f"OCR任务不存在: {task_id}"}
@@ -235,6 +232,72 @@ def process_ocr_task(task_id):
         #     match_languages=target_languages  # 将命中判定语言动态传入，避免硬编码
         # )
 
+        # ================== OCR识别前先利用 Cache 过滤，避免重复识别  =========================
+        enable_cache = task_config.get('enable_cache', True)
+        img_exts_init = {'.jpg', '.jpeg', '.png', '.bmp', '.webp', '.tif', '.tiff'}
+        total_images = 0
+        hit_hashes = set()
+        image_paths = []
+        msg = ""
+        
+        if not enable_cache:
+            for root_dir, _, files in os.walk(check_dir):
+                for file_name in files:
+                    file_ext = os.path.splitext(file_name)[1].lower()
+                    if file_ext not in img_exts_init:
+                        continue
+                    total_images += 1
+            msg = f"未启用缓存, 待处理图片: {total_images}"
+            logger.warning(msg)
+        else:
+            # 初始化进度(以待处理图片总数为准)
+            abspath_to_hash = dict()
+            try:
+                notify_ocr_task_progress({
+                "id": task_id,
+                "remark": "正在使用OCR缓存进行预过滤...",
+                })
+
+                for root_dir, _, files in os.walk(check_dir):
+                    for file_name in files:
+                        file_ext = os.path.splitext(file_name)[1].lower()
+                        if file_ext not in img_exts_init:
+                            continue
+                        img_abspath = os.path.join(root_dir, file_name)
+                        img_hash = OCRService.calculate_image_hash(img_abspath)
+                        abspath_to_hash[img_abspath] = img_hash
+                        total_images += 1
+
+                # 尝试命中缓存
+                all_hashes_list = list(abspath_to_hash.values())
+                hit_hashes = OCRCacheHit.try_hit(all_hashes_list, task_id=task_id)
+                image_paths = [img_path for img_path, h in abspath_to_hash.items() if h not in hit_hashes]
+
+                if len(image_paths) == 0:
+                    logger.warning("⚡所有图片均命中OCR缓存, 无需重复识别")
+                    task.calculate_match_rate_by_related_results()
+                    notify_ocr_task_progress({
+                        "id": task_id,
+                        "status": 'completed',
+                        "end_time": timezone.now(),
+                        "total_images": total_images,
+                        "processed_images": total_images,
+                        "remark": f"✅ 任务执行完毕",
+                    })
+                    return {"status": "success", "task_id": task_id}
+
+                msg = f"⚡ OCR缓存预过滤完成: 总图片数={total_images}, 命中缓存={len(hit_hashes)}, 需识别={len(image_paths)}"
+                logger.info(msg)
+            except Exception as _init_prog_err:
+                logger.warning(f"使用OCR缓存进行预过滤出错: {_init_prog_err}")
+                image_paths = []
+        notify_ocr_task_progress({
+            "id": task_id,
+            "total_images": total_images,
+            "remark": msg,
+        })
+        # ==========================================================================
+
         # 切换为：调用服务层多轮识别（基于内置参数集），并按需输出可视化/复制/标注
         try:
             _tmp_service = OCRService(lang="ch")
@@ -242,24 +305,6 @@ def process_ocr_task(task_id):
         except Exception:
             _rounds_num = 0
         logger.warning(f"开始多轮识别目录({_rounds_num}轮): {check_dir}")
-        start_time = time.time()
-        # 初始化进度(以待处理图片总数为准)
-        total_images_for_progress = 0
-        try:
-            img_exts_init = {'.jpg', '.jpeg', '.png', '.bmp', '.webp', '.tif', '.tiff'}
-            for root_dir, _, files in os.walk(check_dir):
-                for fname in files:
-                    if os.path.splitext(fname)[1].lower() in img_exts_init:
-                        total_images_for_progress += 1
-            # 更新照片总数
-            notify_ocr_task_progress({
-                "id": task_id,
-                "total_images": total_images_for_progress,
-                "remark": f"共检测到 {total_images_for_progress} 张图片, 开始识别...",
-            })
-            # multi_thread_ocr.init_progress(total_images_for_progress)
-        except Exception as _init_prog_err:
-            logger.warning(f"初始化进度失败(忽略): {_init_prog_err}")
 
         # 从任务配置读取开关（未设置默认False）
         try:
@@ -275,9 +320,10 @@ def process_ocr_task(task_id):
         except Exception:
             enable_annotate = False
 
+        start_time = time.time()
         ocr_service = OCRService(lang="ch", id=task_id)
         rounds_res = ocr_service.recognize_rounds_batch(
-            check_dir,
+            image_paths if image_paths else check_dir,
             enable_draw=enable_draw,
             enable_copy=enable_copy,
             enable_annotate=enable_annotate,
@@ -405,9 +451,13 @@ def process_ocr_task(task_id):
         total_matches = 0
         for item in ocr_results:
             img_full_path = os.path.join(media_root, item['image_path'])
+            img_hash = OCRService.calculate_image_hash(img_full_path)
+            if enable_cache and img_hash in hit_hashes:
+                # 如果本次任务启用缓存并且此缓存已存在，则跳过写库
+                continue
             obj = OCRResult(
                 task=task,
-                image_hash=ocr_service.calculate_image_hash(img_full_path),
+                image_hash=img_hash,
                 image_path=item.get('image_path', '').replace('\\', '/'),
                 texts=item.get('texts', []),
                 languages=item.get('languages', {}),
@@ -424,6 +474,8 @@ def process_ocr_task(task_id):
 
         OCRResult.objects.bulk_create(new_results)
         logger.warning(f"批量插入 {len(new_results)} 条OCR结果到数据库")
+        # 记录ocr缓存
+        OCRCache.record_cache(task_id)
 
 
         # 生成汇总报告
@@ -433,14 +485,12 @@ def process_ocr_task(task_id):
 
         # 完成进度
         try:
-            match_rate = round(total_matches / total_images_for_progress * 100, 2) if total_images_for_progress > 0 else 0.0
+            task.calculate_match_rate_by_related_results()
             notify_ocr_task_progress({
                 "id": task_id,
                 "status": 'completed',
                 "end_time": timezone.now(),
-                "matched_images": total_matches,
-                "processed_images": total_images_for_progress,
-                "match_rate": match_rate,
+                "processed_images": total_images,
                 "remark": "✅ 任务执行完毕",
             })
         except Exception as _fin_err:

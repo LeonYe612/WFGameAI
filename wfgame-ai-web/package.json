@@ -56,6 +56,7 @@
     "pinia": "^2.1.7",
     "qs": "^6.11.1",
     "responsive-storage": "^2.2.0",
+    "socket.io-client": "^4.8.1",
     "sortablejs": "^1.15.0",
     "ts-node": "^10.9.2",
     "typeit": "^8.7.1",
