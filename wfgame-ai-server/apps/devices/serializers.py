@@ -15,6 +15,7 @@ if project_root not in sys.path:
 
 try:
     from device_info_enhancer import DeviceInfoEnhancer
+
     device_enhancer = DeviceInfoEnhancer()
 except ImportError:
     device_enhancer = None
@@ -68,10 +69,10 @@ class DeviceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Device
         fields = ['id', 'name', 'device_id', 'brand', 'model', 'android_version',
-                 'type', 'type_name', 'status', 'status_display', 'ip_address', 'width', 'height',
-                 'last_online', 'owner', 'owner_name', 'current_user',
-                 'current_user_name', 'current_user_username', 'occupied_personnel', 'created_at', 'updated_at',
-                 'commercial_name', 'display_name', 'enhanced_brand', 'device_series', 'device_category', 'resolution']
+                  'type', 'type_name', 'status', 'status_display', 'ip_address', 'width', 'height',
+                  'last_online', 'owner', 'owner_name', 'current_user',
+                  'current_user_name', 'current_user_username', 'occupied_personnel', 'created_at', 'updated_at',
+                  'commercial_name', 'display_name', 'enhanced_brand', 'device_series', 'device_category', 'resolution']
         read_only_fields = ['created_at', 'updated_at', 'last_online']
 
     def get_status_display(self, obj):
@@ -101,17 +102,18 @@ class DeviceSerializer(serializers.ModelSerializer):
     def _get_fallback_info(self, obj):
         """获取回退的设备信息"""
         return {'commercial_name': obj.model or 'Unknown Device',
-            'display_name': f"{obj.brand} {obj.model}" if obj.brand and obj.model else obj.model or 'Unknown Device',
-            'enhanced_brand': obj.brand or 'Unknown Brand',
-            'series': '未知系列',
-            'category': '智能手机'
-        }
+                'display_name': f"{obj.brand} {obj.model}" if obj.brand and obj.model else obj.model or 'Unknown Device',
+                'enhanced_brand': obj.brand or 'Unknown Brand',
+                'series': '未知系列',
+                'category': '智能手机'
+                }
 
     def get_commercial_name(self, obj):
         """获取商品名（用于型号字段显示）"""
         enhanced_info = self._get_enhanced_info(obj)
         # 返回商品名作为型号字段显示，如 S16
         return enhanced_info.get('commercial_name', obj.model)
+
     def get_display_name(self, obj):
         """获取显示名称"""
         enhanced_info = self._get_enhanced_info(obj)
@@ -168,14 +170,16 @@ class DeviceDetailSerializer(serializers.ModelSerializer):
     enhanced_brand = serializers.SerializerMethodField()
     device_series = serializers.SerializerMethodField()
     device_category = serializers.SerializerMethodField()
+    resolution = serializers.SerializerMethodField()
 
     class Meta:
         model = Device
         fields = ['id', 'name', 'device_id', 'brand', 'model', 'android_version',
-                 'type', 'type_name', 'status', 'status_display', 'ip_address', 'last_online',
-                 'description', 'owner', 'owner_name', 'current_user',
-                 'current_user_name', 'created_at', 'updated_at', 'recent_logs',
-                 'commercial_name', 'display_name', 'enhanced_brand', 'device_series', 'device_category']
+                  'type', 'type_name', 'status', 'status_display', 'ip_address', 'last_online',
+                  'description', 'owner', 'owner_name', 'current_user',
+                  'current_user_name', 'created_at', 'updated_at', 'recent_logs',
+                  'commercial_name', 'display_name', 'enhanced_brand', 'device_series', 'device_category',
+                  'width', 'height', 'resolution']
         read_only_fields = ['created_at', 'updated_at', 'last_online', 'recent_logs']
 
     def get_status_display(self, obj):
@@ -253,3 +257,9 @@ class DeviceDetailSerializer(serializers.ModelSerializer):
         """获取设备最近的日志"""
         logs = DeviceLog.objects.filter(device=obj).order_by('-created_at')[:10]
         return DeviceLogSerializer(logs, many=True).data
+
+    def get_resolution(self, obj):
+        """获取设备分辨率（详情视图也提供）"""
+        if getattr(obj, 'width', None) and getattr(obj, 'height', None):
+            return f"{obj.width} * {obj.height}"
+        return "未知分辨率"

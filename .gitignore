@@ -43,6 +43,7 @@ wfgame-ai-server/apps/scripts/screen_analysis_results/screen_analysis_results/
 wfgame-ai-server/apps/scripts/ui_detection_output/
 wfgame-ai-server/media/ocr/
 wfgame-ai-server/${server_dir}
+wfgame-ai-server/apps/reports/tmp/
 
 # Python 缓存文件
 __pycache__/

@@ -5,19 +5,16 @@
     width="650px"
     :close-on-click-modal="false"
     class="task-detail-dialog"
+    top="5vh"
   >
     <div v-if="task" class="task-detail">
       <el-card class="info-card" shadow="never">
-        <template #header>
-          <div class="card-header">
-            <span>任务详情</span>
-          </div>
-        </template>
         <el-row :gutter="24">
           <el-col :span="12">
             <div class="info-group left-group">
               <div class="info-subgroup base-block">
                 <div class="info-item"><label>ID：</label><span>{{ task.id ?? '--' }}</span></div>
+                <div class="info-item"><label>Celery ID：</label><span>{{ task.celery_id ?? task.celery_task_id ?? '--' }}</span></div>
                 <div class="info-item"><label>任务名称：</label><span>{{ task.name ?? '--' }}</span></div>
                 <div class="info-item"><label>优先级：</label>
                   <el-tag :type="priorityConfig[task.priority]?.type" size="small" effect="light" class="tag-left">
@@ -57,7 +54,7 @@
                     <el-tag
                       v-for="(name, idx) in task.devices_list"
                       :key="name"
-                      :type="['success','primary','warning','danger'][idx%4]"
+                      :type="(['success','primary','warning','danger'][idx % 4] as any)"
                       size="small"
                       style="margin-right:4px;"
                     >{{ name }}</el-tag>
@@ -70,7 +67,7 @@
                     <el-tag
                       v-for="(name, idx) in task.scripts_list"
                       :key="name"
-                      :type="['primary','success','warning','danger'][idx%4]"
+                      :type="(['primary','success','warning','danger'][idx % 4] as any)"
                       size="small"
                       style="margin-right:4px;"
                     >{{ name }}</el-tag>
@@ -107,6 +104,20 @@
             </div>
           </el-col>
         </el-row>
+        <div class="cmd-block">
+          <label>执行命令：</label>
+          <span class="cmd-text" :title="execCmd">{{ execCmd || "--" }}</span>
+          <el-button
+            v-if="execCmd"
+            class="cmd-copy-btn"
+            circle
+            plain
+            size="small"
+            type="primary"
+            :icon="CopyDocument"
+            @click="copyExecCmd"
+          />
+        </div>
         <div class="description-block">
           <label>描述：</label>
           <span>{{ task.description ?? "--" }}</span>
@@ -170,20 +181,22 @@
 </template>
 
 <script setup lang="ts">
+import { scriptApi } from "@/api/scripts";
 import { getTaskLogs } from "@/api/tasks";
-import {
-  Loading,
-  Refresh,
-  VideoPause,
-  VideoPlay
-} from "@element-plus/icons-vue";
+import { CopyDocument, VideoPause } from "@element-plus/icons-vue";
+import { ElMessage } from "element-plus";
 import { computed, ref, watch } from "vue";
 import { TaskStatus } from "../utils/enums";
-import { priorityConfig, runTypeConfig, taskStatusConfig, taskTypeConfig } from "../utils/rules";
+import {
+    priorityConfig,
+    runTypeConfig,
+    taskStatusConfig,
+    taskTypeConfig
+} from "../utils/rules";
 import type {
-  TaskAction,
-  TaskDetailDialogEmits,
-  TaskDetailDialogProps
+    TaskAction,
+    TaskDetailDialogEmits,
+    TaskDetailDialogProps
 } from "../utils/types";
 
 // Props
@@ -205,6 +218,7 @@ const localVisible = computed({
 // 日志相关状态
 const logs = ref<string>("");
 const logsLoading = ref(false);
+const execCmd = ref<string>("");
 
 // 监听任务变化，自动加载日志
 watch(
@@ -212,6 +226,7 @@ watch(
   newTask => {
     if (newTask) {
       loadLogs();
+      buildExecCmd(newTask);
     }
   },
   { immediate: true }
@@ -237,6 +252,104 @@ const loadLogs = async () => {
 const handleAction = (action: TaskAction) => {
   if (props.task) {
     emit("action", action, props.task);
+  }
+};
+
+// 构建执行命令（仅基于最新结构：script_params 为快照对象）
+const buildExecCmd = async (task: any) => {
+  try {
+    const sp = task?.script_params;
+    if (!sp || typeof sp !== "object" || Array.isArray(sp)) {
+      execCmd.value = "";
+      return;
+    }
+
+    // 设备序列号
+    const serials: string[] = Array.isArray(sp.device_ids)
+      ? sp.device_ids
+          .map((d: any) => (d && typeof d.serial === "string" ? d.serial : ""))
+          .filter((s: string) => !!s)
+      : [];
+
+    // 脚本与参数
+    const specs: Array<{ id: number; lc: number; md?: number }> = [];
+    const arr = Array.isArray(sp.script_ids) ? sp.script_ids : [];
+    for (const it of arr) {
+      if (!it || typeof it !== "object") continue;
+      const id = Number(it.id);
+      if (!Number.isFinite(id)) continue;
+      const lc = Number(it["loop-count"]) > 0 ? Number(it["loop-count"]) : 1;
+      const mdRaw = it["max-duration"];
+      const md = typeof mdRaw === "number" && mdRaw > 0 ? mdRaw : undefined;
+      specs.push({ id, lc, md });
+    }
+    if (!specs.length) {
+      execCmd.value = "";
+      return;
+    }
+
+    const toFileName = (s: any): string => {
+      if (!s) return "";
+      const raw = (s.filename || s.path || s.name || "").toString();
+      const base = raw.split(/[\\/]/).pop() || "";
+      if (base.endsWith(".json")) return base;
+      return base ? `${base}.json` : "";
+    };
+
+    const parts: string[] = ["python", "replay_script.py"];
+    for (const ser of serials) parts.push("--device", ser);
+
+    // 批量查询脚本名
+    const uniqueIds = Array.from(new Set(specs.map(s => s.id)));
+    const fetched = await Promise.all(
+      uniqueIds.map((id: number) =>
+        scriptApi
+          .detail(id)
+          .then(r => r.data)
+          .catch(() => null)
+      )
+    );
+    const idToFile = new Map<number, string>();
+    uniqueIds.forEach((id, idx) => {
+      const obj = fetched[idx];
+      idToFile.set(id, obj ? toFileName(obj) : `script_${id}.json`);
+    });
+
+    for (const s of specs) {
+      const file = idToFile.get(s.id) || `script_${s.id}.json`;
+      parts.push("--script", file, "--loop-count", String(s.lc));
+      if (s.md) parts.push("--max-duration", String(s.md));
+    }
+
+    execCmd.value = parts.join(" ");
+  } catch (e) {
+    console.error("构建执行命令失败:", e);
+    execCmd.value = "";
+  }
+};
+
+// 复制执行命令
+const copyExecCmd = async () => {
+  try {
+    const text = execCmd.value || "";
+    if (!text) return;
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.style.position = "fixed";
+      textarea.style.left = "-9999px";
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+    }
+    ElMessage({ type: "success", message: "已复制执行命令" });
+  } catch (e) {
+    console.error("复制命令失败:", e);
+    ElMessage({ type: "error", message: "复制失败，请手动复制" });
   }
 };
 
@@ -301,28 +414,31 @@ const formatDateTime = (dateTime: string) => {
 }
 .right-group {
   /* 色块高度自适应，右侧与左侧对齐 */
-  .resource-block {
-    background: #eae6fa;
-    border-radius: 8px;
-    padding: 16px 12px 12px 12px;
-    flex: 1 1 auto;
-  }
-  .time-block {
-    background: #eae6fa;
-    border-radius: 8px;
-    padding: 16px 12px 12px 12px;
-    margin-bottom: 16px;
-    flex: 1 1 auto;
-  }
-  .user-block {
-    background: #e6f4fa;
-    border-radius: 8px;
-    padding: 16px 12px 12px 12px;
-    flex: 1 1 auto;
-  }
   margin-left: 0;
   margin-right: 8px;
   vertical-align: middle;
+}
+
+.right-group .resource-block {
+  background: #eae6fa;
+  border-radius: 8px;
+  padding: 16px 12px 12px 12px;
+  flex: 1 1 auto;
+}
+
+.right-group .time-block {
+  background: #eae6fa;
+  border-radius: 8px;
+  padding: 16px 12px 12px 12px;
+  margin-bottom: 16px;
+  flex: 1 1 auto;
+}
+
+.right-group .user-block {
+  background: #e6f4fa;
+  border-radius: 8px;
+  padding: 16px 12px 12px 12px;
+  flex: 1 1 auto;
 }
 .logs-card {
   border: 1px solid var(--el-border-color-light);
@@ -380,6 +496,40 @@ const formatDateTime = (dateTime: string) => {
   border: 1px solid #faebcc;
 }
 
+/* 执行命令单行展示，自动换行并提供悬停查看完整 title */
+.cmd-block {
+  position: relative;
+  margin: 10px 0 6px 0;
+  padding: 8px 12px;
+  padding-right: 48px; /* 为右下角复制按钮预留空间 */
+  background: #fff1f0; /* 浅红背景 */
+  border: 1px solid #ffd6d6;
+  border-radius: 6px;
+  font-size: 13px;
+  display: flex;
+  gap: 8px;
+}
+.cmd-block label {
+  font-weight: 600;
+  color: #1f4e79;
+  min-width: 80px;
+}
+.cmd-text {
+  font-family: monospace;
+  white-space: pre-line;
+  word-break: break-all;
+  color: #0f172a;
+  flex: 1;
+}
+
+/* 复制按钮：更小、右下角悬浮 */
+.cmd-copy-btn {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  transform: translateZ(0); /* 保证渲染清晰 */
+}
+
 .status-icon {
   margin-right: 4px;
 }
@@ -429,7 +579,7 @@ const formatDateTime = (dateTime: string) => {
   margin-top: -8px;
   margin-bottom: 12px;
   font-size: 80%;
-  color: #indianred;
+  color: indianred;
   display: flex;
   align-items: center;
   width: fit-content;
