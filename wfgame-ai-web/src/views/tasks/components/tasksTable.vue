@@ -41,7 +41,9 @@
               <el-icon class="status-icon">
                 <component :is="taskStatusConfig[row.status].icon" />
               </el-icon>
-              <span class="status-text-large">{{ taskStatusConfig[row.status].label }}</span>
+              <span class="status-text-large">{{
+                taskStatusConfig[row.status].label
+              }}</span>
             </el-tag>
             <span v-else class="status-text-large">{{ row.status }}</span>
           </div>
@@ -55,39 +57,68 @@
         align="center"
       >
         <template #default="{ row }">
-          <div class="cell-center">{{ row.device_count !== undefined ? row.device_count + " 台" : "--" }}</div>
-        </template>
-      </el-table-column>
-
-      <el-table-column
-        prop="priority"
-        label="优先级"
-        width="100"
-        align="center"
-      >
-        <template #default="{ row }">
           <div class="cell-center">
-            <el-tag
-              v-if="priorityConfig[row.priority]"
-              :type="priorityConfig[row.priority].type"
-              size="default"
-              effect="light"
-              class="priority-tag-large"
-            >
-              <span class="priority-text-large">{{ priorityConfig[row.priority].label }}</span>
-            </el-tag>
-            <span v-else class="priority-text-large">{{ row.priority_display || row.priority }}</span>
+            {{
+              row.devices_count !== undefined ? row.devices_count + " 台" : "--"
+            }}
           </div>
         </template>
       </el-table-column>
 
-      <el-table-column prop="task_type" label="任务类型" width="120" align="center">
+<!--      <el-table-column-->
+<!--        prop="priority"-->
+<!--        label="优先级"-->
+<!--        width="100"-->
+<!--        align="center"-->
+<!--      >-->
+<!--        <template #default="{ row }">-->
+<!--          <div class="cell-center">-->
+<!--            <el-tag-->
+<!--              v-if="priorityConfig[row.priority]"-->
+<!--              :type="priorityConfig[row.priority].type"-->
+<!--              size="default"-->
+<!--              effect="light"-->
+<!--              class="priority-tag-large"-->
+<!--            >-->
+<!--              <span class="priority-text-large">{{-->
+<!--                priorityConfig[row.priority].label-->
+<!--              }}</span>-->
+<!--            </el-tag>-->
+<!--            <span v-else class="priority-text-large">{{-->
+<!--              row.priority_display || row.priority-->
+<!--            }}</span>-->
+<!--          </div>-->
+<!--        </template>-->
+<!--      </el-table-column>-->
+
+      <el-table-column
+        prop="task_type"
+        label="任务类型"
+        width="120"
+        align="center"
+      >
         <template #default="{ row }">
           <div class="cell-center">
             {{ taskTypeConfig[row.task_type]?.label || row.task_type }}
           </div>
         </template>
       </el-table-column>
+
+      <!-- Celery ID -->
+      <!--      <el-table-column-->
+      <!--        prop="celery_id"-->c
+      <!--        label="Celery ID"-->
+      <!--        min-width="240"-->
+      <!--        align="center"-->
+      <!--      >-->
+      <!--        <template #default="{ row }">-->
+      <!--          <div class="cell-center">-->
+      <!--            <el-tooltip effect="dark" :content="row.celery_id || row.celery_task_id || '&#45;&#45;'" placement="top">-->
+      <!--              <span class="task-name-ellipsis">{{ row.celery_id || row.celery_task_id || '&#45;&#45;' }}</span>-->
+      <!--            </el-tooltip>-->
+      <!--          </div>-->
+      <!--        </template>-->
+      <!--      </el-table-column>-->
 
       <el-table-column
         prop="run_type"
@@ -104,7 +135,9 @@
               effect="light"
               class="status-tag-large"
             >
-              <span class="status-text-large">{{ runTypeConfig[row.run_type].label }}</span>
+              <span class="status-text-large">{{
+                runTypeConfig[row.run_type].label
+              }}</span>
             </el-tag>
             <span v-else class="status-text-large">{{ row.run_type }}</span>
           </div>
@@ -212,21 +245,16 @@
               </el-icon>
             </el-button>
 
-            <!-- 可见的复制按钮（确认弹窗） -->
-            <el-popconfirm
-              title="确定复制该任务吗?"
-              confirm-button-text="复制"
-              cancel-button-text="取消"
-              @confirm="() => handleAction('duplicate', row)"
+            <!-- 复制按钮：点击后弹输入框确认副本名称 -->
+            <el-button
+              size="small"
+              type="primary"
+              @click="handleAction('duplicate', row)"
             >
-              <template #reference>
-                <el-button size="small" type="primary">
-                  <el-icon>
-                    <CopyDocument />
-                  </el-icon>
-                </el-button>
-              </template>
-            </el-popconfirm>
+              <el-icon>
+                <CopyDocument />
+              </el-icon>
+            </el-button>
             <!-- 可见的删除按钮（确认弹窗） -->
             <el-popconfirm
               title="确定删除该任务吗?"
@@ -265,48 +293,29 @@
 
 <script setup lang="ts">
 import {
-    CircleCheck,
-    CircleClose,
-    Clock,
-    CopyDocument,
-    DataLine,
-    Delete,
-    Files,
-    Loading,
-    Refresh,
-    Timer,
-    VideoPause,
-    VideoPlay,
-    View,
-    Warning
+  CopyDocument,
+  Delete,
+  Refresh,
+  VideoPause,
+  VideoPlay,
+  View
 } from "@element-plus/icons-vue";
 import { ref, watch } from "vue";
 import { TaskStatus } from "../utils/enums";
 import {
-    priorityConfig,
-    runTypeConfig,
-    taskStatusConfig,
-    taskTypeConfig
+  priorityConfig,
+  runTypeConfig,
+  taskStatusConfig,
+  taskTypeConfig
 } from "../utils/rules";
 import type {
-    PaginationInfo,
-    TaskAction,
-    TasksTableEmits,
-    TasksTableProps
+  PaginationInfo,
+  TaskAction,
+  TasksTableEmits,
+  TasksTableProps
 } from "../utils/types";
 
-// 将配置中的图标名映射为实际组件
-const iconMap = {
-  Loading,
-  Clock,
-  CircleCheck,
-  CircleClose,
-  Files,
-  DataLine,
-  Timer,
-  Warning,
-};
-const getIcon = (name: string) => iconMap[name as keyof typeof iconMap] || null;
+// icons are imported and used directly in the template
 
 // Props
 const props = withDefaults(defineProps<TasksTableProps>(), {

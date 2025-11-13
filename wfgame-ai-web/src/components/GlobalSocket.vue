@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, onUnmounted, provide } from "vue";
 import { connectSocket } from "@/views/replay/utils/socket";
+import { onUnmounted, provide, ref } from "vue";
 
 // 全局唯一socket，room=global
 const socketIO = ref<any>(null);
@@ -16,7 +16,7 @@ provide("socketIO", socketIO);
 
 // 初始化全局socket，room参数为global
 initSocketIO(
-  { room: "global" },
+  { room: "system_global" },
   {
     onConnect: () => {
       console.log("[global] 已连接");
@@ -27,7 +27,7 @@ initSocketIO(
     onError: err => {
       console.warn("[global] 异常", err);
     },
-    onReplay: () => { },
+    onReplay: () => {},
     onSysMsg: (msg, payload) => {
       // 全局广播消息
       console.log("[global] sysMsg", msg, payload);

@@ -54,6 +54,11 @@ export const taskStatusConfig = {
     type: "info" as const,
     icon: Clock
   },
+  [TaskStatus.CANCELLED]: {
+    label: "已关闭",
+    type: "warning" as const,
+    icon: CircleClose
+  },
   [TaskStatus.COMPLETED]: {
     label: "成功",
     type: "success" as const,

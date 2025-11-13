@@ -3,10 +3,11 @@
     <el-dialog
       :model-value="props.visible"
       :title="isEdit ? '编辑任务' : '新建任务'"
-      width="1000px"
+      width="1100px"
       :close-on-click-modal="true"
       @update:model-value="onDialogVisibleChange"
       @close="handleCancel"
+      top="8vh"
     >
       <div class="dialog-content">
         <div class="dialog-content">
@@ -65,10 +66,7 @@
                       </el-select>
                     </el-form-item>
 
-                    <el-form-item
-                      label="运行类型"
-                      prop="run_type"
-                    >
+                    <el-form-item label="运行类型" prop="run_type">
                       <el-select
                         v-model="formData.run_type"
                         placeholder="请选择运行类型"
@@ -99,7 +97,7 @@
                       v-if="formData.run_type === 3"
                       label="计划时间"
                       prop="run_info.schedule"
-                      style="padding-left: 1em; padding-right: 1em;"
+                      style="padding-left: 1em; padding-right: 1em"
                       size="small"
                       class="schedule-form-item-bg"
                     >
@@ -108,7 +106,9 @@
                         type="datetime"
                         value-format="YYYY-MM-DD HH:mm:ss"
                         placeholder="请选择日期和时间"
-                        :disabled-date="dt => dt.getTime() < Date.now() - 8.64e7"
+                        :disabled-date="
+                          dt => dt.getTime() < Date.now() - 8.64e7
+                        "
                         style="width: 100%"
                       />
                     </el-form-item>
@@ -119,6 +119,7 @@
                         placeholder="请选择目标设备"
                         style="width: 100%"
                         filterable
+                        @visible-change="onDeviceDropdownVisible"
                         size="large"
                       >
                         <el-option
@@ -139,34 +140,61 @@
                         选择脚本
                       </el-button>
                     </el-form-item>
+                    <!-- 将任务描述移入同一列，缩短与“选择脚本”的距离 -->
+                    <el-form-item label="任务描述" class="form-desc-item">
+                      <el-input
+                        v-model="formData.description"
+                        type="textarea"
+                        :autosize="{ minRows: 3, maxRows: 3 }"
+                        placeholder="请输入任务描述（可选）"
+                        maxlength="200"
+                        show-word-limit
+                        size="large"
+                      />
+                    </el-form-item>
                   </div>
-                  <el-form-item label="任务描述" class="form-desc-item">
-                    <el-input
-                      v-model="formData.description"
-                      type="textarea"
-                      :autosize="{ minRows: 3, maxRows: 3 }"
-                      placeholder="请输入任务描述（可选）"
-                      maxlength="200"
-                      show-word-limit
-                      size="large"
-                    />
-                  </el-form-item>
                 </div>
               </el-card>
 
-              <!-- 右侧：脚本选择区卡片（仅展示和拖拽，不做表单校验） -->
+              <!-- 右侧：脚本选择区卡片（含每脚本参数输入与预览） -->
               <div class="dialog-vsplit" />
               <el-card shadow="always" class="script-card">
                 <template #header>
-                  <span class="script-title">脚本编辑（共 {{ scripts.length }} 个）</span>
+                  <span class="script-title"
+                    >脚本编辑（共 {{ scripts.length }} 个）</span
+                  >
                 </template>
-                <div class="script-content-row">
-                    <div class="script-list-col">
-                    <DraggableScriptList v-model="scripts" @update:modelValue="onScriptsChanged" />
+                <div class="script-content">
+                  <div class="script-list-scroll">
+                    <DraggableScriptList
+                      v-model="scripts"
+                      v-model:paramsMap="paramsMap"
+                      @update:modelValue="onScriptsChanged"
+                    />
                   </div>
                 </div>
               </el-card>
             </div>
+            <!-- 底部：全部命令独立卡片，放在基本信息和脚本编辑下方 -->
+            <el-card shadow="always" class="preview-card">
+              <div class="preview-cmd-container">
+                <div class="preview-cmd-line">
+                  <span class="preview-label">执行命令：</span>
+                  <span class="preview-base">{{ previewParts.base }}</span>
+
+                  <div class="preview-arg-list preview-arg-list-scroll">
+                    <span
+                      v-for="(g, idx) in previewParts.groups"
+                      :key="idx"
+                      class="preview-arg-badge"
+                      :style="{ background: argColor(idx), color: '#0b2545' }"
+                    >
+                      {{ g }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </el-card>
           </el-form>
         </div>
       </div>
@@ -179,20 +207,22 @@
         </div>
       </template>
     </el-dialog>
-  <ScriptSelector
-    v-model="scriptSelectorVisible"
-    @confirm="onScriptSelectorConfirm"
-    width="60vw"
-    contentHeight="60vh"
-  />
+    <ScriptSelector
+      v-model="scriptSelectorVisible"
+      @confirm="onScriptSelectorConfirm"
+      width="60vw"
+      contentHeight="60vh"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
+import { listDevices, type DeviceItem } from "@/api/devices";
 import { scriptApi, type ScriptItem } from "@/api/scripts";
+import { superRequest } from "@/utils/request";
 import ScriptSelector from "@/views/common/selectors/scriptSelector/index.vue";
 import { ElMessage, type FormInstance } from "element-plus";
-import { nextTick, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 import {
     runTypeConfig,
     taskFormRules,
@@ -213,8 +243,8 @@ const formRef = ref<FormInstance>();
 // 表单数据 - 使用类型安全的默认值（避免 null 传入 Element Plus 控件）
 const formData = ref<TaskFormData>({
   name: "",
-    task_type: null,
-    run_type: null,
+  task_type: null,
+  run_type: null,
   run_info: { schedule: "" },
   device_ids: [],
   description: "",
@@ -238,11 +268,18 @@ async function onScriptSelectorConfirm(rows: ScriptItem[]) {
   if (!Array.isArray(rows)) return;
   // we already have full script objects from the selector, set them directly
   syncLock.value = true;
-  scripts.value = rows;
+  // 采用“追加”而非“替换”：保留已有，追加新选择的去重项
+  const existing = Array.isArray(scripts.value) ? scripts.value.slice() : [];
+  const exists = new Set(existing.map(s => Number(s.id)));
+  const append = rows.filter(r => !exists.has(Number(r.id)));
+  const combined = existing.concat(append);
+  scripts.value = combined;
   // avoid the formData watcher re-loading these ids immediately
   updatingIds.value = true;
-  const ids = rows.map(r => r.id as number);
+  const ids = combined.map(r => r.id as number);
   formData.value.script_ids = ids;
+  // 初始化每脚本参数
+  ensureParamsFor(ids);
   // mark as last loaded to avoid redundant fetch
   lastLoadedIds.value = ids.slice();
   await nextTick();
@@ -252,8 +289,6 @@ async function onScriptSelectorConfirm(rows: ScriptItem[]) {
 }
 
 // end onScriptSelectorConfirm
-
-
 
 // load full script objects for given ids
 const loadScriptsByIds = async (ids: number[]) => {
@@ -268,9 +303,9 @@ const loadScriptsByIds = async (ids: number[]) => {
         .then(res => res.data)
         .catch(() => null)
     );
-    const results = (
-      await Promise.all(promises)
-    ).filter(Boolean) as ScriptItem[];
+    const results = (await Promise.all(promises)).filter(
+      Boolean
+    ) as ScriptItem[];
     // preserve the incoming order
     const ordered = ids
       .map(id => results.find(r => r.id === id))
@@ -279,6 +314,9 @@ const loadScriptsByIds = async (ids: number[]) => {
     syncLock.value = true;
     syncingScripts.value = true;
     scripts.value = ordered;
+    // 初始化每脚本参数
+    const idsOnly = ordered.map(o => o.id as number);
+    ensureParamsFor(idsOnly);
     // record loaded ids to avoid re-loading the same set
     lastLoadedIds.value = ids.slice();
     // clear flag after DOM update so subsequent user-driven changes sync normally
@@ -317,12 +355,15 @@ async function onScriptsChanged(updated: ScriptItem[]) {
   if (syncingScripts.value) return;
   const ids = Array.isArray(updated) ? updated.map(s => s.id as number) : [];
   const cur = formData.value.script_ids || [];
-  const different = ids.length !== cur.length || ids.some((id, i) => id !== cur[i]);
+  const different =
+    ids.length !== cur.length || ids.some((id, i) => id !== cur[i]);
   if (different) {
     updatingIds.value = true;
     formData.value.script_ids = ids;
     // record lastLoadedIds so the form watcher doesn't re-load unnecessarily
     lastLoadedIds.value = ids.slice();
+    // 确保每脚本参数存在
+    ensureParamsFor(ids);
     await nextTick();
     updatingIds.value = false;
   }
@@ -344,12 +385,63 @@ const onDialogVisibleChange = (val: boolean) => {
 // 是否编辑模式（新建任务始终为 false）
 const isEdit = ref(false);
 
-// 设备选项 (模拟数据，实际应该从API获取)
-const deviceOptions = ref([
-  { label: "OnePlus 9 Pro", value: 1 },
-  { label: "Samsung Galaxy S21", value: 2 },
-  { label: "Xiaomi Mi 11", value: 3 }
-]);
+// 设备选项（从后端获取最新设备列表）
+const deviceOptions = ref<{ label: string; value: number }[]>([]);
+// 设备ID(主键) -> 序列号(device_id) 映射，用于拼接预览命令的 --device serial
+const deviceIdToSerial = ref<Record<number, string>>({});
+
+// 拉取设备列表并转换为下拉选项
+const fetchDevices = async () => {
+  await superRequest({
+    apiFunc: listDevices,
+    apiParams: { available_for_me: true },
+    onSucceed: (data: DeviceItem[]) => {
+      const arr = Array.isArray(data) ? data : [];
+      const options = arr.map(d => ({
+        // 使用设备主键作为提交值；显示 device_id 与型号品牌，便于选择
+        value: Number(d.id as number),
+        label: [
+          d.device_id,
+          [d.brand, d.model].filter(Boolean).join(" "),
+          d.status === "online" && d.current_user_name
+            ? `占用:${d.current_user_name}`
+            : null
+        ]
+          .filter(Boolean)
+          .join(" | ")
+      }));
+      deviceOptions.value = options;
+      // 构建 id -> serial 映射
+      const map: Record<number, string> = {};
+      for (const d of arr) {
+        const key = Number(d.id as number);
+        if (Number.isFinite(key) && d.device_id) {
+          map[key] = String(d.device_id);
+        }
+      }
+      deviceIdToSerial.value = map;
+    }
+  });
+};
+
+// 仅在下拉被展开时拉取一次；收起后重置标记，下一次展开再拉取
+const deviceDropdownFetched = ref(false);
+const deviceFetchLoading = ref(false);
+const onDeviceDropdownVisible = async (visible: boolean) => {
+  if (visible) {
+    if (deviceDropdownFetched.value || deviceFetchLoading.value) return;
+    deviceFetchLoading.value = true;
+    try {
+      await fetchDevices();
+      deviceDropdownFetched.value = true;
+    } finally {
+      deviceFetchLoading.value = false;
+    }
+  } else {
+    // 关闭下拉后，允许下一次打开再次拉取
+    deviceDropdownFetched.value = false;
+  }
+};
 
 // 重置表单
 const resetForm = () => {
@@ -368,10 +460,13 @@ const resetForm = () => {
   };
   const toNumberArray = (v: any): number[] => {
     if (v === undefined || v === null || v === "") return [];
-    if (Array.isArray(v)) return v.map((x: any) => {
-      const n = Number(x);
-      return Number.isFinite(n) ? n : null;
-    }).filter((n: any) => n != null) as number[];
+    if (Array.isArray(v))
+      return v
+        .map((x: any) => {
+          const n = Number(x);
+          return Number.isFinite(n) ? n : null;
+        })
+        .filter((n: any) => n != null) as number[];
     return String(v)
       .split(",")
       .map(s => {
@@ -387,7 +482,10 @@ const resetForm = () => {
     task_type: toNumber(incoming.task_type),
     run_type: toNumber(incoming.run_type),
     run_info: {
-      schedule: incoming.run_info && incoming.run_info.schedule ? String(incoming.run_info.schedule) : ""
+      schedule:
+        incoming.run_info && incoming.run_info.schedule
+          ? String(incoming.run_info.schedule)
+          : ""
     },
     device_ids: toNumberArray(incoming.device_ids),
     description: incoming.description ? String(incoming.description) : "",
@@ -405,9 +503,14 @@ watch(
   v => {
     if (v) {
       resetForm();
+      // 确保预览命令能拿到设备序列号映射
+      if (!deviceDropdownFetched.value) {
+        fetchDevices();
+        deviceDropdownFetched.value = true;
+      }
     }
-  }
-  , { immediate: true }
+  },
+  { immediate: true }
 );
 
 // 如果父组件更新了 fillValues（例如路由解析后再赋值），也应重新 reset 表单
@@ -424,7 +527,45 @@ watch(
 const handleSubmit = async () => {
   try {
     await formRef.value?.validate();
-    emit("submit", { ...formData.value });
+
+    // 构建新的创建载荷：脚本/设备使用对象数组携带附加信息
+    const scriptItems = (Array.isArray(scripts.value) ? scripts.value : []).map(
+      s => {
+        const id = Number(s.id);
+        const cfg = paramsMap.value[id] || { loopCount: 1, maxDuration: null };
+        const item: Record<string, any> = {
+          id,
+          "loop-count": Number(cfg.loopCount) > 0 ? Number(cfg.loopCount) : 1
+        };
+        if (cfg.maxDuration && Number(cfg.maxDuration) > 0) {
+          item["max-duration"] = Number(cfg.maxDuration);
+        }
+        return item;
+      }
+    );
+
+    const deviceItems = (
+      Array.isArray(formData.value.device_ids)
+        ? (formData.value.device_ids as number[])
+        : []
+    ).map(id => ({
+      id: Number(id),
+      serial: deviceIdToSerial.value[Number(id)] || ""
+    }));
+
+    const payload = {
+      name: formData.value.name,
+      task_type: formData.value.task_type,
+      run_type: formData.value.run_type,
+      run_info: formData.value.run_info,
+      description: formData.value.description,
+      script_ids: scriptItems,
+      device_ids: deviceItems,
+      // 预留全局参数对象（如需可由上层传入或在此扩展输入项）
+      params: {}
+    };
+
+    emit("submit", payload as any);
     emit("update:visible", false); // 提交成功后自动关闭
   } catch (error) {
     ElMessage.warning("请完善表单信息");
@@ -437,6 +578,101 @@ const handleCancel = () => {
   emit("cancel");
 };
 
+// ---------------- 回放参数（构建有序 CLI 参数） ----------------
+// 每脚本参数映射：key=脚本ID，value={loopCount,maxDuration}
+const paramsMap = ref<
+  Record<number, { loopCount: number; maxDuration: number | null }>
+>({});
+
+// 确保为当前脚本集初始化/保留参数项
+const ensureParamsFor = (ids: number[]) => {
+  const next: Record<
+    number,
+    { loopCount: number; maxDuration: number | null }
+  > = {};
+  for (const id of ids) {
+    const cur = paramsMap.value[id];
+    next[id] = {
+      loopCount: cur?.loopCount && cur.loopCount > 0 ? cur.loopCount : 1,
+      maxDuration:
+        cur?.maxDuration && cur.maxDuration > 0 ? cur.maxDuration : null
+    };
+  }
+  paramsMap.value = next;
+};
+
+// 保留计算逻辑供预览使用，但不再提交给后端
+// 取消提交 script_params 结构，按路径模式由后端解析命令
+
+// 生成 CLI 预览命令按脚本分别展示的逻辑已拆分为 previewParts（每脚本一组），不再保留完整字符串形式
+
+// 将命令拆分为 base (python replay_script.py) 与参数组（每个脚本的一组参数为一组）
+const previewParts = computed(() => {
+  const toFileName = (s: any): string => {
+    if (!s) return "";
+    const raw = (s.filename || s.path || s.name || "").toString();
+    const base = raw.split(/[\\/]/).pop() || "";
+    return base.endsWith(".json") ? base : base ? `${base}.json` : "";
+  };
+
+  const ids = Array.isArray(formData.value.device_ids)
+    ? (formData.value.device_ids as number[])
+    : [];
+  const serials = ids
+    .map(id => deviceIdToSerial.value[id])
+    .filter((s): s is string => !!s && s.length > 0);
+
+  const base = "python replay_script.py";
+  const groups: string[] = [];
+
+  // devices: each device its own group
+  for (const ser of serials) {
+    groups.push(`--device ${ser}`);
+  }
+
+  // scripts: group per script including its loop/max-duration
+  if (Array.isArray(scripts.value) && scripts.value.length) {
+    for (const s of scripts.value) {
+      const file = toFileName(s);
+      if (!file) continue;
+      const cfg = paramsMap.value[Number(s.id)] || {
+        loopCount: 1,
+        maxDuration: null
+      };
+      const parts: string[] = [];
+      // quote filename if it contains whitespace
+      const fileDisplay = /\s/.test(file) ? `"${file}"` : file;
+      parts.push(`--script ${fileDisplay}`);
+      const lc = Number(cfg.loopCount);
+      if (Number.isFinite(lc) && lc > 0) parts.push(`--loop-count ${lc}`);
+      const md = cfg.maxDuration != null ? Number(cfg.maxDuration) : null;
+      if (md && Number.isFinite(md) && md > 0)
+        parts.push(`--max-duration ${md}`);
+
+      groups.push(parts.join(" "));
+    }
+  }
+
+  return { base, groups };
+});
+
+// 颜色调色板（浅色背景，便于分组区分）
+const _palette = [
+  "#e8f1ff", // blue tint
+  "#e8fff0", // green tint
+  "#fff7e6", // orange tint
+  "#f3e8ff", // purple tint
+  "#e8f8ff", // cyan tint
+  "#ffe8f1", // pink tint
+  "#f0ffe8", // lime tint
+  "#e8eaff", // indigo tint
+  "#fffbe8", // yellow tint
+  "#e8fff9" // teal tint
+];
+
+const argColor = (idx: number) => {
+  return _palette[idx % _palette.length];
+};
 </script>
 
 <style scoped>
@@ -448,10 +684,12 @@ const handleCancel = () => {
   gap: 0;
   align-items: stretch; /* ensure children cards stretch to same height */
   min-height: 410px;
+  justify-content: space-between; /* distribute extra space to edges so right卡片贴近右侧，与左侧对称 */
 }
 
 .form-card-flex {
-  flex: 0 0 35%;
+  /* 左侧基本信息：3/7 比例中的 3 */
+  flex: 0 0 30%;
   min-width: 220px;
   max-width: 400px;
   border-radius: 12px;
@@ -462,7 +700,7 @@ const handleCancel = () => {
   flex-direction: column;
   justify-content: flex-start;
   align-items: stretch;
-  height: 520px; /* match script-card height */
+  height: 505px; /* match left card height */
 }
 
 .form-content-flex {
@@ -478,28 +716,28 @@ const handleCancel = () => {
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 6px; /* 让选择脚本与任务描述更接近一些 */
 }
 
 .form-desc-item {
-  margin-top: 12px;
+  margin-top: 8px;
   margin-bottom: 0;
   width: 100%;
-  /* 保证描述栏始终在底部 */
 }
 
 .dialog-vsplit {
   width: 1px;
   min-height: 410px;
   background: #e5e6eb;
-  margin: 0 32px;
+  margin: 0 6px; /* 收紧分割线左右空白 */
   border-radius: 1px;
 }
 
 .script-card {
-  flex: 0 0 59%;
+  /* 右侧脚本编辑：3/7 比例中的 7 */
+  flex: 1 1 70%;
   min-width: 260px;
-  max-width: 700px;
+  max-width: 750px; /* 右侧加宽约 50px */
   border-radius: 12px;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
   padding: 0;
@@ -507,26 +745,44 @@ const handleCancel = () => {
   flex-direction: column;
   justify-content: flex-start;
   align-items: stretch;
-  height: 520px; /* fixed card height */
+  height: 505px; /* match left card height */
   overflow: hidden;
 }
 
-.script-content-row {
+.script-content {
   display: flex;
-  flex-direction: row;
-  gap: 16px;
-  align-items: stretch; /* stretch children to full card body height */
+  flex-direction: column;
+  align-items: stretch;
   height: 100%;
 }
 
-.script-list-col {
-  flex: 2 1 0;
-  min-width: 180px;
-  display: flex;
-  flex-direction: column;
-  overflow: auto; /* scroll when many scripts */
+.script-list-scroll {
+  flex: 1 1 auto;
+  overflow: auto;
   padding: 12px;
-  min-height: 0; /* allow flex child to shrink and enable scrolling */
+  min-height: 0;
+}
+
+/* 底部预览卡片（显示全部命令） */
+.preview-card {
+  margin-top: 10px;
+  border-radius: 12px;
+}
+
+.replay-card-wrapper {
+  padding: 12px;
+}
+
+.replay-card {
+  border-radius: 10px;
+}
+
+.replay-title {
+  font-weight: 600;
+}
+
+.replay-form :deep(.el-form-item) {
+  margin-bottom: 10px;
 }
 
 .dialog-footer {
@@ -545,6 +801,7 @@ const handleCancel = () => {
   align-items: center;
 }
 
+/* 回放参数卡片 header 样式 */
 /* 收紧 el-card header 与 body 间距，仅作用于本组件内的卡片 */
 :deep(.form-card > .el-card__header),
 :deep(.script-card > .el-card__header) {
@@ -575,7 +832,7 @@ const handleCancel = () => {
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
-  overflow: auto;
+  overflow: hidden; /* 让上方列表区域滚动，底部预览固定 */
 }
 
 /* Tighten label and control spacing in Element Plus form items */
@@ -598,5 +855,75 @@ const handleCancel = () => {
 /* 禁用描述文本域的手动拖拽放大，大小由 autosize 控制 */
 :deep(.form-card .el-textarea__inner) {
   resize: none;
+}
+
+/* 预览命令文本域不允许拉伸，保持与任务描述一致的交互 */
+:deep(.script-card .el-textarea__inner) {
+  resize: none;
+}
+
+/* 独立预览卡片内的文本域同样不允许拉伸 */
+:deep(.preview-card .el-textarea__inner) {
+  resize: none;
+}
+
+.preview-cmd-container {
+  padding: 8px 12px;
+}
+.preview-cmd-line {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap; /* allow badges to wrap to next line when long */
+}
+.preview-label {
+  font-size: 1.25em;
+  font-weight: 700;
+  color: #1a237e;
+  flex: 0 0 auto;
+}
+.preview-base {
+  font-size: 1em;
+  color: #222;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Helvetica Neue", monospace;
+
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+.preview-arg-list {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-left: 6px;
+}
+.preview-arg-list-scroll {
+  max-height: calc(2 * 38px); /* 3 rows, each badge ~38px tall incl. margin */
+  overflow-y: auto;
+  min-height: 38px;
+}
+.preview-arg-badge {
+  padding: 6px 10px;
+  border-radius: 8px;
+
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", monospace;
+
+  font-size: 0.95em;
+  white-space: nowrap;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.03);
+}
+
+.preview-cmd-highlight {
+  background: linear-gradient(90deg, #e3f0ff 0%, #f7fbff 100%);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 4px 0 0 0;
+}
+.preview-cmd-input :deep(.el-textarea__inner) {
+  font-size: 1.25em;
+  font-weight: bold;
+  background: transparent;
+  color: #1a237e;
+  border: none;
+  box-shadow: none;
 }
 </style>

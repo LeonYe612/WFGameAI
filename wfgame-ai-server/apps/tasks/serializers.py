@@ -53,6 +53,8 @@ class TaskDeviceSerializer(serializers.ModelSerializer):
 
 class TaskListSerializer(serializers.ModelSerializer):
     """任务列表序列化器（简化版）"""
+    device_ids = serializers.SerializerMethodField()
+    script_ids = serializers.SerializerMethodField()
     scripts_count = serializers.SerializerMethodField()
     devices_count = serializers.SerializerMethodField()
     devices_list = serializers.SerializerMethodField()
@@ -64,12 +66,17 @@ class TaskListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
         fields = [
-            'id', 'name', 'group', 'group_name', 'status', 'status_display',
+            'id', 'name', 'group', 'group_name', 'status', 'status_display', 'celery_id', 'script_params',
             'priority', 'priority_display', 'description', 'schedule_time',
             'start_time', 'end_time', 'execution_time', 'creator_name',
             'creator_id', 'created_at', 'updater_id', 'updated_at', 'updater_name',
-            'devices_count', 'devices_list', 'scripts_count','scripts_list', 'task_type', 'run_type', 'run_info'
+            'device_ids', 'devices_list', 'devices_count', 'script_ids', 'scripts_list', 'scripts_count',
+            'task_type', 'run_type', 'run_info'
         ]
+    def get_device_ids(self, obj):
+        """获取关联设备ID列表"""
+        return list(TaskDevice.objects.filter(task=obj).values_list('device_id', flat=True))
+
 
     def get_devices_count(self, obj):
         """获取关联设备数量"""
@@ -78,6 +85,10 @@ class TaskListSerializer(serializers.ModelSerializer):
     def get_devices_list(self, obj):
         """获取关联设备名称列表"""
         return [td.device.name for td in TaskDevice.objects.filter(task=obj).select_related('device')]
+
+    def get_script_ids(self, obj):
+        """获取关联脚本ID列表"""
+        return list(TaskScript.objects.filter(task=obj).values_list('script_id', flat=True))
 
     def get_scripts_count(self, obj):
         """获取关联脚本数量"""
@@ -90,6 +101,8 @@ class TaskListSerializer(serializers.ModelSerializer):
 
 class TaskDetailSerializer(serializers.ModelSerializer):
     """任务详情序列化器（完整版）"""
+    device_ids = serializers.SerializerMethodField()
+    script_ids = serializers.SerializerMethodField()
     devices_list = serializers.SerializerMethodField()
     scripts_list = serializers.SerializerMethodField()
     devices_count = serializers.SerializerMethodField()
@@ -101,16 +114,24 @@ class TaskDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
         fields = [
-            'id', 'name', 'group', 'group_name',
+            'id', 'name', 'group', 'group_name', 'celery_id', 'script_params',
             'status', 'status_display', 'priority', 'priority_display', 'task_type', 'run_type', 'run_info', 'description',
             'schedule_time', 'start_time', 'end_time', 'execution_time',
             'creator_name', 'creator_id', 'created_at', 'updater_name', 'updater_id', 'updated_at',
-            'devices_count', 'devices_list', 'scripts_count', 'scripts_list',
+            'device_ids', 'devices_list', 'devices_count', 'script_ids', 'scripts_list', 'scripts_count'
         ]
+
+    def get_device_ids(self, obj):
+        """获取关联设备ID列表"""
+        return list(TaskDevice.objects.filter(task=obj).values_list('device_id', flat=True))
 
     def get_devices_list(self, obj):
         """获取关联设备名称列表"""
         return [td.device.name for td in TaskDevice.objects.filter(task=obj).select_related('device')]
+
+    def get_script_ids(self, obj):
+        """获取关联脚本ID列表"""
+        return list(TaskScript.objects.filter(task=obj).values_list('script_id', flat=True))
 
     def get_scripts_list(self, obj):
         """获取关联脚本名称列表"""
@@ -126,53 +147,106 @@ class TaskDetailSerializer(serializers.ModelSerializer):
 
 
 class TaskCreateSerializer(serializers.ModelSerializer):
-    """任务创建序列化器"""
+    """任务创建序列化器（接受新的结构化载荷）"""
+
+    # 新结构：脚本为对象数组，包含 id、loop-count、max-duration
     script_ids = serializers.ListField(
-        child=serializers.IntegerField(),
+        child=serializers.DictField(child=serializers.JSONField()),
         write_only=True,
         required=False,
-        help_text="关联的脚本ID列表"
+        help_text="[{id, loop-count, max-duration?}, ...]"
     )
+    # 新结构：设备为对象数组，包含 id、serial
     device_ids = serializers.ListField(
-        child=serializers.IntegerField(),
+        child=serializers.DictField(child=serializers.JSONField()),
         write_only=True,
         required=False,
-        help_text="关联的设备ID列表"
+        help_text="[{id, serial}, ...]"
     )
+    # 新增：额外参数对象（例如 version 等）
+    params = serializers.JSONField(write_only=True, required=False)
 
     class Meta:
         model = Task
         fields = [
-            'id', 'name', 'group', 'status', 'priority', 'description',
-            'schedule_time', 'script_ids', 'device_ids', 'task_type', 'run_type', 'run_info'
+            'id', 'name', 'group', 'status', 'priority', 'description', 'celery_id',
+            'schedule_time', 'script_ids', 'device_ids', 'task_type', 'run_type', 'run_info',
+            'params', 'script_params'
         ]
 
+    def validate_script_ids(self, value):
+        if value is None:
+            return []
+        if not isinstance(value, list):
+            raise serializers.ValidationError("script_ids 必须为数组(list)")
+        parsed = []
+        for idx, item in enumerate(value):
+            if not isinstance(item, dict):
+                raise serializers.ValidationError(f"script_ids 第 {idx} 项必须为对象")
+            if 'id' not in item:
+                raise serializers.ValidationError(f"script_ids 第 {idx} 项缺少 id 字段")
+            sid = item.get('id')
+            if not isinstance(sid, int):
+                raise serializers.ValidationError(f"script_ids 第 {idx} 项的 id 必须为整数")
+            lc = item.get('loop-count', 1)
+            if not isinstance(lc, int) or lc <= 0:
+                raise serializers.ValidationError(f"script_ids 第 {idx} 项的 loop-count 必须为正整数")
+            md = item.get('max-duration', None)
+            if md is not None and (not isinstance(md, int) or md <= 0):
+                raise serializers.ValidationError(f"script_ids 第 {idx} 项的 max-duration 必须为正整数")
+            parsed.append({'id': sid, 'loop-count': lc, 'max-duration': md})
+        return parsed
+
+    def validate_device_ids(self, value):
+        if value is None:
+            return []
+        if not isinstance(value, list):
+            raise serializers.ValidationError("device_ids 必须为数组(list)")
+        parsed = []
+        for idx, item in enumerate(value):
+            if not isinstance(item, dict):
+                raise serializers.ValidationError(f"device_ids 第 {idx} 项必须为对象")
+            if 'id' not in item:
+                raise serializers.ValidationError(f"device_ids 第 {idx} 项缺少 id 字段")
+            did = item.get('id')
+            if not isinstance(did, int):
+                raise serializers.ValidationError(f"device_ids 第 {idx} 项的 id 必须为整数")
+            serial = item.get('serial', '')
+            if serial is not None and not isinstance(serial, str):
+                raise serializers.ValidationError(f"device_ids 第 {idx} 项的 serial 必须为字符串")
+            parsed.append({'id': did, 'serial': serial or ''})
+        return parsed
 
     def create(self, validated_data):
-        script_ids = validated_data.pop('script_ids', [])
-        device_ids = validated_data.pop('device_ids', [])
+        # 弹出新结构字段
+        script_objs = validated_data.pop('script_ids', [])
+        device_objs = validated_data.pop('device_ids', [])
+        params = validated_data.pop('params', {}) or {}
+
+        # 生成 Task，并将完整的新结构快照保存到 script_params 以便追溯
+        snapshot = {
+            'script_ids': script_objs,
+            'device_ids': device_objs,
+            'params': params
+        }
+        validated_data['script_params'] = snapshot
         task = Task.objects.create(**validated_data)
 
-        # 校验脚本 id
-        valid_script_ids = set(Script.objects.filter(id__in=script_ids).values_list('id', flat=True))
-        for i, script_id in enumerate(script_ids):
+        # 关联脚本（按顺序）
+        script_id_list = [item['id'] for item in script_objs]
+        valid_script_ids = set(Script.objects.filter(id__in=script_id_list).values_list('id', flat=True))
+        for i, script_id in enumerate(script_id_list):
             if script_id in valid_script_ids:
-                TaskScript.objects.create(
-                    task=task,
-                    script_id=script_id,
-                    order=i + 1
-                )
+                TaskScript.objects.create(task=task, script_id=script_id, order=i + 1)
             else:
                 raise serializers.ValidationError(f"脚本ID {script_id} 不存在")
 
-        # 校验设备 id
-        valid_device_ids = set(Device.objects.filter(id__in=device_ids).values_list('id', flat=True))
-        for device_id in device_ids:
+        # 关联设备
+        device_id_list = [item['id'] for item in device_objs]
+        valid_device_ids = set(Device.objects.filter(id__in=device_id_list).values_list('id', flat=True))
+        for device_id in device_id_list:
             if device_id in valid_device_ids:
-                TaskDevice.objects.create(
-                    task=task,
-                    device_id=device_id
-                )
+                TaskDevice.objects.create(task=task, device_id=device_id)
             else:
                 raise serializers.ValidationError(f"设备ID {device_id} 不存在")
         return task
@@ -184,6 +258,6 @@ class TaskUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
         fields = [
-            'name', 'group', 'status', 'priority', 'description',
+            'name', 'group', 'status', 'priority', 'description', 'celery_id',
             'schedule_time', 'start_time', 'end_time', 'execution_time'
         ]

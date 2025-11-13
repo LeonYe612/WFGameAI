@@ -16,6 +16,10 @@ export interface Task {
     task_type: TaskType;
     run_type: TaskRunType;
     run_info: { schedule: string | null };
+    // 后端新增字段：Celery 任务ID（持久化）
+    celery_id?: string;
+    // 兼容启动接口返回的临时字段名
+    celery_task_id?: string;
     device_ids: number[];
     script_ids: number[];
     startTime: string;
@@ -39,10 +43,12 @@ export interface CreateTaskParams {
     name: string;
     task_type: TaskType;
     run_type: TaskRunType;
-    run_info: { schedule: null },
-    device_ids: number[];
+    run_info: { schedule: null };
     description: string;
-    script_ids: number[];
+    // 新结构：设备与脚本均为对象数组，另带 params 对象
+    device_ids: Array<{ id: number; serial: string }>;
+    script_ids: Array<{ id: number; "loop-count": number; "max-duration"?: number }>;
+    params?: Record<string, any>;
 }
 
 // 获取任务列表（GET）
@@ -86,8 +92,14 @@ export const restartTask = (id: string) => {
 };
 
 // 复制任务（如有自定义 action，POST）
-export const duplicateTask = (id: number) => {
-    return http.request<ApiResult>("post", baseUrlApi(`/tasks/${id}/duplicate/`));
+export const duplicateTask = (id: number, data?: { name?: string }) => {
+    return http.request<ApiResult>(
+        "post",
+        baseUrlApi(`/tasks/${id}/duplicate/`),
+        {
+            ...(data ? { data } : {})
+        }
+    );
 };
 
 // 获取任务日志（GET）

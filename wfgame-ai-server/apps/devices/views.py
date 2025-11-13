@@ -10,6 +10,7 @@ import logging
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, status, views
+from django.db.models import Q
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
@@ -179,10 +180,30 @@ class DeviceViewSet(CustomResponseModelViewSet):
     """设备视图集"""
     queryset = Device.objects.all()
     permission_classes = [AllowAny]  # 允许所有用户访问
-    filterset_fields = ['status', 'type', 'current_user']
+    filterset_fields = ['status', 'type', 'current_user', 'is_idle']
     search_fields = ['name', 'device_id', 'ip_address']
     pagination_class = None
     # http_method_names = ['post']  # 只允许POST方法
+
+    def get_queryset(self):
+        """支持按当前用户可用的设备进行筛选: 在线且未被占用，或被我占用。
+
+        前端可传 available_for_me=true 激活该筛选。
+        同时保留原有 filterset_fields 行为（如 status、current_user_id 等）。
+        """
+        qs = super().get_queryset()
+        params = getattr(self.request, 'query_params', {})
+        flag = params.get('available_for_me')
+        if flag is not None and str(flag).lower() in ('1', 'true', 'yes'):
+            user = getattr(self.request, '_user', None) or getattr(self.request, 'user', None)
+            user_id = getattr(user, 'id', None)
+            # 在线且空闲且可选 (无人占用 或 当前使用者是我)
+            if user_id:
+                qs = qs.filter(status='online').filter(Q(current_user__isnull=True) | Q(current_user=user_id))
+            else:
+                # 无用户信息时，退化为仅返回“在线且空闲”
+                qs = qs.filter(status='online', current_user__isnull=True, is_idle=True)
+        return qs
 
     def get_serializer_class(self):
         """根据操作选择适当的序列化器"""

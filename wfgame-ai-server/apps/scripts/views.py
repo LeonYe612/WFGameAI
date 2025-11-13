@@ -53,6 +53,7 @@ from rest_framework.decorators import api_view, action, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from apps.core.utils.response import api_response
+from django.conf import settings
 
 from .models import (
     Script, ScriptCategory, ScriptVersion, ScriptExecution
@@ -128,7 +129,7 @@ class UTF8StreamHandler(logging.StreamHandler):
             stream.write(self.terminator)
             self.flush()
         except Exception:
-                self.handleError(record)
+            self.handleError(record)
 
 
 def setup_utf8_logging():
@@ -908,8 +909,8 @@ class TaskManager:
         return task_id
 
     def update_task_status(self, task_id: str, status: TaskStatus,
-                          error_message: Optional[str] = None,
-                          results: Optional[Dict[str, Any]] = None):
+                           error_message: Optional[str] = None,
+                           results: Optional[Dict[str, Any]] = None):
         """更新任务状态"""
         with self._lock:
             if task_id not in self.tasks:
@@ -1003,6 +1004,7 @@ task_manager = TaskManager()
 @permission_classes([permissions.AllowAny])
 def replay_script(request):
     """多设备并发回放指定的测试脚本"""
+    # return api_response(code=0, msg="replay 成功", data={"task_id": "task-test001", "device_ids": ["1", "2", "3"]})
     try:
         import traceback
         data = json.loads(request.body)
@@ -1017,9 +1019,9 @@ def replay_script(request):
                 lines = result.stdout.strip().split('\n')[1:]
                 devices = [line.split()[0] for line in lines if line.strip() and 'device' in line]
             except Exception as e:
-                return JsonResponse({'success': False, 'message': f'获取设备列表失败: {e}'}, status=500)
+                return api_response(msg=f'获取设备列表失败: {e}', code=500)
             if not devices:
-                return JsonResponse({'success': False, 'message': '未检测到可用设备'}, status=400)
+                return JsonResponse(msg='未检测到可用设备', code=400)
 
         # 2. 检查脚本参数，兼容scripts数组和script_path参数
         script_configs = data.get('scripts', [])
@@ -1033,19 +1035,13 @@ def replay_script(request):
 
         # 检查是否指定了脚本
         if not script_configs:
-            return JsonResponse({
-                'success': False,
-                'message': '未提供脚本路径'
-            }, status=400)
+            return api_response(msg='未提供脚本路径', code=400)
 
         # 3. 脚本路径规范化处理
         for config in script_configs:
             script_path = config.get('path')
             if not script_path:
-                return JsonResponse({
-                    'success': False,
-                    'message': '脚本配置中缺少path参数'
-                }, status=400)
+                return api_response(msg= '脚本配置中缺少path参数', code=400)
 
             # 规范化脚本路径
             path_input = script_path.strip()
@@ -1078,10 +1074,7 @@ def replay_script(request):
 
             # 检查文件是否存在
             if not os.path.exists(path_input):
-                return JsonResponse({
-                    'success': False,
-                    'message': f'脚本文件不存在: {path_input}'
-                }, status=404)
+                return api_response(msg= f'脚本文件不存在: {path_input}', code=404)
 
             # 更新配置中的路径
             config['path'] = path_input
@@ -1089,8 +1082,12 @@ def replay_script(request):
         # 4. 创建日志目录
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         log_dir_name = f"multi_device_replay_{timestamp}"
-        log_dir = os.path.join(DEVICE_REPORTS_DIR, log_dir_name)
-        os.makedirs(log_dir, exist_ok=True)
+        # 迁移到 reports/tmp/replay 目录结构
+        log_dir = os.path.join(DEVICE_REPORTS_DIR, 'tmp', 'replay', log_dir_name)
+        try:
+            os.makedirs(log_dir, exist_ok=True)
+        except Exception as e_dir:
+            return api_response(msg=f'创建日志目录失败: {e_dir}', code=500)
         # logger.info(f"创建日志目录: {log_dir}")
 
         # 5. 预先为所有设备分配账号 - 在主进程中集中处理，避免子进程竞争
@@ -1174,13 +1171,8 @@ def replay_script(request):
         # 如果有账号分配失败，取消任务并返回错误
         if account_allocation_errors:
             task_manager.update_task_status(task_id, TaskStatus.FAILED,
-                                          error_message="账号分配失败")
-            return JsonResponse({
-                "success": False,
-                "task_id": task_id,
-                "error": "账号分配失败",
-                "details": account_allocation_errors
-            }, status=400)
+                                            error_message="账号分配失败")
+            return JsonResponse(msg=f"账号分配失败: {account_allocation_errors}", code=400)
 
         # 7. 构造每个设备的任务参数
         device_tasks = {}
@@ -1237,7 +1229,7 @@ def replay_script(request):
         max_concurrent = min(system_based_limit, len(devices), data.get('max_concurrent', system_based_limit))
         logger.info(f"计算得出最大并发数: {max_concurrent} (设备数: {len(devices)})")
 
-       # 9. 并发执行回放任务
+        # 9. 并发执行回放任务
         results = {}
         completed_count = 0
 
@@ -1463,17 +1455,14 @@ def replay_script(request):
         log_step_progress(4, 4, f"任务完成，成功: {sum(1 for r in results.values() if r.get('exit_code') == 0)}/{len(devices)}", None, True)
 
         logger.info(f"多设备并发回放任务完成: {len(devices)} 台设备，成功: {sum(1 for r in results.values() if r.get('exit_code') == 0)}")
-        return JsonResponse(response_data)
+        return api_response(data=response_data)
 
     except Exception as e:
         error_msg = str(e)
         logger.error(f"多设备并发回放失败: {error_msg}")
         logger.error(f"详细错误信息: {traceback.format_exc()}")
 
-        return JsonResponse({
-            'success': False,
-            'message': f'多设备并发回放失败: {error_msg}'
-        }, status=500)
+        return api_response(code=500,msg=f"多设备并发回放失败: {error_msg}")
 
 # =====================
 # 步骤级日志记录函数
@@ -1688,6 +1677,100 @@ def get_latest_report(request):
 @api_view(['POST'])
 @csrf_exempt
 @permission_classes([permissions.AllowAny])
+def get_replay_snapshot(request):
+    """返回指定任务的回放历史快照（优先从 Redis，其次回退数据库 ReportDetail）。
+
+    请求体:
+    {
+      "task_id": "<taskId>",
+      "device": "<optional device serial>"
+    }
+
+    响应:
+    {
+      "task_id": "...",
+      "devices": [{"device": "serial", "records": [...]}],
+      "ts": <epoch_ms>
+    }
+    """
+    try:
+        data = request.data or {}
+        task_id = str(data.get('task_id') or '').strip()
+        device = str(data.get('device') or '').strip()
+        if not task_id:
+            return api_response(code=400, msg='缺少 task_id')
+
+        entries = []
+
+        # 1) 优先从 Redis 读取（运行中优先显示最新快照）
+        try:
+            redis_client = getattr(settings, 'REDIS', None)
+            redis_client = getattr(redis_client, 'client', None)
+        except Exception:
+            redis_client = None
+
+        if redis_client:
+            if device:
+                key = f"wfgame:replay:task:{task_id}:device:{device}:steps"
+                raw = redis_client.get(key)
+                if raw:
+                    try:
+                        val = raw.decode('utf-8') if isinstance(raw, (bytes, bytearray)) else raw
+                        records = json.loads(val)
+                    except Exception:
+                        records = []
+                    entries.append({"device": device, "records": records})
+            else:
+                pattern = f"wfgame:replay:task:{task_id}:device:*:steps"
+                try:
+                    for key in redis_client.scan_iter(match=pattern):
+                        k = key.decode('utf-8') if isinstance(key, (bytes, bytearray)) else str(key)
+                        parts = k.split(':')
+                        serial = parts[-2] if len(parts) >= 2 else ''
+                        raw = redis_client.get(key)
+                        if raw:
+                            try:
+                                val = raw.decode('utf-8') if isinstance(raw, (bytes, bytearray)) else raw
+                                records = json.loads(val)
+                            except Exception:
+                                records = []
+                            entries.append({"device": serial, "records": records})
+                except Exception:
+                    # 忽略扫描 Redis 失败，继续回退逻辑
+                    pass
+
+        # 2) 若 Redis 无数据，再回退数据库 ReportDetail（历史快照）
+        if not entries:
+            try:
+                from apps.reports.models import ReportDetail
+                qs = (ReportDetail.objects.all_teams()
+                      .select_related('report', 'device')
+                      .filter(report__task_id=int(task_id)))
+                if device:
+                    qs = qs.filter(device__device_id=device)
+                for d in qs:
+                    try:
+                        serial = getattr(d.device, 'device_id', '')
+                    except Exception:
+                        serial = ''
+                    records = getattr(d, 'step_results', None) or []
+                    entries.append({'device': serial, 'records': records})
+            except Exception as _db_err:
+                logger.warning(f"读取数据库快照失败: {_db_err}")
+
+        return api_response(data={
+            'task_id': task_id,
+            'devices': entries,
+            'ts': int(time.time() * 1000)
+        })
+    except Exception as e:
+        logger.error(f"获取回放快照失败: {e}")
+        return api_response(code=500, msg=f"获取回放快照失败: {e}")
+
+
+@api_view(['POST'])
+@csrf_exempt
+@permission_classes([permissions.AllowAny])
 def record_script(request):
     """
     录制脚本
@@ -1791,13 +1874,13 @@ def replay_status(request):
                 if task_info:
                     return Response({
                         'id': task_id,
-            'status': task_info.status.value,
-            'devices': task_info.devices,
-            'scripts': task_info.scripts,
+                        'status': task_info.status.value,
+                        'devices': task_info.devices,
+                        'scripts': task_info.scripts,
                         'created_at': task_info.created_at.strftime('%Y-%m-%d %H:%M:%S'),
                         'started_at': task_info.started_at.strftime('%Y-%m-%d %H:%M:%S') if task_info.started_at else None,
                         'completed_at': task_info.completed_at.strftime('%Y-%m-%d %H:%M:%S') if task_info.completed_at else None,
-            'error_message': task_info.error_message,
+                        'error_message': task_info.error_message,
                         'results': task_info.results
                     })
                 else:
@@ -1903,7 +1986,7 @@ def start_record(request):
             stderr_thread.start()
 
             return Response({
-            'success': True,
+                'success': True,
                 'message': '录制已开始，请按下Ctrl+C停止录制',
                 'pid': process.pid
             })
@@ -1912,7 +1995,7 @@ def start_record(request):
                 'success': False,
                 'message': '录制启动失败',
                 'error': message
-        })
+            })
 
     except Exception as e:
         logger.error(f"启动录制时出错: {str(e)}")
@@ -1964,10 +2047,10 @@ def get_python_envs(request):
                     try:
                         # 获取Python版本
                         result = subprocess.run([path, "--version"],
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE,
-                            text=True,
-                            check=False)
+                                                stdout=subprocess.PIPE,
+                                                stderr=subprocess.PIPE,
+                                                text=True,
+                                                check=False)
                         version = result.stdout or result.stderr
                         version = version.strip()
 
@@ -1997,10 +2080,10 @@ def get_python_envs(request):
                     try:
                         # 获取Python版本
                         result = subprocess.run([path, "--version"],
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE,
-                            text=True,
-                            check=False)
+                                                stdout=subprocess.PIPE,
+                                                stderr=subprocess.PIPE,
+                                                text=True,
+                                                check=False)
                         version = result.stdout or result.stderr
                         version = version.strip()
 
@@ -2041,10 +2124,10 @@ def switch_python_env(request):
         # 验证是否为有效的Python解释器
         try:
             result = subprocess.run([python_path, "--version"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                check=False)
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE,
+                                    text=True,
+                                    check=False)
 
             if result.returncode != 0:
                 return Response({'success': False, 'message': '无效的Python解释器'}, status=400)
@@ -2492,8 +2575,12 @@ def run_single_replay(device_serial, script_args, log_dir, timeout=3600, max_ret
 
     cmd.extend(script_args)  # 使用 extend 正确展开参数列表
 
-    device_log_file = os.path.join(log_dir, f"{device_serial}.log")
-    result_file = os.path.join(log_dir, f"{device_serial}.result.json")
+    # 设备独立子目录（不在这里创建，延迟到回放脚本内部创建，避免启动阻塞）
+    device_dir = os.path.join(log_dir, device_serial)
+    # 不提前创建: os.makedirs(device_dir, exist_ok=True)
+    # 仍然按照约定路径计算预期的日志与结果文件路径（供后续等待与读取）
+    device_log_file = os.path.join(device_dir, f"{device_serial}.log")  # 回放脚本内部若创建则可读取
+    result_file = os.path.join(device_dir, f"{device_serial}.result.json")
 
     # 🔧 重要调试：详细记录命令构造过程
     logger.info(f"🔧 设备 {device_serial} 命令构造详情:")
@@ -2517,8 +2604,9 @@ def run_single_replay(device_serial, script_args, log_dir, timeout=3600, max_ret
 
     # 重试机制
     for attempt in range(max_retries + 1):
-        log_file_handle = None
+        log_file_handle = None  # 保留变量名以兼容 finally 清理逻辑
         proc = None
+        captured_output = ""  # 用于替代原文件日志的内存缓冲
         try:
             logger.info(f"设备 {device_serial} 开始第 {attempt + 1} 次尝试")
 
@@ -2534,33 +2622,18 @@ def run_single_replay(device_serial, script_args, log_dir, timeout=3600, max_ret
             logger.info(f"   Python可执行: {os.path.exists(sys.executable)}")
             logger.info(f"   脚本文件存在: {os.path.exists(script_path)}")
             logger.info(f"   日志目录存在: {os.path.exists(log_dir)}")
+            logger.info(f"   设备目录存在: {os.path.exists(device_dir)}")
 
-            # 创建更详细的启动日志
-            log_file_handle = open(device_log_file, 'w', encoding='utf-8', errors='replace')  # 使用'w'模式重新创建日志文件
-
-            # 在日志文件开头写入启动信息
-            log_file_handle.write(f"=== 设备 {device_serial} 回放任务启动 ===\n")
-            log_file_handle.write(f"启动时间: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
-            log_file_handle.write(f"执行命令: {' '.join(cmd)}\n")
-            log_file_handle.write(f"工作目录: {os.getcwd()}\n")
-            log_file_handle.write(f"Python路径: {sys.executable}\n")
-            log_file_handle.write(f"脚本路径: {script_path}\n")
-            log_file_handle.write(f"日志目录: {log_dir}\n")
-            log_file_handle.write(f"设备序列号: {device_serial}\n")
-            log_file_handle.write(f"脚本参数: {script_args}\n")
-            log_file_handle.write("=" * 50 + "\n")
-            log_file_handle.flush()  # 确保写入文件
-
-            # 使用更安全的进程启动方式
+            # 使用管道捕获输出，避免启动阶段的文件 IO 开销
             proc = subprocess.Popen(
                 cmd,
-                stdout=log_file_handle,
+                stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 creationflags=creation_flags,
                 preexec_fn=preexec_fn,
                 stdin=subprocess.DEVNULL,
-                cwd=None,  # 使用当前工作目录
-                env=None   # 使用当前环境变量
+                cwd=None,
+                env=None
             )
 
             logger.info(f"设备 {device_serial} 子进程已启动，PID: {proc.pid}")
@@ -2570,30 +2643,26 @@ def run_single_replay(device_serial, script_args, log_dir, timeout=3600, max_ret
                 proc.wait(timeout=timeout)
                 logger.info(f"设备 {device_serial} 子进程已结束，退出码: {proc.returncode}")
 
-                # 🔧 增加：立即读取日志文件的最后几行，了解退出原因
-                if log_file_handle:
-                    log_file_handle.close()
-                    log_file_handle = None
-
+                # 捕获子进程标准输出内容
                 try:
-                    # 读取最近的日志内容
-                    with open(device_log_file, 'r', encoding='utf-8', errors='ignore') as f:
-                        log_content = f.read()
+                    if proc.stdout:
+                        raw_bytes = proc.stdout.read()  # 读取全部缓冲
+                        captured_output = raw_bytes.decode('utf-8', errors='replace') if raw_bytes else ""
+                except Exception as cap_e:
+                    logger.warning(f"读取子进程输出失败: {cap_e}")
 
-                    # 获取最后10行
-                    log_lines = log_content.strip().split('\n')
-                    last_lines = log_lines[-10:] if len(log_lines) > 10 else log_lines
-                    logger.info(f"🔍 设备 {device_serial} 日志文件最后10行:")
-                    for i, line in enumerate(last_lines, 1):
-                        logger.info(f"   [{i:2d}] {line}")
-                except Exception as log_e:
-                    logger.warning(f"读取日志文件失败: {log_e}")
+                # 处理日志行（内存）
+                log_lines = captured_output.strip().split('\n') if captured_output else []
+                last_lines = log_lines[-10:] if len(log_lines) > 10 else log_lines
+                logger.info(f"🔍 设备 {device_serial} 捕获输出最后10行:")
+                for i, line in enumerate(last_lines, 1):
+                    logger.info(f"   [{i:2d}] {line}")
 
                 # 检查是否有明显的错误信息
                 error_indicators = ['error', 'exception', 'traceback', 'failed', '错误', '异常', '失败']
                 for line in reversed(log_lines):
                     if any(indicator.lower() in line.lower() for indicator in error_indicators):
-                        logger.error(f"🚨 设备 {device_serial} 发现错误信息: {line}")
+                        logger.error(f"🚨 设备 {device_serial} 发现错误信息(内存输出): {line}")
                         break
 
             except subprocess.TimeoutExpired:
@@ -2653,13 +2722,14 @@ def run_single_replay(device_serial, script_args, log_dir, timeout=3600, max_ret
 
                     # 如果所有尝试都失败，检查日志文件获取更多信息
                     error_details = ""
-                    if os.path.exists(device_log_file):
+                    if log_lines:
+                        error_details = '\n'.join(log_lines[-5:])
+                    elif os.path.exists(device_log_file):  # 兜底尝试文件（如果脚本自行创建了）
                         try:
                             with open(device_log_file, 'r', encoding='utf-8', errors='replace') as f:
-                                log_content = f.read()
-                                # 提取最后几行作为错误详情
-                                log_lines = log_content.strip().split('\n')
-                                error_details = '\n'.join(log_lines[-5:]) if log_lines else "日志文件为空"
+                                fallback_content = f.read()
+                                fb_lines = fallback_content.strip().split('\n')
+                                error_details = '\n'.join(fb_lines[-5:]) if fb_lines else "日志文件为空"
                         except Exception as e:
                             error_details = f"无法读取日志文件: {e}"
 
@@ -2686,31 +2756,29 @@ def run_single_replay(device_serial, script_args, log_dir, timeout=3600, max_ret
                 error_details = ""
                 script_execution_status = ""
 
-                if os.path.exists(device_log_file):
+                if log_lines:
+                    # 查找关键信息（来自内存）
+                    key_lines = []
+                    for line in log_lines:
+                        if any(keyword in line.lower() for keyword in [
+                            'error', 'exception', 'traceback', 'failed', 'success',
+                            'script', 'device', 'exit', 'complete', '错误', '异常', '失败', '成功'
+                        ]):
+                            key_lines.append(line)
+                    if key_lines:
+                        script_execution_status = f"\n关键执行信息:\n" + '\n'.join(key_lines[-5:])
+                    error_details = '\n'.join(log_lines[-15:]) if log_lines else "日志为空"
+                elif os.path.exists(device_log_file):
+                    # 兜底读取文件（若脚本内部创建了）
                     try:
                         with open(device_log_file, 'r', encoding='utf-8', errors='replace') as f:
-                            log_content = f.read()
-                            log_lines = log_content.strip().split('\n')
-
-                            # 查找脚本执行相关的关键信息
-                            key_lines = []
-                            for line in log_lines:
-                                if any(keyword in line.lower() for keyword in [
-                                    'error', 'exception', 'traceback', 'failed', 'success',
-                                    'script', 'device', 'exit', 'complete', '错误', '异常', '失败', '成功'
-                                ]):
-                                    key_lines.append(line)
-
-                            if key_lines:
-                                script_execution_status = f"\n关键执行信息:\n" + '\n'.join(key_lines[-5:])
-
-                            # 提取最后几行作为错误详情
-                            error_details = '\n'.join(log_lines[-15:]) if log_lines else "日志文件为空"
-
+                            fallback_content = f.read()
+                            fb_lines = fallback_content.strip().split('\n')
+                            error_details = '\n'.join(fb_lines[-15:]) if fb_lines else "日志文件为空"
                     except Exception as e:
                         error_details = f"无法读取日志文件: {e}"
                 else:
-                    error_details = "日志文件不存在"
+                    error_details = "日志不可用"
 
                 full_error_msg = f"未找到结果文件，子进程退出码: {proc.returncode}。{script_execution_status}\n\n最后15行日志:\n{error_details}"
 

@@ -98,6 +98,13 @@ export const releaseDevice = (deviceKey: number | string) => {
   );
 };
 
+export const generateDeviceReport = (deviceKey: number | string) => {
+  return http.request<ApiResult>(
+    "get",
+    baseUrlApi(`/devices/devices/${deviceKey}/report/`)
+  );
+}
+
 // 查询日志
 export const getDeviceLogs = (params: any) => {
   return http.request<ApiResult>("get", baseUrlApi("/devices/logs/"), {
