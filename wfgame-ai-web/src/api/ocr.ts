@@ -76,6 +76,7 @@ export interface CreateGitTaskParams {
   repo_id: number;
   branch: string;
   languages: string[];
+  enable_cache: boolean;
 }
 
 // 创建上传 OCR任务参数

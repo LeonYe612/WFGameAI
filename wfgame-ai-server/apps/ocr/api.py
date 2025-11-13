@@ -19,7 +19,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django.db.models import Q
 from utils.orm_helper import DecimalEncoder
-from .models import OCRProject, OCRGitRepository, OCRTask, OCRResult
+from .models import OCRProject, OCRGitRepository, OCRTask, OCRResult, OCRCacheHit
 from .serializers import (
     OCRProjectSerializer,
     OCRGitRepositorySerializer,
@@ -337,7 +337,8 @@ class OCRTaskAPIView(APIView):
             result_type = request.data.get("result_type")
             try:
                 task = OCRTask.objects.get(id=task_id)
-                results = OCRResult.objects.filter(task=task)
+                results = task.related_results
+
                 if result_type:
                     results = results.filter(result_type=result_type)
 
@@ -702,6 +703,7 @@ class OCRProcessAPIView(APIView):
                 repo_id = serializer.validated_data.get("repo_id")
                 branch = serializer.validated_data.get("branch", "main")
                 languages = serializer.validated_data.get("languages", ["ch"])
+                enable_cache = serializer.validated_data.get("enable_cache", True)
 
                 try:
                     # 获取项目和仓库
@@ -722,8 +724,8 @@ class OCRProcessAPIView(APIView):
                             "target_path": GitLabService(
                                 GitLabConfig(repo_url=git_repo.url,
                                              access_token=git_repo.token,
-                                             )).get_repo_name(git_repo.url)
-
+                                             )).get_repo_name(git_repo.url),
+                            "enable_cache": enable_cache,
                         },
                     )
 
@@ -833,7 +835,7 @@ class OCRHistoryAPIView(APIView):
             task = OCRTask.objects.get(id=task_id)
 
             # 获取该任务的所有结果
-            results = OCRResult.objects.filter(task=task)
+            results = task.related_results
 
             # 直接导出 helper 风格的 xlsx（替换旧CSV导出逻辑）
             xbytes, fname = _export_helper_xlsx(request, results, str(task_id), task_name=(task.name or str(task.id)))
