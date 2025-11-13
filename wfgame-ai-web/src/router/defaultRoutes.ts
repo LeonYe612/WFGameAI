@@ -392,5 +392,49 @@ export default [
         }
       }
     ]
+  },
+  {
+    id: 92,
+    parent_id: 74,
+    genre: 1,
+    path: "/replay",
+    name: "AI-REPLAY",
+    queue: 9998,
+    meta: {
+      title: "回放",
+      icon: "videoPlay",
+      showLink: false,
+      showParent: true,
+      keepAlive: true,
+      frameLoading: false,
+      hiddenTag: false,
+      transition: {
+        enterTransition: "animate__fadeIn animate__faster",
+        leaveTransition: "animate__fadeOut animate__faster"
+      }
+    },
+    children: [
+      {
+        id: 93,
+        parent_id: 92,
+        genre: 1,
+        path: "/replay/index",
+        component: "/replay/index",
+        name: "AI-REPLAY-ROOM",
+        queue: 0,
+        meta: {
+          title: "回放房间",
+          showLink: false,
+          showParent: false,
+          keepAlive: false,
+          frameLoading: false,
+          hiddenTag: false,
+          transition: {
+            enterTransition: "animate__fadeIn animate__faster",
+            leaveTransition: "animate__fadeOut animate__faster"
+          }
+        }
+      }
+    ]
   }
 ];

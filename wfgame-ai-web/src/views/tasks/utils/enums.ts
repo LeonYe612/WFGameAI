@@ -10,6 +10,8 @@ export enum TaskStatus {
     PENDING = "pending",
     /** 运行中 */
     RUNNING = "running",
+    /** 已关闭 */
+    CANCELLED = "cancelled",
     /** 已完成 */
     COMPLETED = "completed",
     /** 失败 */

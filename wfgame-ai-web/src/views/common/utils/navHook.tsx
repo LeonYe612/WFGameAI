@@ -219,6 +219,73 @@ export function useNavigate() {
     });
   }
 
+  /**
+   * ----- Replay room navigation helpers -----
+   * Centralizes building and opening the replay room URL with resilience to route-name differences.
+   */
+  const normalizeList = (val?: Array<string | number>) => {
+    if (!Array.isArray(val)) return [] as string[];
+    return val
+      .map(v => (v == null ? "" : String(v)))
+      .map(s => s.trim())
+      .filter(Boolean);
+  };
+
+  const pickReplayRoute = () => {
+    const candidates = ["AI-REPLAY-ROOM", "ReplayRoom"] as const;
+    for (const name of candidates) {
+      try {
+        if ((router as any).hasRoute && (router as any).hasRoute(name as any)) {
+          return { name } as const;
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+    // fallback to a stable path
+    return { path: "/replay/index" } as const;
+  };
+
+  function buildReplayUrl({
+    taskId,
+    deviceIds,
+    scriptIds,
+    celeryId
+  }: {
+    taskId: string | number;
+    deviceIds?: Array<string | number>;
+    scriptIds?: Array<string | number>;
+    celeryId?: string;
+  }) {
+    const nameOrPath = pickReplayRoute();
+    const query: Record<string, string> = {
+      task_id: String(taskId)
+    };
+    const d = normalizeList(deviceIds);
+    const s = normalizeList(scriptIds);
+    if (d.length) query.device_ids = d.join(",");
+    if (s.length) query.script_ids = s.join(",");
+    if (celeryId) query.celery_id = String(celeryId);
+
+    const { href } = router.resolve({ ...(nameOrPath as any), query });
+    return href;
+  }
+
+  function openReplayRoom(params: {
+    taskId: string | number;
+    deviceIds?: Array<string | number>;
+    scriptIds?: Array<string | number>;
+    celeryId?: string;
+    newTab?: boolean; // default true
+  }) {
+    const href = buildReplayUrl(params);
+    if (params.newTab === false) {
+      window.location.href = href;
+    } else {
+      window.open(href, "_blank");
+    }
+  }
+
   function toDetail(
     parameter: LocationQueryRaw | RouteParamsRaw,
     model: "query" | "params"
@@ -284,6 +351,9 @@ export function useNavigate() {
     navigateToDebugReportList,
     navigateToPlanReportList,
     navigateToExecutorDownload,
+    // replay
+    buildReplayUrl,
+    openReplayRoom,
     navigateToTasksPage,
     toDetail,
     initToDetail,

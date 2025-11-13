@@ -6,6 +6,10 @@ Action处理器模块
 
 # 🔧 新增：禁用第三方库DEBUG日志
 import logging
+
+from utils.socketio_helper import SocketIOHttpApiClient
+from utils.socketIo_room_names import device_room
+
 logging.getLogger('airtest').setLevel(logging.WARNING)
 logging.getLogger('airtest.core.android.adb').setLevel(logging.WARNING)
 import os
@@ -16,6 +20,8 @@ import tempfile
 import traceback
 import cv2
 import numpy as np
+import base64
+import io
 from collections import namedtuple
 
 # 尝试导入相关模块，如果失败则使用占位符
@@ -72,12 +78,46 @@ def get_device_screenshot(device):
     Returns:
         PIL.Image 对象或 None
     """
-
+    # 统一设备房间命名：device_<pk> / device_<serial>
+    try:
+        room_id = device_room(getattr(device, 'primary_key_id', None))
+    except Exception:
+        # 回退：保持旧逻辑（裸ID），但建议尽快迁移
+        room_id = f"device_{getattr(device, 'primary_key_id', 'unknown')}"
     try:
         # 首先检查设备是否有直接的screenshot方法（Mock设备或其他设备类型）
         if hasattr(device, 'screenshot') and callable(device.screenshot):
             screenshot = device.screenshot()
             if screenshot is not None:
+                # 统一转换为 base64 字符串
+                pic_b64 = None
+                try:
+                    # PIL.Image
+                    from PIL import Image
+                    if isinstance(screenshot, Image.Image):
+                        buf = io.BytesIO()
+                        screenshot.save(buf, format='PNG')
+                        pic_b64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+                    # bytes/bytearray
+                    elif isinstance(screenshot, (bytes, bytearray)):
+                        pic_b64 = base64.b64encode(bytes(screenshot)).decode('utf-8')
+                    # numpy array (OpenCV)
+                    elif isinstance(screenshot, np.ndarray):
+                        ok, enc = cv2.imencode('.png', screenshot)
+                        if ok:
+                            pic_b64 = base64.b64encode(enc.tobytes()).decode('utf-8')
+                    # data URL string or raw b64 string
+                    elif isinstance(screenshot, str):
+                        # 去掉 data:image/*;base64, 前缀（如有）
+                        if screenshot.startswith('data:image') and ','.find(screenshot) >= 0:
+                            pic_b64 = screenshot.split(',', 1)[1]
+                        else:
+                            pic_b64 = screenshot
+                except Exception as _:
+                    pic_b64 = None
+
+                if pic_b64:
+                    SocketIOHttpApiClient().push_replay(room_id, pic_data=pic_b64)
                 return screenshot
 
         # 如果设备没有serial属性，说明可能是Mock设备，已经在上面处理了
@@ -86,7 +126,6 @@ def get_device_screenshot(device):
             return None
 
         # 使用subprocess直接获取字节数据，避免字符编码问题
-        import subprocess
         result = subprocess.run(
             f"adb -s {device.serial} exec-out screencap -p",
             shell=True,
@@ -96,8 +135,9 @@ def get_device_screenshot(device):
 
         if result.returncode == 0 and result.stdout:
             from PIL import Image
-            import io
-            # result.stdout 已经是字节数据，直接使用
+            # result.stdout 已经是字节数据，统一转成 base64 字符串
+            pic_b64 = base64.b64encode(result.stdout).decode('utf-8')
+            SocketIOHttpApiClient().push_replay(room_id, pic_data=pic_b64)
             return Image.open(io.BytesIO(result.stdout))
         else:
             print("⚠️ 警告：screencap命令返回空数据或失败")
@@ -113,7 +153,17 @@ def get_device_screenshot(device):
             from airtest.core.api import connect_device
             print("尝试使用airtest设备进行截图...")
             airtest_device = connect_device(f"Android:///{device.serial}")
-            return airtest_device.snapshot()
+            img = airtest_device.snapshot()
+            # 将 PIL.Image 转为 base64
+            pic_b64 = None
+            from PIL import Image as _PILImage
+            if isinstance(img, _PILImage.Image):
+                buf = io.BytesIO()
+                img.save(buf, format='PNG')
+                pic_b64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+            if pic_b64:
+                SocketIOHttpApiClient().push_replay(room_id, pic_data=pic_b64)
+            return img
         except Exception as e2:
             print(f"❌ Airtest截图也失败: {e2}")
             return None
@@ -236,6 +286,8 @@ class ActionProcessor:
         self.log_txt_path = log_txt_path
         self.detect_buttons = detect_buttons_func
         self.device_account = None
+        # 记录最近一次截图的绝对路径，供步骤结果回填
+        self._last_screenshot_path = None
 
     def set_device_account(self, device_account):
         """设置设备账号信息"""
@@ -321,6 +373,11 @@ class ActionProcessor:
 
     def _process_action(self, step, step_idx, log_dir):
         """处理action步骤"""
+        # 确保每个步骤开始时清空上一次的截图记录，避免把上一步的截图误填到当前步骤
+        try:
+            self._last_screenshot_path = None
+        except Exception:
+            pass
         step_action = step.get("action", "click")
         step_yolo_class = step.get("yolo_class")  # 修复: 确保step_yolo_class已定义
         print(f"[DEBUG] _process_action called: step_action={step_action}, step_yolo_class={step_yolo_class}, step_idx={step_idx}, log_dir={log_dir}")
@@ -418,19 +475,17 @@ class ActionProcessor:
                         details={"operation": step_action, "step_yolo_class": step_yolo_class}
                     )
 
-        # 添加 executed 字段到日志条目
-        if isinstance(result, ActionResult):
-            executed = getattr(result, 'executed', None)
-        elif isinstance(result, tuple) and len(result) > 1:
-            executed = result[1]
-        else:
-            executed = None
+        # 统一返回 ActionResult，便于上层获取 screenshot_path
+        if isinstance(result, tuple):
+            result = ActionResult.from_tuple(result)
+        elif not isinstance(result, ActionResult):
+            result = ActionResult(success=False, message=str(result))
 
-        # 转换ActionResult对象为元组（向后兼容）
-        if isinstance(result, ActionResult):
-            return result.to_tuple()
-        else:
-            return result
+        # 如果没有显式截图路径但最近一次截图存在，补全
+        if not getattr(result, 'screenshot_path', None) and getattr(self, '_last_screenshot_path', None):
+            result.screenshot_path = self._last_screenshot_path
+
+        return result
 
     def _handle_delay(self, step, step_idx, log_dir=None):
         """处理延时步骤"""
@@ -1856,12 +1911,25 @@ class ActionProcessor:
                     screenshot_success = True
 
                     print(f"✅ 截图保存成功: {screenshot_path}")
+                    # 记录路径供后续步骤结果使用
+                    try:
+                        self._last_screenshot_path = screenshot_path
+                    except Exception:
+                        pass
 
                 else:
                     print("⚠️ 截图获取失败，使用默认screen对象")
+                    try:
+                        self._last_screenshot_path = None
+                    except Exception:
+                        pass
 
             except Exception as e:
                 print(f"⚠️ 截图处理失败: {e}")
+                try:
+                    self._last_screenshot_path = None
+                except Exception:
+                    pass
 
             # 🔧 修复: 即使截图失败也创建screen对象，直接使用文件名
             screen_object = {
@@ -3374,7 +3442,8 @@ class ActionProcessor:
             )
 
             timestamp = time.time()
-            swipe_entry = {
+            swipe_entry = {"oss_pic_pth": "",
+
                 "tag": "function",
                 "depth": 1,
                 "time": timestamp,

@@ -62,8 +62,8 @@ function getEnvInt(key: string, def: number): number {
   return def;
 }
 
-const DEFAULT_CHUNK_KB = getEnvInt("ZSTD_CHUNK_KB", 1024); // 1MB
-const DEFAULT_THRESHOLD_KB = getEnvInt("ZSTD_THRESHOLD_KB", 10240); // 10MB
+const DEFAULT_CHUNK_KB = getEnvInt("VITE_ZSTD_CHUNK_KB", 1024); // 1MB
+const DEFAULT_THRESHOLD_KB = getEnvInt("VITE_ZSTD_THRESHOLD_KB", 10240); // 10MB
 
 function toU8(buf: Uint8Array | ArrayBuffer): Uint8Array {
   return buf instanceof Uint8Array ? buf : new Uint8Array(buf);

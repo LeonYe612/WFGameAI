@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue";
-import { useRoute } from "vue-router";
-import { connectSocket } from "../utils/socket";
+import { onMounted, onUnmounted, ref } from "vue";
+// import { useRoute } from "vue-router";
 import { listDevices } from "@/api/devices";
+import { connectSocket } from "../utils/socket";
 
 import { defineProps } from "vue";
+import ReplayDeviceBlock from "./ReplayDeviceBlock.vue";
 const props = defineProps<{ taskId: string; deviceIds: string[] }>();
 const taskId = props.taskId;
-import ReplayDeviceBlock from "./ReplayDeviceBlock.vue";
 
 const devices = ref<any[]>(
   props.deviceIds?.map(id => ({ device_id: id })) || []
@@ -20,13 +20,13 @@ const deviceStates = ref<Record<string, any>>({});
 onMounted(async () => {
   // 1. 建立主通道（room为taskId字符串），传递 options，便于区分主通道业务
   taskSocketIO.value = connectSocket(
-    { room: String(taskId) },
+    { room: `replay_task_${String(taskId)}` },
     {
       onConnect: () => {
         console.log("[主通道] 已连接");
       },
       onDisconnect: () => {
-        console.log("[主通道] 已断开");
+        console.error("[主通道] 已断开");
       },
       onError: err => {
         console.warn("[主通道] 异常", err);
@@ -82,7 +82,7 @@ onMounted(async () => {
       recordText: ""
     };
     const devSocket = connectSocket(
-      { room: device.device_id },
+      { room: `device_${device.device_id}` },
       {
         onConnect: () => {
           Object.assign(deviceStates.value[device.device_id], {
@@ -141,9 +141,14 @@ onUnmounted(() => {
   <div class="replay-main">
     <h2>云真机设备信息</h2>
     <div class="device-list">
-      <ReplayDeviceBlock v-for="device in devices" :key="device.device_id" :deviceId="device.device_id"
-                         :imgBase64="deviceStates[device.device_id]?.imgBase64"
-                         :disconnected="!deviceStates[device.device_id]?.connected" :errorMsg="deviceStates[device.device_id]?.errorMsg">
+      <ReplayDeviceBlock
+        v-for="device in devices"
+        :key="device.device_id"
+        :deviceId="device.device_id"
+        :imgBase64="deviceStates[device.device_id]?.imgBase64"
+        :disconnected="!deviceStates[device.device_id]?.connected"
+        :errorMsg="deviceStates[device.device_id]?.errorMsg"
+      >
         <template #default>
           <template v-if="deviceStates[device.device_id]?.recordText">
             <div class="device-record-text">
@@ -158,7 +163,13 @@ onUnmounted(() => {
 
 <style scoped>
 .replay-main {
-  padding: 24px;
+  padding: 12px 24px 24px 24px; /* 顶部更靠上 */
+}
+
+.replay-main h2 {
+  font-size: 16px; /* 字体更小一些 */
+  margin: 0 0 10px 0; /* 往上贴一点并与下方保持适度间距 */
+  color: #334155;
 }
 
 .device-list {
