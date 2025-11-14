@@ -114,6 +114,16 @@
           </el-checkbox-group>
         </div>
       </el-form-item>
+      <el-form-item label="启用缓存" prop="enable_cache">
+        <el-switch
+          title="启用后，系统会查询缓存跳过有历史识别记录的图片，加快处理速度"
+          v-model="form.enable_cache"
+          active-text="启用"
+          inactive-text="禁用"
+          inline-prompt
+          class="scale-[1.2] ml-1"
+        />
+      </el-form-item>
     </el-form>
     <template #footer>
       <div class="dialog-footer">
@@ -177,7 +187,7 @@ import { superRequest } from "@/utils/request";
 import { ocrLanguageEnum, ocrSourceTypeEnum, sortedEnum } from "@/utils/enums";
 import { message } from "@/utils/message";
 import { Tools } from "@element-plus/icons-vue";
-import { useTeamGlobalState } from "@/views/team/hooks/teamStoreStateHook";
+// import { useTeamGlobalState } from "@/views/team/hooks/teamStoreStateHook";
 
 interface Props {
   modelValue: boolean;
@@ -207,7 +217,8 @@ const initialForm = {
   repo_id: "",
   branch: "",
   files: [] as File[],
-  languages: [] as string[]
+  languages: [] as string[],
+  enable_cache: true
 };
 
 const form = ref({ ...initialForm });
@@ -276,23 +287,6 @@ const resetForm = () => {
   formRef.value?.resetFields();
 };
 
-watch(
-  () => props.task,
-  newTask => {
-    if (newTask) {
-      form.value = {
-        ...initialForm,
-        source_type: newTask.source_type,
-        repo_id: newTask.git_repository?.toString() || "",
-        branch: newTask.git_branch || "master"
-      };
-    } else {
-      resetForm();
-    }
-  },
-  { immediate: true }
-);
-
 const fetchRepositories = async () => {
   try {
     const res = await superRequest({
@@ -328,6 +322,15 @@ const fetchBranches = async () => {
   }
 };
 
+const setFormDefaults = async () => {
+  await fetchRepositories();
+  if (repositories.value.length > 0 && !isEditMode.value) {
+    form.value.repo_id = repositories.value[0].id;
+    fetchBranches();
+  }
+  form.value.languages = [ocrLanguageEnum.CH.value];
+};
+
 const handleFileChange = (file: any, fileList: any[]) => {
   form.value.files = fileList.map(f => f.raw);
 };
@@ -336,6 +339,15 @@ const handleClose = () => {
   dialogVisible.value = false;
   resetForm();
 };
+
+watch(
+  () => props.modelValue,
+  val => {
+    if (val) {
+      setFormDefaults();
+    }
+  }
+);
 
 const submitForm = async () => {
   if (!formRef.value) return;
@@ -355,7 +367,8 @@ const submitForm = async () => {
         project_id: 1, // 后续通过 team_id 控制，暂时不需要传
         repo_id: Number(form.value.repo_id),
         branch: form.value.branch,
-        languages: form.value.languages
+        languages: form.value.languages,
+        enable_cache: form.value.enable_cache
       };
       postData = gitData;
       apiFunc = ocrTaskApi.createGitTask;
@@ -396,8 +409,8 @@ const submitForm = async () => {
 };
 
 // 监听团队切换
-const { initWatchTeamId } = useTeamGlobalState();
-initWatchTeamId(fetchRepositories, true);
+// const { initWatchTeamId } = useTeamGlobalState();
+// initWatchTeamId(fetchRepositories, true);
 
 defineExpose({
   fetchRepositories

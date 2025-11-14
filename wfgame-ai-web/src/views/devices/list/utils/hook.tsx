@@ -142,19 +142,25 @@ export function useDevicesManagement() {
       succeedMsgContent: "设备占用成功！"
     });
 
-    // ✅ 已通过并发测试
+    // ✅ 并发测试
     // Promise.all([
     //   superRequest({
     //     apiFunc: reserveDeviceApi,
     //     apiParams: key,
-    //     enableSucceedMsg: false,
-    //     succeedMsgContent: "1-设备占用成功！"
+    //     enableSucceedMsg: true,
+    //     succeedMsgContent: "竞争者1！"
     //   }),
     //   superRequest({
     //     apiFunc: reserveDeviceApi,
     //     apiParams: key,
-    //     enableSucceedMsg: false,
-    //     succeedMsgContent: "2-设备占用成功！"
+    //     enableSucceedMsg: true,
+    //     succeedMsgContent: "竞争者2！"
+    //   }),
+    //   superRequest({
+    //     apiFunc: reserveDeviceApi,
+    //     apiParams: key,
+    //     enableSucceedMsg: true,
+    //     succeedMsgContent: "竞争者3！"
     //   })
     // ]);
   };
