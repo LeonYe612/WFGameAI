@@ -6,6 +6,8 @@ from __future__ import absolute_import, unicode_literals
 import os
 from celery import Celery, Task
 from django.conf import settings
+import uuid
+import threading
 
 # 设置默认Django配置模块
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'wfgame_ai_server_main.settings')
@@ -62,8 +64,46 @@ class GuardTask(Task):
         except Exception:
             eager, timeout = False, 2.0
 
+        # 统一确保 task_id 存在，便于视图层稳定通过 async_res.id 获取
+        if not options.get('task_id'):
+            prefix = ''
+            try:
+                if args and len(args) > 0:
+                    a0 = args[0]
+                    if isinstance(a0, (int, str)) and str(a0).strip():
+                        prefix = f"task-{str(a0).strip()}-"
+            except Exception:
+                pass
+            options['task_id'] = f"{prefix}{uuid.uuid4().hex}"
+
         skip = bool(options.pop('skip_worker_check', False))
-        if eager or skip:
+        if eager:
+            # 在 eager 模式下，默认采用后台线程执行，避免阻塞请求返回
+            eager_async = True
+            try:
+                eager_async = bool(getattr(settings, 'CELERY_EAGER_ASYNC', True))
+            except Exception:
+                eager_async = True
+            if eager_async:
+                task_id = options.get('task_id')
+                def _bg_run():
+                    try:
+                        return self.run(*(args or ()), **(kwargs or {}))
+                    except Exception:
+                        import traceback as _tb
+                        print('[Celery][EagerAsync] 任务执行异常:', _tb.format_exc())
+                        return None
+                th = threading.Thread(target=_bg_run, name=f"celery-eager-{task_id}", daemon=True)
+                th.start()
+                class _LightAsyncResult:
+                    def __init__(self, tid):
+                        self.id = tid
+                        self.task_id = tid
+                return _LightAsyncResult(task_id)
+            # 若显式关闭 CELERY_EAGER_ASYNC，则退回 Celery 的同步执行（将阻塞至任务结束）
+            return super().apply_async(args=args, kwargs=kwargs, **options)
+
+        if skip:
             return super().apply_async(args=args, kwargs=kwargs, **options)
 
         if not _has_alive_worker(self._get_app(), timeout=timeout):
