@@ -316,18 +316,26 @@ CELERY_TASK_DEFAULT_QUEUE = f"ai_queue_{ENV_NAME}"
 _celery_section = f"celery_{ENV_NAME}" if ENV_NAME != 'prod' else 'celery_prod'
 try:
     # 注意：开发配置文件键名为 task_eager_propogates（原拼写），保持兼容读取
-    CELERY_TASK_ALWAYS_EAGER = str(CFG.get(_celery_section, 'task_always_eager', fallback='False')).strip() == 'true'
-    CELERY_TASK_EAGER_PROPAGATES = str(CFG.get(_celery_section, 'task_eager_propogates', fallback='True')).strip() == 'true'
+    CELERY_TASK_ALWAYS_EAGER = CFG.getboolean(_celery_section, 'task_always_eager', fallback=False)
+    CELERY_TASK_EAGER_PROPAGATES = CFG.getboolean(_celery_section, 'task_eager_propogates', fallback=True)
     # 工作者健康检查超时时间（秒）
     try:
         CELERY_WORKER_HEALTHCHECK_TIMEOUT = float(str(CFG.get(_celery_section, 'worker_health_check_timeout', fallback='2')).strip())
     except Exception:
         CELERY_WORKER_HEALTHCHECK_TIMEOUT = 2.0
+    # Eager 模式是否使用非阻塞后台线程（默认 True）
+    # 仅使用新键 eager_mode_async
+    try:
+        CELERY_EAGER_ASYNC = CFG.getboolean(_celery_section, 'eager_mode_async', fallback=True)
+    except Exception:
+        CELERY_EAGER_ASYNC = True
+    # 便于阅读的别名（相同值）
+    CELERY_EAGER_MODE_ASYNC = CELERY_EAGER_ASYNC
 except Exception:
     CELERY_TASK_ALWAYS_EAGER = False
     CELERY_TASK_EAGER_PROPAGATES = True
     CELERY_WORKER_HEALTHCHECK_TIMEOUT = 2.0
-
+    CELERY_EAGER_ASYNC = True
 
 # MinIO 全局服务实例（在应用启动时即加载，可直接 from django.conf import settings 后使用 settings.MINIO ）
 try:

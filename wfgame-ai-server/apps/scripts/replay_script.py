@@ -759,8 +759,12 @@ class StepTracker:
                             step['result'] = res
                         except Exception as _mx:
                             track_error(f"⚠️ 远程路径填充失败: {_mx}")
-            # 刷新一次 Redis 快照
+            # 刷新一次 Redis 快照，并将最新结果写回数据库（便于前端刷新后看到完整远端URL）
             self._flush_to_redis()
+            try:
+                self.flush_to_db()
+            except Exception as _db_e:
+                track_error(f"⚠️ 批量上传后写入数据库失败: {_db_e}")
         except Exception as e:
             track_error(f"⚠️ 批量上传截图失败: {e}")
             track_error(f"⚠️ 批量上传截图失败: {e}")
@@ -2227,6 +2231,13 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
     # 报告生成状态记录在日志中，不影响脚本执行的成功状态
     if not report_generation_success:
         print_realtime(f"ℹ️ 设备 {device_name} 报告生成失败，建议检查报告管理器配置")# 释放账号
+    # 在设备执行的最后阶段，批量将本次运行目录下的图片/报告同步到远端对象存储
+    try:
+        if tracker:
+            tracker._batch_upload_and_fill()
+            print_realtime("📤 已批量上传当前设备报告目录到远端，并填充步骤中的 oss_pic_pth")
+    except Exception as _up_e:
+        track_error(f"⚠️ 批量上传设备报告目录失败: {_up_e}")
     if device_account:
         try:
             account_manager = get_account_manager()
@@ -2762,6 +2773,25 @@ def main():
                         # 收集设备报告目录用于汇总报告
                         current_execution_device_dirs = [str(path) for path in device_report_dirs if path]
                         processed_device_names = list(results.keys())
+
+                        # 多设备场景：在所有设备执行结束后，批量上传各自的报告目录到远端对象存储
+                        try:
+                            if device_report_dirs and getattr(settings, 'MINIO', None):
+                                _minio = settings.MINIO
+                                conf = getattr(_minio, '_conf', {}) if _minio else {}
+                                _bucket = conf.get('default_bucket') or 'wfgame-ai'
+                                for _dir in device_report_dirs:
+                                    try:
+                                        if not _dir:
+                                            continue
+                                        run_dir_name = os.path.basename(str(_dir).rstrip('/'))
+                                        object_root = f"replay_tasks/task_{task_id}/{run_dir_name}".replace('//','/')
+                                        _ = _minio.upload_folder(_bucket, str(_dir), object_root)
+                                        print_realtime(f"📤 多设备上传完成: {_dir} -> {_bucket}/{object_root}")
+                                    except Exception as _e_up:
+                                        track_error(f"⚠️ 多设备目录上传失败: {_e_up}")
+                        except Exception as _e_wrap:
+                            track_error(f"⚠️ 多设备目录批量上传过程中出现异常: {_e_wrap}")
 
                         if failed_devices:
                             print_realtime(f"⚠️ 失败设备: {failed_devices}")
