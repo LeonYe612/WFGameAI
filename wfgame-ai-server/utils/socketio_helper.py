@@ -30,9 +30,11 @@ except Exception as e:
 import socket
 import asyncio
 import socketio
+import requests
 import redis.asyncio as aioredis
 from aiohttp import web
 from django.conf import settings
+
 
 @dataclass
 class SocketResponse:
@@ -46,6 +48,7 @@ class SocketResponse:
 
     def to_dict(self):
         return asdict(self)
+
 
 class SocketIOHelper:
     def __init__(self):
@@ -64,7 +67,7 @@ class SocketIOHelper:
             cors_allowed_origins='*',
             client_manager=redis_manager
         )
-        self.app = web.Application(client_max_size=10*1024*1024)
+        self.app = web.Application(client_max_size=10 * 1024 * 1024) # 默认10MB，否则可能导致阻塞，图片基本上 2-3MB
         self.sio.attach(self.app)
         # todo 注册 event 事件
         self.sio.on('connect', self.handle_connect)
@@ -74,8 +77,9 @@ class SocketIOHelper:
         self.sio.on('sysMsg', self.handle_system_message)
         self.sio.on('is_connected', self.handle_is_connected)
         self.sio.on('replay', self.replay)
-        # todo 注册 HTTP 推送接口
+        # 注册 HTTP 推送接口
         self.app.router.add_post("/api/socketio/push_replay", self.http_push_replay)
+        self.app.router.add_post("/api/socketio/push_step", self.http_push_step)
         self.app["SocketIO"] = self
 
     def _get_server_info(self):
@@ -106,7 +110,6 @@ class SocketIOHelper:
             data=data
         )
         payload = resp.to_dict()
-        print("send ", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         if sids:
             for sid in sids:
                 print(f"➡️ [emit:{event}] - 指定发送给用户 {sid}:")
@@ -143,7 +146,6 @@ class SocketIOHelper:
                 await self.redis.srem(key, member)
         except Exception as e:
             print(f"❗ redis.srem 异常: key={key}, member={member}, err={e}")
-
 
     async def handle_disconnect(self, sid_or_ns, maybe_sid=None):
         """
@@ -288,7 +290,7 @@ class SocketIOHelper:
         """
         推送图片时间问题
             ● 调用截图方法的同时，推送数据 (如果步骤不涉及截图，那可能会很久没有屏幕信息)
-                参考wetest: 
+                参考wetest:
                 1. 每隔5s截图
                 2. 屏幕有变化截图
         """
@@ -301,7 +303,6 @@ class SocketIOHelper:
             with open(pic_path, 'rb') as f:
                 pic_bytes = f.read()
             pic_b64 = base64.b64encode(pic_bytes).decode("utf-8")
-        print("base64", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         await self.emit_event(
             room=room,
             sids=None,
@@ -327,11 +328,41 @@ class SocketIOHelper:
 
     # ========== 外部可调用 http 接口 ==========
     async def http_push_replay(self, request):
-        print("get http ", datetime.now().strftime("%H:%M:%S.%f")[:-3])
         data = await request.json()
         # todo 手动指定 sid，如果sid = ""，则表示通过 http_api 触发
         await self.replay("", data)
         return web.json_response({"code": 0, "msg": "ok", "data": "回放图片推送成功"})
+
+    async def http_push_step(self, request):
+            """推送步骤进度事件到指定房间
+            请求JSON结构：
+            {
+                "room": "task:123",
+                "event": "replay_step",  # 可选，默认 replay_step
+                "data": {
+                    "task_id": 123,
+                    "device": "emulator-5554",
+                    "is_master": true,
+                    "script": {"id": 200, "name": "Test"},
+                    "step_index": 1,
+                    "total_steps": 20,
+                    "status": "running",  # running|success|failed|skipped
+                    "message": "开始执行",
+                    "started_at": 1730892345123,
+                    "ended_at": null,
+                    "duration_ms": null
+                }
+            }
+            """
+            try:
+                    payload = await request.json()
+                    room = str(payload.get("room")) if payload.get("room") is not None else None
+                    event = payload.get("event") or "replay_step"
+                    data = payload.get("data") or {}
+                    await self.emit_event(room=room, event=event, data=data)
+                    return web.json_response({"code": 0, "msg": "ok", "data": "步骤事件推送成功"})
+            except Exception as e:
+                    return web.json_response({"code": -1, "msg": f"推送失败: {e}"})
 
     # ========== 主函数 ==========
     async def main(self, host='0.0.0.0', port=13838):
@@ -344,7 +375,6 @@ class SocketIOHelper:
         print(f"======== Running on http://{host}:{port} ========")
         await asyncio.Event().wait()
 
-import requests
 
 class SocketIOHttpApiClient:
     """
@@ -354,7 +384,7 @@ class SocketIOHttpApiClient:
     def __init__(self):
         self.api_base_url = settings.CFG.get("socketio", "api_base_url").rstrip("/")
 
-    def push_replay(self, room: str, pic_path: str, msg: str = "回放图片"):
+    def push_replay(self, room: str, msg: str = "回放图片", pic_data=None, pic_path=None) -> dict:
         """
         推送图片到指定房间
         :param room: 房间号
@@ -365,11 +395,37 @@ class SocketIOHttpApiClient:
         url = f"{self.api_base_url}/push_replay"
         data = {
             "room": str(room),
+            "pic_data": pic_data,
             "pic_path": pic_path,
             "msg": msg
         }
         try:
             resp = requests.post(url, json=data, timeout=10)
+            resp.raise_for_status()
+            return resp.json()
+        except Exception as e:
+            return {"code": -1, "msg": f"HTTP请求失败: {e}"}
+
+    def push_step(self, room: str, data: dict, event: str = "replay_step") -> dict:
+        """
+        推送步骤进度事件
+        :param room: 房间号，如 task:123
+        :param data: 事件数据（建议使用统一结构）
+        :param event: 事件名，默认 replay_step
+        """
+        url = f"{self.api_base_url}/push_step"
+        payload = {
+            "room": str(room),
+            "event": event,
+            "data": data,
+        }
+        try:
+            # 调试：打印即将推送的 http payload，便于核对字段是否齐全
+            try:
+                print("[DEBUG] http_push_step payload:", payload)
+            except Exception:
+                pass
+            resp = requests.post(url, json=payload, timeout=10)
             resp.raise_for_status()
             return resp.json()
         except Exception as e:

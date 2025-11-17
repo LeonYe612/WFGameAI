@@ -62,6 +62,7 @@ class Device(models.Model):
                                     on_delete=models.SET_NULL,
                                     null=True, blank=True,
                                     related_name='using_devices')
+    is_idle = models.BooleanField(_('是否空闲'), default=True)
     created_at = models.DateTimeField(_('创建时间'), auto_now_add=True)
     updated_at = models.DateTimeField(_('更新时间'), auto_now=True)
 

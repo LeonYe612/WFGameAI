@@ -15,6 +15,7 @@ import sys
 from pathlib import Path
 from utils.config_helper import *
 from utils.redis_helper import RedisHelper
+from utils.minio_helper import MinioService
 
 # 添加项目根路径至 sys.path
 sys.path.insert(0, get_project_root())
@@ -308,3 +309,38 @@ except Exception as e:
 
 # 任务默认队列名带环境后缀，确保与 worker -Q 一致
 CELERY_TASK_DEFAULT_QUEUE = f"ai_queue_{ENV_NAME}"
+
+ # === Celery 同步执行模式（Eager）按配置文件启用 ===
+ # 按环境读取 [celery_dev] 或 [celery_prod] 中的 task_always_eager / task_eager_propogates
+ # 仅支持 True / False，其他值视为 False
+_celery_section = f"celery_{ENV_NAME}" if ENV_NAME != 'prod' else 'celery_prod'
+try:
+    # 注意：开发配置文件键名为 task_eager_propogates（原拼写），保持兼容读取
+    CELERY_TASK_ALWAYS_EAGER = CFG.getboolean(_celery_section, 'task_always_eager', fallback=False)
+    CELERY_TASK_EAGER_PROPAGATES = CFG.getboolean(_celery_section, 'task_eager_propogates', fallback=True)
+    # 工作者健康检查超时时间（秒）
+    try:
+        CELERY_WORKER_HEALTHCHECK_TIMEOUT = float(str(CFG.get(_celery_section, 'worker_health_check_timeout', fallback='2')).strip())
+    except Exception:
+        CELERY_WORKER_HEALTHCHECK_TIMEOUT = 2.0
+    # Eager 模式是否使用非阻塞后台线程（默认 True）
+    # 仅使用新键 eager_mode_async
+    try:
+        CELERY_EAGER_ASYNC = CFG.getboolean(_celery_section, 'eager_mode_async', fallback=True)
+    except Exception:
+        CELERY_EAGER_ASYNC = True
+    # 便于阅读的别名（相同值）
+    CELERY_EAGER_MODE_ASYNC = CELERY_EAGER_ASYNC
+except Exception:
+    CELERY_TASK_ALWAYS_EAGER = False
+    CELERY_TASK_EAGER_PROPAGATES = True
+    CELERY_WORKER_HEALTHCHECK_TIMEOUT = 2.0
+    CELERY_EAGER_ASYNC = True
+
+# MinIO 全局服务实例（在应用启动时即加载，可直接 from django.conf import settings 后使用 settings.MINIO ）
+try:
+    MINIO: MinioService = MinioService()
+except Exception as _e:
+    # 避免启动中断，保留占位；后续使用前可检测是否有 client
+    print(f"[WARN] MinIOService 初始化失败: {_e}")
+    MINIO = None

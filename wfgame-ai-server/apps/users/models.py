@@ -37,7 +37,7 @@ class AuthUser(AbstractUser):
             self, 
             perm_code: str, 
             scope: Literal["all", "menu", "api", "action", "link"] = "all"
-        ) -> bool:
+    ) -> bool:
         """
         检查用户是否具有指定的SSO权限
         :param perm_code: 权限代码

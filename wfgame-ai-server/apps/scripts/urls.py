@@ -33,7 +33,8 @@ from .views import (
     storage_status,
     storage_cleanup,
     edit_script,  # 添加编辑脚本视图函数
-    delete_script  # 添加删除脚本视图函数
+    delete_script,  # 添加删除脚本视图函数
+    get_replay_snapshot,  # 新增回放历史快照接口
 )
 
 from .apis.category import CategoryListView, CategoryDetailView, CategoryTreeView
@@ -109,6 +110,7 @@ urlpatterns = [
     path('replay/', replay_script, name='replay-script'),  # 新增API端点
     path('replay/status/', replay_status, name='replay-status'),
     path('replay/cancel/', replay_cancel, name='replay-cancel'),
+    path('replay/snapshot/', get_replay_snapshot, name='replay-snapshot'),
     path('storage/status/', storage_status, name='storage-status'),
     path('storage/cleanup/', storage_cleanup, name='storage-cleanup'),
     path('debug/', debug_script, name='debug-script'),

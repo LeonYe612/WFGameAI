@@ -9,19 +9,20 @@ import {
     type Task,
     type TaskQueryParams
 } from "@/api/tasks";
+import { superRequest } from "@/utils/request";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { onMounted, reactive, ref } from "vue";
+// import { useRouter } from "vue-router";
+import { useNavigate } from "@/views/common/utils/navHook";
 import type {
+    CreateTaskPayload,
     PaginationInfo,
     TaskAction,
-    TaskFilters,
-    TaskFormData
+    TaskFilters
 } from "../utils/types";
-import {superRequest} from "@/utils/request";
-import {listScripts} from "@/api/scripts";
 
 export const useTasksPage = () => {
-    // 响应式数据
+    const { openReplayRoom } = useNavigate();
     const loading = ref(false);
     const taskList = ref<Task[]>([]);
     const filters = ref<TaskFilters>({
@@ -63,17 +64,17 @@ export const useTasksPage = () => {
         }
 
         await superRequest({
-          apiFunc: getTaskList,
-          apiParams: params,
-          onSucceed: (data) => {
-            taskList.value = data?.results;
-            pagination.total = data?.count || 0;
-          },
-          onCompleted: () => {
-            loading.value = false;
-          }
-        })
-    }
+            apiFunc: getTaskList,
+            apiParams: params,
+            onSucceed: data => {
+                taskList.value = data?.results;
+                pagination.total = data?.count || 0;
+            },
+            onCompleted: () => {
+                loading.value = false;
+            }
+        });
+    };
 
     // 处理过滤器变化
     const handleFilterChange = () => {
@@ -112,45 +113,59 @@ export const useTasksPage = () => {
     };
 
     // 提交任务表单
-    const handleSubmitTask = async (formData: TaskFormData) => {
-            formLoading.value = true;
+    const handleSubmitTask = async (formData: CreateTaskPayload) => {
+        formLoading.value = true;
 
-            if (currentTask.value) {
-                // 编辑逻辑（如果有编辑API的话）
-                // 可根据实际编辑API返回值处理
-            } else {
-                // 创建任务：直接把 TaskFormData 的字段作为顶层参数发送
-                await superRequest(
-                  {
-                    apiFunc: createTask,
-                    apiParams: {
-                      name: formData.name,
-                      task_type: formData.task_type as any,
-                      run_type: formData.run_type as any,
-                      run_info: formData.run_info as any,
-                      device_ids: formData.device_ids,
-                      description: formData.description,
-                      script_ids: formData.script_ids
-                    },
-                    enableSucceedMsg: true,
-                    succeedMsgContent: "创建任务成功！",
-                    onCompleted: () => {
-                      formLoading.value = false;
-                      loadTasks();
-                    }
-                  }
-                )
-            }
-        };
+        if (currentTask.value) {
+            // 编辑逻辑（如果有编辑API的话）
+            // 可根据实际编辑API返回值处理
+        } else {
+            // 创建任务：直接把 TaskFormData 的字段作为顶层参数发送
+            await superRequest({
+                apiFunc: createTask,
+                apiParams: formData as any,
+                enableSucceedMsg: true,
+                succeedMsgContent: "创建任务成功！",
+                onCompleted: () => {
+                    formLoading.value = false;
+                    loadTasks();
+                }
+            });
+        }
+    };
 
     // 处理任务操作
     const handleTaskAction = async (action: TaskAction, task: Task) => {
         try {
             switch (action) {
-                case "start":
-                    await startTask(task.id);
-                    await loadTasks();
+                case "start": {
+                    await superRequest({
+                        apiFunc: startTask,
+                        apiParams: task.id,
+                        enableSucceedMsg: true,
+                        succeedMsgContent: "任务开始执行",
+                        onSucceed: (data: any) => {
+                            const taskId = String(task.id);
+                            const deviceIds = (task as any).device_ids || [];
+                            const scriptIds = (task as any).script_ids || [];
+                            const celeryId =
+                                data?.celery_task_id || (task as any).celery_id || "";
+
+                            // 打开回放页面（封装复用）
+                            openReplayRoom({
+                                taskId,
+                                deviceIds,
+                                scriptIds,
+                                celeryId,
+                                newTab: true
+                            });
+                        },
+                        onCompleted: () => {
+                            loadTasks();
+                        }
+                    });
                     break;
+                }
 
                 case "stop":
                     await ElMessageBox.confirm("确认停止该任务？", "提示", {
@@ -171,17 +186,34 @@ export const useTasksPage = () => {
                     handleViewTask(task);
                     break;
 
-                case "duplicate":
-                  await superRequest({
-                    apiFunc: duplicateTask,
-                    apiParams: task.id,
-                    enableSucceedMsg: true,
-                    succeedMsgContent: "复制任务成功！",
-                    onCompleted: () => {
-                      loadTasks();
-                    }
+                case "duplicate": {
+                    // 弹出输入框，允许用户确认并修改副本名称
+                    const defaultName = `${task.name || "任务"}_cp_${task.id}`;
+                    const { value } = await ElMessageBox.prompt(
+                        "请输入副本名称",
+                        "复制任务",
+                        {
+                            confirmButtonText: "复制",
+                            cancelButtonText: "取消",
+                            inputValue: defaultName,
+                            inputValidator: (val: string) => {
+                                if (!val || !val.trim()) return "名称不能为空";
+                                if (val.length > 50) return "名称长度不能超过50个字符";
+                                return true;
+                            }
+                        }
+                    );
+                    await superRequest({
+                        apiFunc: (id: number) => duplicateTask(id, { name: value }),
+                        apiParams: task.id,
+                        enableSucceedMsg: true,
+                        succeedMsgContent: "复制任务成功！",
+                        onCompleted: () => {
+                            loadTasks();
+                        }
                     });
-                  break;
+                    break;
+                }
 
                 case "delete":
                     await deleteTask(task.id);

@@ -79,6 +79,8 @@ class Task(CommonFieldsMixin):
     task_type = models.IntegerField(_('任务类型'), choices=TASK_TYPE_CHOICES, default=0)
     run_type = models.IntegerField(_('运行类型'),choices=RUN_TYPE_CHOICES, default=0)
     run_info = models.JSONField(_('运行配置信息'), null=True, blank=True)
+    celery_id = models.CharField(_('Celery任务ID'), max_length=255, blank=True, null=True)
+    script_params = models.JSONField(_('回放or其他脚本执行参数'), null=True, blank=True)
 
     class Meta:
         db_table = 'tasks_task'

@@ -78,6 +78,7 @@ class OCRProcessGitSerializer(serializers.Serializer):
         child=serializers.CharField(), required=False, default=["ch"]
     )
     token = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    enable_cache = serializers.BooleanField(required=False, default=True)
 
     def validate(self, data):
         """验证处理参数"""

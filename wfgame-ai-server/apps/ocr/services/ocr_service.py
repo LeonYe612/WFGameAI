@@ -846,14 +846,21 @@ class OCRService:
         return ocr_inst
 
     @staticmethod
-    def calculate_image_hash(image_path) -> str:
+    def calculate_image_hash(image_path, include_path=True) -> str:
         """计算图片的MD5哈希值，用于唯一标识图片内容。"""
         hash_md5 = hashlib.md5()
         try:
             with open(image_path, "rb") as f:
                 for chunk in iter(lambda: f.read(4096), b""):
                     hash_md5.update(chunk)
-            return hash_md5.hexdigest()
+            img_md5 = hash_md5.hexdigest()
+            if not include_path:
+                return img_md5
+            # 包含路径的哈希
+            image_path = image_path.replace('\\', '/')
+            combined = f"{image_path}|{img_md5}"
+            combined_hash = hashlib.md5(combined.encode('utf-8')).hexdigest()
+            return combined_hash
         except Exception:
             return ""
 
@@ -880,7 +887,7 @@ class OCRService:
             return "lt=?|side=?|det=?|box=?|unclip=?|rec=?|unwarp=?|textline=?"
 
     def recognize_rounds_batch(self,
-                               image_dir: str,
+                               image_dir: Union[str, List[str]],
                                image_formats: Optional[List[str]] = None,
                                enable_draw: Optional[bool] = None,
                                enable_copy: Optional[bool] = None,
@@ -893,19 +900,24 @@ class OCRService:
         当启用开关时，短边像素小于阈值的图片会被丢弃以减少误检。
         """
         # 固定启用多轮识别（不再从配置读取开关）
+        if type(image_dir) is str:
+            img_exts = image_formats or ['.jpg', '.jpeg', '.png']
+            full_image_dir = image_dir
+            if not os.path.isabs(image_dir):
+                full_image_dir = os.path.join(settings.MEDIA_ROOT, image_dir)
+            if not os.path.exists(full_image_dir) or not os.path.isdir(full_image_dir):
+                return {"error": f"图片目录不存在或不是目录: {full_image_dir}"}
 
-        img_exts = image_formats or ['.jpg', '.jpeg', '.png']
-        full_image_dir = image_dir
-        if not os.path.isabs(image_dir):
-            full_image_dir = os.path.join(settings.MEDIA_ROOT, image_dir)
-        if not os.path.exists(full_image_dir) or not os.path.isdir(full_image_dir):
-            return {"error": f"图片目录不存在或不是目录: {full_image_dir}"}
+            image_paths: List[str] = []
+            for root_dir, _, files in os.walk(full_image_dir):
+                for fname in files:
+                    if any(fname.lower().endswith(ext) for ext in img_exts):
+                        image_paths.append(os.path.join(root_dir, fname))
+        elif type(image_dir) is list:
+            image_paths = image_dir
+        else:
+            return {"error": "image_dir 参数类型错误"}
 
-        image_paths: List[str] = []
-        for root_dir, _, files in os.walk(full_image_dir):
-            for fname in files:
-                if any(fname.lower().endswith(ext) for ext in img_exts):
-                    image_paths.append(os.path.join(root_dir, fname))
         if not image_paths:
             return {"error": "未发现图片"}
 
