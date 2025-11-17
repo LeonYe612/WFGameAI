@@ -22,6 +22,7 @@ import ctypes
 import importlib.util
 from .path_utils import PathUtils
 import threading
+from paddlex import create_pipeline
 from paddleocr import PaddleOCR
 import shutil
 from apps.notifications.tasks import notify_ocr_task_progress
@@ -176,26 +177,37 @@ class OCRInstancePool:
         os.environ["FLAGS_use_gpu"] = "true"
         os.environ["FLAGS_fraction_of_gpu_memory_to_use"] = "0.8"
 
-        # 基本参数
+        # 基本参数 - 与demo保持一致的配置
         init_kwargs = {
             'device': 'gpu' if GPU_ENABLED else 'cpu',
             'lang': lang,
-            'use_doc_orientation_classify': False,
+            'use_doc_orientation_classify': False,  # 关键修复：禁用文档方向分类
+            'use_doc_preprocessor': False,  # 关键修复：禁用文档预处理
             'use_doc_unwarping': other_params.get('use_doc_unwarping', False),
             'use_textline_orientation': other_params.get('use_textline_orientation', False),
             'text_detection_model_name': "PP-OCRv5_server_det",
             'text_recognition_model_name': "PP-OCRv5_server_rec",
         }
 
+        # 使用PaddleX创建OCR pipeline，与demo保持一致
+        device_name = f"gpu:{0}" if GPU_ENABLED else "cpu"
         try:
-            ocr_instance = PaddleOCR(**init_kwargs)
-            logger.info(f"成功创建OCR实例: {lang}_shared")
+            ocr_instance = create_pipeline(
+                "OCR",
+                device=device_name,
+                use_doc_preprocessor=init_kwargs.get('use_doc_preprocessor', False),
+                use_textline_orientation=init_kwargs.get('use_textline_orientation', False),
+                use_doc_orientation_classify=init_kwargs.get('use_doc_orientation_classify', False),
+                use_doc_unwarping=init_kwargs.get('use_doc_unwarping', False),
+                text_detection_model_name=init_kwargs.get('text_detection_model_name', "PP-OCRv5_server_det"),
+                text_recognition_model_name=init_kwargs.get('text_recognition_model_name', "PP-OCRv5_server_rec"),
+            )
+            logger.info(f"成功创建PaddleX OCR实例: {lang}_shared")
             return ocr_instance
-        except TypeError as e:
-            # 回退：不传入可能不支持的参数
-            logger.warning(f"创建OCR实例失败，回退到基础参数: {e}")
-            ocr_instance = PaddleOCR(**{'device': 'gpu' if GPU_ENABLED else 'cpu', 'lang': lang})
-            return ocr_instance
+        except Exception as e:
+            # 不再回退到PaddleOCR，直接抛出异常终止
+            logger.error(f"创建PaddleX实例失败: {e}")
+            raise RuntimeError(f"PaddleX OCR实例创建失败: {e}") from e
 
     def clear_cache(self):
         """清空缓存"""
@@ -725,83 +737,29 @@ class OCRService:
 
     @staticmethod
     def _default_round_param_sets() -> List[Dict[str, Any]]:
+        """使用demo的两套参数替代原来的7套参数"""
         return [
-        #第1轮
+        # 第1轮：baseline版本（官方默认版本基线）
         {
             'text_det_limit_type': 'min',
             'text_det_limit_side_len': 736,
-            'text_det_thresh': 0.30,
-            'text_det_box_thresh': 0.60,
-            'text_det_unclip_ratio': 1.5,
-            'text_rec_score_thresh': 0.90,
-            'use_textline_orientation': False,
-            'use_doc_unwarping': False,
-        },
-        #第2轮
-        {
-            'text_det_limit_type': 'min',
-            'text_det_limit_side_len': 680,
             'text_det_thresh': 0.3,
             'text_det_box_thresh': 0.6,
             'text_det_unclip_ratio': 1.5,
-            'text_rec_score_thresh': 0.8,
-            'use_textline_orientation': False,
-            'use_doc_unwarping': False,
+            'text_rec_score_thresh': 0.0,  # 关键修复：降低识别阈值
+            'use_textline_orientation': False,  # 关键修复：禁用文本行方向分类
+            'use_doc_unwarping': False,  # 关键修复：禁用文档去畸变
         },
-        #第3轮 小图 
+        # 第2轮：balanced_v1版本（弥补基线版本对长方形图识别率低的缺陷）
         {
-            'text_det_limit_type': 'min',
-            'text_det_limit_side_len': 960,
+            'text_det_limit_type': 'max',  # 修改：使用max边长类型
+            'text_det_limit_side_len': 736,
             'text_det_thresh': 0.3,
             'text_det_box_thresh': 0.6,
             'text_det_unclip_ratio': 1.5,
-            'text_rec_score_thresh': 0.8,
-            'use_textline_orientation': False,
-            'use_doc_unwarping': False,
-        },
-        #第4轮
-        {
-            'text_det_limit_type': 'max',
-            'text_det_limit_side_len': 960,
-            'text_det_thresh': 0.3,
-            'text_det_box_thresh': 0.6,
-            'text_det_unclip_ratio': 2.0,
-            'text_rec_score_thresh': 0.8,
-            'use_textline_orientation': False,
-            'use_doc_unwarping': False,
-        },
-        #第5轮
-        {
-            'text_det_limit_type': 'min',
-            'text_det_limit_side_len': 1280,
-            'text_det_thresh': 0.25,
-            'text_det_box_thresh': 0.45,
-            'text_det_unclip_ratio': 2.0,
-            'text_rec_score_thresh': 0.8,
-            'use_textline_orientation': False,
-            'use_doc_unwarping': False,
-        },
-        #第6轮
-        {
-            'text_det_limit_type': 'max',
-            'text_det_limit_side_len': 960,
-            'text_det_thresh': 0.3,
-            'text_det_box_thresh': 0.6,
-            'text_det_unclip_ratio': 2.0,
-            'text_rec_score_thresh': 0.7,
-            'use_textline_orientation': True,
-            'use_doc_unwarping': True,
-        },
-        #第7轮。
-        {
-            'text_det_limit_type': 'max',
-            'text_det_limit_side_len': 1280,
-            'text_det_thresh': 0.3,
-            'text_det_box_thresh': 0.6,
-            'text_det_unclip_ratio': 2.0,
-            'text_rec_score_thresh': 0.5,
-            'use_textline_orientation': False,
-            'use_doc_unwarping': True,
+            'text_rec_score_thresh': 0.0,  # 关键修复：降低识别阈值
+            'use_textline_orientation': False,  # 关键修复：禁用文本行方向分类
+            'use_doc_unwarping': False,  # 关键修复：禁用文档去畸变
         },
         ]
 
@@ -1081,7 +1039,7 @@ class OCRService:
         else:
             rounds_root = ""
  
-        # 固定使用内置6轮参数，不从配置读取
+        # 固定使用内置7轮参数，不从配置读取
         rounds = [self._validate_round_params(x)
                   for x in self._default_round_param_sets()]
         
