@@ -5,7 +5,9 @@
 用法示例：
     # 开发环境（自动重载）
     python start_celery_worker.py --env dev --autoreload --queue ai_queue --name ai_worker
-    # 等同：python start_celery_worker.py --env dev
+    
+    # 等同：
+    python start_celery_worker.py --env dev --autoreload
     
     
     # 线上/生产环境（不重载）
@@ -22,6 +24,7 @@ import sys
 import argparse
 import subprocess
 import time
+import datetime
 from typing import Dict, List
 
 
@@ -105,6 +108,9 @@ def main() -> int:
     env['PYTHONUNBUFFERED'] = '1'
     # 关键：将当前环境写入子进程，驱动 ConfigManager 选择 config_{env}.ini
     env['AI_ENV'] = env_name
+    # 明确指定配置文件路径，避免路径查找错误
+    config_file = os.path.join(project_root, f'config_{env_name}.ini')
+    env['WFGAMEAI_CONFIG'] = config_file
 
     # 隔离 pid/log 文件，避免多环境冲突
     run_dir = os.path.join(project_root, 'run')
@@ -114,6 +120,14 @@ def main() -> int:
         pass
     pid_file = os.path.join(run_dir, f'celery{env_suffix}.pid')
     log_file = os.path.join(run_dir, f'celery{env_suffix}.log')
+
+    # 清空日志文件（重启时重新开始记录）
+    try:
+        with open(log_file, 'w', encoding='utf-8') as f:
+            f.write(f"=== Celery Worker 启动于 {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ===\n")
+        print(f'已清空日志文件: {log_file}')
+    except Exception as e:
+        print(f'清空日志文件失败: {e}')
 
     # 将日志重定向到文件（保留控制台输出）
     log_fp = open(log_file, 'a', encoding='utf-8', errors='ignore')

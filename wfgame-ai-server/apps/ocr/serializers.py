@@ -117,9 +117,26 @@ class FileUploadSerializer(serializers.Serializer):
 
     file = serializers.FileField(required=True)
     project_id = serializers.IntegerField(required=True)
-    languages = serializers.ListField(
-        child=serializers.CharField(), required=False, default=["ch"]
-    )
+    languages = serializers.CharField(required=False, default='["ch"]')
+    
+    def validate_languages(self, value):
+        """验证并解析languages字段"""
+        try:
+            import json
+            if isinstance(value, str):
+                languages_list = json.loads(value)
+            else:
+                languages_list = value
+            
+            if not isinstance(languages_list, list):
+                raise serializers.ValidationError("languages必须是一个列表")
+            
+            if not languages_list:
+                return ["ch"]  # 默认值
+                
+            return languages_list
+        except json.JSONDecodeError:
+            raise serializers.ValidationError("languages格式错误，必须是有效的JSON数组")
 
     def validate_file(self, value):
         """验证上传文件"""

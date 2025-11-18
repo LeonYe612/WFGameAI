@@ -79,7 +79,7 @@
       >
         <el-form-item label="上传文件" prop="files">
           <el-upload
-            v-model:file-list="form.files"
+            ref="uploadRef"
             action=""
             :auto-upload="false"
             :limit="100"
@@ -88,6 +88,7 @@
             :accept="acceptTypes"
             :before-upload="beforeFileUpload"
             :on-change="handleFileChange"
+            :file-list="form.files"
           >
             <el-icon class="el-icon--upload"><upload-filled /></el-icon>
             <div class="el-upload__text">
@@ -210,6 +211,7 @@ const dialogVisible = computed({
 
 const isEditMode = computed(() => !!props.task);
 const formRef = ref<FormInstance>();
+const uploadRef = ref();
 const isSubmitting = ref(false);
 
 const initialForm = {
@@ -332,7 +334,9 @@ const setFormDefaults = async () => {
 };
 
 const handleFileChange = (file: any, fileList: any[]) => {
-  form.value.files = fileList.map(f => f.raw);
+  // 保存原始的文件列表，包含raw属性
+  form.value.files = fileList;
+  console.log("文件列表更新:", fileList);
 };
 
 const handleClose = () => {
@@ -378,11 +382,36 @@ const submitForm = async () => {
         return;
       }
       const formData = new FormData();
-      form.value.files.forEach((file: File) => {
-        formData.append("file", file);
-      });
+      
+      // 从upload组件获取文件列表
+      const uploadComponent = uploadRef.value;
+      const uploadFiles = uploadComponent?.uploadFiles || form.value.files;
+      
+      if (!uploadFiles || uploadFiles.length === 0) {
+        message("请选择有效的文件", { type: "error" });
+        return;
+      }
+      
+      // 后端只支持单文件上传，取第一个文件
+      const fileItem = uploadFiles[0];
+      const file = fileItem.raw || fileItem;
+      
+      // 调试信息
+      console.log("Upload组件文件列表:", uploadFiles);
+      console.log("文件项对象:", fileItem);
+      console.log("实际文件对象:", file);
+      console.log("文件类型:", typeof file);
+      console.log("是否为File实例:", file instanceof File);
+      
+      if (!file || !file.name) {
+        message("无法获取文件对象", { type: "error" });
+        return;
+      }
+      
+      formData.append("file", file);
       formData.append("project_id", "1");
-      formData.append("languages", String(form.value.languages));
+      // languages作为JSON字符串发送，后端需要解析
+      formData.append("languages", JSON.stringify(form.value.languages));
       postData = formData;
       apiFunc = ocrTaskApi.createUploadTask;
     }

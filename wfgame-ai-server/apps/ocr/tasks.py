@@ -103,7 +103,7 @@ def _filter_texts_by_languages(texts, target_languages):
     return filtered
 
 
-@shared_task(queue="ai_queue")
+@shared_task(queue=f"ai_queue_{os.environ.get('AI_ENV', 'dev')}")
 def process_ocr_task(task_id):
     """调度并处理指定 OCR 任务。
 
@@ -129,10 +129,33 @@ def process_ocr_task(task_id):
 
     try:
         # step1. 获取任务信息
-        task: OCRTask  = OCRTask.objects.all_teams().filter(id=task_id).first()
-        if not task:
-            logger.error(f"OCR任务不存在: {task_id}")
-            return {"status": "error", "message": f"OCR任务不存在: {task_id}"}
+        logger.info(f"开始查询OCR任务: {task_id}, 类型: {type(task_id)}")
+        
+        # 添加重试机制，处理数据库事务延迟问题
+        task = None
+        max_retries = 5
+        retry_delay = 0.2  # 200毫秒
+        
+        for attempt in range(max_retries):
+            task = OCRTask.objects.all_teams().filter(id=task_id).first()
+            if task:
+                logger.info(f"第{attempt + 1}次尝试成功找到OCR任务: {task.id}")
+                break
+            
+            if attempt < max_retries - 1:
+                logger.warning(f"第{attempt + 1}次尝试未找到任务 {task_id}，{retry_delay}秒后重试...")
+                time.sleep(retry_delay)
+                retry_delay *= 1.5  # 指数退避
+            else:
+                # 最后一次尝试失败，记录详细调试信息
+                all_tasks = OCRTask.objects.all_teams().values_list('id', 'name', 'status', 'created_time')
+                recent_tasks = list(all_tasks.order_by('-created_time')[:10])
+                logger.error(f"OCR任务不存在: {task_id}")
+                logger.error(f"数据库中最近10个任务: {recent_tasks}")
+                logger.error(f"查询条件: id={task_id}")
+                return {"status": "error", "message": f"OCR任务不存在: {task_id}"}
+        
+        logger.info(f"成功找到OCR任务: {task.id}, 名称: {task.name}, 状态: {task.status}")
 
         # 更新任务状态
         notify_ocr_task_progress({
@@ -175,7 +198,8 @@ def process_ocr_task(task_id):
 
             # 根据任务类型确定检查目录
             if task.source_type == 'upload':
-                check_dir = target_dir
+                # 对于上传任务，target_dir是相对路径，需要与MEDIA_ROOT拼接
+                check_dir = os.path.join(settings.MEDIA_ROOT, target_dir)
             elif task.source_type == 'git':
                 check_dir = os.path.join(target_dir, target_path)
                 git_service = GitLabService(
@@ -474,6 +498,14 @@ def process_ocr_task(task_id):
 
         OCRResult.objects.bulk_create(new_results)
         logger.warning(f"批量插入 {len(new_results)} 条OCR结果到数据库")
+        
+        # 强制提交数据库事务
+        from django.db import transaction
+        transaction.commit()
+        
+        # 短暂延迟确保数据库操作完全完成
+        time.sleep(0.2)
+        
         # 记录ocr缓存
         OCRCache.record_cache(task_id)
 
@@ -483,9 +515,23 @@ def process_ocr_task(task_id):
         _generate_summary_report(task, ocr_results, target_languages)
         logger.warning("汇总报告生成完成")
 
-        # 完成进度
+        # 完成进度 - 直接使用已知的统计数据更新任务
         try:
-            task.calculate_match_rate_by_related_results()
+            logger.warning(f"开始更新任务 {task_id} 的统计数据...")
+            
+            # 直接计算统计数据，不依赖复杂的查询
+            total_processed = len(ocr_results)
+            total_matched = sum(1 for item in ocr_results if item.get('has_match', False))
+            match_rate = round((total_matched / total_processed * 100), 2) if total_processed > 0 else 0.0
+            
+            # 直接更新任务统计字段
+            task.processed_images = total_processed
+            task.matched_images = total_matched
+            task.match_rate = match_rate
+            task.save(update_fields=["processed_images", "matched_images", "match_rate"])
+            
+            logger.warning(f"任务 {task_id} 统计数据更新完成: 总数={total_processed}, 匹配数={total_matched}, 匹配率={match_rate}%")
+            
             notify_ocr_task_progress({
                 "id": task_id,
                 "status": 'completed',

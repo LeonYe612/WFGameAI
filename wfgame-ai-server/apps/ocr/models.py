@@ -13,11 +13,12 @@ from apps.core.models.common import CommonFieldsMixin
 
 def generate_task_id():
     """生成任务ID"""
-    # 使用YYYY-MM-dd_HH-MM-SS格式生成任务ID，确保唯一性
+    # 使用YYYY-MM-dd_HH-MM-SS-微秒格式生成任务ID，确保唯一性
     now = datetime.datetime.now()
     date_str = now.strftime("%Y-%m-%d")
     time_str = now.strftime("%H-%M-%S")
-    return f"task_{date_str}_{time_str}"
+    microsecond_str = f"{now.microsecond:06d}"[:3]  # 取前3位微秒，避免ID过长
+    return f"task_{date_str}_{time_str}-{microsecond_str}"
 
 # deprecated 系统根据 team_id 自动管理数据隔离
 class OCRProject(models.Model):
@@ -121,28 +122,57 @@ class OCRTask(CommonFieldsMixin):
     @property
     def related_results(self) -> QuerySet:
         """获取关联的OCR结果列表"""
-        query = Q(task_id=self.id)
+        # 修复：使用正确的外键关系查询
+        query = Q(task=self)
         has_cache = OCRCacheHit.objects.filter(task_id=self.id).first()
         if has_cache:
             cached_result_ids = [int(i) for i in has_cache.result_ids.split(',')]
-            query = Q(task_id=self.id) | Q(id__in=cached_result_ids)
+            query = query | Q(id__in=cached_result_ids)
         return OCRResult.objects.filter(query).order_by("id")
 
 
     def calculate_match_rate_by_related_results(self):
         """通过 related_results 计算匹配率"""
+        import logging
+        from django.db import connection
+        logger = logging.getLogger(__name__)
+        
+        # 强制刷新数据库连接，确保能看到最新数据
+        connection.ensure_connection()
+        
+        # 先尝试直接查询OCRResult，看看是否能找到数据
+        from apps.ocr.models import OCRResult
+        direct_results = OCRResult.objects.filter(task=self)
+        direct_count = direct_results.count()
+        logger.warning(f"任务 {self.id} 直接查询OCRResult: 找到 {direct_count} 条结果")
+        
+        # 如果直接查询有结果，打印一些调试信息
+        if direct_count > 0:
+            first_result = direct_results.first()
+            logger.warning(f"任务 {self.id} 第一条结果: task_id={first_result.task_id if hasattr(first_result, 'task_id') else 'N/A'}, task.id={first_result.task.id}")
+        
+        # 再使用related_results查询
         related_results = self.related_results
         total = related_results.count()
+        logger.warning(f"任务 {self.id} related_results查询: 查询到 {total} 条相关结果")
+        
         if total == 0:
             matched_images = 0
             match_rate = 0.00
+            logger.warning(f"任务 {self.id} 统计计算: 未找到相关结果")
         else:
             matched_images = related_results.filter(has_match=True).count()
             match_rate = round((matched_images / total) * 100, 2)
+            logger.warning(f"任务 {self.id} 统计计算: 总数={total}, 匹配数={matched_images}, 匹配率={match_rate}%")
+        
+        # 更新任务统计字段
+        old_values = (self.processed_images, self.matched_images, self.match_rate)
         self.processed_images = total
         self.matched_images = matched_images
         self.match_rate = match_rate
         self.save(update_fields=["processed_images", "matched_images", "match_rate"])
+        
+        logger.warning(f"任务 {self.id} 统计更新: {old_values} -> ({total}, {matched_images}, {match_rate})")
 
 
 

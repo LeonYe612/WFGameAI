@@ -221,8 +221,16 @@ class OCRTaskAPIView(APIView):
                 # 创建任务
                 task = serializer.save()
 
-                # 提交Celery任务
-                process_ocr_task.delay(task.id)
+                # 使用事务确保任务创建完成后再提交Celery任务
+                from django.db import transaction
+                import time
+                
+                def submit_celery_task():
+                    time.sleep(0.1)  # 短暂延迟确保事务提交
+                    logger.info(f"提交OCR任务到Celery: {task.id}")
+                    process_ocr_task.delay(task.id)
+                
+                transaction.on_commit(submit_celery_task)
 
                 result_serializer = OCRTaskSerializer(task)
                 return api_response(data=result_serializer.data, msg="任务创建成功")
@@ -606,8 +614,12 @@ class OCRUploadAPIView(APIView):
 
     def post(self, request):
         # 处理文件上传
+        logger.info(f"收到文件上传请求，数据类型: {type(request.data)}")
+        logger.info(f"请求数据键: {list(request.data.keys())}")
+        
         serializer = FileUploadSerializer(data=request.data)
         if not serializer.is_valid():
+            logger.error(f"参数验证失败: {serializer.errors}")
             return api_response(code=status.HTTP_400_BAD_REQUEST, data=serializer.errors, msg="参数验证失败")
 
         uploaded_file = serializer.validated_data.get("file")
@@ -626,8 +638,15 @@ class OCRUploadAPIView(APIView):
 
             # 创建上传ID
             upload_id = f"upload_{uuid.uuid4().hex[:8]}"
-            upload_dir = os.path.join(PathUtils.get_ocr_uploads_dir(), upload_id)
+            uploads_base_dir = PathUtils.get_ocr_uploads_dir()
+            upload_dir = os.path.join(uploads_base_dir, upload_id)
+            
+            # 调试信息
+            logger.info(f"上传基础目录: {uploads_base_dir}")
+            logger.info(f"完整上传目录: {upload_dir}")
+            
             os.makedirs(upload_dir, exist_ok=True)
+            logger.info(f"目录创建成功: {upload_dir}")
 
             # 保存文件
             file_path = os.path.join(upload_dir, uploaded_file.name)
@@ -644,6 +663,8 @@ class OCRUploadAPIView(APIView):
                 os.remove(file_path)  # 删除原始TAR文件
 
             # 创建OCR任务
+            # 保存相对于MEDIA_ROOT的相对路径，避免路径重复
+            relative_upload_dir = upload_id
             task = OCRTask.objects.create(
                 project=project,
                 source_type="upload",
@@ -652,12 +673,35 @@ class OCRUploadAPIView(APIView):
                 config={
                     "target_languages": languages,
                     "upload_id": upload_id,
-                    "target_dir": upload_dir,
+                    "target_dir": relative_upload_dir,
                 },
             )
 
-            # 提交Celery任务
-            process_ocr_task.delay(task.id)
+            # 确保数据库事务提交后再提交Celery任务
+            from django.db import transaction
+            import time
+            
+            logger.info(f"创建OCR任务成功，任务ID: {task.id}, 类型: {type(task.id)}")
+            
+            # 使用事务确保任务创建完成后再提交Celery任务
+            def submit_celery_task():
+                # 添加短暂延迟确保数据库事务完全提交
+                time.sleep(0.1)
+                
+                # 验证任务是否存在
+                verification_task = OCRTask.objects.filter(id=task.id).first()
+                if verification_task:
+                    logger.info(f"任务验证通过，提交异步Celery任务: {task.id}")
+                    process_ocr_task.delay(task.id)
+                    logger.info(f"Celery任务已提交: {task.id}")
+                else:
+                    logger.error(f"任务验证失败，任务不存在: {task.id}")
+                    # 记录详细调试信息
+                    all_tasks = OCRTask.objects.values_list('id', 'name', 'status')[:5]
+                    logger.error(f"数据库中的任务示例: {list(all_tasks)}")
+            
+            # 在事务提交后执行Celery任务提交
+            transaction.on_commit(submit_celery_task)
             # process_ocr_task(task.id)
 
             serializer = OCRTaskSerializer(task)
@@ -729,7 +773,17 @@ class OCRProcessAPIView(APIView):
                         },
                     )
 
-                    process_ocr_task.delay(task.id)
+                    # 使用事务确保任务创建完成后再提交Celery任务
+                    from django.db import transaction
+                    import time
+                    
+                    def submit_celery_task():
+                        time.sleep(0.1)  # 短暂延迟确保事务提交
+                        logger.info(f"提交Git OCR任务到Celery: {task.id}")
+                        process_ocr_task.delay(task.id)
+                    
+                    transaction.on_commit(submit_celery_task)
+                    
                     # 返回任务信息
                     serializer = OCRTaskSerializer(task)
                     return api_response(data=serializer.data, msg="Git仓库OCR任务创建成功")
