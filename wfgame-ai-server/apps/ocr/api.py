@@ -761,7 +761,7 @@ class OCRProcessAPIView(APIView):
                         source_type="git",
                         status="pending",
                         config={
-                            # "branch": branch,
+                            "branch": branch,
                             "languages": languages,
                             "target_dir": PathUtils.get_ocr_repos_dir(),
                             # 项目代码所在目录，与 target_dir 相对路径

@@ -187,6 +187,10 @@ def process_ocr_task(task_id):
         target_dir = task_config.get("target_dir")
         target_path = task_config.get("target_path")
         check_dir = ""
+        
+        logger.info(f"任务配置 - target_dir: {target_dir}")
+        logger.info(f"任务配置 - target_path: {target_path}")
+        logger.info(f"任务配置 - source_type: {task.source_type}")
 
         # 检查调试目录是否存在 且 开启调试（快速使用指定目录图片排查识别逻辑时使用）
         if os.path.exists(debug_dir) and debug_status:
@@ -202,6 +206,7 @@ def process_ocr_task(task_id):
                 check_dir = os.path.join(settings.MEDIA_ROOT, target_dir)
             elif task.source_type == 'git':
                 check_dir = os.path.join(target_dir, target_path)
+                logger.info(f"Git任务检查目录: {check_dir}")
                 git_service = GitLabService(
                     GitLabConfig(
                         repo_url=task.git_repository.url,
