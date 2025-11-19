@@ -118,6 +118,7 @@ class FileUploadSerializer(serializers.Serializer):
     file = serializers.FileField(required=True)
     project_id = serializers.IntegerField(required=True)
     languages = serializers.CharField(required=False, default='["ch"]')
+    enable_cache = serializers.BooleanField(required=False, default=True)
     
     def validate_languages(self, value):
         """验证并解析languages字段"""

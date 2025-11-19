@@ -74,6 +74,51 @@ def has_changes(prev: Dict[str, float], cur: Dict[str, float]) -> bool:
     return False
 
 
+def stop_existing_worker(pid_file: str) -> None:
+    """停止已存在的Celery Worker进程"""
+    if not os.path.exists(pid_file):
+        return
+    
+    try:
+        with open(pid_file, 'r', encoding='utf-8') as f:
+            pid_str = f.read().strip()
+            if not pid_str:
+                return
+            pid = int(pid_str)
+        
+        print(f'检测到已存在的Worker进程 (PID: {pid})，正在停止...')
+        
+        # Windows系统使用taskkill
+        if sys.platform == 'win32':
+            try:
+                subprocess.run(['taskkill', '/F', '/PID', str(pid)], 
+                             capture_output=True, timeout=5)
+                time.sleep(1)
+                print(f'已停止旧的Worker进程 (PID: {pid})')
+            except Exception as e:
+                print(f'停止进程失败: {e}')
+        else:
+            # Linux/Mac使用kill
+            try:
+                import signal
+                os.kill(pid, signal.SIGTERM)
+                time.sleep(1)
+                print(f'已停止旧的Worker进程 (PID: {pid})')
+            except ProcessLookupError:
+                print(f'进程 {pid} 不存在，可能已停止')
+            except Exception as e:
+                print(f'停止进程失败: {e}')
+        
+        # 删除PID文件
+        try:
+            os.remove(pid_file)
+        except Exception:
+            pass
+            
+    except Exception as e:
+        print(f'读取PID文件失败: {e}')
+
+
 def main() -> int:
     """入口函数：启动 Celery Worker，支持环境隔离与可选自动重载。"""
     parser = argparse.ArgumentParser(description='启动 Celery Worker')
@@ -120,6 +165,9 @@ def main() -> int:
         pass
     pid_file = os.path.join(run_dir, f'celery{env_suffix}.pid')
     log_file = os.path.join(run_dir, f'celery{env_suffix}.log')
+
+    # 停止已存在的Worker进程
+    stop_existing_worker(pid_file)
 
     # 清空日志文件（重启时重新开始记录）
     try:
@@ -183,6 +231,21 @@ def main() -> int:
                             proc.kill()
                     except Exception:
                         pass
+                    
+                    # 关闭旧的日志文件句柄
+                    try:
+                        log_fp.close()
+                    except Exception:
+                        pass
+                    
+                    # 清空日志文件并重新打开
+                    try:
+                        with open(log_file, 'w', encoding='utf-8') as f:
+                            f.write(f"=== Celery Worker 自动重启于 {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ===\n")
+                    except Exception:
+                        pass
+                    log_fp = open(log_file, 'a', encoding='utf-8', errors='ignore')
+                    
                     # 重启
                     prev_snapshot = cur_snapshot
                     proc = subprocess.Popen(base_cmd, cwd=celery_cwd, env=env, stdout=log_fp, stderr=log_fp)
@@ -191,6 +254,7 @@ def main() -> int:
                             pf.write(str(proc.pid))
                     except Exception:
                         pass
+                    print(f'✅ Worker已重启 (新PID: {proc.pid})')
     except KeyboardInterrupt:
         print('\n已中断。正在退出...')
         try:

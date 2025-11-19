@@ -23,7 +23,12 @@ sys.path.insert(0, get_project_root())
 # 构建路径，以项目目录为起点
 BASE_DIR = (
     Path(__file__).resolve().parent.parent
-)  # wfgame-ai-server/wfgame_ai_server_main
+)  # f:\GithubProjects\WFGameAI\wfgame-ai-server
+
+# Django 框架的标准配置，用于处理用户上传的媒体文件。不要删除
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")  # f:\GithubProjects\WFGameAI\wfgame-ai-server\media
+
 
 # 密钥设置
 SECRET_KEY = "django-insecure-key-for-development-only"
@@ -146,9 +151,6 @@ STATICFILES_DIRS = [
 # 重要：在开发模式下不要设置STATIC_ROOT，否则Django无法提供staticfiles目录中的文件
 # STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # 已注释掉，确保开发模式下直接使用staticfiles目录
 
-# 媒体文件设置
-MEDIA_URL = "/media/"
-MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 # 默认主键类型
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

@@ -21,11 +21,13 @@ import sys
 import ctypes
 import importlib.util
 from .path_utils import PathUtils
+from .performance_config import get_performance_config, PARAM_VERSIONS
 import threading
 from paddlex import create_pipeline
 from paddleocr import PaddleOCR
 import shutil
 from apps.notifications.tasks import notify_ocr_task_progress
+import paddle
 
 import warnings
 warnings.filterwarnings("ignore", message="iCCP: known incorrect sRGB profile")
@@ -76,7 +78,10 @@ if GPU_ENABLED:
 
 
 class OCRInstancePool:
-    """OCR实例池，用于缓存不同参数组合的OCR实例，避免频繁重建"""
+    """OCR实例池，用于缓存不同参数组合的OCR实例，避免频繁重建
+    
+    集成了性能优化配置和两阶段检测支持
+    """
 
     _instance = None
     _lock = threading.Lock()
@@ -102,27 +107,29 @@ class OCRInstancePool:
             self._initialized = True
             logger.info("OCR实例池初始化完成")
 
-    def _generate_cache_key(self, lang: str, limit_type: str,
-                            use_textline_orientation: bool,
-                            use_doc_unwarping: bool) -> str:
-        """生成缓存键（语言、方向分类、去畸变）。
-        注意：不再将 limit_type 纳入缓存键，缩放策略通过强制写入预处理参数实现，
-        避免相同模型因不同 limit_type 被重复创建。
+    def _generate_cache_key(self, lang: str, stage: str = "baseline",
+                            use_fast_models: bool = False) -> str:
+        """生成缓存键，基于语言、检测阶段和模型类型
+        
+        Args:
+            lang: 语言代码
+            stage: 检测阶段 (baseline 或 balanced_v1)
+            use_fast_models: 是否使用快速模型
         """
-        orientation_flag = 'cls1' if use_textline_orientation else 'cls0'
-        unwarp_flag = 'warp1' if use_doc_unwarping else 'warp0'
-        return f"{lang}_{orientation_flag}_{unwarp_flag}"
+        model_type = 'mobile' if use_fast_models else 'server'
+        return f"{lang}_{stage}_{model_type}"
 
-    def get_ocr_instance(self, lang: str = "ch", limit_type: str = "max",
-                         text_det_thresh: float = 0.3, text_det_box_thresh: float = 0.6,
-                         text_det_unclip_ratio: float = 1.5, text_det_limit_side_len: int = 960,
-                         **other_params) -> PaddleOCR:
-        """获取OCR实例，如果缓存中没有则创建新实例"""
-        use_textline_orientation = other_params.get('use_textline_orientation', False)
-        use_doc_unwarping = other_params.get('use_doc_unwarping', False)
-        cache_key = self._generate_cache_key(
-            lang, limit_type, use_textline_orientation, use_doc_unwarping
-        )
+    def get_ocr_instance(self, lang: str = "ch", stage: str = "baseline", 
+                         use_fast_models: bool = False, **other_params):
+        """获取OCR实例，支持两阶段检测和性能优化
+        
+        Args:
+            lang: 语言代码
+            stage: 检测阶段 (baseline 或 balanced_v1)
+            use_fast_models: 是否使用快速模型
+            **other_params: 其他参数
+        """
+        cache_key = self._generate_cache_key(lang, stage, use_fast_models)
 
         with self._cache_lock:
             # 检查缓存中是否存在
@@ -138,11 +145,9 @@ class OCRInstancePool:
             if len(self._cache) >= self._max_cache_size:
                 self._evict_lru_instance()
 
-            # 创建新的OCR实例（避免将阈值参与实例构建，阈值使用后续强制写入）
+            # 创建新的OCR实例
             ocr_instance = self._create_ocr_instance(
-                lang, limit_type, text_det_limit_side_len,
-                use_textline_orientation=use_textline_orientation,
-                use_doc_unwarping=use_doc_unwarping
+                lang, stage, use_fast_models, **other_params
             )
 
             # 添加到缓存
@@ -166,10 +171,14 @@ class OCRInstancePool:
 
         logger.info(f"淘汰LRU OCR实例: {lru_key}")
 
-    def _create_ocr_instance(self, lang: str, limit_type: str,
-                             text_det_limit_side_len: int,
-                             **other_params) -> PaddleOCR:
-        """创建新的OCR实例"""
+    def _create_ocr_instance(self, lang: str, stage: str, use_fast_models: bool, **other_params):
+        """创建新的OCR实例，集成了调优后的参数配置
+        
+        Args:
+            lang: 语言代码
+            stage: 检测阶段 (baseline 或 balanced_v1)
+            use_fast_models: 是否使用快速模型
+        """
 
         # 强制GPU环境配置
         os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
@@ -177,37 +186,104 @@ class OCRInstancePool:
         os.environ["FLAGS_use_gpu"] = "true"
         os.environ["FLAGS_fraction_of_gpu_memory_to_use"] = "0.8"
 
-        # 基本参数 - 与demo保持一致的配置
+        # 获取阶段参数配置
+        stage_params = PARAM_VERSIONS.get(stage, PARAM_VERSIONS["baseline"])
+        
+        # 根据性能配置选择模型
+        if use_fast_models:
+            det_model, rec_model = "PP-OCRv5_mobile_det", "PP-OCRv5_mobile_rec"
+        else:
+            det_model, rec_model = "PP-OCRv5_server_det", "PP-OCRv5_server_rec"
+        
+        # 基本参数 - 使用调优后的配置
         init_kwargs = {
             'device': 'gpu' if GPU_ENABLED else 'cpu',
             'lang': lang,
-            'use_doc_orientation_classify': False,  # 关键修复：禁用文档方向分类
-            'use_doc_preprocessor': False,  # 关键修复：禁用文档预处理
-            'use_doc_unwarping': other_params.get('use_doc_unwarping', False),
-            'use_textline_orientation': other_params.get('use_textline_orientation', False),
-            'text_detection_model_name': "PP-OCRv5_server_det",
-            'text_recognition_model_name': "PP-OCRv5_server_rec",
+            'use_doc_orientation_classify': stage_params.get('use_doc_orientation_classify', False),
+            'use_doc_preprocessor': stage_params.get('use_doc_preprocessor', False),
+            'use_doc_unwarping': stage_params.get('use_doc_unwarping', False),
+            'use_textline_orientation': stage_params.get('use_textline_orientation', False),
+            'text_detection_model_name': det_model,
+            'text_recognition_model_name': rec_model,
         }
 
-        # 使用PaddleX创建OCR pipeline，与demo保持一致
+        # 使用PaddleX创建OCR pipeline，集成调优参数
         device_name = f"gpu:{0}" if GPU_ENABLED else "cpu"
+        
+        # 确保GPU环境
+        self._ensure_gpu_environment()
+        
         try:
-            ocr_instance = create_pipeline(
-                "OCR",
-                device=device_name,
-                use_doc_preprocessor=init_kwargs.get('use_doc_preprocessor', False),
-                use_textline_orientation=init_kwargs.get('use_textline_orientation', False),
-                use_doc_orientation_classify=init_kwargs.get('use_doc_orientation_classify', False),
-                use_doc_unwarping=init_kwargs.get('use_doc_unwarping', False),
-                text_detection_model_name=init_kwargs.get('text_detection_model_name', "PP-OCRv5_server_det"),
-                text_recognition_model_name=init_kwargs.get('text_recognition_model_name', "PP-OCRv5_server_rec"),
-            )
-            logger.info(f"成功创建PaddleX OCR实例: {lang}_shared")
+            # 尝试启用HPI加速（如果可用）
+            pipeline_config = {
+                "device": device_name,
+                "use_doc_preprocessor": init_kwargs.get('use_doc_preprocessor', False),
+                "use_textline_orientation": init_kwargs.get('use_textline_orientation', False),
+                "use_doc_orientation_classify": init_kwargs.get('use_doc_orientation_classify', False),
+                "use_doc_unwarping": init_kwargs.get('use_doc_unwarping', False),
+                "text_detection_model_name": init_kwargs.get('text_detection_model_name'),
+                "text_recognition_model_name": init_kwargs.get('text_recognition_model_name'),
+            }
+            
+            # 尝试启用HPI高性能推理
+            try:
+                pipeline_config["use_hpip"] = True
+                ocr_instance = create_pipeline("OCR", **pipeline_config)
+                logger.info(f"✅ HPI高性能推理已启用: {stage}_{lang}")
+            except Exception as hpi_error:
+                logger.warning(f"⚠️  HPI不可用，使用标准推理: {hpi_error}")
+                pipeline_config["use_hpip"] = False
+                ocr_instance = create_pipeline("OCR", **pipeline_config)
+            logger.info(f"成功创建PaddleX OCR实例: {stage}_{lang}_{det_model.split('_')[-2]}")
             return ocr_instance
         except Exception as e:
             # 不再回退到PaddleOCR，直接抛出异常终止
             logger.error(f"创建PaddleX实例失败: {e}")
             raise RuntimeError(f"PaddleX OCR实例创建失败: {e}") from e
+
+    def _ensure_gpu_environment(self):
+        """确保GPU环境正确配置"""
+        if not GPU_ENABLED:
+            return
+            
+        try:
+            if not paddle.device.is_compiled_with_cuda():
+                raise EnvironmentError("未启用GPU，请安装GPU版PaddlePaddle")
+            if paddle.device.cuda.device_count() <= 0:
+                raise EnvironmentError("未检测到可用GPU，请检查驱动与CUDA环境")
+            
+            # 设置GPU设备
+            paddle.device.set_device("gpu:0")
+            logger.debug("GPU环境检查通过")
+        except Exception as e:
+            logger.error(f"GPU环境检查失败: {e}")
+            raise
+
+    def warmup_pipeline(self, pipeline, warmup_image_path: str = None):
+        """
+        预热GPU和Pipeline，提升后续处理速度
+        
+        Args:
+            pipeline: OCR pipeline实例
+            warmup_image_path: 预热用的图片路径
+        """
+        if warmup_image_path and Path(warmup_image_path).exists():
+            try:
+                warmup_start = time.time()
+                
+                # 推理预热：一次前向传播完成CUDA初始化和模型加载
+                results = list(pipeline.predict([warmup_image_path]))
+                
+                # 清理结果释放内存
+                del results
+                
+                warmup_time = time.time() - warmup_start
+                logger.debug(f"GPU预热完成 (耗时: {warmup_time:.2f}秒)")
+                
+            except Exception as e:
+                logger.warning(f"GPU预热失败: {e}")
+        else:
+            logger.debug("未找到预热图片，跳过GPU预热")
 
     def clear_cache(self):
         """清空缓存"""

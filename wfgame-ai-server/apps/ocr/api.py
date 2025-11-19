@@ -625,6 +625,7 @@ class OCRUploadAPIView(APIView):
         uploaded_file = serializer.validated_data.get("file")
         project_id = serializer.validated_data.get("project_id")
         languages = serializer.validated_data.get("languages", ["ch"])
+        enable_cache = serializer.validated_data.get("enable_cache", True)
 
         try:
             # 确保项目存在
@@ -674,6 +675,7 @@ class OCRUploadAPIView(APIView):
                     "target_languages": languages,
                     "upload_id": upload_id,
                     "target_dir": relative_upload_dir,
+                    "enable_cache": enable_cache,
                 },
             )
 
@@ -682,6 +684,7 @@ class OCRUploadAPIView(APIView):
             import time
             
             logger.info(f"创建OCR任务成功，任务ID: {task.id}, 类型: {type(task.id)}")
+            logger.info(f"任务详细信息: 名称={task.name}, 状态={task.status}, 创建时间={task.created_at}")
             
             # 使用事务确保任务创建完成后再提交Celery任务
             def submit_celery_task():
@@ -692,8 +695,9 @@ class OCRUploadAPIView(APIView):
                 verification_task = OCRTask.objects.filter(id=task.id).first()
                 if verification_task:
                     logger.info(f"任务验证通过，提交异步Celery任务: {task.id}")
-                    process_ocr_task.delay(task.id)
-                    logger.info(f"Celery任务已提交: {task.id}")
+                    # 使用apply_async指定任务ID，确保Celery任务ID与数据库任务ID一致
+                    celery_result = process_ocr_task.apply_async(args=[task.id], task_id=f"task-{task.id}")
+                    logger.info(f"Celery任务已提交: {task.id}, Celery任务ID: {celery_result.id}")
                 else:
                     logger.error(f"任务验证失败，任务不存在: {task.id}")
                     # 记录详细调试信息
@@ -777,10 +781,24 @@ class OCRProcessAPIView(APIView):
                     from django.db import transaction
                     import time
                     
+                    logger.info(f"创建Git OCR任务成功，任务ID: {task.id}, 类型: {type(task.id)}")
+                    logger.info(f"Git任务详细信息: 名称={task.name}, 状态={task.status}, 创建时间={task.created_at}")
+                    
                     def submit_celery_task():
                         time.sleep(0.1)  # 短暂延迟确保事务提交
-                        logger.info(f"提交Git OCR任务到Celery: {task.id}")
-                        process_ocr_task.delay(task.id)
+                        
+                        # 验证任务是否存在
+                        verification_task = OCRTask.objects.filter(id=task.id).first()
+                        if verification_task:
+                            logger.info(f"Git任务验证通过，提交异步Celery任务: {task.id}")
+                            # 使用apply_async指定任务ID，确保Celery任务ID与数据库任务ID一致
+                            celery_result = process_ocr_task.apply_async(args=[task.id], task_id=f"task-{task.id}")
+                            logger.info(f"Git Celery任务已提交: {task.id}, Celery任务ID: {celery_result.id}")
+                        else:
+                            logger.error(f"Git任务验证失败，任务不存在: {task.id}")
+                            # 记录详细调试信息
+                            all_tasks = OCRTask.objects.values_list('id', 'name', 'status')[:5]
+                            logger.error(f"数据库中的任务示例: {list(all_tasks)}")
                     
                     transaction.on_commit(submit_celery_task)
                     
