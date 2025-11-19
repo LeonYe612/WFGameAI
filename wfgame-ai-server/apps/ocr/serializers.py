@@ -79,6 +79,7 @@ class OCRProcessGitSerializer(serializers.Serializer):
     )
     token = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     enable_cache = serializers.BooleanField(required=False, default=True)
+    keyword_filter = serializers.DictField(required=False, default=dict)
 
     def validate(self, data):
         """验证处理参数"""
@@ -86,6 +87,12 @@ class OCRProcessGitSerializer(serializers.Serializer):
             raise serializers.ValidationError("项目ID为必填项")
         if not data.get("repo_id"):
             raise serializers.ValidationError("仓库ID为必填项")
+        
+        # 验证关键字过滤配置
+        keyword_filter = data.get("keyword_filter", {})
+        if keyword_filter.get("enabled") and not keyword_filter.get("keywords"):
+            raise serializers.ValidationError("启用关键字过滤时必须提供关键字")
+        
         return data
 
 
@@ -119,6 +126,26 @@ class FileUploadSerializer(serializers.Serializer):
     project_id = serializers.IntegerField(required=True)
     languages = serializers.CharField(required=False, default='["ch"]')
     enable_cache = serializers.BooleanField(required=False, default=True)
+    keyword_filter = serializers.CharField(required=False, default='{}')
+    
+    def validate_keyword_filter(self, value):
+        """验证并解析keyword_filter字段"""
+        try:
+            import json
+            if isinstance(value, str):
+                filter_dict = json.loads(value)
+            elif isinstance(value, dict):
+                filter_dict = value
+            else:
+                return {}
+            
+            # 验证关键字过滤配置
+            if filter_dict.get('enabled') and not filter_dict.get('keywords'):
+                raise serializers.ValidationError("启用关键字过滤时必须提供关键字")
+            
+            return filter_dict
+        except json.JSONDecodeError:
+            raise serializers.ValidationError("keyword_filter格式错误，必须是有效的JSON对象")
     
     def validate_languages(self, value):
         """验证并解析languages字段"""

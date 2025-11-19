@@ -626,6 +626,7 @@ class OCRUploadAPIView(APIView):
         project_id = serializer.validated_data.get("project_id")
         languages = serializer.validated_data.get("languages", ["ch"])
         enable_cache = serializer.validated_data.get("enable_cache", True)
+        keyword_filter = serializer.validated_data.get("keyword_filter", {})
 
         try:
             # 确保项目存在
@@ -676,6 +677,7 @@ class OCRUploadAPIView(APIView):
                     "upload_id": upload_id,
                     "target_dir": relative_upload_dir,
                     "enable_cache": enable_cache,
+                    "keyword_filter": keyword_filter,  # 关键字过滤配置
                 },
             )
 
@@ -744,6 +746,7 @@ class OCRProcessAPIView(APIView):
         action = request.data.get("action", "")
         if action == "process_git":
             # 处理Git仓库源OCR
+            logger.info(f"收到Git OCR请求，原始数据: {request.data}")
             serializer = OCRProcessGitSerializer(data=request.data)
             if serializer.is_valid():
                 # 获取参数
@@ -752,6 +755,7 @@ class OCRProcessAPIView(APIView):
                 branch = serializer.validated_data.get("branch", "main")
                 languages = serializer.validated_data.get("languages", ["ch"])
                 enable_cache = serializer.validated_data.get("enable_cache", True)
+                keyword_filter = serializer.validated_data.get("keyword_filter", {})
 
                 try:
                     # 获取项目和仓库
@@ -766,7 +770,7 @@ class OCRProcessAPIView(APIView):
                         status="pending",
                         config={
                             "branch": branch,
-                            "languages": languages,
+                            "target_languages": languages,  # 统一使用target_languages字段
                             "target_dir": PathUtils.get_ocr_repos_dir(),
                             # 项目代码所在目录，与 target_dir 相对路径
                             "target_path": GitLabService(
@@ -774,6 +778,7 @@ class OCRProcessAPIView(APIView):
                                              access_token=git_repo.token,
                                              )).get_repo_name(git_repo.url),
                             "enable_cache": enable_cache,
+                            "keyword_filter": keyword_filter,  # 关键字过滤配置
                         },
                     )
 
@@ -785,7 +790,7 @@ class OCRProcessAPIView(APIView):
                     logger.info(f"Git任务详细信息: 名称={task.name}, 状态={task.status}, 创建时间={task.created_at}")
                     
                     def submit_celery_task():
-                        time.sleep(0.1)  # 短暂延迟确保事务提交
+                        time.sleep(0.3)  # 增加延迟到500ms，确保数据库事务完全提交
                         
                         # 验证任务是否存在
                         verification_task = OCRTask.objects.filter(id=task.id).first()

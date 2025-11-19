@@ -74,7 +74,7 @@ class TwoStageOCRService:
             "rec_scores": scores,
             "text_rec_score_thresh": threshold_value,
             "max_rec_score": max(scores) if scores else None,
-            "has_match": any(self.contains_chinese(text) for text in texts),
+            "has_match": len(texts) > 0,  # 修改：只要有文本就算命中，不限制语言
         }
         return record
     

@@ -136,22 +136,26 @@ def process_ocr_task(task_id):
         # 添加重试机制，处理数据库事务延迟问题
         task = None
         max_retries = 5
-        retry_delay = 0.2  # 200毫秒
+        retry_delay = 0.3  # 300毫秒
         
         for attempt in range(max_retries):
+            logger.info(f"第{attempt + 1}次尝试查询任务: {task_id}")
             task = OCRTask.objects.all_teams().filter(id=task_id).first()
             if task:
-                logger.info(f"第{attempt + 1}次尝试成功找到OCR任务: {task.id}")
+                logger.info(f"✅ 第{attempt + 1}次尝试成功找到OCR任务: {task.id}")
                 break
             
+            # 查询失败，记录调试信息
+            logger.warning(f"❌ 第{attempt + 1}次尝试未找到任务 {task_id}")
+            
             if attempt < max_retries - 1:
-                logger.warning(f"第{attempt + 1}次尝试未找到任务 {task_id}，{retry_delay}秒后重试...")
+                logger.warning(f"⏳ {retry_delay}秒后重试...")
                 time.sleep(retry_delay)
                 retry_delay *= 1.5  # 指数退避
             else:
                 # 最后一次尝试失败，记录详细调试信息
-                all_tasks = OCRTask.objects.all_teams().values_list('id', 'name', 'status', 'created_time')
-                recent_tasks = list(all_tasks.order_by('-created_time')[:10])
+                all_tasks = OCRTask.objects.all_teams().values_list('id', 'name', 'status', 'created_at')
+                recent_tasks = list(all_tasks.order_by('-created_at')[:10])
                 logger.error(f"OCR任务不存在: {task_id}")
                 logger.error(f"数据库中最近10个任务: {recent_tasks}")
                 logger.error(f"查询条件: id={task_id}")
@@ -169,6 +173,8 @@ def process_ocr_task(task_id):
         # 获取目标语言
         task_config = task.config or {}
         target_languages = task_config.get('target_languages', ['ch'])  # 默认检测中文（官方语言码）
+        logger.info(f"任务配置: {task_config}")
+        logger.info(f"目标语言: {target_languages}")
 
 
         # 从命令行指定的配置文件读取OCR多线程配置
@@ -317,7 +323,7 @@ def process_ocr_task(task_id):
                     })
                     return {"status": "success", "task_id": task_id}
 
-                msg = f"⚡ OCR缓存预过滤完成: 总图片数={total_images}, 命中缓存={len(hit_hashes)}, 需识别={len(image_paths)}"
+                msg = f"⚡缓存过滤完成: T{total_images};H{len(hit_hashes)};P{len(image_paths)}"
                 logger.info(msg)
             except Exception as _init_prog_err:
                 logger.warning(f"使用OCR缓存进行预过滤出错: {_init_prog_err}")
@@ -355,21 +361,30 @@ def process_ocr_task(task_id):
         
         # 准备输入图片列表
         if image_paths:
-            # 使用缓存过滤后的图片列表
-            input_images = image_paths
+            # 使用缓存过滤后的图片列表，同时过滤图片格式
+            img_exts = {'.jpg', '.jpeg', '.png'}
+            input_images = [
+                img_path for img_path in image_paths
+                if os.path.splitext(img_path)[1].lower() in img_exts
+            ]
+            if len(input_images) < len(image_paths):
+                logger.info(f"格式过滤: 原始={len(image_paths)}, 保留={len(input_images)}, "
+                           f"过滤={len(image_paths) - len(input_images)}")
         else:
-            # 扫描目录获取所有图片
+            # 扫描目录获取所有图片（仅限jpg、jpeg、png格式）
             input_images = []
-            img_exts = {'.jpg', '.jpeg', '.png', '.bmp', '.webp', '.tif', '.tiff'}
+            img_exts = {'.jpg', '.jpeg', '.png'}
             for root_dir, _, files in os.walk(check_dir):
                 for file_name in files:
                     if os.path.splitext(file_name)[1].lower() in img_exts:
                         input_images.append(os.path.join(root_dir, file_name))
         
         # 执行两阶段OCR检测
+        ocr_lang = target_languages[0] if target_languages else "ch"
+        logger.warning(f"🔍 执行OCR检测，使用语言: {ocr_lang}, 原始语言列表: {target_languages}")
         detection_result = two_stage_service.process_two_stage_detection(
             input_images, 
-            lang=target_languages[0] if target_languages else "ch"
+            lang=ocr_lang
         )
         
         end_time = time.time()
@@ -445,6 +460,22 @@ def process_ocr_task(task_id):
                 'max_confidence': hit_record.get('max_rec_score', 0.0),
             })
 
+        # 关键字过滤（如果启用）
+        keyword_filter_config = task_config.get('keyword_filter', {})
+        if keyword_filter_config.get('enabled'):
+            from apps.ocr.services.keyword_filter import KeywordFilter
+            keyword_filter = KeywordFilter(keyword_filter_config)
+            original_count = len(ocr_results)
+            ocr_results = keyword_filter.filter_results(ocr_results)
+            logger.info(f"关键字过滤: 原始结果={original_count}, 过滤后={len(ocr_results)}")
+            
+            notify_ocr_task_progress({
+                "id": task_id,
+                "remark": f"关键字过滤完成: 原始={original_count}, 匹配={len(ocr_results)}",
+            })
+        else:
+            logger.info(f"关键字过滤未启用 (enabled={keyword_filter_config.get('enabled', False)})")
+        
         # 持久化两阶段检测结果，供导出和分析使用
         try:
             import json as _json
