@@ -1,11 +1,14 @@
 import { isString, isEmpty } from "@pureadmin/utils";
 import { useMultiTagsStoreHook } from "@/store/modules/multiTags";
+import { useSettingStoreHook } from "@/store/modules/settings";
+import { emitter } from "@/utils/mitt";
 import {
   useRouter,
   useRoute,
   type LocationQueryRaw,
   type RouteParamsRaw
 } from "vue-router";
+import { nextTick, ref } from "vue";
 
 export interface NavigateProps {
   parameter?: LocationQueryRaw | RouteParamsRaw;
@@ -22,6 +25,10 @@ export function useNavigate() {
   const route = useRoute();
   const router = useRouter();
   const getParameter = isEmpty(route?.params) ? route?.query : route?.params;
+  const pureSetting = useSettingStoreHook();
+
+  // 用于跟踪是否已添加样式表，避免重复添加
+  const fullscreenStyleSheet = ref<CSSStyleSheet | null>(null);
 
   const findPathByName = (routeName: string) => {
     const resolvedRoute = router.resolve({
@@ -178,7 +185,7 @@ export function useNavigate() {
         id: id,
         ...params
       },
-      componentName: "ReportDetail",
+      componentName: "AI-REPORTS-DETAIL",
       tagTitle: title,
       blank,
       addTag
@@ -339,6 +346,134 @@ export function useNavigate() {
     if (getParameter) toDetail(getParameter, model);
   };
 
+  /**
+   * 设置全屏模式
+   * @param enableFullscreen 是否启用全屏，如果不传则从路由参数中获取
+   * @param hideTagBar 是否隐藏标签栏，默认与全屏状态一致
+   */
+  function setFullscreen(enableFullscreen?: boolean, hideTagBar?: boolean) {
+    const isFullscreen =
+      enableFullscreen ?? getParameter?.fullscreen === "true";
+    const shouldHideTagBar = hideTagBar ?? isFullscreen;
+
+    nextTick(() => {
+      // 设置侧边栏隐藏状态
+      pureSetting.changeSetting({
+        key: "hiddenSideBar",
+        value: isFullscreen
+      });
+
+      // 设置标签栏显示状态
+      emitter.emit("tagViewsChange", shouldHideTagBar as unknown as string);
+
+      // 处理样式覆盖
+      if (isFullscreen) {
+        addFullscreenStyles();
+      } else {
+        removeFullscreenStyles();
+      }
+    });
+  }
+
+  /**
+   * 添加全屏样式
+   */
+  function addFullscreenStyles() {
+    // 如果已经添加过样式表，先移除
+    if (fullscreenStyleSheet.value) {
+      removeFullscreenStyles();
+    }
+
+    try {
+      // 创建新的样式表
+      const sheet = new CSSStyleSheet();
+
+      // 添加样式规则
+      const rules = [
+        "body[layout=horizontal] .main-hidden .fixed-header + .app-main { padding-top: 0px !important; }",
+        "body[layout=vertical] .main-hidden .fixed-header + .app-main { padding-top: 0px !important; }",
+        // 可以根据需要添加更多全屏相关样式
+        "body[layout=horizontal] .main-hidden .fixed-header + .app-main { padding-left: 0px !important; }",
+        "body[layout=horizontal] .main-hidden .fixed-header + .app-main { padding-right: 0px !important; }"
+      ];
+
+      rules.forEach(rule => {
+        sheet.insertRule(rule);
+      });
+
+      // 添加到文档
+      document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet];
+      fullscreenStyleSheet.value = sheet;
+    } catch (error) {
+      console.warn("Failed to add fullscreen styles:", error);
+      // 降级方案：直接设置内联样式
+      fallbackToInlineStyles(true);
+    }
+  }
+
+  /**
+   * 移除全屏样式
+   */
+  function removeFullscreenStyles() {
+    if (fullscreenStyleSheet.value) {
+      try {
+        const index = document.adoptedStyleSheets.indexOf(
+          fullscreenStyleSheet.value
+        );
+        if (index > -1) {
+          document.adoptedStyleSheets = document.adoptedStyleSheets.filter(
+            (_, i) => i !== index
+          );
+        }
+      } catch (error) {
+        console.warn("Failed to remove fullscreen styles:", error);
+        // 降级方案：恢复内联样式
+        fallbackToInlineStyles(false);
+      }
+      fullscreenStyleSheet.value = null;
+    }
+  }
+
+  /**
+   * 降级方案：直接操作DOM元素的内联样式
+   */
+  function fallbackToInlineStyles(enable: boolean) {
+    const selectors = [
+      "body[layout=horizontal] .main-hidden .fixed-header + .app-main",
+      "body[layout=vertical] .main-hidden .fixed-header + .app-main"
+    ];
+
+    selectors.forEach(selector => {
+      const element = document.querySelector(selector) as HTMLElement;
+      if (element) {
+        if (enable) {
+          element.style.setProperty("padding-top", "0px", "important");
+          element.style.setProperty("padding-left", "0px", "important");
+          element.style.setProperty("padding-right", "0px", "important");
+        } else {
+          element.style.removeProperty("padding-top");
+          element.style.removeProperty("padding-left");
+          element.style.removeProperty("padding-right");
+        }
+      }
+    });
+  }
+
+  /**
+   * 切换全屏状态
+   */
+  function toggleFullscreen() {
+    const currentState = getParameter?.fullscreen === "true";
+    setFullscreen(!currentState);
+  }
+
+  /**
+   * 退出全屏模式
+   */
+  function exitFullscreen() {
+    setFullscreen(false);
+  }
+
   return {
     navigateTo,
     navigateToTestcaseList,
@@ -355,6 +490,11 @@ export function useNavigate() {
     buildReplayUrl,
     openReplayRoom,
     navigateToTasksPage,
+    // fullscreen
+    setFullscreen,
+    toggleFullscreen,
+    exitFullscreen,
+    removeFullscreenStyles,
     toDetail,
     initToDetail,
     getParameter,
