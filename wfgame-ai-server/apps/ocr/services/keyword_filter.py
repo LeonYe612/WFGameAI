@@ -221,18 +221,30 @@ class KeywordFilter:
         
         filtered_results = []
         total_count = len(ocr_results)
+        language_matched = 0  # 语言匹配数量
+        keyword_matched = 0   # 关键字匹配数量
         
         for result in ocr_results:
+            # 第一步：检查是否通过语言检查（has_match由two_stage_ocr根据语言判断）
+            if not result.get('has_match', False):
+                # 未通过语言检查，直接跳过
+                result['has_match'] = False
+                continue
+            
+            language_matched += 1
+            
+            # 第二步：检查是否包含关键字
             if self._contains_keywords(result):
-                # 确保匹配的结果标记为命中
+                # 通过语言检查 + 关键字检查 = 真正命中
                 result['has_match'] = True
                 filtered_results.append(result)
+                keyword_matched += 1
             else:
-                # 标记为未匹配
+                # 通过语言检查但未包含关键字
                 result['has_match'] = False
         
-        logger.info(f"关键字过滤完成: 原始={total_count}, 匹配={len(filtered_results)}, "
-                   f"过滤={total_count - len(filtered_results)}")
+        logger.info(f"关键字过滤完成: 原始={total_count}, 语言匹配={language_matched}, "
+                   f"关键字匹配={keyword_matched}, 最终命中={len(filtered_results)}")
         
         return filtered_results
     

@@ -6,6 +6,7 @@ import csv
 import json
 import logging
 import os
+import re
 import tarfile
 import uuid
 import zipfile
@@ -638,8 +639,15 @@ class OCRUploadAPIView(APIView):
                     msg="项目不存在"
                 )
 
-            # 创建上传ID
-            upload_id = f"upload_{uuid.uuid4().hex[:8]}"
+            # 创建上传ID：格式为 upload_YYYYMMDD_HHMMSS_项目名_随机码
+            from datetime import datetime
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            # random_code = uuid.uuid4().hex[:6]
+            # 清理项目名称，移除特殊字符
+            safe_project_name = re.sub(r'[^\w\-]', '_', project.name)[:20]
+            # upload_id = f"upload_{timestamp}_{safe_project_name}_{random_code}"
+            upload_id = f"upload_{timestamp}_{safe_project_name}"
+            
             uploads_base_dir = PathUtils.get_ocr_uploads_dir()
             upload_dir = os.path.join(uploads_base_dir, upload_id)
             
@@ -665,8 +673,15 @@ class OCRUploadAPIView(APIView):
                 os.remove(file_path)  # 删除原始TAR文件
 
             # 创建OCR任务
-            # 保存相对于MEDIA_ROOT的相对路径，避免路径重复
-            relative_upload_dir = upload_id
+            # 计算相对于MEDIA_ROOT的相对路径
+            abs_upload_dir = os.path.abspath(upload_dir)
+            abs_media_root = os.path.abspath(settings.MEDIA_ROOT)
+            if abs_upload_dir.startswith(abs_media_root):
+                relative_upload_dir = os.path.relpath(abs_upload_dir, abs_media_root).replace('\\', '/')
+            else:
+                # 降级方案：如果路径不在media下，只保存upload_id
+                relative_upload_dir = upload_id
+            logger.info(f"相对上传目录: {relative_upload_dir}")
             task = OCRTask.objects.create(
                 project=project,
                 source_type="upload",

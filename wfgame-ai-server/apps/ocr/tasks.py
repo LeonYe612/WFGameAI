@@ -213,8 +213,10 @@ def process_ocr_task(task_id):
                 # 对于上传任务，target_dir是相对路径，需要与MEDIA_ROOT拼接
                 check_dir = os.path.join(settings.MEDIA_ROOT, target_dir)
             elif task.source_type == 'git':
-                check_dir = os.path.join(target_dir, target_path)
-                logger.info(f"Git任务检查目录: {check_dir}")
+                # Git任务：动态获取repos基础目录，避免使用旧配置中的路径
+                repos_base_dir = PathUtils.get_ocr_repos_dir()
+                check_dir = os.path.join(repos_base_dir, target_path)
+                logger.info(f"Git任务检查目录: {check_dir} (基础目录: {repos_base_dir}, 仓库名: {target_path})")
                 git_service = GitLabService(
                     GitLabConfig(
                         repo_url=task.git_repository.url,
@@ -382,9 +384,27 @@ def process_ocr_task(task_id):
         # 执行两阶段OCR检测
         ocr_lang = target_languages[0] if target_languages else "ch"
         logger.warning(f"🔍 执行OCR检测，使用语言: {ocr_lang}, 原始语言列表: {target_languages}")
+        
+        # 通知开始OCR检测
+        notify_ocr_task_progress({
+            "id": task_id,
+            "remark": f"开始OCR检测，共{len(input_images)}张图片，使用{ocr_lang}模型...",
+        })
+        
+        # 定义进度回调函数
+        def ocr_progress_callback(processed, total, stage):
+            """OCR检测进度回调"""
+            progress_percent = int((processed / total * 100)) if total > 0 else 0
+            notify_ocr_task_progress({
+                "id": task_id,
+                "processed_images": processed,
+                "remark": f"{stage}: {processed}/{total} ({progress_percent}%)",
+            })
+        
         detection_result = two_stage_service.process_two_stage_detection(
             input_images, 
-            lang=ocr_lang
+            lang=ocr_lang,
+            progress_callback=ocr_progress_callback
         )
         
         end_time = time.time()
@@ -418,23 +438,45 @@ def process_ocr_task(task_id):
         })
 
         # 构建与旧流程兼容的结果列表（用于写库与汇总）
-        # 从两阶段检测结果中获取所有命中记录
+        # 从两阶段检测结果中获取所有命中记录和未命中路径
         all_hits_records = detection_result.get('all_hits_records', [])
+        final_miss_paths = detection_result.get('final_statistics', {}).get('final_miss_paths', [])
         media_root = settings.MEDIA_ROOT
 
         # 生成兼容结果：将两阶段检测结果转换为数据库格式
+        notify_ocr_task_progress({
+            "id": task_id,
+            "remark": f"正在处理OCR结果，命中={total_hits}张，未命中={final_miss}张...",
+        })
+        
         ocr_results = []
+        
+        # 1. 处理命中的记录
         for hit_record in all_hits_records:
             input_path = hit_record.get('input_path', '')
             texts = hit_record.get('rec_texts', [])
             confidences = hit_record.get('rec_scores', [])
             stage = hit_record.get('stage', 'unknown')
             
-            # 计算相对路径
-            if input_path.startswith(media_root):
-                rel_path = os.path.relpath(input_path, media_root).replace('\\', '/')
+            # 计算相对路径（确保使用绝对路径）
+            abs_input_path = os.path.abspath(input_path)
+            abs_media_root = os.path.abspath(media_root)
+            
+            # 调试：记录第一张图片的路径信息
+            if len(ocr_results) == 0:
+                logger.info(f"=== 路径调试信息 ===")
+                logger.info(f"原始路径: {input_path}")
+                logger.info(f"绝对路径: {abs_input_path}")
+                logger.info(f"Media根目录: {abs_media_root}")
+                logger.info(f"是否以Media开头: {abs_input_path.startswith(abs_media_root)}")
+            
+            # 检查路径是否在media目录下
+            if abs_input_path.startswith(abs_media_root):
+                rel_path = os.path.relpath(abs_input_path, abs_media_root).replace('\\', '/')
             else:
-                rel_path = input_path
+                logger.warning(f"图片路径不在media目录下: {abs_input_path}")
+                logger.warning(f"media_root: {abs_media_root}")
+                rel_path = os.path.relpath(abs_input_path, abs_media_root).replace('\\', '/')
             
             # 读取图片分辨率
             pic_resolution = ''
@@ -454,15 +496,57 @@ def process_ocr_task(task_id):
                 'image_path': rel_path,
                 'texts': texts,
                 'confidences': confidences,
-                'has_match': True,  # 所有记录都是命中的
+                'has_match': hit_record.get('has_match', True),  # 从检测结果获取命中状态
                 'pic_resolution': pic_resolution,
                 'stage': stage,  # 记录检测阶段
                 'max_confidence': hit_record.get('max_rec_score', 0.0),
             })
+        
+        # 2. 处理未命中的记录（没有识别到文本的图片）
+        for miss_path in final_miss_paths:
+            # 计算相对路径
+            abs_miss_path = os.path.abspath(miss_path)
+            abs_media_root = os.path.abspath(media_root)
+            
+            if abs_miss_path.startswith(abs_media_root):
+                rel_path = os.path.relpath(abs_miss_path, abs_media_root).replace('\\', '/')
+            else:
+                logger.warning(f"未命中图片路径不在media目录下: {abs_miss_path}")
+                rel_path = os.path.relpath(abs_miss_path, abs_media_root).replace('\\', '/')
+            
+            # 读取图片分辨率
+            pic_resolution = ''
+            try:
+                import numpy as _np
+                import cv2 as _cv2
+                data = _np.fromfile(miss_path, dtype=_np.uint8)
+                img_nd = _cv2.imdecode(data, _cv2.IMREAD_COLOR)
+                if img_nd is not None:
+                    h, w = img_nd.shape[:2]
+                    pic_resolution = f"{int(w)}x{int(h)}"
+            except Exception:
+                pic_resolution = ''
+            
+            # 创建未命中的OCR结果记录
+            ocr_results.append({
+                'image_path': rel_path,
+                'texts': [],  # 未命中，没有文本
+                'confidences': [],  # 未命中，没有置信度
+                'has_match': False,  # 未命中
+                'pic_resolution': pic_resolution,
+                'stage': 'miss',  # 标记为未命中
+                'max_confidence': 0.0,
+            })
 
         # 关键字过滤（如果启用）
         keyword_filter_config = task_config.get('keyword_filter', {})
+        logger.info(f"关键字过滤配置: enabled={keyword_filter_config.get('enabled', False)}")
+        
         if keyword_filter_config.get('enabled'):
+            notify_ocr_task_progress({
+                "id": task_id,
+                "remark": f"开始关键字过滤，共{len(ocr_results)}条结果...",
+            })
             from apps.ocr.services.keyword_filter import KeywordFilter
             keyword_filter = KeywordFilter(keyword_filter_config)
             original_count = len(ocr_results)
@@ -474,12 +558,16 @@ def process_ocr_task(task_id):
                 "remark": f"关键字过滤完成: 原始={original_count}, 匹配={len(ocr_results)}",
             })
         else:
-            logger.info(f"关键字过滤未启用 (enabled={keyword_filter_config.get('enabled', False)})")
+            logger.info("关键字过滤未启用 (enabled=False)")
+            notify_ocr_task_progress({
+                "id": task_id,
+                "remark": f"跳过关键字过滤，共{len(ocr_results)}条结果",
+            })
         
-        # 持久化两阶段检测结果，供导出和分析使用
+        # 保存两阶段检测结果到文件（用于调试）
         try:
             import json as _json
-            report_dir = PathUtils.get_ocr_reports_dir()
+            report_dir = os.path.join(settings.MEDIA_ROOT, 'ocr', 'reports')
             os.makedirs(report_dir, exist_ok=True)
             result_file = os.path.join(report_dir, f"{task.id}_two_stage_result.json")
             with open(result_file, 'w', encoding='utf-8') as fp:
@@ -503,6 +591,11 @@ def process_ocr_task(task_id):
             return {"status": "success", "task_id": task_id}
 
         # 批量记录 OCRResult & 统计最终命中数
+        notify_ocr_task_progress({
+            "id": task_id,
+            "remark": f"正在保存OCR结果到数据库，共{len(ocr_results)}条...",
+        })
+        
         new_results = []
         total_matches = 0
         for item in ocr_results:
@@ -531,6 +624,11 @@ def process_ocr_task(task_id):
         OCRResult.objects.bulk_create(new_results)
         logger.warning(f"批量插入 {len(new_results)} 条OCR结果到数据库")
         
+        notify_ocr_task_progress({
+            "id": task_id,
+            "remark": f"已保存{len(new_results)}条结果到数据库",
+        })
+        
         # 强制提交数据库事务
         from django.db import transaction
         transaction.commit()
@@ -543,9 +641,19 @@ def process_ocr_task(task_id):
 
 
         # 生成汇总报告
+        notify_ocr_task_progress({
+            "id": task_id,
+            "remark": "正在生成汇总报告...",
+        })
+        
         logger.warning("开始生成汇总报告")
         _generate_summary_report(task, ocr_results, target_languages)
         logger.warning("汇总报告生成完成")
+        
+        notify_ocr_task_progress({
+            "id": task_id,
+            "remark": "汇总报告生成完成",
+        })
 
         # 完成进度 - 直接使用已知的统计数据更新任务
         try:
@@ -568,7 +676,10 @@ def process_ocr_task(task_id):
                 "id": task_id,
                 "status": 'completed',
                 "end_time": timezone.now(),
-                "processed_images": total_images,
+                "total_images": total_processed,
+                "processed_images": total_processed,
+                "matched_images": total_matched,
+                "match_rate": match_rate,
                 "remark": "✅ 任务执行完毕",
             })
         except Exception as _fin_err:

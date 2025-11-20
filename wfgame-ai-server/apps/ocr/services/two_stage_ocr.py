@@ -9,7 +9,7 @@ import re
 import shutil
 import tempfile
 import uuid
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional, Callable
 
 from .performance_config import get_performance_config, PARAM_VERSIONS
 from .ocr_service import OCRInstancePool
@@ -56,7 +56,7 @@ class TwoStageOCRService:
                 continue
         return normalized
     
-    def build_record(self, data: Dict[str, Any], stage: str) -> Dict[str, Any]:
+    def build_record(self, data: Dict[str, Any], stage: str, lang: str = "ch") -> Dict[str, Any]:
         """构建OCR结果记录"""
         texts = self.normalize_texts(data.get("rec_texts", []))
         scores = self.normalize_scores(data.get("rec_scores", []))
@@ -66,6 +66,16 @@ class TwoStageOCRService:
             threshold_value = float(threshold)
         except (TypeError, ValueError):
             threshold_value = 0.0
+        
+        # 根据语言判断是否命中
+        has_match = False
+        if texts:
+            if lang == "ch":
+                # 中文模型：检查是否包含中文字符
+                has_match = any(self.contains_chinese(text) for text in texts)
+            else:
+                # 其他语言模型：只要有文本就算命中
+                has_match = True
             
         record = {
             "input_path": data.get("input_path"),
@@ -74,7 +84,7 @@ class TwoStageOCRService:
             "rec_scores": scores,
             "text_rec_score_thresh": threshold_value,
             "max_rec_score": max(scores) if scores else None,
-            "has_match": len(texts) > 0,  # 修改：只要有文本就算命中，不限制语言
+            "has_match": has_match,
         }
         return record
     
@@ -105,9 +115,13 @@ class TwoStageOCRService:
         prepared_images = []
         for original_path in input_images:
             try:
-                # 检查路径是否包含中文字符
-                if any('\u4e00' <= char <= '\u9fff' for char in original_path):
-                    # 包含中文，创建临时副本
+                # 检查路径是否包含非ASCII字符（中文、特殊符号等）
+                try:
+                    original_path.encode('ascii')
+                    # 纯ASCII路径，直接使用
+                    prepared_images.append(original_path)
+                except UnicodeEncodeError:
+                    # 包含非ASCII字符，创建临时副本
                     file_ext = os.path.splitext(original_path)[1]
                     temp_filename = f"{uuid.uuid4().hex}{file_ext}"
                     temp_path = os.path.join(self.temp_dir, temp_filename)
@@ -116,10 +130,7 @@ class TwoStageOCRService:
                     shutil.copy2(original_path, temp_path)
                     self.path_mapping[temp_path] = original_path
                     prepared_images.append(temp_path)
-                    logger.debug(f"中文路径映射: {original_path} -> {temp_path}")
-                else:
-                    # 不包含中文，直接使用
-                    prepared_images.append(original_path)
+                    logger.debug(f"非ASCII路径映射: {original_path} -> {temp_path}")
             except Exception as e:
                 logger.warning(f"准备图片失败，跳过: {original_path}, 错误: {e}")
                 
@@ -137,8 +148,18 @@ class TwoStageOCRService:
                 logger.warning(f"清理临时文件失败: {e}")
     
     def run_single_stage(self, stage: str, input_images: List[str], 
-                        lang: str = "ch") -> Tuple[List[Dict[str, Any]], List[str]]:
-        """运行单阶段OCR检测"""
+                        lang: str = "ch",
+                        progress_callback: Optional[Callable] = None,
+                        stage_name: str = "") -> Tuple[List[Dict[str, Any]], List[str]]:
+        """运行单阶段OCR检测
+        
+        参数:
+            stage: 阶段名称 (baseline/balanced_v1)
+            input_images: 输入图片路径列表
+            lang: 语言代码
+            progress_callback: 进度回调函数
+            stage_name: 阶段显示名称（用于进度提示）
+        """
         stage_params = PARAM_VERSIONS[stage]
         
         # 预处理图片路径，处理中文路径问题
@@ -147,7 +168,7 @@ class TwoStageOCRService:
             logger.warning("没有有效的图片可以处理")
             return [], input_images
         
-        logger.info(f"准备处理 {len(prepared_images)} 张图片（原始: {len(input_images)}）")
+        logger.info(f"{stage_name}准备处理 {len(prepared_images)} 张图片（原始: {len(input_images)}）")
         
         # 获取或创建共享Pipeline
         pipeline = self.create_shared_pipeline(lang)
@@ -170,6 +191,7 @@ class TwoStageOCRService:
         
         hits_records = []
         miss_image_paths = []
+        processed_count = 0
         
         # 分批处理图片
         for i in range(0, len(prepared_images), batch_size):
@@ -177,6 +199,14 @@ class TwoStageOCRService:
             
             # 现在图片路径已经预处理过，直接使用
             valid_batch = batch_images
+            
+            # 更新进度（每10张图片更新一次）
+            if progress_callback and (processed_count % 10 == 0 or processed_count == 0):
+                progress_callback(
+                    processed=processed_count,
+                    total=len(prepared_images),
+                    stage=stage_name
+                )
                 
             try:
                 batch_results = list(pipeline.predict(valid_batch, **predict_params))
@@ -203,27 +233,48 @@ class TwoStageOCRService:
                 original_path = self.path_mapping.get(temp_path, temp_path)
                 result_data["input_path"] = original_path
                 
-                record = self.build_record(result_data, stage)
+                record = self.build_record(result_data, stage, lang)
                 
                 if record["has_match"]:
                     hits_records.append(record)
                 else:
                     miss_image_paths.append(original_path)
+                
+                processed_count += 1
+        
+        # 最后更新一次进度（确保显示100%）
+        if progress_callback:
+            progress_callback(
+                processed=len(prepared_images),
+                total=len(prepared_images),
+                stage=stage_name
+            )
         
         return hits_records, miss_image_paths
     
     def process_two_stage_detection(self, input_images: List[str], 
-                                   lang: str = "ch") -> Dict[str, Any]:
-        """执行两阶段OCR检测"""
+                                   lang: str = "ch",
+                                   progress_callback: Optional[Callable] = None) -> Dict[str, Any]:
+        """执行两阶段OCR检测
+        
+        参数:
+            input_images: 输入图片路径列表
+            lang: 语言代码
+            progress_callback: 进度回调函数
+        """
         # 阶段1: baseline检测
         stage1_hits, stage1_miss_paths = self.run_single_stage(
-            "baseline", input_images, lang
+            "baseline", input_images, lang,
+            progress_callback=progress_callback,
+            stage_name="阶段1(快速检测)"
         )
         
         # 阶段2: balanced_v1检测未命中的图片
         if stage1_miss_paths:
             stage2_hits, final_miss_paths = self.run_single_stage(
-                "balanced_v1", stage1_miss_paths, lang
+                "balanced_v1", stage1_miss_paths, lang,
+                progress_callback=progress_callback,
+                stage_name="阶段2(详细检测)"
             )
         else:
             stage2_hits = []

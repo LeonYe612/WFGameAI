@@ -1018,7 +1018,7 @@ class OCRService:
         
         # 获取图片路径列表
         if type(image_dir) is str:
-            img_exts = image_formats or ['.jpg', '.jpeg', '.png', '.bmp', '.webp', '.tif', '.tiff']
+            img_exts = image_formats or ['.jpg', '.jpeg', '.png']
             full_image_dir = image_dir
             if not os.path.isabs(image_dir):
                 full_image_dir = os.path.join(settings.MEDIA_ROOT, image_dir)

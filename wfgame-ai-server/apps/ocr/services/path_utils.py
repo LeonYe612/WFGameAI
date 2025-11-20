@@ -68,8 +68,11 @@ class PathUtils:
     @staticmethod
     def get_ocr_uploads_dir():
         """获取OCR上传目录"""
-        # 直接返回MEDIA_ROOT，避免路径重复问题
-        return settings.MEDIA_ROOT
+        config = PathUtils.load_config()
+        path_str = config.get('paths', 'ocr_uploads_dir', fallback=os.path.join(settings.MEDIA_ROOT, 'ocr', 'uploads'))
+        resolved_path = PathUtils._resolve_path_variables(path_str)
+        logger.debug(f"OCR上传目录: {path_str} -> {resolved_path}")
+        return resolved_path
 
     @staticmethod
     def get_ocr_results_dir():
