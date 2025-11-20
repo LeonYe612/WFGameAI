@@ -130,3 +130,15 @@ export const deviceStatusEnum: Record<string, EnumValue> = {
     type: "warning"
   }
 };
+
+/** 报告状态 */
+export const reportStatusEnum: Record<string, EnumValue> = {
+  GENERATING: {
+    label: "生成中",
+    value: "generating",
+    order: 1,
+    type: "warning"
+  },
+  COMPLETED: { label: "已完成", value: "completed", order: 2, type: "success" },
+  FAILED: { label: "生成失败", value: "failed", order: 3, type: "danger" }
+};

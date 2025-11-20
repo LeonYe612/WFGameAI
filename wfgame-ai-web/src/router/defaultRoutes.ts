@@ -221,13 +221,34 @@ export default [
         id: 85,
         parent_id: 84,
         genre: 1,
-        path: "/reports/index",
-        component: "/reports/index",
+        path: "/reports/list/index",
+        component: "/reports/list/index",
         name: "AI-REPORTS-INDEX",
         queue: 0,
         meta: {
           title: "测试报告",
           showLink: true,
+          showParent: false,
+          keepAlive: true,
+          frameLoading: false,
+          hiddenTag: false,
+          transition: {
+            enterTransition: "animate__fadeIn animate__faster",
+            leaveTransition: "animate__fadeOut animate__faster"
+          }
+        }
+      },
+      {
+        id: 85,
+        parent_id: 84,
+        genre: 1,
+        path: "/reports/detail/index",
+        component: "/reports/detail/index",
+        name: "AI-REPORTS-DETAIL",
+        queue: 5,
+        meta: {
+          title: "测试报告",
+          showLink: false,
           showParent: false,
           keepAlive: true,
           frameLoading: false,

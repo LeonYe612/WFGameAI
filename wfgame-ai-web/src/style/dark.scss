@@ -2,10 +2,16 @@
 
 /* 暗黑模式适配 */
 html.dark {
-  /* 自定义深色背景颜色 */
-  // --el-bg-color: #020409;
-  $border-style: #303030;
-  $color-white: #fff;
+  /* 自定义深色背景颜色 - 优化的深蓝色主题 */
+  --el-bg-color: #1e2330;
+  --el-bg-color-page: #181c28;
+  --el-bg-color-overlay: #252a3a;
+  --el-bg-color-light: #2a2f42;
+  $border-style: #3c4556;
+  $color-white: #ffffff;
+  $color-text-primary: #f0f2f7;
+  $color-text-secondary: #b8bcc8;
+  $color-text-disabled: #6c7293;
 
   .navbar,
   .tags-view,
@@ -19,7 +25,7 @@ html.dark {
   }
 
   .app-main {
-    background: #020409 !important;
+    background: var(--el-bg-color-page) !important;
   }
 
   .frame {
@@ -32,10 +38,29 @@ html.dark {
     .arrow-right {
       border-right: 1px solid $border-style;
       box-shadow: none;
+      background: var(--el-bg-color-light);
     }
 
     .arrow-right {
       border-left: 1px solid $border-style;
+    }
+
+    .tags-view-item {
+      background: var(--el-bg-color-light);
+      border: 1px solid $border-style;
+      color: $color-text-secondary;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: var(--el-bg-color-overlay);
+        color: $color-text-primary;
+      }
+
+      &.active {
+        background: var(--el-color-primary);
+        color: $color-white;
+        border-color: var(--el-color-primary);
+      }
     }
   }
 
@@ -51,14 +76,25 @@ html.dark {
   }
 
   /* element-plus */
+  .el-table {
+    --el-table-bg-color: var(--el-bg-color);
+    --el-table-tr-bg-color: var(--el-bg-color);
+    --el-table-header-bg-color: var(--el-bg-color-light);
+    --el-table-text-color: $color-text-primary;
+    --el-table-header-text-color: $color-text-primary;
+  }
+
   .el-table__cell {
     background: var(--el-bg-color);
+    border-bottom: 1px solid $border-style;
+    color: $color-text-primary;
   }
 
   .el-card {
     --el-card-bg-color: var(--el-bg-color);
-
-    // border: none !important;
+    --el-card-border-color: $border-style;
+    border: 1px solid $border-style !important;
+    box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.15);
   }
 
   .el-backtop {
@@ -85,22 +121,104 @@ html.dark {
 
   /* 克隆并自定义 ElMessage 样式，不会影响 ElMessage 原本样式，在 src/utils/message.ts 中调用自定义样式 ElMessage 方法即可，非暗黑模式在 src/style/element-plus.scss 文件进行了适配 */
   .pure-message {
-    background-color: rgb(36 37 37) !important;
+    background-color: var(--el-bg-color-light) !important;
     background-image: initial !important;
-    box-shadow: rgb(13 13 13 / 12%) 0 3px 6px -4px,
-      rgb(13 13 13 / 8%) 0 6px 16px 0, rgb(13 13 13 / 5%) 0 9px 28px 8px !important;
+    border: 1px solid $border-style;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25) !important;
 
     & .el-message__content {
-      color: $color-white !important;
+      color: $color-text-primary !important;
       pointer-events: all !important;
       background-image: initial !important;
     }
 
     & .el-message__closeBtn {
+      color: $color-text-secondary;
+      transition: all 0.2s ease;
+      
       &:hover {
-        color: rgb(255 255 255 / 85%);
-        background-color: rgb(255 255 255 / 12%);
+        color: $color-text-primary;
+        background-color: rgba(255, 255, 255, 0.1);
       }
+    }
+  }
+
+  /* 状态颜色定制 */
+  .el-tag {
+    &.el-tag--success {
+      --el-tag-bg-color: rgba(103, 194, 58, 0.2);
+      --el-tag-text-color: #67c23a;
+      --el-tag-border-color: rgba(103, 194, 58, 0.4);
+    }
+
+    &.el-tag--warning {
+      --el-tag-bg-color: rgba(230, 162, 60, 0.2);
+      --el-tag-text-color: #e6a23c;
+      --el-tag-border-color: rgba(230, 162, 60, 0.4);
+    }
+
+    &.el-tag--danger {
+      --el-tag-bg-color: rgba(245, 108, 108, 0.2);
+      --el-tag-text-color: #f56c6c;
+      --el-tag-border-color: rgba(245, 108, 108, 0.4);
+    }
+  }
+
+  /* 按钮样式 */
+  .el-button {
+    &.el-button--primary {
+      --el-button-bg-color: #409eff;
+      --el-button-border-color: #409eff;
+    }
+
+    &.el-button--success {
+      --el-button-bg-color: #67c23a;
+      --el-button-border-color: #67c23a;
+    }
+  }
+
+  /* 输入框样式 */
+  .el-input {
+    --el-input-bg-color: var(--el-bg-color-light);
+    --el-input-border-color: $border-style;
+    --el-input-text-color: $color-text-primary;
+    --el-input-placeholder-color: $color-text-disabled;
+
+    .el-input__wrapper {
+      background-color: var(--el-bg-color-light);
+      border: 1px solid $border-style;
+      transition: all 0.2s ease;
+
+      &:hover {
+        border-color: rgba(64, 158, 255, 0.6);
+      }
+
+      &.is-focus {
+        border-color: var(--el-color-primary);
+        box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.1);
+      }
+    }
+  }
+
+  /* 下拉菜单 */
+  .el-select-dropdown {
+    background: var(--el-bg-color-light);
+    border: 1px solid $border-style;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.2);
+  }
+
+  .el-select-dropdown__item {
+    color: $color-text-primary;
+    transition: background-color 0.2s ease;
+
+    &:hover {
+      background-color: rgba(64, 158, 255, 0.15);
+    }
+
+    &.selected {
+      background-color: rgba(64, 158, 255, 0.2);
+      color: var(--el-color-primary);
+      font-weight: 500;
     }
   }
 }
