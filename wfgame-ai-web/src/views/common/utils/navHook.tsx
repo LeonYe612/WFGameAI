@@ -177,7 +177,7 @@ export function useNavigate() {
     id: number,
     blank = false,
     params = {},
-    addTag = true
+    addTag = false
   ) {
     const title = `ID.${id} - 测试报告`;
     navigateTo({
@@ -278,7 +278,7 @@ export function useNavigate() {
     return href;
   }
 
-  function openReplayRoom(params: {
+  function openReplayRoomBak(params: {
     taskId: string | number;
     deviceIds?: Array<string | number>;
     scriptIds?: Array<string | number>;
@@ -291,6 +291,38 @@ export function useNavigate() {
     } else {
       window.open(href, "_blank");
     }
+  }
+
+  function openReplayRoom(params: {
+    taskId: string | number;
+    deviceIds?: Array<string | number>;
+    scriptIds?: Array<string | number>;
+    celeryId?: string;
+    newTab?: boolean; // default true
+    blank?: boolean; // default false
+  }) {
+    const title = `Task.${params.taskId} - 回放室`;
+
+    const parameter: any = {
+      task_id: params.taskId
+    };
+
+    const d = normalizeList(params.deviceIds);
+    const s = normalizeList(params.scriptIds);
+    if (d.length) parameter.device_ids = d.join(",");
+    if (s.length) parameter.script_ids = s.join(",");
+    if (params.celeryId) parameter.celery_id = params.celeryId;
+
+    // 尝试获取回放室路由名称
+    const componentName = "AI-REPLAY-ROOM"; // 默认组件名
+
+    navigateTo({
+      parameter,
+      componentName,
+      tagTitle: title,
+      blank: params.blank,
+      addTag: params.newTab
+    });
   }
 
   function toDetail(
@@ -489,6 +521,7 @@ export function useNavigate() {
     // replay
     buildReplayUrl,
     openReplayRoom,
+    openReplayRoomBak,
     navigateToTasksPage,
     // fullscreen
     setFullscreen,

@@ -25,7 +25,7 @@ const script_ids = (route.query.script_ids || "")
   1. 图片 分片传输
   2. 图片 压缩
   3. 增加前端 拉流（当前是后端推流） -->
-  <GlobalSocket />
+  <!-- <GlobalSocket /> -->
   <div class="replay-layout">
     <!-- <div class="ids-row top">
       <span class="id-chip strong">任务ID：{{ task_id }}</span>

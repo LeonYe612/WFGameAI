@@ -251,12 +251,43 @@ def start_usb_monitor(config_path: str = None):
     env_vars = {}
     if config_path:
         env_vars['WFGAMEAI_CONFIG'] = config_path
+        if "config_dev.ini" in config_path:
+            env_vars['AI_ENV'] = 'dev'
         print_colored(f"使用配置文件: {config_path}", 'cyan')
 
     command = [sys.executable, monitor_script]
     process = run_command(command, cwd=get_project_root(), name="USB监控", env_vars=env_vars)
 
     print_colored("USB设备监控启动中，请稍后...", 'yellow')
+    return process
+
+def start_socketio_server(config_path: str = None):
+    """
+    启动Socket.IO服务器
+
+    Returns:
+        subprocess.Popen: Socket.IO进程对象
+    """
+    print_colored("\n====== 启动Socket.IO服务器 ======", 'yellow')
+
+    socketio_script = os.path.join(get_project_root(), "wfgame-ai-server", "utils", "socketio_helper.py")
+
+    if not os.path.exists(socketio_script):
+        print_colored(f"错误: Socket.IO服务器脚本不存在: {socketio_script}", 'red')
+        return None
+
+    # 配置文件环境变量
+    env_vars = {}
+    if config_path:
+        env_vars['WFGAMEAI_CONFIG'] = config_path
+        if "config_dev.ini" in config_path:
+            env_vars['AI_ENV'] = 'dev'
+        print_colored(f"使用配置文件: {config_path}", 'cyan')
+
+    command = [sys.executable, socketio_script]
+    process = run_command(command, cwd=get_project_root(), name="Socket.IO", env_vars=env_vars)
+
+    print_colored("Socket.IO服务器启动中，请稍后...", 'yellow')
     return process
 
 def start_frontend():
@@ -417,6 +448,12 @@ def main():
         usb_monitor_process = start_usb_monitor(config_path=selected_config)
         if not usb_monitor_process:
             print_colored("USB设备监控服务启动失败", 'red')
+            return
+
+        # 启动Socket.IO服务
+        socketio_process = start_socketio_server(config_path=selected_config)
+        if not socketio_process:
+            print_colored("Socket.IO服务启动失败", 'red')
             return
 
         # 等待服务启动
