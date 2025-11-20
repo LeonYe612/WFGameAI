@@ -21,10 +21,13 @@ import sys
 import ctypes
 import importlib.util
 from .path_utils import PathUtils
+from .performance_config import get_performance_config, PARAM_VERSIONS
 import threading
+from paddlex import create_pipeline
 from paddleocr import PaddleOCR
 import shutil
 from apps.notifications.tasks import notify_ocr_task_progress
+import paddle
 
 import warnings
 warnings.filterwarnings("ignore", message="iCCP: known incorrect sRGB profile")
@@ -63,19 +66,22 @@ if GPU_ENABLED:
     os.environ["MKL_SERVICE_FORCE_INTEL"] = "0"
 
     # 检测NVIDIA GPU
-    try:
-        import subprocess
-        nvidia_smi = subprocess.run(['nvidia-smi'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        if nvidia_smi.returncode == 0:
-            logger.warning(f"NVIDIA GPU信息:\n{nvidia_smi.stdout}")
-        else:
-            logger.warning(f"无法获取NVIDIA GPU信息: {nvidia_smi.stderr}")
-    except Exception as e:
-        logger.warning(f"检测NVIDIA GPU失败: {e}")
+    # try:
+    #     import subprocess
+    #     nvidia_smi = subprocess.run(['nvidia-smi'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    #     if nvidia_smi.returncode == 0:
+    #         logger.warning(f"NVIDIA GPU信息:\n{nvidia_smi.stdout}")
+    #     else:
+    #         logger.warning(f"无法获取NVIDIA GPU信息: {nvidia_smi.stderr}")
+    # except Exception as e:
+    #     logger.warning(f"检测NVIDIA GPU失败: {e}")
 
 
 class OCRInstancePool:
-    """OCR实例池，用于缓存不同参数组合的OCR实例，避免频繁重建"""
+    """OCR实例池，用于缓存不同参数组合的OCR实例，避免频繁重建
+    
+    集成了性能优化配置和两阶段检测支持
+    """
 
     _instance = None
     _lock = threading.Lock()
@@ -101,27 +107,29 @@ class OCRInstancePool:
             self._initialized = True
             logger.info("OCR实例池初始化完成")
 
-    def _generate_cache_key(self, lang: str, limit_type: str,
-                            use_textline_orientation: bool,
-                            use_doc_unwarping: bool) -> str:
-        """生成缓存键（语言、方向分类、去畸变）。
-        注意：不再将 limit_type 纳入缓存键，缩放策略通过强制写入预处理参数实现，
-        避免相同模型因不同 limit_type 被重复创建。
+    def _generate_cache_key(self, lang: str, stage: str = "baseline",
+                            use_fast_models: bool = False) -> str:
+        """生成缓存键，基于语言、检测阶段和模型类型
+        
+        Args:
+            lang: 语言代码
+            stage: 检测阶段 (baseline 或 balanced_v1)
+            use_fast_models: 是否使用快速模型
         """
-        orientation_flag = 'cls1' if use_textline_orientation else 'cls0'
-        unwarp_flag = 'warp1' if use_doc_unwarping else 'warp0'
-        return f"{lang}_{orientation_flag}_{unwarp_flag}"
+        model_type = 'mobile' if use_fast_models else 'server'
+        return f"{lang}_{stage}_{model_type}"
 
-    def get_ocr_instance(self, lang: str = "ch", limit_type: str = "max",
-                         text_det_thresh: float = 0.3, text_det_box_thresh: float = 0.6,
-                         text_det_unclip_ratio: float = 1.5, text_det_limit_side_len: int = 960,
-                         **other_params) -> PaddleOCR:
-        """获取OCR实例，如果缓存中没有则创建新实例"""
-        use_textline_orientation = other_params.get('use_textline_orientation', False)
-        use_doc_unwarping = other_params.get('use_doc_unwarping', False)
-        cache_key = self._generate_cache_key(
-            lang, limit_type, use_textline_orientation, use_doc_unwarping
-        )
+    def get_ocr_instance(self, lang: str = "ch", stage: str = "baseline", 
+                         use_fast_models: bool = False, **other_params):
+        """获取OCR实例，支持两阶段检测和性能优化
+        
+        Args:
+            lang: 语言代码
+            stage: 检测阶段 (baseline 或 balanced_v1)
+            use_fast_models: 是否使用快速模型
+            **other_params: 其他参数
+        """
+        cache_key = self._generate_cache_key(lang, stage, use_fast_models)
 
         with self._cache_lock:
             # 检查缓存中是否存在
@@ -137,11 +145,9 @@ class OCRInstancePool:
             if len(self._cache) >= self._max_cache_size:
                 self._evict_lru_instance()
 
-            # 创建新的OCR实例（避免将阈值参与实例构建，阈值使用后续强制写入）
+            # 创建新的OCR实例
             ocr_instance = self._create_ocr_instance(
-                lang, limit_type, text_det_limit_side_len,
-                use_textline_orientation=use_textline_orientation,
-                use_doc_unwarping=use_doc_unwarping
+                lang, stage, use_fast_models, **other_params
             )
 
             # 添加到缓存
@@ -165,10 +171,14 @@ class OCRInstancePool:
 
         logger.info(f"淘汰LRU OCR实例: {lru_key}")
 
-    def _create_ocr_instance(self, lang: str, limit_type: str,
-                             text_det_limit_side_len: int,
-                             **other_params) -> PaddleOCR:
-        """创建新的OCR实例"""
+    def _create_ocr_instance(self, lang: str, stage: str, use_fast_models: bool, **other_params):
+        """创建新的OCR实例，集成了调优后的参数配置
+        
+        Args:
+            lang: 语言代码
+            stage: 检测阶段 (baseline 或 balanced_v1)
+            use_fast_models: 是否使用快速模型
+        """
 
         # 强制GPU环境配置
         os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
@@ -176,26 +186,104 @@ class OCRInstancePool:
         os.environ["FLAGS_use_gpu"] = "true"
         os.environ["FLAGS_fraction_of_gpu_memory_to_use"] = "0.8"
 
-        # 基本参数
+        # 获取阶段参数配置
+        stage_params = PARAM_VERSIONS.get(stage, PARAM_VERSIONS["baseline"])
+        
+        # 根据性能配置选择模型
+        if use_fast_models:
+            det_model, rec_model = "PP-OCRv5_mobile_det", "PP-OCRv5_mobile_rec"
+        else:
+            det_model, rec_model = "PP-OCRv5_server_det", "PP-OCRv5_server_rec"
+        
+        # 基本参数 - 使用调优后的配置
         init_kwargs = {
             'device': 'gpu' if GPU_ENABLED else 'cpu',
             'lang': lang,
-            'use_doc_orientation_classify': False,
-            'use_doc_unwarping': other_params.get('use_doc_unwarping', False),
-            'use_textline_orientation': other_params.get('use_textline_orientation', False),
-            'text_detection_model_name': "PP-OCRv5_server_det",
-            'text_recognition_model_name': "PP-OCRv5_server_rec",
+            'use_doc_orientation_classify': stage_params.get('use_doc_orientation_classify', False),
+            'use_doc_preprocessor': stage_params.get('use_doc_preprocessor', False),
+            'use_doc_unwarping': stage_params.get('use_doc_unwarping', False),
+            'use_textline_orientation': stage_params.get('use_textline_orientation', False),
+            'text_detection_model_name': det_model,
+            'text_recognition_model_name': rec_model,
         }
 
+        # 使用PaddleX创建OCR pipeline，集成调优参数
+        device_name = f"gpu:{0}" if GPU_ENABLED else "cpu"
+        
+        # 确保GPU环境
+        self._ensure_gpu_environment()
+        
         try:
-            ocr_instance = PaddleOCR(**init_kwargs)
-            logger.info(f"成功创建OCR实例: {lang}_shared")
+            # 尝试启用HPI加速（如果可用）
+            pipeline_config = {
+                "device": device_name,
+                "use_doc_preprocessor": init_kwargs.get('use_doc_preprocessor', False),
+                "use_textline_orientation": init_kwargs.get('use_textline_orientation', False),
+                "use_doc_orientation_classify": init_kwargs.get('use_doc_orientation_classify', False),
+                "use_doc_unwarping": init_kwargs.get('use_doc_unwarping', False),
+                "text_detection_model_name": init_kwargs.get('text_detection_model_name'),
+                "text_recognition_model_name": init_kwargs.get('text_recognition_model_name'),
+            }
+            
+            # 尝试启用HPI高性能推理
+            try:
+                pipeline_config["use_hpip"] = True
+                ocr_instance = create_pipeline("OCR", **pipeline_config)
+                logger.info(f"✅ HPI高性能推理已启用: {stage}_{lang}")
+            except Exception as hpi_error:
+                logger.warning(f"⚠️  HPI不可用，使用标准推理: {hpi_error}")
+                pipeline_config["use_hpip"] = False
+                ocr_instance = create_pipeline("OCR", **pipeline_config)
+            logger.info(f"成功创建PaddleX OCR实例: {stage}_{lang}_{det_model.split('_')[-2]}")
             return ocr_instance
-        except TypeError as e:
-            # 回退：不传入可能不支持的参数
-            logger.warning(f"创建OCR实例失败，回退到基础参数: {e}")
-            ocr_instance = PaddleOCR(**{'device': 'gpu' if GPU_ENABLED else 'cpu', 'lang': lang})
-            return ocr_instance
+        except Exception as e:
+            # 不再回退到PaddleOCR，直接抛出异常终止
+            logger.error(f"创建PaddleX实例失败: {e}")
+            raise RuntimeError(f"PaddleX OCR实例创建失败: {e}") from e
+
+    def _ensure_gpu_environment(self):
+        """确保GPU环境正确配置"""
+        if not GPU_ENABLED:
+            return
+            
+        try:
+            if not paddle.device.is_compiled_with_cuda():
+                raise EnvironmentError("未启用GPU，请安装GPU版PaddlePaddle")
+            if paddle.device.cuda.device_count() <= 0:
+                raise EnvironmentError("未检测到可用GPU，请检查驱动与CUDA环境")
+            
+            # 设置GPU设备
+            paddle.device.set_device("gpu:0")
+            logger.debug("GPU环境检查通过")
+        except Exception as e:
+            logger.error(f"GPU环境检查失败: {e}")
+            raise
+
+    def warmup_pipeline(self, pipeline, warmup_image_path: str = None):
+        """
+        预热GPU和Pipeline，提升后续处理速度
+        
+        Args:
+            pipeline: OCR pipeline实例
+            warmup_image_path: 预热用的图片路径
+        """
+        if warmup_image_path and Path(warmup_image_path).exists():
+            try:
+                warmup_start = time.time()
+                
+                # 推理预热：一次前向传播完成CUDA初始化和模型加载
+                results = list(pipeline.predict([warmup_image_path]))
+                
+                # 清理结果释放内存
+                del results
+                
+                warmup_time = time.time() - warmup_start
+                logger.debug(f"GPU预热完成 (耗时: {warmup_time:.2f}秒)")
+                
+            except Exception as e:
+                logger.warning(f"GPU预热失败: {e}")
+        else:
+            logger.debug("未找到预热图片，跳过GPU预热")
 
     def clear_cache(self):
         """清空缓存"""
@@ -478,13 +566,18 @@ class OCRService:
         if not texts:
             return False
 
-        # 语言代码映射
+        # 语言代码映射（按照PaddleOCR官方文档标准）
         language_patterns = {
-            'zh': r'[\u4e00-\u9fff]',  # 中文
-            'en': r'[a-zA-Z]',         # 英文
-            'vi': r'[\u01A0\u01A1\u01AF\u01B0\u1EA0-\u1EF9]',  # 越南语
-            'ko': r'[\uac00-\ud7a3]',  # 韩文
-            'ja': r'[\u3040-\u30ff]',  # 日文
+            'ch': r'[\u4e00-\u9fff]',           # 中文（官方标准）
+            'en': r'[a-zA-Z]',                  # 英文
+            'korean': r'[\uac00-\ud7a3]',       # 韩文（官方标准）
+            'ko': r'[\uac00-\ud7a3]',           # 韩文（兼容）
+            'japan': r'[\u3040-\u30ff]',        # 日文（官方标准）
+            'ja': r'[\u3040-\u30ff]',           # 日文（兼容）
+            'chinese_cht': r'[\u4e00-\u9fff]',  # 繁体中文
+            'te': r'[\u0c00-\u0c7f]',           # 泰卢固文
+            'ka': r'[\u0c80-\u0cff]',           # 卡纳达文
+            'ta': r'[\u0b80-\u0bff]',           # 泰米尔文
         }
 
         # 获取目标语言的正则表达式
@@ -563,9 +656,43 @@ class OCRService:
         return 'none'
 
     @staticmethod
+    def _parse_predict_items_paddlex(result_data: Any) -> List[Any]:
+        """解析 PaddleX.predict 的返回，输出 (poly, text, score) 列表。
+        
+        PaddleX返回格式与demo保持一致。"""
+        items: List[Any] = []
+        if result_data is None:
+            return items
+        try:
+            # PaddleX返回格式：result_data包含texts, scores, boxes等字段
+            texts = result_data.get('texts', [])
+            scores = result_data.get('scores', [])
+            boxes = result_data.get('boxes', [])
+            
+            if not isinstance(texts, list):
+                texts = [texts] if texts else []
+            if not isinstance(scores, list):
+                scores = [scores] if scores else []
+            if not isinstance(boxes, list):
+                boxes = [boxes] if boxes else []
+                
+            n = max(len(texts), len(scores), len(boxes))
+            for i in range(n):
+                t = texts[i] if i < len(texts) else ""
+                try:
+                    s = float(scores[i]) if i < len(scores) else 0.0
+                except Exception:
+                    s = 0.0
+                p = boxes[i] if i < len(boxes) else []
+                items.append((p, str(t), float(s)))
+        except Exception:
+            return items
+        return items
+
+    @staticmethod
     def _parse_predict_items(res: Any) -> List[Any]:
         """解析 PaddleOCR.predict 的返回，输出 (poly, text, score) 列表。
-
+        
         为简化仅返回三元组，poly 可为空列表。"""
         items: List[Any] = []
         if res is None:
@@ -725,83 +852,29 @@ class OCRService:
 
     @staticmethod
     def _default_round_param_sets() -> List[Dict[str, Any]]:
+        """使用demo的两套参数替代原来的7套参数"""
         return [
-        #第1轮
+        # 第1轮：baseline版本（官方默认版本基线）
         {
             'text_det_limit_type': 'min',
             'text_det_limit_side_len': 736,
-            'text_det_thresh': 0.30,
-            'text_det_box_thresh': 0.60,
-            'text_det_unclip_ratio': 1.5,
-            'text_rec_score_thresh': 0.90,
-            'use_textline_orientation': False,
-            'use_doc_unwarping': False,
-        },
-        #第2轮
-        {
-            'text_det_limit_type': 'min',
-            'text_det_limit_side_len': 680,
             'text_det_thresh': 0.3,
             'text_det_box_thresh': 0.6,
             'text_det_unclip_ratio': 1.5,
-            'text_rec_score_thresh': 0.8,
-            'use_textline_orientation': False,
-            'use_doc_unwarping': False,
+            'text_rec_score_thresh': 0.0,  # 关键修复：降低识别阈值
+            'use_textline_orientation': False,  # 关键修复：禁用文本行方向分类
+            'use_doc_unwarping': False,  # 关键修复：禁用文档去畸变
         },
-        #第3轮 小图 
+        # 第2轮：balanced_v1版本（弥补基线版本对长方形图识别率低的缺陷）
         {
-            'text_det_limit_type': 'min',
-            'text_det_limit_side_len': 960,
+            'text_det_limit_type': 'max',  # 修改：使用max边长类型
+            'text_det_limit_side_len': 736,
             'text_det_thresh': 0.3,
             'text_det_box_thresh': 0.6,
             'text_det_unclip_ratio': 1.5,
-            'text_rec_score_thresh': 0.8,
-            'use_textline_orientation': False,
-            'use_doc_unwarping': False,
-        },
-        #第4轮
-        {
-            'text_det_limit_type': 'max',
-            'text_det_limit_side_len': 960,
-            'text_det_thresh': 0.3,
-            'text_det_box_thresh': 0.6,
-            'text_det_unclip_ratio': 2.0,
-            'text_rec_score_thresh': 0.8,
-            'use_textline_orientation': False,
-            'use_doc_unwarping': False,
-        },
-        #第5轮
-        {
-            'text_det_limit_type': 'min',
-            'text_det_limit_side_len': 1280,
-            'text_det_thresh': 0.25,
-            'text_det_box_thresh': 0.45,
-            'text_det_unclip_ratio': 2.0,
-            'text_rec_score_thresh': 0.8,
-            'use_textline_orientation': False,
-            'use_doc_unwarping': False,
-        },
-        #第6轮
-        {
-            'text_det_limit_type': 'max',
-            'text_det_limit_side_len': 960,
-            'text_det_thresh': 0.3,
-            'text_det_box_thresh': 0.6,
-            'text_det_unclip_ratio': 2.0,
-            'text_rec_score_thresh': 0.7,
-            'use_textline_orientation': True,
-            'use_doc_unwarping': True,
-        },
-        #第7轮。
-        {
-            'text_det_limit_type': 'max',
-            'text_det_limit_side_len': 1280,
-            'text_det_thresh': 0.3,
-            'text_det_box_thresh': 0.6,
-            'text_det_unclip_ratio': 2.0,
-            'text_rec_score_thresh': 0.5,
-            'use_textline_orientation': False,
-            'use_doc_unwarping': True,
+            'text_rec_score_thresh': 0.0,  # 关键修复：降低识别阈值
+            'use_textline_orientation': False,  # 关键修复：禁用文本行方向分类
+            'use_doc_unwarping': False,  # 关键修复：禁用文档去畸变
         },
         ]
 
@@ -928,6 +1001,12 @@ class OCRService:
         except Exception:
             return "lt=?|side=?|det=?|box=?|unclip=?|rec=?|unwarp=?|textline=?"
 
+    def _contains_chinese(self, text: str) -> bool:
+        """检查文本是否包含中文字符"""
+        import re
+        chinese_pattern = re.compile(r"[\u4e00-\u9fff]")
+        return bool(chinese_pattern.search(text))
+
     def recognize_rounds_batch(self,
                                image_dir: Union[str, List[str]],
                                image_formats: Optional[List[str]] = None,
@@ -935,13 +1014,9 @@ class OCRService:
                                enable_copy: Optional[bool] = None,
                                enable_annotate: Optional[bool] = None
                                ) -> Dict[str, Any]:
-        """多轮参数识别（命中即剔除），与 helper 行为保持一致的核心流程。
-
-        返回批次统计与每图首轮命中信息，便于上层落盘。
-        新增：在进入默认多轮识别之前，支持按配置对极小图进行预过滤，
-        当启用开关时，短边像素小于阈值的图片会被丢弃以减少误检。
-        """
-        # 固定启用多轮识别（不再从配置读取开关）
+        """使用PaddleX产线的两阶段OCR识别：baseline + balanced_v1"""
+        
+        # 获取图片路径列表
         if type(image_dir) is str:
             img_exts = image_formats or ['.jpg', '.jpeg', '.png']
             full_image_dir = image_dir
@@ -961,182 +1036,141 @@ class OCRService:
             return {"error": "image_dir 参数类型错误"}
 
         if not image_paths:
-            return {"error": "未发现图片"}
+            return {"error": "未找到图片文件"}
 
         total_images = len(image_paths)
-        # 预处理：基于配置抛弃过小分辨率图片（按短边像素阈值）
-        try:
-            cfg = settings.CFG._config
-            pre_enabled = cfg.getboolean(
-                'ocr', 'prefilter_small_images_enabled', fallback=False
-            )
-            pre_min_side = cfg.getint('ocr', 'prefilter_min_side_px', fallback=55)
-        except Exception:
-            pre_enabled = False
-            pre_min_side = 55
-        # 明确打印配置来源与读到的值，便于排查“阈值显示为50”的问题
-        try:
-            cfg_path = getattr(settings.CFG, '_config_path', '')
-            logger.warning(
-                "预过滤配置来源: file=%s enabled=%s min_side=%s",
-                cfg_path, pre_enabled, pre_min_side
-            )
-        except Exception:
-            pass
-        if pre_enabled:
-            kept_paths: List[str] = []
-            dropped = 0
-            for p in image_paths:
-                try:
-                    img = self._load_image_unicode(p)
-                    if img is None:
-                        # 无法读取的图片交由后续流程处理，不在此阶段丢弃
-                        kept_paths.append(p)
-                        continue
-                    h, w = img.shape[:2]
-                    if min(h, w) < int(pre_min_side):
-                        dropped += 1
-                        continue
-                    kept_paths.append(p)
-                except Exception:
-                    # 读取失败不影响主流程，保留以便后续统一按 miss 处理
-                    kept_paths.append(p)
-            try:
-                remark = (f"预过滤：按短边阈值丢弃={int(dropped)} 张，"
-                          f"阈值={int(pre_min_side)}像素，保留={int(len(kept_paths))} 张")
-                logger.warning(remark)
-                notify_ocr_task_progress({
-                    "id": self.id,
-                    "processed_images": total_images - len(kept_paths),
-                    "remark": remark,
-                })
-            except Exception:
-                pass
-            image_paths = kept_paths
-            if not image_paths:
-                return {
-                    "error": (
-                        f"预过滤后未发现图片(短边阈值={int(pre_min_side)})"
-                    )
-                }
+        logger.info(f"开始PaddleX两阶段OCR识别，总图片数: {total_images}")
 
-        # 预分流：按 min_side 的 P95
-        notify_ocr_task_progress({
-            "id": self.id,
-            "remark": f"正在 P95 预分流，共 {len(image_paths)} 张图片",
-        })
-        try:
-            min_sides: List[int] = []
-            name_to_path: Dict[str, str] = {}
-            for p in image_paths:
-                try:
-                    img = self._load_image_unicode(p)
-                    if img is None:
-                        continue
-                    h, w = img.shape[:2]
-                    min_sides.append(int(min(h, w)))
-                    name_to_path[os.path.basename(p)] = p
-                except Exception:
-                    continue
-            th_small = None
-            if min_sides:
-                arr = np.array(min_sides, dtype=np.float32)
-                th_small = int(np.percentile(arr, 95))
-            small_images: List[str] = []
-            rest_images: List[str] = []
-            if th_small is not None:
-                for p in image_paths:
-                    try:
-                        img = self._load_image_unicode(p)
-                        if img is None:
-                            rest_images.append(p)
-                            continue
-                        h, w = img.shape[:2]
-                        if min(h, w) <= th_small:
-                            small_images.append(p)
-                        else:
-                            rest_images.append(p)
-                    except Exception:
-                        rest_images.append(p)
-        except Exception as e:
-            logger.warning(f"预分流失败: {e}")
-            small_images, rest_images = [], list(image_paths)
+        # Demo中的两套参数配置
+        param_configs = [
+            {
+                "text_det_thresh": 0.3,
+                "text_det_box_thresh": 0.6,
+                "text_det_unclip_ratio": 1.5,
+                "text_det_limit_side_len": 736,
+                "text_det_limit_type": "min",
+                "text_rec_score_thresh": 0.0,
+            },
+            {
+                "text_det_thresh": 0.3,
+                "text_det_box_thresh": 0.6,
+                "text_det_unclip_ratio": 1.5,
+                "text_det_limit_side_len": 736,
+                "text_det_limit_type": "max",  # 主要区别：使用max边长类型
+                "text_rec_score_thresh": 0.0,
+            }
+        ]
 
-        # 第一轮输入采用预过滤后的全部图片，P95预分流仅用于统计与可视化，不影响输入集合
-        cur_inputs = list(image_paths)
-
-        # 通过配置控制绘制与标注的默认值；函数参数为显式覆盖
-        try:
-            cfg = settings.CFG._config
-            cfg_draw = cfg.getboolean('ocr', 'draw_enabled', fallback=False)
-            cfg_annotate = cfg.getboolean('ocr', 'annotate_enabled', fallback=False)
-        except Exception:
-            cfg_draw = False
-            cfg_annotate = False
-        
-        logger.info(f"enable_draw: {enable_draw}, cfg_draw: {cfg_draw}")
-        logger.info(f"enable_copy: {enable_copy}, cfg_annotate: {cfg_annotate}")
-
-        # 通过函数参数控制：未显式传入则使用配置默认
-        enable_draw = bool(enable_draw) if enable_draw is not None else bool(cfg_draw)
-        enable_copy = bool(enable_copy) if enable_copy is not None else False
-        enable_annotate = bool(enable_annotate) if enable_annotate is not None else bool(cfg_annotate)
- 
-        # 可视化根目录（仅在开启绘制时创建）
-        if enable_draw:
-            ts = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-            rounds_root = os.path.join(PathUtils.get_ocr_results_dir(), f"rounds_eval_{ts}")
-            try:
-                os.makedirs(rounds_root, exist_ok=True)
-            except Exception:
-                rounds_root = ""
-        else:
-            rounds_root = ""
- 
-        # 固定使用内置6轮参数，不从配置读取
-        rounds = [self._validate_round_params(x)
-                  for x in self._default_round_param_sets()]
-        
-        logger.warning(f"多轮识别：使用内置参数集，轮数={len(rounds)}")
-
-        # 预先打印每一轮的参数生效一次，避免在图片循环里反复穿插日志
-        try:
-            for ridx, rp in enumerate(rounds, start=1):
-                try:
-                    ocr_tmp = self._get_ocr_for_round(rp)
-                    self._log_effective_round_params(ocr_tmp, rp, ridx)
-                except Exception:
-                    continue
-        except Exception:
-            pass
- 
-        # 由现有语言配置推导过滤策略（不新增配置项）
-        text_lang_filter = self._resolve_text_filter_strategy()
-        try:
-            logger.warning(
-                f"语言过滤策略(由语言配置推导): {text_lang_filter} | lang={self.lang}"
-            )
-        except Exception:
-            pass
- 
-        # 统计结构
+        # 统计结果
         total_hit = 0
         first_hit_info: Dict[str, Dict[str, Any]] = {}
-        # 记录各轮命中数，便于和旧日志口径对齐
-        round_hit_counter: Dict[int, int] = {i: 0 for i in range(1, len(rounds) + 1)}
-
-        # 改为“按图片逐轮尝试”：每张图仅解码一次，命中立即早停
-        remain_inputs = list(cur_inputs)
         final_miss_paths: List[str] = []
         total_processed = 0
+        
+        # 阶段1处理的图片列表
+        stage1_miss_paths = []
 
-        for p in remain_inputs:
+        # 阶段1: baseline检测
+        logger.info("开始阶段1: baseline检测")
+        for p in image_paths:
             total_processed += 1
+            
+            # 更新进度
             notify_ocr_task_progress({
                 "id": self.id,
                 "processed_images": total_processed,
-                "remark": f"正在识别第 {total_processed} 张 / 共 {total_images} 张",
+                "remark": f"阶段1识别第 {total_processed} 张 / 共 {total_images} 张",
             }, debounce=True)
+            
+            try:
+                img = self._load_image_unicode(p)
+                if img is None:
+                    stage1_miss_paths.append(p)
+                    continue
+            except Exception:
+                stage1_miss_paths.append(p)
+                continue
+
+            fname = os.path.basename(p)
+            hit_in_stage1 = False
+            
+            # 尝试baseline配置
+            try:
+                config = param_configs[0]  # baseline
+                logger.info(f"图片 {fname} 开始阶段1处理，配置: {config}")
+                
+                # 获取OCR实例
+                try:
+                    ocr_inst = self._get_ocr_for_round(config)
+                    logger.info(f"图片 {fname} OCR实例获取成功")
+                except Exception as ocr_e:
+                    logger.error(f"图片 {fname} OCR实例获取失败: {ocr_e}")
+                    raise ocr_e
+                
+                # 使用PaddleX API进行预测
+                try:
+                    results = list(ocr_inst.predict([img], **config))
+                    logger.info(f"图片 {fname} 阶段1预测结果数量: {len(results)}")
+                except Exception as pred_e:
+                    logger.error(f"图片 {fname} 阶段1预测失败: {pred_e}")
+                    raise pred_e
+                
+                if results:
+                    result = results[0]
+                    result_data = result.json["res"]
+                    
+                    # 检查是否包含中文文本
+                    rec_texts = result_data.get("rec_texts", [])
+                    logger.debug(f"图片 {fname} 阶段1识别到的文本: {rec_texts}")
+                    
+                    # 检查每个文本是否包含中文
+                    chinese_texts = []
+                    for text in rec_texts:
+                        if self._contains_chinese(text):
+                            chinese_texts.append(text)
+                    
+                    logger.debug(f"图片 {fname} 阶段1中文文本: {chinese_texts}")
+                    
+                    if rec_texts and any(self._contains_chinese(text) for text in rec_texts):
+                        # 阶段1命中
+                        hit_in_stage1 = True
+                        total_hit += 1
+                        
+                        # 解析结果
+                        items = self._parse_predict_items_paddlex(result_data)
+                        scores = [float(s) for (poly, t, s) in items] if items else [1.0]
+                        
+                        first_hit_info[fname] = {
+                            "round": 1,
+                            "hit_texts": "|".join(rec_texts[:10]),
+                            "hit_scores": "|".join([f"{s:.4f}" for s in scores[:10]])
+                        }
+                        
+                        logger.info(f"图片 {fname} 在阶段1(baseline)中识别成功，中文文本数: {len(chinese_texts)}")
+                    else:
+                        logger.debug(f"图片 {fname} 阶段1未检测到中文文本")
+                        
+            except Exception as e:
+                logger.debug(f"图片 {fname} 阶段1识别失败: {e}")
+            
+            # 如果阶段1未命中，加入阶段2处理列表
+            if not hit_in_stage1:
+                stage1_miss_paths.append(p)
+
+        # 阶段2: balanced_v1检测阶段1未命中的图片
+        logger.info(f"开始阶段2: balanced_v1检测，处理 {len(stage1_miss_paths)} 张未命中图片")
+        stage2_processed = 0
+        
+        for p in stage1_miss_paths:
+            stage2_processed += 1
+            
+            # 更新进度
+            notify_ocr_task_progress({
+                "id": self.id,
+                "processed_images": total_processed - len(stage1_miss_paths) + stage2_processed,
+                "remark": f"阶段2识别第 {stage2_processed} 张 / 共 {len(stage1_miss_paths)} 张",
+            }, debounce=True)
+            
             try:
                 img = self._load_image_unicode(p)
                 if img is None:
@@ -1146,127 +1180,186 @@ class OCRService:
                 final_miss_paths.append(p)
                 continue
 
-            hit_round = 0
-            for ridx, rp in enumerate(rounds, start=1):
-                try:
-                    rp = self._validate_round_params(rp)
-                except Exception as ve:
-                    logger.debug(f"参数非法(第{ridx}轮，跳过)：{ve}")
-                    continue
-
-                # 懒创建可视化目录（按需）
-                vis_hit_dir, vis_miss_dir = "", ""
-                if enable_draw and rounds_root:
-                    vis_hit_dir = os.path.join(rounds_root, f"vis_r{ridx}", 'hit')
-                    vis_miss_dir = os.path.join(rounds_root, f"vis_r{ridx}", 'miss')
-                    try:
-                        os.makedirs(vis_hit_dir, exist_ok=True)
-                        os.makedirs(vis_miss_dir, exist_ok=True)
-                    except Exception:
-                        enable_draw = False
-
-                # 获取实例（不再在此重复打印参数生效日志）
-                try:
-                    ocr_inst = self._get_ocr_for_round(rp)
-                except Exception:
-                    continue
-
-                # 前置缩放，确保每轮 limit_type/side_len 生效
-                try:
-                    img_proc = self._resize_image_for_round(
-                        img,
-                        str(rp['text_det_limit_type']),
-                        int(rp['text_det_limit_side_len'])
-                    )
-                except Exception:
-                    img_proc = img
-
-                try:
-                    res = ocr_inst.predict(input=img_proc)
-                    items = self._parse_predict_items(res)
-                except Exception as pe:
-                    items = []
-                    logger.debug(f"预测失败(第{ridx}轮，跳过)：{pe}")
-
-                # 语言与分数阈值过滤
-                kept: List[Any] = []
-                for (poly, t, s) in items:
-                    if self._text_passes_language_filter(t, text_lang_filter):
-                        kept.append((poly, t, s))
-                try:
-                    score_thresh = float(rp.get('text_rec_score_thresh', 0.0))
-                except Exception:
-                    score_thresh = 0.0
-                kept_scored = [
-                    (poly, t, s) for (poly, t, s) in kept if float(s) >= score_thresh
-                ]
-
-                if kept_scored:
-                    hit_round = ridx
-                    round_hit_counter[ridx] = round_hit_counter.get(ridx, 0) + 1
-                    total_hit += 1
-                    notify_ocr_task_progress({
-                        "id": self.id,
-                        "matched_images": total_hit,
-                    }, debounce=True)
-
-                    if os.path.basename(p) not in first_hit_info:
-                        try:
-                            texts = [t for (_, t, s) in kept_scored]
-                            scores = [float(s) for (_, t, s) in kept_scored]
-                        except Exception:
-                            texts, scores = [], []
-                        first_hit_info[os.path.basename(p)] = {
-                            'round': ridx,
-                            'hit_texts': '|'.join(texts[:10]),
-                            'hit_scores': '|'.join([f"{x:.4f}" for x in scores[:10]])
+            fname = os.path.basename(p)
+            hit_in_stage2 = False
+            
+            # 尝试balanced_v1配置
+            try:
+                config = param_configs[1]  # balanced_v1
+                
+                # 获取OCR实例
+                ocr_inst = self._get_ocr_for_round(config)
+                
+                # 使用PaddleX API进行预测
+                results = list(ocr_inst.predict([img], **config))
+                if results:
+                    result = results[0]
+                    result_data = result.json["res"]
+                    
+                    # 检查是否包含中文文本
+                    rec_texts = result_data.get("rec_texts", [])
+                    if rec_texts and any(self._contains_chinese(text) for text in rec_texts):
+                        # 阶段2命中
+                        hit_in_stage2 = True
+                        total_hit += 1
+                        
+                        # 解析结果
+                        items = self._parse_predict_items_paddlex(result_data)
+                        scores = [float(s) for (poly, t, s) in items] if items else [1.0]
+                        
+                        first_hit_info[fname] = {
+                            "round": 2,
+                            "hit_texts": "|".join(rec_texts[:10]),
+                            "hit_scores": "|".join([f"{s:.4f}" for s in scores[:10]])
                         }
-                    if enable_draw and rounds_root and vis_hit_dir:
-                        try:
-                            self._draw_visualization(
-                                img, kept_scored,
-                                os.path.join(vis_hit_dir, os.path.basename(p))
-                            )
-                        except Exception:
-                            pass
-                    break  # 命中即早停，切换到下一张图片
-                else:
-                    if enable_draw and rounds_root and vis_miss_dir:
-                        try:
-                            self._draw_visualization(
-                                img, [],
-                                os.path.join(vis_miss_dir, os.path.basename(p))
-                            )
-                        except Exception:
-                            pass
+                        
+                        logger.debug(f"图片 {fname} 在阶段2(balanced_v1)中识别成功")
+                        
+            except Exception as e:
+                logger.debug(f"图片 {fname} 阶段2识别失败: {e}")
+            
+            # 如果阶段2也未命中，加入最终未命中列表
+            if not hit_in_stage2:
+                final_miss_paths.append(p)
 
+        # 返回结果统计
+        final_miss = len(final_miss_paths)
+        stage1_hits = sum(1 for info in first_hit_info.values() if info["round"] == 1)
+        stage2_hits = sum(1 for info in first_hit_info.values() if info["round"] == 2)
+        
+        logger.info(f"PaddleX两阶段识别完成: 总图片={total_images}, 阶段1命中={stage1_hits}, 阶段2命中={stage2_hits}, 总命中={total_hit}, 未命中={final_miss}")
+        
+        return {
+            "total_hit": total_hit,
+            "final_miss": final_miss,
+            "first_hit_info": first_hit_info,
+            "rounds_root": "",  # 简化版本不生成可视化文件
+        }
+
+    def recognize_simple_batch(self,
+                               image_dir: Union[str, List[str]],
+                               image_formats: Optional[List[str]] = None,
+                               enable_draw: Optional[bool] = None,
+                               enable_copy: Optional[bool] = None,
+                               enable_annotate: Optional[bool] = None
+                               ) -> Dict[str, Any]:
+        """简化的OCR识别方法：只使用PaddleX产线+两套配置参数"""
+        
+        # 获取图片路径列表
+        if type(image_dir) is str:
+            img_exts = image_formats or ['.jpg', '.jpeg', '.png', '.bmp', '.webp', '.tif', '.tiff']
+            full_image_dir = image_dir
+            if not os.path.isabs(image_dir):
+                full_image_dir = os.path.join(settings.MEDIA_ROOT, image_dir)
+            if not os.path.exists(full_image_dir) or not os.path.isdir(full_image_dir):
+                return {"error": f"图片目录不存在或不是目录: {full_image_dir}"}
+
+            image_paths: List[str] = []
+            for root_dir, _, files in os.walk(full_image_dir):
+                for fname in files:
+                    if any(fname.lower().endswith(ext) for ext in img_exts):
+                        image_paths.append(os.path.join(root_dir, fname))
+        elif type(image_dir) is list:
+            image_paths = image_dir
+        else:
+            return {"error": "image_dir 参数类型错误"}
+
+        if not image_paths:
+            return {"error": "未找到图片文件"}
+
+        total_images = len(image_paths)
+        logger.info(f"开始简化OCR识别，总图片数: {total_images}")
+
+        # 简化的两套配置参数
+        configs = [
+            {
+                "det_limit_side_len": 960,
+                "det_limit_type": "max",
+                "rec_batch_num": 6,
+                "use_angle_cls": True,
+                "use_space_char": True
+            },
+            {
+                "det_limit_side_len": 1280,
+                "det_limit_type": "max", 
+                "rec_batch_num": 8,
+                "use_angle_cls": False,
+                "use_space_char": True
+            }
+        ]
+
+        # 统计结果
+        total_hit = 0
+        first_hit_info: Dict[str, Dict[str, Any]] = {}
+        final_miss_paths: List[str] = []
+        total_processed = 0
+
+        # 逐图片处理
+        for p in image_paths:
+            total_processed += 1
+            
+            # 更新进度
+            notify_ocr_task_progress({
+                "id": self.id,
+                "processed_images": total_processed,
+                "remark": f"正在识别第 {total_processed} 张 / 共 {total_images} 张",
+            }, debounce=True)
+            
+            try:
+                img = self._load_image_unicode(p)
+                if img is None:
+                    final_miss_paths.append(p)
+                    continue
+            except Exception:
+                final_miss_paths.append(p)
+                continue
+
+            fname = os.path.basename(p)
+            hit_round = 0
+            
+            # 尝试两套配置
+            for config_idx, config in enumerate(configs, start=1):
+                try:
+                    # 使用PaddleX产线进行OCR识别
+                    ocr_result = self.ocr(img, **config)
+                    
+                    if ocr_result and len(ocr_result) > 0:
+                        # 提取文本
+                        texts = [line[1][0] if len(line) > 1 and len(line[1]) > 0 else "" 
+                                for line in ocr_result]
+                        texts = [t for t in texts if t.strip()]
+                        
+                        if texts:
+                            # 记录命中信息
+                            hit_round = config_idx
+                            total_hit += 1
+                            
+                            first_hit_info[fname] = {
+                                "round": hit_round,
+                                "hit_texts": "|".join(texts[:10]),
+                                "hit_scores": "|".join(["1.0000"] * min(len(texts), 10))
+                            }
+                            
+                            logger.debug(f"图片 {fname} 在第{hit_round}轮配置中识别成功，文本数量: {len(texts)}")
+                            break
+                            
+                except Exception as e:
+                    logger.debug(f"图片 {fname} 第{config_idx}轮配置识别失败: {e}")
+                    continue
+            
+            # 如果所有配置都失败，记录为未命中
             if hit_round == 0:
                 final_miss_paths.append(p)
 
-            # 每张图片仅输出一条日志：命中轮次或未命中
-            try:
-                name_only = os.path.basename(p)
-                if hit_round > 0:
-                    logger.warning(f"图片命中 | 轮次={hit_round} | {name_only}")
-                else:
-                    logger.warning(f"图片未命中 | {name_only}")
-            except Exception:
-                pass
-
-        # 输出与旧日志口径兼容的分轮统计（取消显示，仅保留调试级别）
-        # for ridx in range(1, len(rounds) + 1):
-        #     try:
-        #         logger.debug(
-        #             f"多轮迭代：第{ridx}轮结束，hit={round_hit_counter.get(ridx, 0)}"
-        #         )
-        #     except Exception:
-        #         pass
-
+        # 返回结果统计
+        final_miss = len(final_miss_paths)
+        logger.info(f"简化OCR识别完成: 总图片={total_images}, 命中={total_hit}, 未命中={final_miss}")
+        
         return {
-            'rounds_root': rounds_root, 
-            'total_hit': int(total_hit),
-            'final_miss': int(len(final_miss_paths)),
-            'first_hit_info': first_hit_info,
+            "total_hit": total_hit,
+            "final_miss": final_miss,
+            "first_hit_info": first_hit_info,
+            "rounds_root": "",  # 简化版本不生成可视化文件
         }
 
 

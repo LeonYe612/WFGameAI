@@ -9,6 +9,7 @@ docs/
 *debug*.py
 *verify*.py
 *.txt
+*.pid
 # 大文件需要 Git LFS 跟踪或忽略
 *.pt
 *.png
@@ -21,6 +22,8 @@ docs/
 *.csv
 *.xlsx
 
+run/
+media/
 # 不忽略前端目录和Django静态文件目录下的图片资源
 !wfgame-ai-web/public/*.svg
 !wfgame-ai-web/public/*.png

@@ -182,9 +182,11 @@ export const ocrTaskApi = {
       data: { ...data, action: "process_git" }
     }),
   createUploadTask: (formData: FormData) =>
-    http.request<ApiResult>("post", baseUrlApi("/orc/upload/"), {
+    http.request<ApiResult>("post", baseUrlApi("/ocr/upload/"), {
       data: formData,
-      headers: { "Content-Type": "multipart/form-data" }
+      headers: {
+        "Content-Type": undefined // 明确清除默认的application/json，让浏览器自动设置multipart/form-data
+      }
     }),
   history: (params: OcrHistoryQuery) =>
     http.request<ApiResult>("post", baseUrlApi("/ocr/history/"), {

@@ -11,6 +11,9 @@ Version: 1.0
 """
 
 """
+python 环境：
+conda activate py39_yolov10
+
 使用
 python start_wfgame_ai.py --config config.ini → 线上环境绑定 8000
 python start_wfgame_ai.py --config config_dev.ini → 开发环境绑定 9000

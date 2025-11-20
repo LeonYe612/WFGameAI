@@ -1261,13 +1261,24 @@ class GitLabService:
         try:
             # 仓库保存目录位置（指定仓库名称为对应项目名）
             # repo_dir = Path(repo_base_dir) / self._generate_repo_key()
-            repo_dir = Path(repo_base_dir)
+            repo_dir = Path(repo_base_dir).resolve()  # 转换为绝对路径
             logger.info(f"⭐下载策略 [Git Clone]: {self.config.repo_url} | branch: {branch} -> {repo_dir}")
 
             # 判断是否启用增量更新
             # 当目录存在且包含 .git 文件夹时，优先使用增量更新
             # 如果用户设置了 overwrite_existing=False，则跳过更新
-            is_git_repo = repo_dir.exists() and (repo_dir / ".git").exists()
+            repo_exists = repo_dir.exists()
+            git_dir_exists = (repo_dir / ".git").exists()
+            is_git_repo = repo_exists and git_dir_exists
+            
+            logger.info(f"仓库目录检测: repo_dir={repo_dir} (绝对路径)")
+            logger.info(f"目录存在: {repo_exists}, .git存在: {git_dir_exists}, 是Git仓库: {is_git_repo}")
+            
+            # 额外调试信息
+            if repo_exists:
+                logger.info(f"目录内容: {list(repo_dir.iterdir())[:5]}...")  # 显示前5个文件/目录
+            if not git_dir_exists and repo_exists:
+                logger.warning(f"目录存在但缺少.git目录，可能不是有效的Git仓库")
 
             if is_git_repo:
                 # 增量更新模式：仓库存在且允许更新
