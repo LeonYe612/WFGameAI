@@ -425,8 +425,8 @@ export default [
       title: "回放",
       icon: "videoPlay",
       showLink: false,
-      showParent: true,
-      keepAlive: true,
+      showParent: false,
+      keepAlive: false,
       frameLoading: false,
       hiddenTag: false,
       transition: {
