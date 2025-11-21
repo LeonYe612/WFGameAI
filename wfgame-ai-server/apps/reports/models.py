@@ -137,7 +137,7 @@ class ReportDetail(CommonFieldsMixin):
         }
     ]
     """
-    step_results = models.JSONField(_('步骤结果'), default=dict, blank=True)
+    step_results = models.JSONField(_('步骤结果'), default=list, blank=True)
 
     class Meta:
         db_table = 'report_detail'

@@ -7,12 +7,13 @@ const ROOM_EVENT_HANDLERS: Record<string, Record<string, Set<Function>>> = {};
 export function connectSocket(
     { room }: { room: string },
     options?: {
-        onReplay?: (imgBase64: string) => void;
+        onFrame?: (imgBase64: string) => void;
         onDisconnect?: () => void;
         onConnect?: () => void;
         onError?: (err: any) => void;
         onSysMsg?: (msg: string, payload: any) => void;
         onStep?: (payload: any) => void;
+        onProgress?: (payload: any) => void;
     }
 ): Socket {
     const optionsCopy = options ? { ...options } : undefined;
@@ -36,6 +37,14 @@ export function connectSocket(
     if (ROOM_SOCKET_CACHE[room]) {
         const existing = ROOM_SOCKET_CACHE[room];
         if (optionsCopy) attachRoomHandlers(existing, room, optionsCopy);
+        // 检查缓存的 socket 是否已断开，若是则重连
+        if (existing.disconnected) {
+            existing.connect();
+        } else {
+            // 若已连接，确保加入房间并触发 onConnect 回调
+            existing.emit("join", { room });
+            optionsCopy?.onConnect && optionsCopy.onConnect();
+        }
         return existing;
     }
     const socket: Socket = io(endpoint, {
@@ -63,34 +72,55 @@ export function connectSocket(
         "reconnect_failed",
         () => optionsCopy?.onError && optionsCopy.onError("重连失败")
     );
-    socket.on("replay", payload => {
+    // 移除全局 onAny 调试日志
+
+    socket.on("frame", payload => {
+        const ts = Date.now();
+        let base64Candidate: any = null;
         if (payload && (payload.data || typeof payload === "string")) {
-            const img = payload.data || payload;
-            triggerRoomHandlers(room, "replay", img);
+            base64Candidate = payload.data || payload;
+        }
+        if (typeof base64Candidate === 'string') {
+            triggerRoomHandlers(room, "frame", base64Candidate);
         }
     });
-    socket.on("sysMsg", payload => triggerRoomHandlers(room, "sysMsg", payload));
-    socket.on(
-        "replay_step",
-        payload => triggerRoomHandlers(room, "replay_step", payload?.data || payload)
-    );
-    // 兼容后端直接以事件名推送（非 sysMsg 封装）的任务进度/状态事件
-    const sysWrap = (evt: string) => (payload: any) =>
-        triggerRoomHandlers(room, "sysMsg", { event: evt, data: payload?.data || payload });
-    socket.on("task_progress", sysWrap("task_progress"));
-    socket.on("task_status", sysWrap("task_status"));
-    socket.on("task_finished", sysWrap("task_finished"));
+    socket.on("sysMsg", payload => {
+        triggerRoomHandlers(room, "sysMsg", payload);
+    });
+    // 直接监听服务端的 progress 事件（HTTP emit: event="progress"）
+    socket.on("progress", payload => {
+        // 兼容 SocketResponse 包裹或直传 data
+        let raw: any = payload;
+        if (raw && typeof raw === "object" && "data" in raw && (raw as any).data != null) {
+            raw = (raw as any).data;
+        }
+        triggerRoomHandlers(room, "progress", raw);
+    });
+    socket.on("step", payload => {
+        let raw = payload;
+        if (raw && typeof raw === "object" && "data" in raw && raw.data && typeof raw.data === "object") {
+            const d = (raw as any).data;
+            if ("step_index" in d || "script" in d || "status" in d) {
+                raw = d;
+            }
+        }
+        triggerRoomHandlers(room, "step", raw);
+    });
+    socket.on("error", payload => {
+        triggerRoomHandlers(room, "error", payload);
+    });
     if (optionsCopy) attachRoomHandlers(socket, room, optionsCopy);
     return socket;
 }
 
 function attachRoomHandlers(socket: Socket, room: string, options: {
-    onReplay?: (imgBase64: string) => void;
+    onFrame?: (imgBase64: string) => void;
     onDisconnect?: () => void;
     onConnect?: () => void;
     onError?: (err: any) => void;
     onSysMsg?: (msg: string, payload: any) => void;
     onStep?: (payload: any) => void;
+    onProgress?: (payload: any) => void;
 }): void {
     const map = (ROOM_EVENT_HANDLERS[room] = ROOM_EVENT_HANDLERS[room] || {});
     const register = (evt: string, fn: Function | undefined) => {
@@ -98,12 +128,14 @@ function attachRoomHandlers(socket: Socket, room: string, options: {
         map[evt] = map[evt] || new Set();
         map[evt].add(fn);
     };
-    register("replay", options.onReplay);
+    register("frame", options.onFrame);
     register(
         "sysMsg",
         (payload: any) => options.onSysMsg?.(payload?.msg || "", payload)
     );
-    register("replay_step", options.onStep);
+    register("step", options.onStep);
+    register("progress", options.onProgress);
+    register("error", options.onError);
     if (options.onError) {
         socket.off("connect_error", _handleConnectError(room));
         socket.on(
@@ -146,4 +178,28 @@ export function releaseRoomSocket(room: string): void {
         delete ROOM_SOCKET_CACHE[room];
         delete ROOM_EVENT_HANDLERS[room];
     }
+}
+
+// 预连接任务房间：在点击“Start”后、真正调用后端启动接口之前调用，避免错过早期离线/错误事件。
+// 使用方式：preconnectReplayTask(taskId, { onStep, onProgress, onSysMsg, ... });
+// 若后续页面再挂载同房间组件，会复用底层 socket，不会重复建立。
+export function preconnectReplayTask(
+    taskId: string | number,
+    handlers?: {
+        onStep?: (payload: any) => void;
+        onProgress?: (payload: any) => void;
+        onSysMsg?: (msg: string, payload: any) => void;
+        onError?: (err: any) => void;
+    }
+): Socket {
+    const room = `replay_task_${String(taskId)}`;
+    // 仅注册所需处理器；连接成功后立即 join 房间。
+    return connectSocket({ room }, {
+        onStep: handlers?.onStep,
+        onProgress: handlers?.onProgress,
+        onSysMsg: handlers?.onSysMsg,
+        onError: handlers?.onError,
+        onConnect: () => {/* noop */ },
+        onDisconnect: () => {/* noop */ }
+    });
 }

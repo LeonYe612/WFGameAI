@@ -1,9 +1,11 @@
 <script setup lang="ts">
 // 基于 task.script_ids 循环查询脚本详情，分组展示步骤，并通过 socket 实时更新状态
-import { replayApi } from "@/api/scripts"; // 不再依赖 scriptApi.detail 以避免步骤列表不匹配
+import { replayApi, scriptApi } from "@/api/scripts"; // 不再依赖 scriptApi.detail 以避免步骤列表不匹配
 import { getTaskDetail } from "@/api/tasks";
+import CopyToClipboard from "@/components/Common/CopyToClipboard.vue";
 import { superRequest } from "@/utils/request";
 import { connectSocket } from "@/views/replay/utils/socket";
+import { InfoFilled } from "@element-plus/icons-vue";
 import { nextTick, onMounted, onUnmounted, ref } from "vue";
 // 时间解析：支持毫秒时间戳或 ISO 字符串
 const parseToMs = (val: any): number | null => {
@@ -62,6 +64,22 @@ const failedCount = ref(0);
 // 手风琴当前激活的面板名（脚本ID）
 const activeName = ref<string | number | null>(null);
 const socketRef = ref<any>(null);
+// 系统级错误展示：来自 sysMsg(task_error) 或快照的 error_message
+const errorAlerts = ref<Array<{ device: string; message: string }>>([]);
+const showErrorOverlay = ref(false); // 初次出现错误时，居中提示一次
+const showErrorDialog = ref(false); // 查看详情弹窗
+
+function addErrorAlert(device: string, message: string) {
+  if (!message) return;
+  const before = errorAlerts.value.length;
+  errorAlerts.value.push({ device, message });
+  if (before === 0) {
+    // 首次出现错误：显示居中提示
+    showErrorOverlay.value = true;
+  }
+}
+
+// 使用通用复制组件 CopyToClipboard，移除自建复制函数
 
 const recomputeCounters = () => {
   totalSteps.value = groups.value.reduce(
@@ -134,6 +152,39 @@ onMounted(async () => {
       res.push({ scriptId: sid, scriptName, expanded: false, steps: [] });
     }
     groups.value = res;
+
+    // 尝试获取脚本详情以预填步骤（修复刷新后总步数变少的问题）
+    if (scriptIds.length > 0) {
+      try {
+        const promises = scriptIds.map(sid => scriptApi.detail(sid).catch(() => null));
+        const results = await Promise.all(promises);
+        results.forEach((r: any) => {
+          const s = r?.data || r;
+          if (!s) return;
+          const sid = Number(s.id);
+          const grp = groups.value.find(g => g.scriptId === sid);
+          if (grp && Array.isArray(s.steps)) {
+            // 更新脚本名
+            if (s.name) grp.scriptName = s.name;
+            // 预填步骤
+            s.steps.forEach((stepDef: any, idx: number) => {
+              if (grp.steps.length <= idx) {
+                grp.steps.push({
+                  status: "等待",
+                  time: "",
+                  remark: stepDef.remark || stepDef.name || stepDef.title || `步骤 ${idx + 1}`,
+                  name: stepDef.name,
+                  title: stepDef.title
+                });
+              }
+            });
+          }
+        });
+      } catch (e) {
+        /* ignore */
+      }
+    }
+
     recomputeCounters();
     activeName.value = res.length ? res[0].scriptId : null;
 
@@ -144,26 +195,6 @@ onMounted(async () => {
         {
           // 新增：直接处理 replay_step 推送的数据
           onStep: (data: any) => {
-            // 调试：打印原始事件（前端自行计算耗时）
-            try {
-              if ((window as any).DEBUG_REPLAY) {
-                const _st = data?.result?.start_time || data?.start_time;
-                const _et = data?.result?.end_time || data?.end_time;
-                let _dur: string | null = null;
-                if (_st && _et) {
-                  const ms = computeDurationMs(_st, _et);
-                  _dur = ms !== null ? formatDuration(ms) : null;
-                }
-                console.debug("[REPLAY_STEP_EVT]", {
-                  raw: data,
-                  start: _st,
-                  end: _et,
-                  duration: _dur
-                });
-              }
-            } catch (e) {
-              /* ignore debug error */
-            }
             const scriptInfo = data?.script;
             const targetScript = Number(
               typeof scriptInfo === "object" ? scriptInfo?.id : scriptInfo
@@ -221,6 +252,51 @@ onMounted(async () => {
               });
             }
             recomputeCounters();
+          },
+          onSysMsg: (_msg: string, payload: any) => {
+            try {
+              const kind = String(payload?.msg || payload?.event || "");
+              if (kind === "task_error") {
+                const dev = String(payload?.device || "");
+                const m = String(
+                  payload?.error_message ||
+                    payload?.message ||
+                    payload?.data?.error_message ||
+                    payload?.data?.message ||
+                    ""
+                );
+                addErrorAlert(dev, m);
+              } else if (kind === "device_status") {
+                const dev = String(
+                  payload?.device || payload?.data?.device || ""
+                );
+                const status = String(
+                  payload?.status || payload?.data?.status || ""
+                ).toLowerCase();
+                const message = String(
+                  payload?.message || payload?.data?.message || ""
+                );
+
+                if (status === "offline" || status === "unauthorized") {
+                  const msg =
+                    message ||
+                    (status === "unauthorized" ? "设备未授权" : "设备未连接");
+                  addErrorAlert(dev, msg);
+                }
+              }
+            } catch (_) {
+              /* ignore */
+            }
+          },
+          onError: (err: any) => {
+            // 兼容 { data: { message: ... } } 结构
+            const payload = (err && err.data) ? err.data : err;
+            // 处理后端推送的 error 事件
+            // 结构: { message: string, task_id: string, ... }
+            if (payload && typeof payload === "object" && payload.message) {
+              const dev = payload.device || "任务系统";
+              addErrorAlert(String(dev), String(payload.message));
+            }
           }
         }
       );
@@ -238,14 +314,46 @@ onMounted(async () => {
               ? resp.devices
               : [];
             for (const dev of devices) {
+              // 先处理系统级错误信息（若存在）
+              if (dev && typeof dev === "object") {
+                // 统一错误字段提取逻辑，与 onSysMsg/onError 保持一致
+                const err =
+                  dev.error_message ||
+                  dev.message ||
+                  dev.data?.error_message ||
+                  dev.data?.message;
+                const status = String(dev.status || "").toLowerCase();
+                if (err) {
+                  addErrorAlert(String(dev.device || ""), String(err));
+                } else if (status === "offline") {
+                  addErrorAlert(String(dev.device || ""), "设备已离线");
+                }
+              }
               const records = Array.isArray(dev?.records) ? dev.records : [];
               if (!records.length) continue;
               for (const rec of records) {
                 const meta = rec?.meta || {};
                 const sid = Number(meta?.id);
                 if (!Number.isFinite(sid)) continue;
-                const grp = groups.value.find(g => g.scriptId === sid);
-                if (!grp) continue;
+                let grp = groups.value.find(g => g.scriptId === sid);
+                // 若任务详情中未包含该脚本ID（例如进入房间时脚本已完成未更新 script_ids），动态创建分组
+                if (!grp) {
+                  const scriptName = meta?.name || `脚本 ${sid}`;
+                  grp = {
+                    scriptId: sid,
+                    scriptName,
+                    expanded: false,
+                    steps: []
+                  };
+                  groups.value.push(grp);
+                  // 若当前无激活分组，则设为激活（进入页面后第一次补齐脚本）
+                  if (!activeName.value) activeName.value = sid;
+                } else {
+                  // 更新已有分组名称（如果任务详情用的是占位名）
+                  if (meta?.name && grp.scriptName !== meta.name) {
+                    grp.scriptName = meta.name;
+                  }
+                }
                 const stepsArr = Array.isArray(rec?.steps) ? rec.steps : [];
                 for (let i = 0; i < stepsArr.length; i++) {
                   const s = stepsArr[i] || {};
@@ -266,6 +374,21 @@ onMounted(async () => {
                   target.status = disp
                     ? mapDisplay(disp)
                     : normalizeStatus(r.status ?? s.status);
+                  // 补充 remark 展示名称：优先级链条
+                  // 1) 顶层步骤定义的 remark
+                  // 2) result.remark（兼容旧结构）
+                  // 3) 顶层步骤的 name/title
+                  // 4) 脚本名 meta.name
+                  // 5) 回退 "步骤 i+1"
+                  const fallbackName = meta?.name || `脚本 ${sid}`;
+                  const remarkVal =
+                    s.remark ||
+                    r.remark ||
+                    s.name ||
+                    s.title ||
+                    fallbackName ||
+                    `步骤 ${i + 1}`;
+                  target.remark = remarkVal;
                   const ended =
                     target.status === "完成" ||
                     target.status === "失败" ||
@@ -298,8 +421,51 @@ onUnmounted(() => {
 
 <template>
   <div class="task-steps">
+    <!-- 顶部轻量红色告警条，避免干扰步骤布局 -->
+    <div v-if="errorAlerts.length" class="error-banner">
+      <span>检测到 {{ errorAlerts.length }} 条系统错误</span>
+      <el-button
+        size="small"
+        type="danger"
+        text
+        @click="showErrorDialog = true"
+      >
+        查看详情
+      </el-button>
+    </div>
+
+    <!-- 首次出现错误时，居中弹出提示卡片，提高可见性 -->
+    <div v-if="showErrorOverlay && errorAlerts.length" class="error-overlay">
+      <div class="overlay-card">
+        <div class="overlay-title">系统错误</div>
+        <div class="overlay-body">
+          <div class="overlay-msg">
+            {{ errorAlerts[0]?.device ? errorAlerts[0].device + "：" : "" }}
+            {{ errorAlerts[0]?.message }}
+          </div>
+        </div>
+        <div class="overlay-actions">
+          <el-button
+            type="danger"
+            @click="
+              showErrorDialog = true;
+              showErrorOverlay = false;
+            "
+          >
+            查看详情
+          </el-button>
+          <el-button @click="showErrorOverlay = false">我知道了</el-button>
+        </div>
+      </div>
+    </div>
     <div class="steps-header">
-      <h3 class="steps-title">任务执行步骤</h3>
+      <div class="steps-title-group">
+        <h3 class="steps-title">任务执行步骤</h3>
+        <el-tooltip content="此处展示首个响应设备的执行进度与步骤详情" placement="top">
+          <el-icon class="steps-help-icon"><InfoFilled /></el-icon>
+        </el-tooltip>
+      </div>
+
       <div class="steps-stats">
         <span class="steps-badge current">
           当前第 {{ currentStepNo }} / {{ totalSteps }}
@@ -358,6 +524,29 @@ onUnmounted(() => {
       </el-collapse>
     </div>
   </div>
+
+  <!-- 详情弹窗：按设备列出错误，可复制 -->
+  <el-dialog v-model="showErrorDialog" title="系统错误详情" width="640px">
+    <div class="error-dialog-list" v-if="errorAlerts.length">
+      <div class="dialog-item" v-for="(ea, i) in errorAlerts" :key="'dlg-' + i">
+        <div class="dialog-item-left">
+          <span class="err-tag">系统错误</span>
+          <span class="err-device" v-if="ea.device">{{ ea.device }}：</span>
+        </div>
+        <div class="dialog-item-right">
+          <div class="err-msg">{{ ea.message }}</div>
+          <div class="dialog-actions">
+            <CopyToClipboard :text="ea.message" :wrap="true">
+              <el-button size="small" text>复制</el-button>
+            </CopyToClipboard>
+          </div>
+        </div>
+      </div>
+    </div>
+    <template #footer>
+      <el-button @click="showErrorDialog = false">关闭</el-button>
+    </template>
+  </el-dialog>
 </template>
 <style scoped>
 .task-steps {
@@ -370,6 +559,7 @@ onUnmounted(() => {
   background: transparent;
   padding: 18px 25px 18px 22px;
   margin: 0;
+  position: relative; /* 作为遮罩定位参考 */
 }
 .steps-header {
   display: flex;
@@ -378,6 +568,112 @@ onUnmounted(() => {
   flex-wrap: wrap;
   gap: 12px;
   margin-bottom: 4px;
+}
+.steps-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.steps-help-icon {
+  color: #94a3b8;
+  cursor: help;
+  font-size: 15px;
+}
+.steps-help-icon:hover {
+  color: #64748b;
+}
+.error-banner {
+  margin-bottom: 10px;
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  color: #7a1a1a;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.err-tag {
+  background: #dc2626;
+  color: #fff;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-weight: 600;
+}
+.err-device {
+  font-weight: 600;
+}
+.err-msg {
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* 居中提示遮罩 */
+.error-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+.overlay-card {
+  background: #fff;
+  border: 1px solid #fecaca;
+  border-left: 6px solid #dc2626;
+  border-radius: 8px;
+  padding: 16px 18px;
+  width: min(680px, 90%);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+}
+.overlay-title {
+  font-weight: 700;
+  color: #991b1b;
+  margin-bottom: 8px;
+}
+.overlay-body {
+  color: #111827;
+  margin-bottom: 12px;
+}
+.overlay-msg {
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.overlay-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* 详情弹窗列表 */
+.error-dialog-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.dialog-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px dashed #fecaca;
+  border-radius: 6px;
+  background: #fff7f7;
+}
+.dialog-item-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.dialog-item-right {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.dialog-actions {
+  white-space: nowrap;
 }
 .steps-title {
   margin: 0;
