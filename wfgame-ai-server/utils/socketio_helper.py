@@ -10,7 +10,7 @@ import sys
 import time
 from dataclasses import dataclass, asdict
 from datetime import datetime
-from typing import Any, Optional, List
+from typing import Any, Optional, List, Dict
 
 # 1) 先设置 Django 配置模块环境变量
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'wfgame_ai_server_main.settings')
@@ -28,12 +28,15 @@ except Exception as e:
     sys.exit(-1)
 
 import socket
+import json
 import asyncio
 import socketio
 import requests
 import redis.asyncio as aioredis
 from aiohttp import web
 from django.conf import settings
+from utils.socketio_events import ALLOWED_EVENTS, ALLOWED_MODULES, EmitPayload
+from utils.socketio_schema import validate_event_data  # 新增: 事件数据校验
 
 
 @dataclass
@@ -52,7 +55,7 @@ class SocketResponse:
 
 class SocketIOHelper:
     def __init__(self):
-        self.port = settings.CFG.getint("socketio", "port", fallback=3838)
+        self.port = settings.CFG.getint("socketio", "port", fallback=13838)
         self.conn_info = {}
         self.redis = None
         self.sio = None
@@ -62,12 +65,15 @@ class SocketIOHelper:
     async def setup(self):
         self.redis = aioredis.from_url(self.redis_url)
         redis_manager = socketio.AsyncRedisManager(self.redis_url)
+        # 注意: 大图帧(base64) 可能 > 1MB，需提升单消息上限，否则客户端收不到 frame 事件
         self.sio = socketio.AsyncServer(
             async_mode='aiohttp',
             cors_allowed_origins='*',
-            client_manager=redis_manager
+            client_manager=redis_manager,
+            max_http_buffer=200 * 1024 * 1024  # 20MB
         )
-        self.app = web.Application(client_max_size=10 * 1024 * 1024) # 默认10MB，否则可能导致阻塞，图片基本上 2-3MB
+        # 提升 aiohttp 请求体上限，避免大帧被拒（base64 有额外开销）
+        self.app = web.Application(client_max_size=25 * 1024 * 1024)
         self.sio.attach(self.app)
         # todo 注册 event 事件
         self.sio.on('connect', self.handle_connect)
@@ -76,10 +82,9 @@ class SocketIOHelper:
         self.sio.on('leave', self.handle_leave)
         self.sio.on('sysMsg', self.handle_system_message)
         self.sio.on('is_connected', self.handle_is_connected)
-        self.sio.on('replay', self.replay)
-        # 注册 HTTP 推送接口
-        self.app.router.add_post("/api/socketio/push_replay", self.http_push_replay)
-        self.app.router.add_post("/api/socketio/push_step", self.http_push_step)
+    # 移除旧的 'replay' 事件处理，统一采用 /api/socketio/emit 接口 + 新事件名 'frame'
+    # 注册统一 HTTP 推送接口 (旧 push_* 接口已移除)
+        self.app.router.add_post("/api/socketio/emit", self.http_emit)
         self.app["SocketIO"] = self
 
     def _get_server_info(self):
@@ -100,26 +105,25 @@ class SocketIOHelper:
             code: int = 0,
             msg: str = "ok",
             data: Optional[Any] = None
-    ):
-        resp = SocketResponse(
-            room=room,
-            sids=sids,
-            event=event,
-            code=code,
-            msg=msg,
-            data=data
-        )
-        payload = resp.to_dict()
+        ):
+        # 防止发送已被移除的旧事件名（额外运行时保护）
+        if event not in ALLOWED_EVENTS:
+            print(f"❌ [emit:拒绝] 非法事件名: {event}，已丢弃。")
+            return
+        # 不做 step 缓存/补发，严格实时推送
+        # 对 frame 事件不做封装，直传 base64 字符串，降低包体并与前端监听一致
+        if event == "frame":
+            payload = data
+        else:
+            resp = SocketResponse(room=room, sids=sids, event=event, code=code, msg=msg, data=data)
+            payload = resp.to_dict()
         if sids:
             for sid in sids:
-                print(f"➡️ [emit:{event}] - 指定发送给用户 {sid}:")
                 await self.sio.emit(event, payload, room=sid)
         elif room is not None:
             room = str(room)
-            print(f"➡️ [emit:{event}] - 发送给房间【{room}】内所有用户 ")
             await self.sio.emit(event, payload, room=room)
         else:
-            print(f"➡️ [emit:{event}] - 全量广播")
             await self.sio.emit(event, payload)
 
     async def handle_connect(self, sid, environ):
@@ -219,7 +223,9 @@ class SocketIOHelper:
                                     members = [sids]
 
                             if sid in members:
-                                print(f"🏠 [房间] 用户 [{sid}] 离开房间: {room}")
+                                # 过滤掉无效房间名（None 或 sid 自身默认房间）
+                                if room and str(room) != "None" and str(room) != str(sid):
+                                    print(f"🏠 [房间] 用户 [{sid}] 离开房间: {room}")
                                 # 尝试安全地从 redis 集合中移除该 sid
                                 await self._safe_redis_srem(f"room:{room}:members", sid)
                         except Exception as e:
@@ -248,7 +254,6 @@ class SocketIOHelper:
             await self.redis.sadd(f"room:{room}:members", sid)
             members = await self.redis.smembers(f"room:{room}:members")
             members = [m.decode() if isinstance(m, bytes) else m for m in members]
-            print(f"🏠 [进入房间] 用户 [{sid}] ，房间: [{room}]，共 [{len(members)}] 个成员: {members}")
             await self.emit_event(
                 room=room,
                 sids=None,
@@ -257,6 +262,7 @@ class SocketIOHelper:
                 msg=f'{sid} 加入了房间 {room}',
                 data={'sid': f'{sid}'}
             )
+            # 按需求：移除后端首屏进度推送逻辑，首屏由前端自行计算/展示
 
     async def handle_leave(self, sid, data):
         room = data.get('room')
@@ -266,7 +272,6 @@ class SocketIOHelper:
             await self.redis.srem(f"room:{room}:members", sid)
             members = await self.redis.smembers(f"room:{room}:members")
             members = [m.decode() if isinstance(m, bytes) else m for m in members]
-            print(f"🏠 [房间] 用户 [{sid}] 离开房间: {room}，全局 [{len(members)}] 个成员: {members}")
             await self.emit_event(
                 room=room,
                 sids=None,
@@ -276,41 +281,6 @@ class SocketIOHelper:
                 data=None
             )
 
-    async def replay(self, sid, data):
-        """
-        AI 回放图片推送(有pic_data 优先推送)
-        :param sid:
-        :param data:
-            - room: 房间号
-            - pic_data【优先】: base64字符串（截图的）
-            - pic_path: 图片路径（服务端可访问的）
-        :return:
-        """
-        # todo 考虑传输清晰度（一般、高清）
-        """
-        推送图片时间问题
-            ● 调用截图方法的同时，推送数据 (如果步骤不涉及截图，那可能会很久没有屏幕信息)
-                参考wetest:
-                1. 每隔5s截图
-                2. 屏幕有变化截图
-        """
-        room = str(data.get('room'))
-        pic_data = data.get('pic_data')
-        pic_path = data.get('pic_path')
-        if pic_data:
-            pic_b64 = pic_data
-        else:
-            with open(pic_path, 'rb') as f:
-                pic_bytes = f.read()
-            pic_b64 = base64.b64encode(pic_bytes).decode("utf-8")
-        await self.emit_event(
-            room=room,
-            sids=None,
-            event="replay",
-            code=0,
-            msg="[AI回放] - 成功",
-            data=pic_b64
-        )
 
     async def handle_system_message(self, sid, data):
         sids = data.get('sids')
@@ -327,42 +297,37 @@ class SocketIOHelper:
         )
 
     # ========== 外部可调用 http 接口 ==========
-    async def http_push_replay(self, request):
-        data = await request.json()
-        # todo 手动指定 sid，如果sid = ""，则表示通过 http_api 触发
-        await self.replay("", data)
-        return web.json_response({"code": 0, "msg": "ok", "data": "回放图片推送成功"})
 
-    async def http_push_step(self, request):
-            """推送步骤进度事件到指定房间
-            请求JSON结构：
-            {
-                "room": "task:123",
-                "event": "replay_step",  # 可选，默认 replay_step
-                "data": {
-                    "task_id": 123,
-                    "device": "emulator-5554",
-                    "is_master": true,
-                    "script": {"id": 200, "name": "Test"},
-                    "step_index": 1,
-                    "total_steps": 20,
-                    "status": "running",  # running|success|failed|skipped
-                    "message": "开始执行",
-                    "started_at": 1730892345123,
-                    "ended_at": null,
-                    "duration_ms": null
-                }
-            }
-            """
-            try:
-                    payload = await request.json()
-                    room = str(payload.get("room")) if payload.get("room") is not None else None
-                    event = payload.get("event") or "replay_step"
-                    data = payload.get("data") or {}
-                    await self.emit_event(room=room, event=event, data=data)
-                    return web.json_response({"code": 0, "msg": "ok", "data": "步骤事件推送成功"})
-            except Exception as e:
-                    return web.json_response({"code": -1, "msg": f"推送失败: {e}"})
+    async def http_emit(self, request):
+        """统一事件推送接口 (module + event)
+        请求 JSON:
+        {
+          "room": "replay_task_12",
+          "module": "task",
+          "event": "progress",
+          "data": {"current": 3, "total": 10, "percent": 30}
+        }
+        兼容：若 module/event 不在枚举内，返回 code=-2
+        """
+        try:
+            payload = await request.json()
+            room = str(payload.get("room")) if payload.get("room") is not None else None
+            module = (payload.get("module") or '').strip()
+            event = (payload.get("event") or '').strip()
+            data = payload.get("data") or {}
+            # 放宽 module 校验，仅校验事件名；module 仅作服务端内部分类使用
+            if event not in ALLOWED_EVENTS:
+                return web.json_response({"code": -2, "msg": "非法 event", "allowed_events": list(ALLOWED_EVENTS)})
+            # 事件数据结构校验
+            ok, err = validate_event_data(event, data)
+            if not ok:
+                return web.json_response({"code": -3, "msg": f"数据校验失败: {err}", "event": event})
+            # 真实发送：直接以事件名发送 data（frame 可为字符串或对象，参见 schema 容忍）
+            await self.emit_event(room=room, event=event, data=data)
+            return web.json_response({"code": 0, "msg": "ok", "data": {"room": room, "event": event}})
+        except Exception as e:
+            return web.json_response({"code": -1, "msg": f"emit失败: {e}"})
+
 
     # ========== 主函数 ==========
     async def main(self, host='0.0.0.0', port=13838):
@@ -377,61 +342,46 @@ class SocketIOHelper:
 
 
 class SocketIOHttpApiClient:
-    """
-    用于通过 HTTP API 调用 socketio 服务的工具类
-    """
-
+    """统一 HTTP API 客户端，仅保留 emit 方法"""
     def __init__(self):
-        self.api_base_url = settings.CFG.get("socketio", "api_base_url").rstrip("/")
-
-    def push_replay(self, room: str, msg: str = "回放图片", pic_data=None, pic_path=None) -> dict:
-        """
-        推送图片到指定房间
-        :param room: 房间号
-        :param pic_path: 图片绝对路径（需服务端可访问）
-        :param msg: 消息内容
-        :return: dict 响应
-        """
-        url = f"{self.api_base_url}/push_replay"
-        data = {
-            "room": str(room),
-            "pic_data": pic_data,
-            "pic_path": pic_path,
-            "msg": msg
-        }
+        # 提供安全的默认地址，避免缺少配置时抛错
         try:
-            resp = requests.post(url, json=data, timeout=10)
-            resp.raise_for_status()
-            return resp.json()
-        except Exception as e:
-            return {"code": -1, "msg": f"HTTP请求失败: {e}"}
+            port = settings.CFG.getint("socketio", "port", fallback=13838)
+        except Exception:
+            port = 13838
+        default_base = f"http://127.0.0.1:{port}/api/socketio"
+        self.api_base_url = settings.CFG.get("socketio", "api_base_url", fallback=default_base).rstrip("/")
 
-    def push_step(self, room: str, data: dict, event: str = "replay_step") -> dict:
-        """
-        推送步骤进度事件
-        :param room: 房间号，如 task:123
-        :param data: 事件数据（建议使用统一结构）
-        :param event: 事件名，默认 replay_step
-        """
-        url = f"{self.api_base_url}/push_step"
-        payload = {
-            "room": str(room),
-            "event": event,
-            "data": data,
-        }
-        try:
-            # 调试：打印即将推送的 http payload，便于核对字段是否齐全
+    def emit(self, *, room: str, module: str, event: str, data: Dict[str, Any]) -> dict:
+        url = f"{self.api_base_url}/emit"
+        payload = {"room": str(room) if room is not None else None, "module": module, "event": event, "data": data}
+        # 日志脱敏：对可能很大的字段进行缩略，避免刷屏
+        def _redact(obj):
             try:
-                print("[DEBUG] http_push_step payload:", payload)
+                if isinstance(obj, dict):
+                    red = {}
+                    for k, v in obj.items():
+                        if k in ("base64", "pic_data", "pic_url", "image", "screenshot", "content"):
+                            red[k] = "***"
+                        else:
+                            red[k] = _redact(v)
+                    return red
+                if isinstance(obj, (list, tuple)):
+                    return [
+                        _redact(x) for x in (list(obj) if isinstance(obj, list) else list(obj))
+                    ]
+                if isinstance(obj, str) and len(obj) > 200:
+                    return obj[:50] + "***"
+                return obj
             except Exception:
-                pass
+                return "***"
+        safe_payload = _redact(payload)
+        try:
             resp = requests.post(url, json=payload, timeout=10)
             resp.raise_for_status()
             return resp.json()
         except Exception as e:
             return {"code": -1, "msg": f"HTTP请求失败: {e}"}
-
-    # todo 继续扩展其它API方法，如推送文本、踢人、广播等
 
 
 if __name__ == '__main__':

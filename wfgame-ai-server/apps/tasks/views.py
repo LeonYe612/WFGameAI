@@ -7,9 +7,11 @@
 """
 
 import logging
+import copy
 from datetime import datetime
 from django.shortcuts import get_object_or_404
 from django.db import transaction
+from django.conf import settings
 from rest_framework import viewsets, status, views, permissions
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import AllowAny
@@ -88,16 +90,26 @@ class TaskViewSet(CustomResponseModelViewSet):
                 msg=f"以下设备不空闲，无法启动任务: {', '.join(no_idle_devices)}",
                 code=status.HTTP_400_BAD_REQUEST
             )
-        # 判断当前用户是否有权限操作绑定设备（没有需要先占用）
+        # 设备占用要求：
+        # 1. 未占用（None）
+        # 2. 被其他用户占用
         current_user = get_current_user()
-        unauthorized_devices = []
+        unoccupied_devices = []
+        occupied_by_others = []
         for td in task_devices:
             device = td.device
-            if device.current_user and device.current_user != current_user:
-                unauthorized_devices.append(device.name)
-        if unauthorized_devices:
+            if not getattr(device, 'current_user', None):
+                unoccupied_devices.append(device.name)
+            elif device.current_user != current_user:
+                occupied_by_others.append(device.name)
+        if unoccupied_devices:
             return api_response(
-                msg=f"以下设备被其他用户占用，无法启动任务: {', '.join(unauthorized_devices)}",
+                msg=f"以下设备未被任何人占用，无法启动任务: {', '.join(unoccupied_devices)}",
+                code=status.HTTP_400_BAD_REQUEST
+            )
+        if occupied_by_others:
+            return api_response(
+                msg=f"以下设备已被其他用户占用，无法启动任务: {', '.join(occupied_by_others)}",
                 code=status.HTTP_400_BAD_REQUEST
             )
         try:
@@ -111,58 +123,139 @@ class TaskViewSet(CustomResponseModelViewSet):
                 task.updater_name = get_current_user().username if get_current_user() else '系统'
                 task.updated_at = datetime.now()
 
-                # todo 更新关联设备状态? 后续是否考虑去掉这个表
-                TaskDevice.objects.filter(task=task).update(
-                    status='running',
-                    start_time=datetime.now(),
-                    end_time=None,
-                    execution_time=None,
-                    error_message=''
-                )
+                # 清理旧 Redis 缓存（只在校验通过后执行）
+                redis_client = getattr(settings.REDIS, 'client', None)
+                if redis_client:
+                    try:
+                        pattern = f"wfgame:replay:task:{task.id}:device:*:steps"
+                        for key in redis_client.scan_iter(match=pattern):
+                            try:
+                                redis_client.delete(key)
+                            except Exception:
+                                pass
+                        try:
+                            redis_client.delete(f"wfgame:replay:task:{task.id}:primary_device")
+                        except Exception:
+                            pass
+                        # 同时清理错误信息 Key
+                        pattern_error = f"wfgame:replay:task:{task.id}:device:*:error"
+                        for key in redis_client.scan_iter(match=pattern_error):
+                            try:
+                                redis_client.delete(key)
+                            except Exception:
+                                pass
+                    except Exception:
+                        logger.warning("启动任务时清理Redis缓存失败")
 
                 logger.info(f"回放任务开始投递: {task.name}")
                 async_res = replay_task.delay(task.id)
                 if async_res is None:
+                    # 显式标记任务失败，避免列表仍显示为“成功/已完成”
+                    task.status = 'failed'
+                    task.end_time = datetime.now()
+                    if task.start_time:
+                        task.execution_time = (task.end_time - task.start_time).total_seconds()
+                    task.save(update_fields=['status', 'end_time', 'execution_time', 'updated_at'])
                     return api_response(
                         msg="当前无可用 Celery Worker，任务未投递",
                         code=status.HTTP_503_SERVICE_UNAVAILABLE
                     )
                 task.celery_id = getattr(async_res, 'id', None)
-                task.save(update_fields=['celery_id', 'status', 'updated_at', 'updater_id', 'updater_name'])
+                task.save(update_fields=['celery_id', 'status', 'updated_at', 'updater_id', 'updater_name', 'start_time', 'end_time', 'execution_time'])
 
-                # 新增：拉起任务后立即创建Report和ReportDetail
-                # 只要能正常拉起任务就创建
-                # 使用 all_teams 保证团队作用域
-                report, created = Report.objects.all_teams().get_or_create(task=task, defaults={
-                    'name': f"Task-{task.id} Report",
-                    'duration': 0,
-                })
-                # 第二次及之后启动：仅重置 duration
-                report.duration = 0
-                # 如果模型有状态字段，置为生成中（兼容无该字段情况）
+                # 重启成功后，恢复 TaskDevice 到初始状态（清空错误信息与时间，回到 pending）
                 try:
-                    if hasattr(report, 'status'):
-                        report.status = 'generating'
+                    TaskDevice.objects.filter(task=task).update(
+                        status='pending',
+                        start_time=None,
+                        end_time=None,
+                        execution_time=None,
+                        error_message=''  # 清空设备级错误信息
+                    )
                 except Exception:
-                    pass
-                report.save(update_fields=['duration'] + (['status'] if hasattr(report, 'status') else []))
-                # 设备列表
-                task_devices = TaskDevice.objects.filter(task=task).select_related('device')
-                for td in task_devices:
+                    logger.warning(f"重启任务时重置 TaskDevice 状态失败: task_id={task.id}")
+
+                # Report 仅维护一条记录：若存在则复用并重置；若有多条保留第一条并警告
+                reports = list(Report.objects.all_teams().filter(task=task).order_by('id'))
+                if reports:
+                    report = reports[0]
+                    if len(reports) > 1:
+                        logger.warning(f"Task {task.id} 存在多个报告记录，保留第一条 (id={report.id}) 其余不处理")
+                    report.status = 'generating'
+                    report.duration = 0
+                    # 保持 report_path 稳定：/apps/reports/tmp/replay/task_<id>/index.html
+                    report.report_path = f"/apps/reports/tmp/replay/task_{task.id}/index.html"
+                    report.save(update_fields=['status','duration','report_path'])
+                else:
+                    report = Report.objects.all_teams().create(
+                        task=task,
+                        name=f"Task-{task.id} Report",
+                        duration=0,
+                        report_path=f"/apps/reports/tmp/replay/task_{task.id}/index.html",
+                        status='generating'
+                    )
+
+                # 准备脚本骨架
+                ts_qs = TaskScript.objects.filter(task=task).select_related('script').order_by('order')
+                initial_records = []
+                for ts in ts_qs:
+                    s = getattr(ts, 'script', None)
+                    if not s:
+                        continue
+                    raw_steps = (getattr(s, 'steps', None) or [])
+                    new_steps = []
+                    for step_def in raw_steps:
+                        try:
+                            st = dict(step_def) if isinstance(step_def, dict) else {"value": step_def}
+                        except Exception:
+                            st = {"value": step_def}
+                        st['result'] = {
+                            "status": "pending",
+                            "display_status": "等待中",
+                            "start_time": None,
+                            "end_time": None,
+                            "local_pic_pth": "",
+                            "oss_pic_pth": "",
+                            "error_msg": "",
+                        }
+                        new_steps.append(st)
+                    initial_records.append({
+                        "meta": {
+                            "id": getattr(s, 'id', None),
+                            "name": getattr(s, 'name', ""),
+                            "loop-count": 1,
+                            "max-duration": None,
+                            "loop-index": None,
+                        },
+                        "steps": new_steps,
+                        "summary": {
+                            "total": len(new_steps),
+                            "success": 0,
+                            "failed": 0,
+                            "skipped": 0,
+                            "duration": None,
+                            "duration_ms": None,
+                        }
+                    })
+
+                # 初始化 ReportDetail（复用或创建），为每台设备提供独立拷贝，避免引用共享导致第二脚本丢失
+                td_qs = TaskDevice.objects.filter(task=task).select_related('device')
+                for td in td_qs:
                     device = td.device
-                    if device:
-                        # 创建或刷新 ReportDetail 的时间戳，清空错误
-                        detail, _ = ReportDetail.objects.all_teams().get_or_create(
-                            report=report,
-                            device=device,
-                            defaults={
-                                'duration': 0,
-                                'error_message': '',
-                            }
-                        )
-                        detail.duration = 0
-                        detail.error_message = ''
-                        detail.save(update_fields=['duration', 'error_message'])
+                    if not device:
+                        continue
+                    detail, _ = ReportDetail.objects.all_teams().get_or_create(
+                        report=report,
+                        device=device,
+                        defaults={
+                            'duration': 0,
+                            'error_message': '',
+                        }
+                    )
+                    detail.duration = 0
+                    detail.error_message = ''
+                    detail.step_results = copy.deepcopy(initial_records)
+                    detail.save(update_fields=['duration', 'error_message', 'step_results'])
 
                 # 返回任务信息
                 serializer = self.get_serializer(task)
@@ -227,29 +320,190 @@ class TaskViewSet(CustomResponseModelViewSet):
     def restart(self, request, pk=None):
         """重新执行任务"""
         task = self.get_object()
+        # 避免与 start 重复校验：在 restart 内自行完成校验与启动，不再调用 start
+        # 1) 运行中阻断
+        if task.status == 'running':
+            return api_response(
+                msg="任务已在执行中",
+                code=status.HTTP_400_BAD_REQUEST
+            )
 
-        # 重置任务状态
+        # 2) 前置校验（顺序：在线 -> 空闲 -> 占用）
+        task_devices = TaskDevice.objects.filter(task=task).select_related('device')
+        no_online_devices = [td.device.name for td in task_devices if td.device.status != "online"]
+        if no_online_devices:
+            return api_response(
+                msg=f"以下设备不在线，无法重启任务: {', '.join(no_online_devices)}",
+                code=status.HTTP_400_BAD_REQUEST
+            )
+        no_idle_devices = [td.device.name for td in task_devices if not td.device.is_idle]
+        if no_idle_devices:
+            return api_response(
+                msg=f"以下设备不空闲，无法重启任务: {', '.join(no_idle_devices)}",
+                code=status.HTTP_400_BAD_REQUEST
+            )
+        current_user = get_current_user()
+        unoccupied_devices = []
+        occupied_by_others = []
+        for td in task_devices:
+            device = td.device
+            if not getattr(device, 'current_user', None):
+                unoccupied_devices.append(device.name)
+            elif device.current_user != current_user:
+                occupied_by_others.append(device.name)
+        if unoccupied_devices:
+            return api_response(
+                msg=f"以下设备未被任何人占用，无法重启任务: {', '.join(unoccupied_devices)}",
+                code=status.HTTP_400_BAD_REQUEST
+            )
+        if occupied_by_others:
+            return api_response(
+                msg=f"以下设备已被其他用户占用，无法重启任务: {', '.join(occupied_by_others)}",
+                code=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 3) 校验通过后，执行状态更新、清理缓存、投递任务与初始化报告（与 start 统一逻辑）
         try:
             with transaction.atomic():
-                task.status = 'pending'
-                task.start_time = None
+                # 更新任务为 running（不再先置 pending，避免状态漂移）
+                task.status = 'running'
+                task.start_time = datetime.now()
                 task.end_time = None
                 task.execution_time = None
-                task.save()
+                task.updater_id = get_current_user().id if get_current_user() else None
+                task.updater_name = get_current_user().username if get_current_user() else '系统'
+                task.updated_at = datetime.now()
 
-                # 重置关联设备状态
-                TaskDevice.objects.filter(task=task).update(
-                    status='pending',
-                    start_time=None,
-                    end_time=None,
-                    execution_time=None,
-                    error_message=''
+                # 清理旧 Redis 缓存
+                redis_client = getattr(settings.REDIS, 'client', None)
+                if redis_client:
+                    try:
+                        pattern = f"wfgame:replay:task:{task.id}:device:*:steps"
+                        for key in redis_client.scan_iter(match=pattern):
+                            try:
+                                redis_client.delete(key)
+                            except Exception:
+                                pass
+                        try:
+                            redis_client.delete(f"wfgame:replay:task:{task.id}:primary_device")
+                        except Exception:
+                            pass
+                        # 同时清理错误信息 Key
+                        pattern_error = f"wfgame:replay:task:{task.id}:device:*:error"
+                        for key in redis_client.scan_iter(match=pattern_error):
+                            try:
+                                redis_client.delete(key)
+                            except Exception:
+                                pass
+                    except Exception:
+                        logger.warning("重启任务时清理Redis缓存失败")
+
+                # 投递 Celery 任务
+                logger.info(f"回放任务重启投递: {task.name}")
+                async_res = replay_task.delay(task.id)
+                if async_res is None:
+                    # 显式标记任务失败，避免列表仍显示为“成功/已完成”
+                    task.status = 'failed'
+                    task.end_time = datetime.now()
+                    if task.start_time:
+                        task.execution_time = (task.end_time - task.start_time).total_seconds()
+                    task.save(update_fields=['status', 'end_time', 'execution_time', 'updated_at'])
+                    return api_response(
+                        msg="当前无可用 Celery Worker，任务未投递",
+                        code=status.HTTP_503_SERVICE_UNAVAILABLE
+                    )
+                task.celery_id = getattr(async_res, 'id', None)
+                task.save(update_fields=['celery_id', 'status', 'updated_at', 'updater_id', 'updater_name', 'start_time', 'end_time', 'execution_time'])
+
+                # 复用或创建单一 Report 记录
+                reports = list(Report.objects.all_teams().filter(task=task).order_by('id'))
+                if reports:
+                    report = reports[0]
+                    if len(reports) > 1:
+                        logger.warning(f"Task {task.id} 存在多个报告记录，保留第一条 (id={report.id}) 其余不处理")
+                    report.status = 'generating'
+                    report.duration = 0
+                    report.report_path = f"/apps/reports/tmp/replay/task_{task.id}/index.html"
+                    report.save(update_fields=['status','duration','report_path'])
+                else:
+                    report = Report.objects.all_teams().create(
+                        task=task,
+                        name=f"Task-{task.id} Report",
+                        duration=0,
+                        report_path=f"/apps/reports/tmp/replay/task_{task.id}/index.html",
+                        status='generating'
+                    )
+
+                # 准备脚本骨架
+                ts_qs = TaskScript.objects.filter(task=task).select_related('script').order_by('order')
+                initial_records = []
+                for ts in ts_qs:
+                    s = getattr(ts, 'script', None)
+                    if not s:
+                        continue
+                    raw_steps = (getattr(s, 'steps', None) or [])
+                    new_steps = []
+                    for step_def in raw_steps:
+                        try:
+                            st = dict(step_def) if isinstance(step_def, dict) else {"value": step_def}
+                        except Exception:
+                            st = {"value": step_def}
+                        st['result'] = {
+                            "status": "pending",
+                            "display_status": "等待中",
+                            "start_time": None,
+                            "end_time": None,
+                            "local_pic_pth": "",
+                            "oss_pic_pth": "",
+                            "error_msg": "",
+                        }
+                        new_steps.append(st)
+                    initial_records.append({
+                        "meta": {
+                            "id": getattr(s, 'id', None),
+                            "name": getattr(s, 'name', ""),
+                            "loop-count": 1,
+                            "max-duration": None,
+                            "loop-index": None,
+                        },
+                        "steps": new_steps,
+                        "summary": {
+                            "total": len(new_steps),
+                            "success": 0,
+                            "failed": 0,
+                            "skipped": 0,
+                            "duration": None,
+                            "duration_ms": None,
+                        }
+                    })
+
+                td_qs = TaskDevice.objects.filter(task=task).select_related('device')
+                for td in td_qs:
+                    device = td.device
+                    if not device:
+                        continue
+                    detail, _ = ReportDetail.objects.all_teams().get_or_create(
+                        report=report,
+                        device=device,
+                        defaults={
+                            'duration': 0,
+                            'error_message': '',
+                        }
+                    )
+                    detail.duration = 0
+                    detail.error_message = ''
+                    detail.step_results = copy.deepcopy(initial_records)
+                    detail.save(update_fields=['duration', 'error_message', 'step_results'])
+
+                serializer = self.get_serializer(task)
+                return api_response(
+                    msg="任务重启成功",
+                    data={
+                        "message": "任务重启成功",
+                        "task": serializer.data,
+                        "celery_task_id": async_res.id,
+                    }
                 )
-
-                logger.info(f"任务已重置: {task.name}")
-
-                # 然后启动任务
-                return self.start(request, pk)
 
         except Exception as e:
             logger.error(f"重新执行任务失败: {str(e)}")

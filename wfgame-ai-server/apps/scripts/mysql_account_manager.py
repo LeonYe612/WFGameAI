@@ -123,6 +123,28 @@ class MySQLDistributedAccountManager:
             Dict[str, dict]: {device_serial: account_info, ...}
         """
         with self.lock:
+            # 在分配前进行一次懒加载迁移：当账户表为空时自动从JSON导入
+            try:
+                conn_probe = self.connection_pool.connection()
+                cur_probe = conn_probe.cursor()
+                cur_probe.execute("SELECT COUNT(*) AS c FROM ai_game_accounts")
+                row = cur_probe.fetchone()
+                total_accounts = int(row.get('c', 0) if isinstance(row, dict) else (row[0] if row else 0))
+            except Exception:
+                total_accounts = -1
+            finally:
+                try:
+                    cur_probe.close(); conn_probe.close()
+                except Exception:
+                    pass
+            if total_accounts == 0:
+                # 自动迁移一次；失败则忽略，继续正常流程
+                try:
+                    print("🔄 检测到账户表为空，尝试从JSON自动导入账号池...")
+                    self.migrate_accounts_from_json()
+                except Exception as _auto_mig_e:
+                    print(f"⚠️ 自动导入账号池失败: {_auto_mig_e}")
+
             conn = self.connection_pool.connection()
 
             try:
@@ -131,7 +153,8 @@ class MySQLDistributedAccountManager:
 
                 allocations = {}
 
-                for device_serial in device_serials:                    # 检查设备是否已有分配
+                for device_serial in device_serials:
+                    # 检查设备是否已有分配
                     cursor.execute("""
                         SELECT account_id, username, password, phone
                         FROM ai_game_accounts
@@ -144,7 +167,8 @@ class MySQLDistributedAccountManager:
                         # 设备已有分配，返回现有账号
                         allocations[device_serial] = existing_account
                         print(f"✅ 设备 {device_serial} 已分配账号: {existing_account['username']}")
-                        continue                    # 查找可用账号
+                        continue
+                    # 查找可用账号
                     cursor.execute("""
                         SELECT account_id, username, password, phone
                         FROM ai_game_accounts

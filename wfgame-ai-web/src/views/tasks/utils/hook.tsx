@@ -14,6 +14,7 @@ import { ElMessage, ElMessageBox } from "element-plus";
 import { onMounted, reactive, ref } from "vue";
 // import { useRouter } from "vue-router";
 import { useNavigate } from "@/views/common/utils/navHook";
+import { preconnectReplayTask } from "@/views/replay/utils/socket";
 import type {
     CreateTaskPayload,
     PaginationInfo,
@@ -25,6 +26,8 @@ export const useTasksPage = () => {
     const { openReplayRoom } = useNavigate();
     const loading = ref(false);
     const taskList = ref<Task[]>([]);
+    const restartLoadingMap = ref<Record<number, boolean>>({}); // 任务级重启 loading
+    const restartLoadingTimers = ref<Record<number, number>>({}); // 任务级重启 loading 超时兜底
     const filters = ref<TaskFilters>({
         search: "",
         status: null,
@@ -139,35 +142,77 @@ export const useTasksPage = () => {
         try {
             switch (action) {
                 case "start": {
+                    // 启动任务：先建立WS连接监听早期事件，再调用start接口，最后打开窗口并传递捕获的离线设备
+                    const taskId = String(task.id);
+                    const deviceIds = (task as any).device_ids || [];
+                    const scriptIds = (task as any).script_ids || [];
+
+                    // 1. 尝试预连接 WS (容错处理)
+                    const capturedOffline = new Set<string>();
+                    let socket: any = null;
+                    try {
+                        // 清理旧的离线记录
+                        localStorage.removeItem(`replay_offline_${taskId}`);
+
+                        socket = preconnectReplayTask(taskId, {
+                            onError: (err: any) => {
+                                try {
+                                    // 后端 emit event="error" data={ device, reason: "device_not_connected", ... }
+                                    const data = (err && err.data) ? err.data : err;
+                                    const device = data?.device;
+                                    const reason = data?.reason;
+
+                                    if (device && reason === 'device_not_connected') {
+                                        capturedOffline.add(device);
+                                        // 写入 LocalStorage 以便新窗口读取
+                                        const key = `replay_offline_${taskId}`;
+                                        const existing = JSON.parse(localStorage.getItem(key) || '[]');
+                                        if (!existing.includes(device)) {
+                                            existing.push(device);
+                                            localStorage.setItem(key, JSON.stringify(existing));
+                                        }
+                                    }
+                                } catch (e) { /* ignore callback error */ }
+                            }
+                        });
+                    } catch (e) {
+                        console.error("Preconnect failed", e);
+                    }
+
+                    // 2. 调用 Start 接口
                     await superRequest({
                         apiFunc: startTask,
                         apiParams: task.id,
                         enableSucceedMsg: true,
                         succeedMsgContent: "任务开始执行",
                         onSucceed: (data: any) => {
-                            const taskId = String(task.id);
-                            const deviceIds = (task as any).device_ids || [];
-                            const scriptIds = (task as any).script_ids || [];
-                            const celeryId =
-                                data?.celery_task_id || (task as any).celery_id || "";
-
-                            // 打开回放页面（封装复用）
+                            const celeryId = data?.celery_task_id || (task as any).celery_id || "";
+                            // 3. 打开窗口，传递捕获的离线设备
+                            const extraQuery: any = {};
+                            if (capturedOffline.size > 0) {
+                                extraQuery.initial_offline = Array.from(capturedOffline).join(',');
+                            }
                             openReplayRoom({
                                 taskId,
                                 deviceIds,
                                 scriptIds,
                                 celeryId,
-                                newTab: true
+                                blank: true,
+                                extraQuery: Object.keys(extraQuery).length > 0 ? extraQuery : undefined
                             });
                         },
                         onCompleted: () => {
+                            // 延迟断开预连接，确保新窗口有时间加载或事件已传递
+                            if (socket) {
+                                setTimeout(() => {
+                                    try { socket.disconnect(); } catch (_) { /* ignore */ }
+                                }, 5000);
+                            }
                             loadTasks();
                         }
                     });
                     break;
-                }
-
-                case "stop":
+                } case "stop":
                     await ElMessageBox.confirm("确认停止该任务？", "提示", {
                         confirmButtonText: "确定",
                         cancelButtonText: "取消",
@@ -177,10 +222,109 @@ export const useTasksPage = () => {
                     await loadTasks();
                     break;
 
-                case "restart":
-                    await restartTask(task.id);
-                    await loadTasks();
+                case "restart": {
+                    await ElMessageBox.confirm("确认重启该任务？将生成新的执行记录。", "重启任务", {
+                        confirmButtonText: "重启",
+                        cancelButtonText: "取消",
+                        type: "warning"
+                    });
+                    restartLoadingMap.value[task.id] = true;
+
+                    // 1. 尝试预连接 WS (容错处理)
+                    const capturedOffline = new Set<string>();
+                    let socket: any = null;
+                    try {
+                        // 清理旧的离线记录
+                        localStorage.removeItem(`replay_offline_${task.id}`);
+
+                        socket = preconnectReplayTask(task.id, {
+                            onError: (err: any) => {
+                                try {
+                                    // 后端 emit event="error" data={ device, reason: "device_not_connected", ... }
+                                    const data = (err && err.data) ? err.data : err;
+                                    const device = data?.device;
+                                    const reason = data?.reason;
+
+                                    if (device && reason === 'device_not_connected') {
+                                        capturedOffline.add(device);
+                                        // 写入 LocalStorage 以便新窗口读取
+                                        const key = `replay_offline_${task.id}`;
+                                        const existing = JSON.parse(localStorage.getItem(key) || '[]');
+                                        if (!existing.includes(device)) {
+                                            existing.push(device);
+                                            localStorage.setItem(key, JSON.stringify(existing));
+                                        }
+                                    }
+                                } catch (e) { /* ignore callback error */ }
+                            }
+                        });
+                    } catch (e) {
+                        console.error("Preconnect failed", e);
+                    }
+
+                    // 兜底超时：10s 后无论成功/失败都解除 loading，防止 Celery 未启动导致前端卡死
+                    if (restartLoadingTimers.value[task.id]) {
+                        clearTimeout(restartLoadingTimers.value[task.id]);
+                    }
+                    restartLoadingTimers.value[task.id] = window.setTimeout(() => {
+                        restartLoadingMap.value[task.id] = false;
+                        delete restartLoadingTimers.value[task.id];
+                        if (socket) {
+                            try { socket.disconnect(); } catch (_) { /* ignore */ }
+                        }
+                    }, 10000);
+
+                    await superRequest({
+                        apiFunc: (id: string) => restartTask(id),
+                        apiParams: task.id,
+                        enableSucceedMsg: true,
+                        succeedMsgContent: "任务重启成功！",
+                        onSucceed: (data: any) => {
+                            const taskId = task.id;
+                            const deviceIds = (task as any).device_ids || [];
+                            const scriptIds = (task as any).script_ids || [];
+                            const celeryId = data?.celery_task_id || (task as any).celery_id || "";
+
+                            const extraQuery: any = {};
+                            if (capturedOffline.size > 0) {
+                                extraQuery.initial_offline = Array.from(capturedOffline).join(',');
+                            }
+                            openReplayRoom({
+                                taskId,
+                                deviceIds,
+                                scriptIds,
+                                celeryId,
+                                blank: true,
+                                extraQuery: Object.keys(extraQuery).length > 0 ? extraQuery : undefined
+                            });
+                        },
+                        onFailed: () => {
+                            // 若无可用 celery worker 或失败，直接去掉 loading
+                            restartLoadingMap.value[task.id] = false;
+                            if (restartLoadingTimers.value[task.id]) {
+                                clearTimeout(restartLoadingTimers.value[task.id]);
+                                delete restartLoadingTimers.value[task.id];
+                            }
+                            if (socket) {
+                                try { socket.disconnect(); } catch (_) { /* ignore */ }
+                            }
+                        },
+                        onCompleted: () => {
+                            restartLoadingMap.value[task.id] = false;
+                            if (restartLoadingTimers.value[task.id]) {
+                                clearTimeout(restartLoadingTimers.value[task.id]);
+                                delete restartLoadingTimers.value[task.id];
+                            }
+                            if (socket) {
+                                setTimeout(() => {
+                                    try { socket.disconnect(); } catch (_) { /* ignore */ }
+                                }, 5000);
+                            }
+                            loadTasks();
+                        }
+                    });
                     break;
+                }
 
                 case "view":
                     handleViewTask(task);
@@ -247,6 +391,7 @@ export const useTasksPage = () => {
         taskList,
         filters,
         pagination,
+        restartLoadingMap,
 
         // 对话框状态
         formDialogVisible,

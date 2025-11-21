@@ -1358,6 +1358,7 @@ class AndroidTools:
 
 if __name__ == '__main__':
     # Simple demo showing how to instantiate the tools with defaults.
+    # cfg = AndroidConfig(device_id="")
     cfg = AndroidConfig()
     android_tools = AndroidTools(cfg)
     # 获取单个设备信息

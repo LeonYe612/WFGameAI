@@ -23,6 +23,22 @@ from apps.scripts.models import Script  # 用于根据ID解析脚本文件名
 logger = logging.getLogger(__name__)
 
 
+def _emit_task_sys_error(task_id: int, serial: str, message: str) -> None:
+    """向任务房间推送系统级错误，便于前端即时展示。
+    事件: sysMsg, 房间: replay_task_<task_id>
+    数据: { msg: 'task_error', device: <serial>, error_message: <message> }
+    """
+    try:
+        from utils.socketio_helper import SocketIOHttpApiClient
+        client = SocketIOHttpApiClient()
+        room = f"replay_task_{int(task_id)}"
+        payload = {"msg": "task_error", "device": str(serial), "error_message": str(message or "")}
+        client.emit(room=room, module="task", event="sysMsg", data=payload)
+    except Exception:
+        # 仅日志记录，避免影响主流程
+        logger.debug("emit sysMsg(task_error) failed: task=%s device=%s", task_id, serial)
+
+
 def _parse_script_specs(sp: Any) -> List[Dict[str, Any]]:
     """仅解析最新快照结构，返回每个脚本的独立配置
 
@@ -242,6 +258,21 @@ def replay_task(task_id: int):
                 except Exception:
                     exit_code = None
                 error_text = payload.get('error_msg')
+            # 结果文件缺失或未包含错误时，回退到报告详情中的错误信息
+            if not error_text:
+                try:
+                    from apps.reports.models import ReportDetail
+                    rd = (ReportDetail.objects.all_teams()
+                          .select_related('report', 'device')
+                          .filter(report__task_id=task_id, device__device_id=serial)
+                          .only('error_message')
+                          .first())
+                    if rd and getattr(rd, 'error_message', ''):
+                        error_text = rd.error_message
+                        # 若来源于DB错误，则将 exit_code 视为 -1
+                        exit_code = -1 if exit_code in (None, 0) else exit_code
+                except Exception:
+                    pass
             try:
                 td = (TaskDevice.objects.all_teams()
                       .filter(task=task, device__device_id=serial)
@@ -265,6 +296,25 @@ def replay_task(task_id: int):
                         if error_text:
                             from apps.reports.models import ReportDetail
                             ReportDetail.objects.all_teams().filter(report__task_id=task_id, device__device_id=serial).update(error_message=error_text)
+                            # 同步推送系统级错误到前端
+                            _emit_task_sys_error(task_id, serial, error_text)
+
+                            # 同步更新 Redis 错误信息，确保快照能获取到
+                            try:
+                                from django.conf import settings
+                                redis_client = None
+                                if hasattr(settings, 'REDIS'):
+                                    redis_client = getattr(settings.REDIS, 'client', None)
+
+                                if redis_client:
+                                    key = f"wfgame:replay:task:{task_id}:device:{serial}:error"
+                                    redis_client.set(key, error_text, ex=7*24*3600)
+                                    # Ensure steps key exists
+                                    steps_key = f"wfgame:replay:task:{task_id}:device:{serial}:steps"
+                                    if not redis_client.exists(steps_key) or not redis_client.get(steps_key):
+                                        redis_client.set(steps_key, "[]", ex=7*24*3600)
+                            except Exception:
+                                pass
                     except Exception:
                         logger.exception("更新 ReportDetail 错误信息失败: %s", serial)
             except Exception:
@@ -303,13 +353,32 @@ def replay_task(task_id: int):
                     report.duration = (report.updated_at - report.created_at).total_seconds()
             except Exception:
                 pass
+
             # 若有状态字段，按任务状态映射
+            update_fields = ['duration', 'updated_at']
             try:
                 if hasattr(report, 'status'):
-                    report.status = 'completed' if task.status == 'completed' else ('failed' if task.status == 'failed' else report.status)
+                    # 1. 优先检查是否有失败的详情 (业务失败)
+                    from apps.reports.models import ReportDetail
+                    # 检查 result 是否包含 fail 或 error
+                    has_failed_details = ReportDetail.objects.all_teams().filter(report=report).filter(result__icontains='fail').exists() or \
+                                         ReportDetail.objects.all_teams().filter(report=report).filter(result__icontains='error').exists()
+
+                    if has_failed_details:
+                        report.status = 'failed'
+                        update_fields.append('status')
+                    # 2. 其次检查任务本身是否失败 (系统异常)
+                    elif task.status == 'failed':
+                        report.status = 'failed'
+                        update_fields.append('status')
+                    # 3. 若无失败详情且任务成功，则置为完成
+                    elif task.status == 'completed':
+                        report.status = 'completed'
+                        update_fields.append('status')
             except Exception:
                 pass
-            report.save(update_fields=['duration', 'updated_at'] + (['status'] if hasattr(report, 'status') else []))
+
+            report.save(update_fields=update_fields)
     except Exception:
         logger.exception("更新 Report 主表时间戳失败: task_id=%s", task_id)
 

@@ -13,6 +13,7 @@ from utils.socketIo_room_names import device_room
 logging.getLogger('airtest').setLevel(logging.WARNING)
 logging.getLogger('airtest.core.android.adb').setLevel(logging.WARNING)
 import os
+import sys
 import json
 import time
 import subprocess
@@ -23,7 +24,6 @@ import numpy as np
 import base64
 import io
 from collections import namedtuple
-
 # 尝试导入相关模块，如果失败则使用占位符
 try:
     from .enhanced_input_handler import DeviceScriptReplayer
@@ -78,12 +78,23 @@ def get_device_screenshot(device):
     Returns:
         PIL.Image 对象或 None
     """
-    # 统一设备房间命名：device_<pk> / device_<serial>
+    # 仅使用 device_<pk> 房间；禁止使用序列号房间
+    room_id = "device_unknown"
     try:
-        room_id = device_room(getattr(device, 'primary_key_id', None))
+        pk = getattr(device, 'primary_key_id', None) or getattr(device, 'id', None)
+        if not pk and hasattr(device, 'serial'):
+            # 尝试通过序列号查询 Django Device 模型获取 pk
+            try:
+                from apps.devices.models import Device as _DModel
+                dev_obj = _DModel.objects.filter(device_id=getattr(device, 'serial')).only('id').first()
+                if dev_obj:
+                    pk = dev_obj.id
+            except Exception:
+                pk = None
+        if pk:
+            room_id = f"device_{pk}"
     except Exception:
-        # 回退：保持旧逻辑（裸ID），但建议尽快迁移
-        room_id = f"device_{getattr(device, 'primary_key_id', 'unknown')}"
+        room_id = "device_unknown"
     try:
         # 首先检查设备是否有直接的screenshot方法（Mock设备或其他设备类型）
         if hasattr(device, 'screenshot') and callable(device.screenshot):
@@ -117,7 +128,10 @@ def get_device_screenshot(device):
                     pic_b64 = None
 
                 if pic_b64:
-                    SocketIOHttpApiClient().push_replay(room_id, pic_data=pic_b64)
+                    try:
+                        SocketIOHttpApiClient().emit(room=room_id, module='replay', event='frame', data=pic_b64)
+                    except Exception as _emit_err:
+                        print(f"⚠️ emit frame 失败: {_emit_err}")
                 return screenshot
 
         # 如果设备没有serial属性，说明可能是Mock设备，已经在上面处理了
@@ -137,7 +151,10 @@ def get_device_screenshot(device):
             from PIL import Image
             # result.stdout 已经是字节数据，统一转成 base64 字符串
             pic_b64 = base64.b64encode(result.stdout).decode('utf-8')
-            SocketIOHttpApiClient().push_replay(room_id, pic_data=pic_b64)
+            try:
+                SocketIOHttpApiClient().emit(room=room_id, module='replay', event='frame', data=pic_b64)
+            except Exception as _emit_err2:
+                print(f"⚠️ emit frame 失败: {_emit_err2}")
             return Image.open(io.BytesIO(result.stdout))
         else:
             print("⚠️ 警告：screencap命令返回空数据或失败")
@@ -162,7 +179,10 @@ def get_device_screenshot(device):
                 img.save(buf, format='PNG')
                 pic_b64 = base64.b64encode(buf.getvalue()).decode('utf-8')
             if pic_b64:
-                SocketIOHttpApiClient().push_replay(room_id, pic_data=pic_b64)
+                try:
+                    SocketIOHttpApiClient().emit(room=room_id, module='replay', event='frame', data=pic_b64)
+                except Exception as _emit_err3:
+                    print(f"⚠️ emit frame 失败: {_emit_err3}")
             return img
         except Exception as e2:
             print(f"❌ Airtest截图也失败: {e2}")
@@ -484,7 +504,6 @@ class ActionProcessor:
         # 如果没有显式截图路径但最近一次截图存在，补全
         if not getattr(result, 'screenshot_path', None) and getattr(self, '_last_screenshot_path', None):
             result.screenshot_path = self._last_screenshot_path
-
         return result
 
     def _handle_delay(self, step, step_idx, log_dir=None):
