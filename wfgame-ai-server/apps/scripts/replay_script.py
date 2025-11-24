@@ -561,7 +561,7 @@ class StepTracker:
             # 推送进度事件
             try:
                 client.emit(room=room, module='task', event='progress', data=payload)
-                print_realtime(f"📊 推送进度: {progress_percentage}% ({completed_steps}/{calculated_total_steps}) 设备数:{online_devices_count}")
+                print_realtime(f"📊 [Task-{self.task_id} Dev-{self.device_serial}] 推送进度: {progress_percentage}% ({completed_steps}/{calculated_total_steps}) 设备数:{GLOBAL_INITIAL_DEVICE_COUNT or 1}")
             except Exception as _emit_progress_err:
                 track_error(f"⚠️ 进度事件推送失败: {_emit_progress_err}")
         except Exception as e:
@@ -752,33 +752,19 @@ class StepTracker:
         # 补充：若初始化时未拿到全局总步数，且现在全局已计算，则同步缓存
         if self._cached_total_steps is None and GLOBAL_REPLAY_TOTAL_STEPS is not None:
             self._cached_total_steps = int(GLOBAL_REPLAY_TOTAL_STEPS)
-        self._flush_to_redis()
-        # 如果这是从未完成状态变为完成状态，则原子地更新 Redis 计数（避免跨进程重复计数）
+
+        # 确保总步数写入 Redis (供多进程共享)
         try:
-            if self.redis_client and self.task_id:
-                try:
-                    was_completed = prev_status in ("success", "failed")
-                except Exception:
-                    was_completed = False
-                is_completed_now = new_status in ("success", "failed")
-                if (not was_completed) and is_completed_now:
-                    try:
-                        completed_key = f"wfgame:replay:task:{self.task_id}:completed_total"
-                        device_completed_key = f"wfgame:replay:task:{self.task_id}:device:{self.device_serial}:completed"
-                        # 原子自增
-                        self.redis_client.incr(completed_key, amount=1)
-                        self.redis_client.incr(device_completed_key, amount=1)
-                        # 设置TTL，避免长期残留
-                        try:
-                            self.redis_client.expire(completed_key, 7*24*3600)
-                            self.redis_client.expire(device_completed_key, 7*24*3600)
-                        except Exception:
-                            pass
-                        print_realtime(f"💾 Redis 进度计数更新: {completed_key}++, {device_completed_key}++")
-                    except Exception as _inc_e:
-                        track_error(f"⚠️ 更新 Redis 进度计数失败: {_inc_e}")
+            if self.redis_client and self.task_id and self._cached_total_steps:
+                key = f"wfgame:replay:task:{self.task_id}:config:total_steps"
+                # setnx 避免覆盖已有的配置
+                if self.redis_client.setnx(key, self._cached_total_steps):
+                    self.redis_client.expire(key, 7*24*3600)
+                    print_realtime(f"🔢 [Task-{self.task_id} Dev-{self.device_serial}] 初始化Redis总步数: {self._cached_total_steps}")
         except Exception:
             pass
+
+        self._flush_to_redis()
         # 不推送初始化事件；由后续 step_started/step_finished 产生的 replay_step 驱动前端更新
 
     def step_started(self, step_index: int, **kwargs):
@@ -882,6 +868,20 @@ class StepTracker:
         else:
             rec["summary"]["failed"] = rec["summary"].get("failed", 0) + 1
 
+        # 原子更新 Redis 进度
+        try:
+            if self.redis_client and self.task_id:
+                completed_key = f"wfgame:replay:task:{self.task_id}:completed_total"
+                device_completed_key = f"wfgame:replay:task:{self.task_id}:device:{self.device_serial}:completed"
+                new_total = self.redis_client.incr(completed_key, amount=1)
+                new_dev_total = self.redis_client.incr(device_completed_key, amount=1)
+                # 延长过期时间
+                self.redis_client.expire(completed_key, 7*24*3600)
+                self.redis_client.expire(device_completed_key, 7*24*3600)
+                print_realtime(f"📈 [Task-{self.task_id} Dev-{self.device_serial}] Redis进度更新: Total={new_total}, DevTotal={new_dev_total}")
+        except Exception as e:
+            track_error(f"⚠️ Redis进度更新失败: {e}")
+
         self._flush_to_redis()
         # 推送单步“完成/失败”事件（仅主设备）
         try:
@@ -972,10 +972,14 @@ class StepTracker:
         try:
             client = _get_socket_client()
             if client and self._is_primary_device():
-                # 结束时不推送 progress/complete，仅最后一步的 step 已发送
-                pass
+                print_realtime(f"🏁 [Task-{self.task_id} Dev-{self.device_serial}] 脚本结束，强制推送最终进度: {self._cached_total_steps}/{self._cached_total_steps}")
+                # 强制推送最终进度 (100%)
+                self._push_progress_event(
+                    script_id=rec.get("meta", {}).get("id"),
+                    completed_steps=self._cached_total_steps,
+                    total_steps=self._cached_total_steps
+                )
         except Exception as _pe:
-            track_error(f"⚠️ 任务完成状态推送异常: {_pe}")
             track_error(f"⚠️ 任务完成状态推送异常: {_pe}")
 
         # 将最终结果写入数据库

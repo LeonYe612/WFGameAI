@@ -60,6 +60,14 @@ class ReportListView(APIView):
             else:
                 queryset = queryset.filter(name__icontains=keyword)
 
+        # Additional filter: task_id
+        task_id = request.query_params.get('task_id')
+        if task_id:
+            try:
+                queryset = queryset.filter(task_id=int(task_id))
+            except ValueError:
+                pass
+
         # Pagination
         return CommonPagination().paginate_response(
             queryset,

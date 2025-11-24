@@ -47,7 +47,8 @@ export type TaskAction =
     | "restart"
     | "view"
     | "duplicate"
-    | "delete";
+    | "delete"
+    | "report";
 
 // 任务表格列定义
 export interface TaskTableColumn {
