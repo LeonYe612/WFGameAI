@@ -13,6 +13,7 @@ export interface Task {
   name: string;
   group: any;
   celery_id?: string;
+  report_id?: number; // 关联报告ID（如果已生成报告）
   script_params: Record<string, any>;
   status: TaskStatus;
   status_display: string;

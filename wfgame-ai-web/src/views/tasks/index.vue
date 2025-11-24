@@ -70,6 +70,7 @@
 
 <script setup lang="ts">
 import MainContent from "@/layout/components/mainContent/index.vue";
+import { useNavigate } from "@/views/common/utils/navHook";
 import type { TaskFormData } from "@/views/tasks/utils/types";
 import { Plus, Refresh } from "@element-plus/icons-vue";
 import { onMounted, onUnmounted, ref, watch } from "vue";
@@ -121,6 +122,9 @@ const defaultForm: TaskFormData = {
 };
 
 const fillValues = ref<TaskFormData>({ ...defaultForm });
+
+// 导航钩子：使用专用的 navigateToReportList(report_id) 辅助函数
+const { navigateToReportList } = useNavigate();
 
 // 自动刷新逻辑
 const autoRefreshEnabled = ref(false);
@@ -192,6 +196,16 @@ const onAction = (action: string, task: any) => {
         : []
     };
     formDialogVisible.value = true;
+    return;
+  }
+  if (action === "report") {
+    const rid = Number(task?.report_id);
+    if (!isNaN(rid) && rid > 0) {
+      navigateToReportList(rid);
+    } else {
+      // 无报告ID：仍跳转到报告列表，不带参数
+      navigateToReportList();
+    }
     return;
   }
   // 其它动作按原逻辑处理

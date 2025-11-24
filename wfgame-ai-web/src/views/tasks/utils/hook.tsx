@@ -1,3 +1,4 @@
+import { listReports } from "@/api/reports";
 import {
     createTask,
     deleteTask,
@@ -69,14 +70,57 @@ export const useTasksPage = () => {
         await superRequest({
             apiFunc: getTaskList,
             apiParams: params,
-            onSucceed: data => {
+            onSucceed: async data => {
                 taskList.value = data?.results;
                 pagination.total = data?.count || 0;
+                try {
+                    await enrichReportIds(taskList.value || []);
+                } catch (e) {
+                    console.warn("附加报告ID失败", e);
+                }
             },
             onCompleted: () => {
                 loading.value = false;
             }
         });
+    };
+
+    /** 为已结束的任务补充 report_id（若后端未直接返回） */
+    const enrichReportIds = async (tasks: Task[]) => {
+        if (!Array.isArray(tasks) || tasks.length === 0) return;
+        const endedStatuses = new Set([
+            "completed",
+            "failed",
+            "cancelled",
+            "finished",
+            "success"
+        ]);
+        const candidates = tasks.filter(
+            (t: any) =>
+                !t.report_id && endedStatuses.has(String(t.status)) && t.id
+        );
+        if (candidates.length === 0) return;
+        // 并发获取每个任务的最新报告，限制单个结果 size=1
+        await Promise.all(
+            candidates.map(async task => {
+                try {
+                    const resp = await superRequest({
+                        apiFunc: listReports,
+                        apiParams: { task_id: task.id, size: 1, page: 1 },
+                        enableFailedMsg: false,
+                        enableErrorMsg: false
+                    });
+                    const payload = resp?.data || {};
+                    const items = payload.items || payload.results || [];
+                    const first = Array.isArray(items) ? items[0] : null;
+                    if (first && first.id) {
+                        (task as any).report_id = first.id;
+                    }
+                } catch (e) {
+                    // 忽略单个失败
+                }
+            })
+        );
     };
 
     // 处理过滤器变化
