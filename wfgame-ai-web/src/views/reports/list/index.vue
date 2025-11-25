@@ -36,11 +36,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick, watch } from "vue";
-import { Search, Refresh } from "@element-plus/icons-vue";
 import MainContent from "@/layout/components/mainContent/index.vue";
-import ReportsTable from "./components/reportsTable.vue";
 import { useNavigate } from "@/views/common/utils/navHook";
+import { Refresh, Search } from "@element-plus/icons-vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
+import ReportsTable from "./components/reportsTable.vue";
 const { getParameter } = useNavigate();
 
 // 页面标题
@@ -63,15 +63,18 @@ const onQueryChanged = (value: any, key: string) => {
 
 // 页面加载时检查 URL 参数，自动查询并打开对应报告
 const openReportByUrlParam = async () => {
-  const id = getParameter.id || "";
-  if (!id) return;
-  const reportId = Number(id);
+  // 支持 report_id 或 id 两种参数来源
+  const raw = (getParameter.report_id as any) || (getParameter.id as any) || "";
+  if (!raw) return;
+  const reportId = Number(raw);
   if (isNaN(reportId) || reportId === 0) return;
 
   // 等待 reportsTableRef 挂载并加载完成
   await nextTick();
 
   if (reportsTableRef.value) {
+    // 采用统一关键字模式，兼容后台检索：优先使用 report_id
+    // 后端当前仅识别 id= 过滤（report_id= 不支持）
     reportsTableRef.value.queryForm.keyword = `id=${reportId}`;
     await reportsTableRef.value.fetchData();
     // 等待 DOM 更新后再查找并点击行

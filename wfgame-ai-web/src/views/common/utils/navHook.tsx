@@ -192,6 +192,22 @@ export function useNavigate() {
     });
   }
 
+  // 跳转到报告列表（带 id 参数），后续列表根据 id 自动选中行
+  function navigateToReportList(reportId?: number, blank = false) {
+    let title = "测试报告";
+    const rid = reportId && !isNaN(reportId) && reportId > 0 ? reportId : undefined;
+    if (rid) {
+      title = `报告ID.${rid}`;
+    }
+    navigateTo({
+      parameter: rid ? { id: rid } : {},
+      componentName: "AI-REPORTS-INDEX",
+      tagTitle: title,
+      blank
+    });
+  }
+
+
   function navigateToOcrResult(
     taskId: string,
     blank = false,
@@ -517,6 +533,7 @@ export function useNavigate() {
     navigateToCatalog,
     navigateToDebugReportList,
     navigateToPlanReportList,
+    navigateToReportList,
     navigateToExecutorDownload,
     // replay
     buildReplayUrl,

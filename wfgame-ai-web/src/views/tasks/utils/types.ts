@@ -47,7 +47,8 @@ export type TaskAction =
     | "restart"
     | "view"
     | "duplicate"
-    | "delete";
+    | "delete"
+    | "report";
 
 // 任务表格列定义
 export interface TaskTableColumn {
@@ -75,6 +76,8 @@ export interface TasksTableProps {
     data: Task[];
     loading?: boolean;
     pagination: PaginationInfo;
+    // 用于显示“重启”按钮的 loading/disabled 状态（按任务ID）
+    restartLoadingMap?: Record<number, boolean>;
 }
 
 export interface TaskFormDialogProps {

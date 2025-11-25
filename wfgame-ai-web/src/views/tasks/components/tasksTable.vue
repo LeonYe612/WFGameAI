@@ -7,7 +7,7 @@
       style="width: 100%"
       @sort-change="handleSortChange"
     >
-      <el-table-column prop="id" label="任务ID" width="100" align="center">
+      <el-table-column prop="id" label="ID" width="100" align="center">
         <template #default="{ row }">
           <div class="cell-center">
             {{ row.id }}
@@ -15,7 +15,7 @@
         </template>
       </el-table-column>
 
-      <el-table-column prop="name" label="任务名称" min-width="160">
+      <el-table-column prop="name" label="任务名称" min-width="300">
         <template #default="{ row }">
           <el-tooltip effect="dark" :content="row.name" placement="top">
             <span class="task-name-ellipsis">{{ row.name }}</span>
@@ -65,31 +65,7 @@
         </template>
       </el-table-column>
 
-<!--      <el-table-column-->
-<!--        prop="priority"-->
-<!--        label="优先级"-->
-<!--        width="100"-->
-<!--        align="center"-->
-<!--      >-->
-<!--        <template #default="{ row }">-->
-<!--          <div class="cell-center">-->
-<!--            <el-tag-->
-<!--              v-if="priorityConfig[row.priority]"-->
-<!--              :type="priorityConfig[row.priority].type"-->
-<!--              size="default"-->
-<!--              effect="light"-->
-<!--              class="priority-tag-large"-->
-<!--            >-->
-<!--              <span class="priority-text-large">{{-->
-<!--                priorityConfig[row.priority].label-->
-<!--              }}</span>-->
-<!--            </el-tag>-->
-<!--            <span v-else class="priority-text-large">{{-->
-<!--              row.priority_display || row.priority-->
-<!--            }}</span>-->
-<!--          </div>-->
-<!--        </template>-->
-<!--      </el-table-column>-->
+      <!-- 优先级列已移除，如需恢复请重新加入 -->
 
       <el-table-column
         prop="task_type"
@@ -104,21 +80,23 @@
         </template>
       </el-table-column>
 
-      <!-- Celery ID -->
-      <!--      <el-table-column-->
-      <!--        prop="celery_id"-->c
-      <!--        label="Celery ID"-->
-      <!--        min-width="240"-->
-      <!--        align="center"-->
-      <!--      >-->
-      <!--        <template #default="{ row }">-->
-      <!--          <div class="cell-center">-->
-      <!--            <el-tooltip effect="dark" :content="row.celery_id || row.celery_task_id || '&#45;&#45;'" placement="top">-->
-      <!--              <span class="task-name-ellipsis">{{ row.celery_id || row.celery_task_id || '&#45;&#45;' }}</span>-->
-      <!--            </el-tooltip>-->
-      <!--          </div>-->
-      <!--        </template>-->
-      <!--      </el-table-column>-->
+      <!-- Celery ID (已隐藏，如需恢复请去掉注释) -->
+      <!--
+      <el-table-column
+        prop="celery_id"
+        label="Celery ID"
+        min-width="240"
+        align="center"
+      >
+        <template #default="{ row }">
+          <div class="cell-center">
+            <el-tooltip effect="dark" :content="row.celery_id || row.celery_task_id || '--'" placement="top">
+              <span class="task-name-ellipsis">{{ row.celery_id || row.celery_task_id || '--' }}</span>
+            </el-tooltip>
+          </div>
+        </template>
+      </el-table-column>
+      -->
 
       <el-table-column
         prop="run_type"
@@ -144,66 +122,39 @@
         </template>
       </el-table-column>
 
-      <el-table-column
-        prop="creator_name"
-        label="创建人"
-        width="140"
-        align="center"
-      >
+      <el-table-column label="创建信息" width="200" align="center">
         <template #default="{ row }">
-          <div class="cell-center">
-            {{ row.creator_name || "--" }}
+          <div class="flex flex-col">
+            <span class="text-base">{{ row.creator_name || "--" }}</span>
+            <span class="text-sm font-light text-gray-400 mt-1">
+              {{ formatDateShort(row.created_at) }}
+            </span>
           </div>
         </template>
       </el-table-column>
 
-      <el-table-column
-        prop="created_at"
-        label="创建时间"
-        width="180"
-        align="center"
-      >
+      <el-table-column label="最后编辑" width="200" align="center">
         <template #default="{ row }">
-          <div class="cell-center">
-            {{ formatDateShort(row.created_at) }}
+          <div class="flex flex-col">
+            <span class="text-base">{{ row.updater_name || "--" }}</span>
+            <span class="text-sm font-light text-gray-400 mt-1">
+              {{ formatDateShort(row.updated_at) }}
+            </span>
           </div>
         </template>
       </el-table-column>
 
-      <el-table-column
-        prop="updater_name"
-        label="更新人"
-        width="140"
-        align="center"
-      >
-        <template #default="{ row }">
-          <div class="cell-center">
-            {{ row.updater_name || "--" }}
-          </div>
-        </template>
-      </el-table-column>
-
-      <el-table-column
-        prop="updated_at"
-        label="更新时间"
-        width="180"
-        align="center"
-      >
-        <template #default="{ row }">
-          <div class="cell-center">
-            {{ formatDateShort(row.updated_at) }}
-          </div>
-        </template>
-      </el-table-column>
-
-      <el-table-column label="操作" width="200" fixed="right" align="center">
+      <el-table-column label="操作" width="300" fixed="right" align="center">
         <template #default="{ row }">
           <div class="action-buttons">
             <!-- 运行中状态显示停止按钮 -->
             <el-button
               v-if="row.status === TaskStatus.RUNNING"
               type="danger"
-              size="small"
+              class="action-btn"
+              circle
+              plain
+              title="停止任务"
               @click="handleAction('stop', row)"
             >
               <el-icon>
@@ -215,7 +166,12 @@
             <el-button
               v-else-if="row.status === TaskStatus.FAILED"
               type="warning"
-              size="small"
+              class="action-btn"
+              circle
+              plain
+              title="重试任务"
+              :loading="props.restartLoadingMap?.[row.id] === true"
+              :disabled="props.restartLoadingMap?.[row.id] === true"
               @click="handleAction('restart', row)"
             >
               <el-icon>
@@ -226,8 +182,13 @@
             <el-button
               v-else
               type="primary"
-              size="small"
-              @click="handleAction('start', row)"
+              class="action-btn"
+              circle
+              plain
+              title="开始任务"
+              :loading="startLoadingTasks[row.id] === true"
+              :disabled="startLoadingTasks[row.id] === true"
+              @click="onStart(row)"
             >
               <el-icon>
                 <VideoPlay />
@@ -237,7 +198,10 @@
             <!-- 查看详情 -->
             <el-button
               type="info"
-              size="small"
+              class="action-btn"
+              circle
+              plain
+              title="查看详情"
               @click="handleAction('view', row)"
             >
               <el-icon>
@@ -247,14 +211,33 @@
 
             <!-- 复制按钮：点击后弹输入框确认副本名称 -->
             <el-button
-              size="small"
               type="primary"
+              class="action-btn"
+              circle
+              plain
+              title="复制任务"
               @click="handleAction('duplicate', row)"
             >
               <el-icon>
                 <CopyDocument />
               </el-icon>
             </el-button>
+
+            <!-- 查看报告按钮：始终显示；无 report_id 时置灰不可点 -->
+            <el-button
+              type="success"
+              class="action-btn report-btn"
+              circle
+              :plain="!row.report_id"
+              :disabled="!row.report_id"
+              :title="row.report_id ? '查看报告' : '报告未生成'"
+              @click="row.report_id && handleAction('report', row)"
+            >
+              <el-icon>
+                <Document />
+              </el-icon>
+            </el-button>
+
             <!-- 可见的删除按钮（确认弹窗） -->
             <el-popconfirm
               title="确定删除该任务吗?"
@@ -263,7 +246,7 @@
               @confirm="() => handleAction('delete', row)"
             >
               <template #reference>
-                <el-button size="small" type="danger">
+                <el-button type="danger" circle plain title="删除任务" class="action-btn">
                   <el-icon>
                     <Delete />
                   </el-icon>
@@ -293,33 +276,34 @@
 
 <script setup lang="ts">
 import {
-  CopyDocument,
-  Delete,
-  Refresh,
-  VideoPause,
-  VideoPlay,
-  View
+    CopyDocument,
+    Delete,
+    Document,
+    Refresh,
+    VideoPause,
+    VideoPlay,
+    View
 } from "@element-plus/icons-vue";
 import { ref, watch } from "vue";
 import { TaskStatus } from "../utils/enums";
 import {
-  priorityConfig,
-  runTypeConfig,
-  taskStatusConfig,
-  taskTypeConfig
+    runTypeConfig,
+    taskStatusConfig,
+    taskTypeConfig
 } from "../utils/rules";
 import type {
-  PaginationInfo,
-  TaskAction,
-  TasksTableEmits,
-  TasksTableProps
+    PaginationInfo,
+    TaskAction,
+    TasksTableEmits,
+    TasksTableProps
 } from "../utils/types";
 
 // icons are imported and used directly in the template
 
 // Props
 const props = withDefaults(defineProps<TasksTableProps>(), {
-  loading: false
+  loading: false,
+  restartLoadingMap: () => ({})
 });
 
 // Emits
@@ -341,6 +325,66 @@ watch(
 const handleAction = (action: TaskAction, task: any) => {
   emit("action", action, task);
 };
+
+// --- Start 按钮 loading 逻辑 ---
+// 仅在点击开始后到收到后端运行事件之间显示 loading；前端只展示第一台设备的进度即可
+const startLoadingTasks = ref<Record<number, boolean>>({});
+
+const onStart = (task: any) => {
+  if (!task || !task.id) return;
+  // 已在 loading 中则忽略重复点击
+  if (startLoadingTasks.value[task.id]) return;
+  startLoadingTasks.value[task.id] = true;
+  handleAction("start", task);
+  // 安全兜底：10s 未收到运行事件自动解除 loading，避免卡死
+  setTimeout(() => {
+    if (startLoadingTasks.value[task.id]) {
+      delete startLoadingTasks.value[task.id];
+    }
+  }, 10000);
+};
+
+// 观察任务状态变化：一旦任务进入 running/failed/finished 解除 loading
+watch(
+  () => props.data.map(d => ({ id: d.id, status: d.status })),
+  list => {
+    list.forEach(({ id, status }) => {
+      if (
+        startLoadingTasks.value[id] &&
+        ["running", "failed", "finished", "success"].includes(String(status))
+      ) {
+        delete startLoadingTasks.value[id];
+      }
+    });
+  },
+  { deep: true }
+);
+
+// 当父级触发列表刷新并结束后，如果任务仍未进入 running 等活跃态，清理 start 的 loading，避免超时卡死
+watch(
+  () => props.loading,
+  (newVal, oldVal) => {
+    if (oldVal === true && newVal === false) {
+      try {
+        const activeStatuses = ["running"]; // 进入运行态则不清理
+        props.data.forEach(d => {
+          const isActive = activeStatuses.includes(String(d.status));
+          if (!isActive && startLoadingTasks.value[d.id]) {
+            delete startLoadingTasks.value[d.id];
+          }
+        });
+      } catch {}
+    }
+  }
+);
+
+// 提供给父组件/外部在收到 socket 事件时手动清除：expose
+const clearStartLoading = (taskId: number) => {
+  if (startLoadingTasks.value[taskId]) {
+    delete startLoadingTasks.value[taskId];
+  }
+};
+defineExpose({ clearStartLoading });
 
 // 处理排序变化
 const handleSortChange = (sort: any) => {
@@ -395,6 +439,13 @@ const _formatDuration = (seconds: number | null | undefined) => {
   return `${m}:${String(sec).padStart(2, "0")}`;
 };
 
+// 任务是否结束（用于报告按钮状态）
+const isEnded = (row: any) => {
+  if (!row) return false;
+  const endedStatuses = ["completed", "failed", "cancelled", "finished", "success"]; // 扩展兼容
+  return endedStatuses.includes(String(row.status));
+};
+
 // ...existing code...
 </script>
 
@@ -442,9 +493,35 @@ const _formatDuration = (seconds: number | null | undefined) => {
 
 .action-buttons {
   display: flex;
-  gap: 6px;
+  flex-wrap: nowrap;
+  gap: 4px;
   justify-content: center;
 }
+.action-buttons :deep(.el-button.action-btn) {
+  /* Unified circular size */
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  min-width: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+:deep(.el-button.action-btn .el-icon) {
+  font-size: 18px;
+}
+/* 报告按钮禁用态灰色 */
+:deep(.el-button.report-btn:disabled) {
+  background: #f5f6f8 !important; /* lighter gray */
+  border-color: #eceff3 !important;
+  color: #c2c5ca !important;
+  opacity: 0.7;
+  filter: grayscale(60%);
+}
+:deep(.el-button.report-btn:disabled .el-icon) {
+  color: #c2c5ca !important;
+}
+
 
 /* 新增列样式，保证对齐与省略 */
 .col-name {
@@ -505,7 +582,7 @@ const _formatDuration = (seconds: number | null | undefined) => {
 /* 任务名称超长省略但可悬浮显示完整 */
 .task-name-ellipsis {
   display: inline-block;
-  max-width: 400px;
+  max-width: 500px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

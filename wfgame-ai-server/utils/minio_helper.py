@@ -45,7 +45,7 @@ def _get_minio_conf() -> dict:
     env_server_url = os.getenv('MINIO_SERVER_URL')
 
     endpoint = (section.get('endpoint') if isinstance(section,
-                                                      dict) else None) or env_endpoint or '172.28.133.134:19000'
+                                                      dict) else None) or env_endpoint or '172.28.133.200:19000'
     # 允许写 http(s)://host:port 或 host:port
     secure = False
     if str(endpoint).startswith('https://'):

@@ -209,65 +209,50 @@ export const actionSort = (data: {
 
 // ==========================================================
 
-// 回放相关类型定义
-export interface ReplayConfig {
-  loop_count?: number;
-  max_duration?: number;
-}
-
-export interface ScriptInfo {
-  id?: number;
-  path?: string;
-  loop_count?: number;
-  max_duration?: number;
-}
-
 export interface ReplayRequest {
-  device_serials: string[];
-  scripts: ScriptInfo[];
-  log_dir?: string;
-  account?: string;
-  password?: string;
+    script_ids: number[];
+    device_ids: string[];
+    [key: string]: any;
 }
 
-/**
- * 执行调试命令
- */
-export const executeDebugCommand = (command: string) => {
-  return http.request<ApiResult>("post", baseUrlApi("/scripts/debug/"), {
-    data: { command }
-  });
-};
+// /**
+//  * 执行调试命令
+//  */
+// export const executeDebugCommand = (command: string) => {
+//   return http.request<ApiResult>("post", baseUrlApi("/scripts/debug/"), {
+//     data: { command }
+//   });
+// };
 
 /**
  * 回放脚本
  */
 export const replayScripts = (data: ReplayRequest) => {
-  return http.request<ApiResult>("post", baseUrlApi("/scripts/replay/"), {
-    data
-  });
+    return http.request<ApiResult>("post", baseUrlApi("/scripts/replay/"), {
+        data
+    });
 };
 
-// /**
-//  * 导入单个脚本
-//  */
-// export const importScript = (formData: FormData) => {
-//   return http.request<ApiResult>("post", baseUrlApi("/scripts/import/"), {
-//     data: formData,
-//     headers: {
-//       "Content-Type": "multipart/form-data"
-//     }
-//   });
-// };
+/**
+ * 导入单个脚本
+ */
+export const importScript = (formData: FormData) => {
+    return http.request<ApiResult>("post", baseUrlApi("/scripts/import/"), {
+        data: formData,
+        headers: {
+            "Content-Type": "multipart/form-data"
+        }
+    });
+};
 
-// /**
-//  * 批量导入脚本
-//  */
-// export const batchImportScripts = (formData: FormData) => {
-//   return http.request<ApiResult>("post", baseUrlApi("/scripts/import/"), {
-//     data: formData,
-//     headers: {
-//       "Content-Type": "multipart/form-data"
-//     }
-//   });
-// };
+/**
+ * 批量导入脚本
+ */
+export const batchImportScripts = (formData: FormData) => {
+    return http.request<ApiResult>("post", baseUrlApi("/scripts/import/"), {
+        data: formData,
+        headers: {
+            "Content-Type": "multipart/form-data"
+        }
+    });
+};
