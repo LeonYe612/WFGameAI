@@ -209,23 +209,44 @@ export const actionSort = (data: {
 
 // ==========================================================
 
-// /**
-//  * 执行调试命令
-//  */
-// export const executeDebugCommand = (command: string) => {
-//   return http.request<ApiResult>("post", baseUrlApi("/scripts/debug/"), {
-//     data: { command }
-//   });
-// };
+// 回放相关类型定义
+export interface ReplayConfig {
+  loop_count?: number;
+  max_duration?: number;
+}
 
-// /**
-//  * 回放脚本
-//  */
-// export const replayScripts = (data: ReplayRequest) => {
-//   return http.request<ApiResult>("post", baseUrlApi("/scripts/replay/"), {
-//     data
-//   });
-// };
+export interface ScriptInfo {
+  id?: number;
+  path?: string;
+  loop_count?: number;
+  max_duration?: number;
+}
+
+export interface ReplayRequest {
+  device_serials: string[];
+  scripts: ScriptInfo[];
+  log_dir?: string;
+  account?: string;
+  password?: string;
+}
+
+/**
+ * 执行调试命令
+ */
+export const executeDebugCommand = (command: string) => {
+  return http.request<ApiResult>("post", baseUrlApi("/scripts/debug/"), {
+    data: { command }
+  });
+};
+
+/**
+ * 回放脚本
+ */
+export const replayScripts = (data: ReplayRequest) => {
+  return http.request<ApiResult>("post", baseUrlApi("/scripts/replay/"), {
+    data
+  });
+};
 
 // /**
 //  * 导入单个脚本

@@ -224,6 +224,16 @@ def start_backend(config_path: str = None, port: int = 8000):
     if config_path:
         env_vars['WFGAMEAI_CONFIG'] = config_path
         print_colored(f"使用配置文件: {config_path}", 'cyan')
+        
+        # 根据配置文件名推断环境并设置AI_ENV
+        config_basename = os.path.basename(config_path).lower()
+        if config_basename == 'config.ini':
+            env_vars['AI_ENV'] = 'prod'
+            print_colored(f"环境: prod", 'cyan')
+        elif config_basename == 'config_dev.ini':
+            env_vars['AI_ENV'] = 'dev'
+            print_colored(f"环境: dev", 'cyan')
+    
     print_colored(f"后端绑定端口: {bind}", 'cyan')
 
     process = run_command(command, cwd=backend_dir, name="后端", env_vars=env_vars)

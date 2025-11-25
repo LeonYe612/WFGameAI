@@ -400,7 +400,7 @@ const fetchBranches = async () => {
 const setFormDefaults = async () => {
   await fetchRepositories();
   if (repositories.value.length > 0 && !isEditMode.value) {
-    form.value.repo_id = repositories.value[1].id;
+    form.value.repo_id = repositories.value[0].id;
     fetchBranches();
   }
   // 默认选择第一个分支,测试使用，后续需要删除

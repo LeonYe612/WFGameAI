@@ -60,29 +60,38 @@ class TwoStageOCRService:
         """构建OCR结果记录"""
         texts = self.normalize_texts(data.get("rec_texts", []))
         scores = self.normalize_scores(data.get("rec_scores", []))
-        threshold = data.get("text_rec_score_thresh", 0.0)
         
-        try:
-            threshold_value = float(threshold)
-        except (TypeError, ValueError):
-            threshold_value = 0.0
+        # 从配置中获取该阶段的识别阈值
+        stage_threshold = 0.0
+        if stage in PARAM_VERSIONS:
+            stage_threshold = PARAM_VERSIONS[stage].get("text_rec_score_thresh", 0.0)
         
-        # 根据语言判断是否命中
+        # 根据语言和阈值判断是否命中
         has_match = False
         if texts:
             if lang == "ch":
-                # 中文模型：检查是否包含中文字符
-                has_match = any(self.contains_chinese(text) for text in texts)
+                # 中文模型：检查是否包含中文字符且达到阈值
+                for index, text in enumerate(texts):
+                    if not self.contains_chinese(text):
+                        continue
+                    score = scores[index] if index < len(scores) else 0.0
+                    if score >= stage_threshold:
+                        has_match = True
+                        break
             else:
-                # 其他语言模型：只要有文本就算命中
-                has_match = True
+                # 其他语言模型：需要达到阈值
+                for index, _ in enumerate(texts):
+                    score = scores[index] if index < len(scores) else 0.0
+                    if score >= stage_threshold:
+                        has_match = True
+                        break
             
         record = {
             "input_path": data.get("input_path"),
             "stage": stage,
             "rec_texts": texts,
             "rec_scores": scores,
-            "text_rec_score_thresh": threshold_value,
+            "text_rec_score_thresh": stage_threshold,
             "max_rec_score": max(scores) if scores else None,
             "has_match": has_match,
         }
@@ -150,7 +159,7 @@ class TwoStageOCRService:
     def run_single_stage(self, stage: str, input_images: List[str], 
                         lang: str = "ch",
                         progress_callback: Optional[Callable] = None,
-                        stage_name: str = "") -> Tuple[List[Dict[str, Any]], List[str]]:
+                        stage_name: str = "") -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], List[str]]:
         """运行单阶段OCR检测
         
         参数:
@@ -159,6 +168,9 @@ class TwoStageOCRService:
             lang: 语言代码
             progress_callback: 进度回调函数
             stage_name: 阶段显示名称（用于进度提示）
+        
+        返回:
+            (命中记录列表, 未命中记录列表, 处理失败的路径列表)
         """
         stage_params = PARAM_VERSIONS[stage]
         
@@ -177,6 +189,9 @@ class TwoStageOCRService:
         batch_size = self.perf_config.get_batch_size(len(prepared_images))
         
         # 预测参数
+        # 注意：text_rec_score_thresh 不应该传递给 Pipeline predict()
+        # 因为 Pipeline 会在内部过滤识别结果，导致我们无法看到原始的置信度分数
+        # 我们需要获取所有识别结果，然后在 build_record 中自己应用阈值
         predict_params = {
             "use_doc_orientation_classify": stage_params.get("use_doc_orientation_classify", False),
             "use_doc_unwarping": stage_params.get("use_doc_unwarping", False),
@@ -186,11 +201,12 @@ class TwoStageOCRService:
             "text_det_thresh": stage_params["text_det_thresh"],
             "text_det_box_thresh": stage_params["text_det_box_thresh"],
             "text_det_unclip_ratio": stage_params["text_det_unclip_ratio"],
-            "text_rec_score_thresh": stage_params["text_rec_score_thresh"],
+            # 不传递 text_rec_score_thresh，让 Pipeline 返回所有识别结果
         }
         
         hits_records = []
-        miss_image_paths = []
+        miss_records = []
+        error_image_paths = []
         processed_count = 0
         
         # 分批处理图片
@@ -220,8 +236,8 @@ class TwoStageOCRService:
                         batch_results.extend(single_result)
                     except Exception as single_e:
                         logger.error(f"单张图片处理失败: {single_img}, 错误: {single_e}")
-                        # 创建一个空结果，添加到未命中列表
-                        miss_image_paths.append(single_img)
+                        # 记录处理失败的路径
+                        error_image_paths.append(single_img)
                         continue
             
             # 处理批次结果
@@ -238,7 +254,7 @@ class TwoStageOCRService:
                 if record["has_match"]:
                     hits_records.append(record)
                 else:
-                    miss_image_paths.append(original_path)
+                    miss_records.append(record)
                 
                 processed_count += 1
         
@@ -250,7 +266,8 @@ class TwoStageOCRService:
                 stage=stage_name
             )
         
-        return hits_records, miss_image_paths
+        # 返回命中、未命中、处理失败的记录
+        return hits_records, miss_records, error_image_paths
     
     def process_two_stage_detection(self, input_images: List[str], 
                                    lang: str = "ch",
@@ -263,25 +280,31 @@ class TwoStageOCRService:
             progress_callback: 进度回调函数
         """
         # 阶段1: baseline检测
-        stage1_hits, stage1_miss_paths = self.run_single_stage(
+        stage1_hits, stage1_miss_records, stage1_error_paths = self.run_single_stage(
             "baseline", input_images, lang,
             progress_callback=progress_callback,
             stage_name="阶段1(快速检测)"
         )
         
+        # 提取阶段1未命中的图片路径用于阶段2
+        stage1_miss_paths = [r["input_path"] for r in stage1_miss_records]
+        
         # 阶段2: balanced_v1检测未命中的图片
         if stage1_miss_paths:
-            stage2_hits, final_miss_paths = self.run_single_stage(
+            stage2_hits, stage2_miss_records, stage2_error_paths = self.run_single_stage(
                 "balanced_v1", stage1_miss_paths, lang,
                 progress_callback=progress_callback,
                 stage_name="阶段2(详细检测)"
             )
         else:
             stage2_hits = []
-            final_miss_paths = []
+            stage2_miss_records = []
+            stage2_error_paths = []
         
         # 合并最终结果
         all_hits = stage1_hits + stage2_hits
+        all_miss_records = stage1_miss_records + stage2_miss_records
+        final_miss_paths = [r["input_path"] for r in stage2_miss_records]
         
         # 清理临时文件
         self.cleanup_temp_files()
@@ -322,6 +345,7 @@ class TwoStageOCRService:
             # 只返回核心数据
             return {
                 "all_hits_records": all_hits,
+                "all_miss_records": all_miss_records,
                 "final_statistics": {
                     "total_images": len(input_images),
                     "total_hits": len(all_hits),

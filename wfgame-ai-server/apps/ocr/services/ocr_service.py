@@ -852,30 +852,11 @@ class OCRService:
 
     @staticmethod
     def _default_round_param_sets() -> List[Dict[str, Any]]:
-        """使用demo的两套参数替代原来的7套参数"""
+        """从performance_config读取两阶段参数配置"""
+        from .performance_config import PARAM_VERSIONS
         return [
-        # 第1轮：baseline版本（官方默认版本基线）
-        {
-            'text_det_limit_type': 'min',
-            'text_det_limit_side_len': 736,
-            'text_det_thresh': 0.3,
-            'text_det_box_thresh': 0.6,
-            'text_det_unclip_ratio': 1.5,
-            'text_rec_score_thresh': 0.0,  # 关键修复：降低识别阈值
-            'use_textline_orientation': False,  # 关键修复：禁用文本行方向分类
-            'use_doc_unwarping': False,  # 关键修复：禁用文档去畸变
-        },
-        # 第2轮：balanced_v1版本（弥补基线版本对长方形图识别率低的缺陷）
-        {
-            'text_det_limit_type': 'max',  # 修改：使用max边长类型
-            'text_det_limit_side_len': 736,
-            'text_det_thresh': 0.3,
-            'text_det_box_thresh': 0.6,
-            'text_det_unclip_ratio': 1.5,
-            'text_rec_score_thresh': 0.0,  # 关键修复：降低识别阈值
-            'use_textline_orientation': False,  # 关键修复：禁用文本行方向分类
-            'use_doc_unwarping': False,  # 关键修复：禁用文档去畸变
-        },
+            PARAM_VERSIONS.get('baseline', {}),
+            PARAM_VERSIONS.get('balanced_v1', {}),
         ]
 
     def _load_rounds_from_config(self) -> List[Dict[str, Any]]:
@@ -1041,24 +1022,11 @@ class OCRService:
         total_images = len(image_paths)
         logger.info(f"开始PaddleX两阶段OCR识别，总图片数: {total_images}")
 
-        # Demo中的两套参数配置
+        # 从performance_config读取两阶段参数配置
+        from .performance_config import PARAM_VERSIONS
         param_configs = [
-            {
-                "text_det_thresh": 0.3,
-                "text_det_box_thresh": 0.6,
-                "text_det_unclip_ratio": 1.5,
-                "text_det_limit_side_len": 736,
-                "text_det_limit_type": "min",
-                "text_rec_score_thresh": 0.0,
-            },
-            {
-                "text_det_thresh": 0.3,
-                "text_det_box_thresh": 0.6,
-                "text_det_unclip_ratio": 1.5,
-                "text_det_limit_side_len": 736,
-                "text_det_limit_type": "max",  # 主要区别：使用max边长类型
-                "text_rec_score_thresh": 0.0,
-            }
+            PARAM_VERSIONS.get('baseline', {}),
+            PARAM_VERSIONS.get('balanced_v1', {}),
         ]
 
         # 统计结果

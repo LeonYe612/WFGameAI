@@ -51,6 +51,20 @@ export interface DeviceLogItem {
   created_at: string;
 }
 
+// USB连接检查结果
+export interface UsbCheckResult {
+  success: boolean;
+  message: string;
+  devices: Array<{
+    device_id: string;
+    status: string;
+    name?: string;
+    model?: string;
+  }>;
+  total_devices: number;
+  connected_devices: number;
+}
+
 // 扫描设备列表(adb扫描并更新数据库)
 export const scanDevices = () => {
   return http.request<ApiResult>("post", baseUrlApi("/devices/devices/scan/"));
@@ -110,4 +124,12 @@ export const getDeviceLogs = (params: any) => {
   return http.request<ApiResult>("get", baseUrlApi("/devices/logs/"), {
     params
   });
+};
+
+// USB连接检查
+export const checkUsbConnection = () => {
+  return http.request<ApiResult>(
+    "post",
+    baseUrlApi("/devices/devices/check-usb/")
+  );
 };
