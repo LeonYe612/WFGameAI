@@ -34,7 +34,12 @@ const script_ids = (route.query.script_ids || "")
       </span>
     </div> -->
     <div class="progress-block">
-      <ReplayTaskProgress :taskId="task_id" :celeryId="celery_id" />
+      <ReplayTaskProgress
+        :taskId="task_id"
+        :celeryId="celery_id"
+        :deviceIds="device_ids"
+        :scriptIds="script_ids"
+      />
     </div>
     <div class="main-row">
       <div class="devices-block">

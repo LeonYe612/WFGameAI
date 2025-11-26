@@ -440,7 +440,7 @@ export default [
         parent_id: 92,
         genre: 1,
         path: "/replay/index",
-        component: "/replay/index",
+        component: "/replay/index.vue",
         name: "AI-REPLAY-ROOM",
         queue: 0,
         meta: {

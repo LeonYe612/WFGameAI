@@ -304,6 +304,29 @@ class ReportGenerator:
 
             print(f"📝 开始生成设备报告: {device_dir.name}")
 
+            # 🔧 增强修复：确保device_dir是正确的设备专属目录
+            if not isinstance(device_dir, Path):
+                device_dir = Path(device_dir)
+
+            # 尝试修正设备目录路径到标准位置
+            try:
+                if hasattr(self, 'report_manager') and self.report_manager:
+                    correct_base_dir = self.report_manager.single_device_reports_dir
+                    # 检查当前路径是否已经是标准路径的一部分
+                    if str(correct_base_dir) not in str(device_dir.absolute()):
+                        print(f"⚠️ 设备目录不在标准位置: {device_dir}")
+                        # 使用标准位置
+                        target_dir = correct_base_dir / device_dir.name
+                        print(f"🔧 切换到标准设备目录: {target_dir}")
+
+                        # 确保目标目录存在
+                        if not target_dir.exists():
+                            target_dir.mkdir(parents=True, exist_ok=True)
+
+                        device_dir = target_dir
+            except Exception as e:
+                print(f"⚠️ 尝试修正设备目录失败: {e}")
+
             # 确保设备目录存在
             if not device_dir.exists():
                 print(f"❌ 设备目录不存在: {device_dir}")

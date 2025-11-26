@@ -104,6 +104,7 @@ CFG = ConfigManager()
 
 # 根据环境标识（由 AI_ENV 或启动脚本注入）
 ENV_NAME = (os.environ.get("AI_ENV", "dev") or "dev").strip()
+print(f"[Django Settings] ENV_NAME = {ENV_NAME}, AI_ENV环境变量 = {os.environ.get('AI_ENV', '(未设置)')}")
 
 DATABASES = {
     "default": {
@@ -185,14 +186,14 @@ try:
 except Exception:
     FRONT_ORIGIN = ''
 
-if ENV_NAME == 'prod':
-    CORS_ALLOW_ALL_ORIGINS = False
-    CORS_ALLOWED_ORIGINS = [FRONT_ORIGIN] if FRONT_ORIGIN else []
-    # CSRF 信任来源需包含 scheme
-    CSRF_TRUSTED_ORIGINS = [FRONT_ORIGIN] if FRONT_ORIGIN else []
-    # HTTPS 环境下开启安全Cookie
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
+# if ENV_NAME == 'prod':
+#     CORS_ALLOW_ALL_ORIGINS = True
+#     CORS_ALLOWED_ORIGINS = [FRONT_ORIGIN] if FRONT_ORIGIN else []
+#     # CSRF 信任来源需包含 scheme
+#     CSRF_TRUSTED_ORIGINS = [FRONT_ORIGIN] if FRONT_ORIGIN else []
+#     # HTTPS 环境下开启安全Cookie
+#     SESSION_COOKIE_SECURE = True
+#     CSRF_COOKIE_SECURE = True
 
 # 生产环境使用以下配置替代 CORS_ALLOW_ALL_ORIGINS = True
 # CORS_ALLOWED_ORIGINS = [
@@ -312,6 +313,7 @@ except Exception as e:
 
 # 任务默认队列名带环境后缀，确保与 worker -Q 一致
 CELERY_TASK_DEFAULT_QUEUE = f"ai_queue_{ENV_NAME}"
+print(f"[Django Settings] Celery默认队列名 = {CELERY_TASK_DEFAULT_QUEUE}")
 
  # === Celery 同步执行模式（Eager）按配置文件启用 ===
  # 按环境读取 [celery_dev] 或 [celery_prod] 中的 task_always_eager / task_eager_propogates

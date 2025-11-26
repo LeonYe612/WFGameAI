@@ -8,11 +8,13 @@ Socket.IO 房间命名工具（统一规范）
 - 避免裸数字或裸串，始终带模块前缀，便于排查与隔离。
 
 核心约定（建议）：
-- 任务进度（步骤流）：replay_task_<taskId>
-- 设备实时流（截图/画面）：device_<primaryKeyId>
-- 脚本调试（可选）：script_<scriptId>
-- 项目/团队/用户等（如需）：project_<id> / team_<id> / user_<id>
 - 系统广播（如需）：system_global
+- 项目/团队/用户等（如需）：project_<id> / team_<id> / user_<id>
+- 功能模块房间（如需）：
+    a. 设备相关：device_<primaryKeyId>
+    b. 回放相关：replay_<taskId>
+    ...
+- 业务模块房间（如需）（回放步骤）：replay_task_<taskId>
 
 使用示例：
 - replay_task_room(123) -> "replay_task_123"

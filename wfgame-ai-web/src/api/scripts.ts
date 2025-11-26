@@ -209,6 +209,12 @@ export const actionSort = (data: {
 
 // ==========================================================
 
+export interface ReplayRequest {
+    script_ids: number[];
+    device_ids: string[];
+    [key: string]: any;
+}
+
 // /**
 //  * 执行调试命令
 //  */
@@ -218,35 +224,35 @@ export const actionSort = (data: {
 //   });
 // };
 
-// /**
-//  * 回放脚本
-//  */
-// export const replayScripts = (data: ReplayRequest) => {
-//   return http.request<ApiResult>("post", baseUrlApi("/scripts/replay/"), {
-//     data
-//   });
-// };
+/**
+ * 回放脚本
+ */
+export const replayScripts = (data: ReplayRequest) => {
+    return http.request<ApiResult>("post", baseUrlApi("/scripts/replay/"), {
+        data
+    });
+};
 
-// /**
-//  * 导入单个脚本
-//  */
-// export const importScript = (formData: FormData) => {
-//   return http.request<ApiResult>("post", baseUrlApi("/scripts/import/"), {
-//     data: formData,
-//     headers: {
-//       "Content-Type": "multipart/form-data"
-//     }
-//   });
-// };
+/**
+ * 导入单个脚本
+ */
+export const importScript = (formData: FormData) => {
+    return http.request<ApiResult>("post", baseUrlApi("/scripts/import/"), {
+        data: formData,
+        headers: {
+            "Content-Type": "multipart/form-data"
+        }
+    });
+};
 
-// /**
-//  * 批量导入脚本
-//  */
-// export const batchImportScripts = (formData: FormData) => {
-//   return http.request<ApiResult>("post", baseUrlApi("/scripts/import/"), {
-//     data: formData,
-//     headers: {
-//       "Content-Type": "multipart/form-data"
-//     }
-//   });
-// };
+/**
+ * 批量导入脚本
+ */
+export const batchImportScripts = (formData: FormData) => {
+    return http.request<ApiResult>("post", baseUrlApi("/scripts/import/"), {
+        data: formData,
+        headers: {
+            "Content-Type": "multipart/form-data"
+        }
+    });
+};

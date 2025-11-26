@@ -1206,6 +1206,11 @@ def replay_script(request):
             # 添加账号信息
             script_args.extend(['--account', account_info['username']])
             script_args.extend(['--password', account_info['password']])
+
+            # 🔧 关键修复：传递 task_id 确保子进程能正确写入 Redis 和数据库
+            if task_id:
+                script_args.extend(['--task-id', str(task_id)])
+
             logger.info(f"🔍 添加账号参数: {account_info['username']}")
 
             device_tasks[device_serial] = script_args
@@ -1713,13 +1718,25 @@ def get_replay_snapshot(request):
             if device:
                 key = f"wfgame:replay:task:{task_id}:device:{device}:steps"
                 raw = redis_client.get(key)
+                records = []
                 if raw:
                     try:
                         val = raw.decode('utf-8') if isinstance(raw, (bytes, bytearray)) else raw
                         records = json.loads(val)
                     except Exception:
                         records = []
-                    entries.append({"device": device, "records": records})
+
+                # 尝试获取 Redis 中的错误信息
+                err_msg = ""
+                try:
+                    err_key = f"wfgame:replay:task:{task_id}:device:{device}:error"
+                    err_raw = redis_client.get(err_key)
+                    if err_raw:
+                        err_msg = err_raw.decode('utf-8') if isinstance(err_raw, (bytes, bytearray)) else str(err_raw)
+                except Exception:
+                    pass
+
+                entries.append({"device": device, "records": records, "error_message": err_msg})
             else:
                 pattern = f"wfgame:replay:task:{task_id}:device:*:steps"
                 try:
@@ -1728,18 +1745,32 @@ def get_replay_snapshot(request):
                         parts = k.split(':')
                         serial = parts[-2] if len(parts) >= 2 else ''
                         raw = redis_client.get(key)
+                        records = []
                         if raw:
                             try:
                                 val = raw.decode('utf-8') if isinstance(raw, (bytes, bytearray)) else raw
                                 records = json.loads(val)
                             except Exception:
                                 records = []
-                            entries.append({"device": serial, "records": records})
+
+                        # 尝试获取 Redis 中的错误信息
+                        err_msg = ""
+                        try:
+                            err_key = f"wfgame:replay:task:{task_id}:device:{serial}:error"
+                            err_raw = redis_client.get(err_key)
+                            if err_raw:
+                                err_msg = err_raw.decode('utf-8') if isinstance(err_raw, (bytes, bytearray)) else str(err_raw)
+                        except Exception as e:
+                            logger.warning(f"获取Redis错误信息失败: {e}")
+
+                        entries.append({"device": serial, "records": records, "error_message": err_msg})
                 except Exception:
                     # 忽略扫描 Redis 失败，继续回退逻辑
                     pass
 
-        # 2) 若 Redis 无数据，再回退数据库 ReportDetail（历史快照）
+        # 2) 从数据库 ReportDetail（历史快照）补充或回退
+        #  - 若 Redis 没有任何数据，则直接使用 DB 快照
+        #  - 若 Redis 有数据，则额外拼接 DB 的 error_message 字段，便于前端展示系统级错误
         if not entries:
             try:
                 from apps.reports.models import ReportDetail
@@ -1754,9 +1785,37 @@ def get_replay_snapshot(request):
                     except Exception:
                         serial = ''
                     records = getattr(d, 'step_results', None) or []
-                    entries.append({'device': serial, 'records': records})
+                    # 防御式：确保为列表，避免旧数据为 {} 导致前端解析问题
+                    if not isinstance(records, list):
+                        records = []
+                    entries.append({'device': serial, 'records': records, 'error_message': getattr(d, 'error_message', '') or ''})
             except Exception as _db_err:
                 logger.warning(f"读取数据库快照失败: {_db_err}")
+        else:
+            # Redis 有 entries 时，追加 DB 的 error_message 信息
+            try:
+                from apps.reports.models import ReportDetail
+                serials = [e.get('device') for e in entries if e.get('device')]
+                if serials:
+                    qs = (ReportDetail.objects.all_teams()
+                          .select_related('report', 'device')
+                          .filter(report__task_id=int(task_id), device__device_id__in=serials)
+                          .only('error_message', 'device__device_id'))
+                    emap = {}
+                    for d in qs:
+                        try:
+                            emap[getattr(d.device, 'device_id', '')] = getattr(d, 'error_message', '') or ''
+                        except Exception:
+                            continue
+                    for e in entries:
+                        dev = e.get('device')
+                        # 如果 Redis 中没有错误信息（或为空），尝试从 DB 补充
+                        if dev and not e.get('error_message'):
+                            db_err = emap.get(dev, '')
+                            if db_err:
+                                e['error_message'] = db_err
+            except Exception as _db_err2:
+                logger.debug("补充 error_message 失败: %s", _db_err2)
 
         return api_response(data={
             'task_id': task_id,

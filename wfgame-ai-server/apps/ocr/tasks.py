@@ -569,10 +569,30 @@ def process_ocr_task(task_id):
             import json as _json
             report_dir = os.path.join(settings.MEDIA_ROOT, 'ocr', 'reports')
             os.makedirs(report_dir, exist_ok=True)
+            
+            # 分离命中和未命中的记录
+            hits_only_result = {
+                "all_hits_records": detection_result.get('all_hits_records', []),
+                "final_statistics": detection_result.get('final_statistics', {}),
+            }
+            
+            # 保存命中结果
             result_file = os.path.join(report_dir, f"{task.id}_two_stage_result.json")
             with open(result_file, 'w', encoding='utf-8') as fp:
-                _json.dump(detection_result, fp, ensure_ascii=False, indent=2)
+                _json.dump(hits_only_result, fp, ensure_ascii=False, indent=2)
             logger.warning(f"两阶段检测结果已写入: {result_file}")
+            
+            # 保存未命中结果（如果有）
+            miss_records = detection_result.get('all_miss_records', [])
+            if miss_records:
+                miss_file = os.path.join(report_dir, f"{task.id}_miss_details.json")
+                miss_result = {
+                    "total_miss": len(miss_records),
+                    "miss_records": miss_records,
+                }
+                with open(miss_file, 'w', encoding='utf-8') as fp:
+                    _json.dump(miss_result, fp, ensure_ascii=False, indent=2)
+                logger.warning(f"未命中详情已写入: {miss_file}")
         except Exception as _result_err:
             logger.warning(f"写入两阶段检测结果失败(忽略): {_result_err}")
 

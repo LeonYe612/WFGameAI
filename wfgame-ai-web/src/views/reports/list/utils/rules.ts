@@ -32,3 +32,14 @@ export const calculateSuccessRate = (
   if (totalCount === 0) return 0;
   return successCount / totalCount;
 };
+
+// 成功率筛选选项
+export const successRateOptions = [
+  { label: "全部", value: "" },
+  { label: "100%", value: "100" },
+  { label: "≥90%", value: "90" },
+  { label: "≥80%", value: "80" },
+  { label: "≥70%", value: "70" },
+  { label: "≥60%", value: "60" },
+  { label: "<60%", value: "60-" }
+];

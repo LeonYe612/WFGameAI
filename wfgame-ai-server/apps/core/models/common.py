@@ -1,8 +1,84 @@
-from typing import Optional, Any
+import json
+import logging
+from typing import Optional
 
 from django.db import models
+from django.conf import settings
 from apps.core.utils.context_vars import current_user
 from apps.users.models import AuthUser
+
+
+logger = logging.getLogger(__name__)
+
+# 批量写库参数配置，提供统一入口
+DEFAULT_BULK_CREATE_CONFIG = getattr(settings, "COMMON_BULK_CREATE_CONFIG", {})
+DEFAULT_MAX_PACKET_BYTES = DEFAULT_BULK_CREATE_CONFIG.get(
+    "max_packet_bytes",
+    2 * 1024 * 1024,
+)
+DEFAULT_MAX_CHUNK_ROWS = DEFAULT_BULK_CREATE_CONFIG.get("max_chunk_rows", 500)
+
+
+def _get_bulk_create_limits(user_batch_size: Optional[int] = None) -> tuple[int, int]:
+    """获取批量写库限制配置"""
+    config = getattr(settings, "COMMON_BULK_CREATE_CONFIG", {})
+    max_packet_bytes = config.get("max_packet_bytes", DEFAULT_MAX_PACKET_BYTES)
+    max_chunk_rows = config.get("max_chunk_rows", DEFAULT_MAX_CHUNK_ROWS)
+    if user_batch_size:
+        max_chunk_rows = min(max_chunk_rows, user_batch_size)
+    max_packet_bytes = max(1, int(max_packet_bytes))
+    max_chunk_rows = max(1, int(max_chunk_rows))
+    return max_packet_bytes, max_chunk_rows
+
+
+def _estimate_instance_payload(instance: models.Model) -> int:
+    """估算单条记录在批量写库中的数据量"""
+    total_bytes = 0
+    for field in instance._meta.concrete_fields:
+        value = getattr(instance, field.attname, None)
+        if value is None:
+            continue
+        if isinstance(value, (bytes, bytearray, memoryview)):
+            total_bytes += len(value)
+            continue
+        if isinstance(value, (list, dict)):
+            total_bytes += len(json.dumps(value, ensure_ascii=False))
+            continue
+        total_bytes += len(str(value))
+    return max(total_bytes, 1)
+
+
+def _split_bulk_create_objects(
+    objs: list[models.Model],
+    max_packet_bytes: int,
+    max_chunk_rows: int,
+) -> list[list[models.Model]]:
+    """根据配置切分批量写库数据"""
+    chunks = []
+    current_chunk: list[models.Model] = []
+    current_bytes = 0
+    for obj in objs:
+        payload_size = _estimate_instance_payload(obj)
+        limit_hit = (
+            current_bytes + payload_size > max_packet_bytes
+            or len(current_chunk) >= max_chunk_rows
+        )
+        if current_chunk and limit_hit:
+            chunks.append(current_chunk)
+            current_chunk = []
+            current_bytes = 0
+        if payload_size > max_packet_bytes:
+            logger.warning(
+                "单条记录估算大小超过批量阈值，可能导致数据库限制: 模型=%s, "
+                "估算大小=%s",
+                obj.__class__.__name__,
+                payload_size,
+            )
+        current_chunk.append(obj)
+        current_bytes += payload_size
+    if current_chunk:
+        chunks.append(current_chunk)
+    return chunks
 
 
 def get_current_user() -> Optional[AuthUser]:
@@ -199,17 +275,50 @@ class CommonFilteredManager(models.Manager):
         1. 必须指定 team_id 字段，否则尝试自动填充
         2. 自动填充 creator_id, creator_name
         """
+        objs = list(objs)
+        if not objs:
+            return []
         for obj in objs:
             _fill_team_id(obj)
             _fill_creator_fields(obj)
-        return super().bulk_create(
-            objs,
-            batch_size=batch_size,
-            ignore_conflicts=ignore_conflicts,
-            update_conflicts=update_conflicts,
-            update_fields=update_fields,
-            unique_fields=unique_fields
-        )
+        max_packet_bytes, max_chunk_rows = _get_bulk_create_limits(batch_size)
+        chunks = _split_bulk_create_objects(objs, max_packet_bytes, max_chunk_rows)
+        if len(chunks) > 1:
+            logger.warning(
+                "批量写库触发自动切分: 模型=%s, 总记录=%s, 分批数量=%s, "
+                "行数阈值=%s, 字节阈值=%s",
+                objs[0].__class__.__name__,
+                len(objs),
+                len(chunks),
+                max_chunk_rows,
+                max_packet_bytes,
+            )
+        created_objs = []
+        for chunk_index, chunk in enumerate(chunks, start=1):
+            chunk_batch_size = batch_size
+            if chunk_batch_size is not None:
+                chunk_batch_size = min(len(chunk), chunk_batch_size)
+            else:
+                chunk_batch_size = len(chunk)
+            logger.info(
+                "执行批量写库: 模型=%s, 批次=%s/%s, 本批记录=%s, "
+                "batch_size=%s",
+                chunk[0].__class__.__name__,
+                chunk_index,
+                len(chunks),
+                len(chunk),
+                chunk_batch_size,
+            )
+            created_chunk = super().bulk_create(
+                chunk,
+                batch_size=chunk_batch_size,
+                ignore_conflicts=ignore_conflicts,
+                update_conflicts=update_conflicts,
+                update_fields=update_fields,
+                unique_fields=unique_fields
+            )
+            created_objs.extend(created_chunk)
+        return created_objs
 
     def bulk_update(self, objs, fields, batch_size=100):
         """

@@ -3,21 +3,20 @@
 启动 Celery Worker（支持环境隔离与可选自动重载）
 
 用法示例：
-    # 开发环境（自动重载）
-    python start_celery_worker.py --env dev --autoreload --queue ai_queue --name ai_worker
-    
-    # 等同：
+    # 开发环境（使用config_dev.ini，自动重载）
     python start_celery_worker.py --env dev --autoreload
     
-    
-    # 线上/生产环境（不重载）
-    python start_celery_worker.py --env prod --queue ai_queue --name ai_worker -l info
-    # 等同：python start_celery_worker.py --env prod
+    # 线上环境（使用config.ini，不重载）
+    python start_celery_worker.py --env prod
+
+配置文件映射：
+    - prod环境 -> config.ini
+    - dev环境 -> config_dev.ini
 
 说明:
-- 通过 --env 或环境变量 AI_ENV 隔离队列名、worker 名称、pid/log 文件，避免与其他环境互相影响。
-- 默认使用 solo 池，兼容 Windows。
-- 仅在显式传入 --autoreload 时启用源码监听；生产环境默认关闭。
+- 通过 --env 隔离队列名、worker 名称、pid/log 文件，避免不同环境互相影响
+- 默认使用 solo 池，兼容 Windows
+- 仅在显式传入 --autoreload 时启用源码监听；生产环境默认关闭
 """
 import os
 import sys
@@ -153,8 +152,14 @@ def main() -> int:
     env['PYTHONUNBUFFERED'] = '1'
     # 关键：将当前环境写入子进程，驱动 ConfigManager 选择 config_{env}.ini
     env['AI_ENV'] = env_name
+    
     # 明确指定配置文件路径，避免路径查找错误
-    config_file = os.path.join(project_root, f'config_{env_name}.ini')
+    # prod环境使用config.ini，其他环境使用config_{env}.ini
+    if env_name == 'prod':
+        config_file = os.path.join(project_root, 'config.ini')
+    else:
+        config_file = os.path.join(project_root, f'config_{env_name}.ini')
+    
     env['WFGAMEAI_CONFIG'] = config_file
 
     # 隔离 pid/log 文件，避免多环境冲突

@@ -1,6 +1,7 @@
 from typing import List, Optional
-import os, sys, time, json, traceback
+import os, sys, time, json, traceback, base64
 from datetime import datetime, timezone
+
 try:
     # 初始化 Django 环境以便使用 settings 与 ORM
     if 'DJANGO_SETTINGS_MODULE' not in os.environ:
@@ -29,6 +30,10 @@ except Exception:
 # 懒加载 Socket 客户端（HTTP API 方式）
 _SOCKET_CLIENT = None
 ERROR_LOGS: List[str] = []  # 全局执行过程错误收集（非步骤级）
+# 全局固定步数（初始化阶段计算，后续不再动态升级）
+GLOBAL_REPLAY_TOTAL_STEPS: Optional[int] = None
+GLOBAL_REPLAY_SINGLE_DEVICE_STEPS: Optional[int] = None
+GLOBAL_INITIAL_DEVICE_COUNT: Optional[int] = None
 def _get_socket_client():
     global _SOCKET_CLIENT
     if _SOCKET_CLIENT is not None:
@@ -216,6 +221,9 @@ class StepTracker:
             self.redis_client = None
         # 不再使用 socket_client，这里移除以减少依赖
         self.socket_client = None
+        # 设备主键缓存与活跃设备集合快照，用于事件载荷
+        self.device_pk = None
+        self._progress_devices = []
         # 预计算 MinIO 相关固定前缀，避免在每步里动态读取配置
         try:
             self._minio = getattr(settings, 'MINIO', None)
@@ -229,19 +237,18 @@ class StepTracker:
                 dev = Device.objects.filter(device_id=self.device_serial).only('id').first()
                 if dev and getattr(dev, 'id', None) is not None:
                     self._device_key = str(dev.id)
+                    self.device_pk = dev.id
+                else:
+                    self.device_pk = None
             except Exception:
                 # 忽略设备ID查询失败，继续使用序列号作为 _device_key
                 self._device_key = str(self.device_serial)
+                self.device_pk = None
             task_part = f"task_{self.task_id}" if self.task_id else "session"
-            # 新增：运行目录名（示例：65WGZT7P9XHEKN7D_2025-11-13-15-03-56），用于替换原来的 device_<id>
-            run_dir_name = None
-            try:
-                if self.device_report_dir:
-                    run_dir_name = os.path.basename(str(self.device_report_dir).rstrip('/')) or None
-            except Exception:
-                run_dir_name = None
-            self._run_dir_name = run_dir_name or (self._device_key if str(self._device_key).startswith('device_') else f'device_{self._device_key}')
-            # 使用运行目录名构造对象根路径，满足前端/外部希望看到具体执行目录
+            # 远端对象目录名：设备序列号_时间（YYYYMMDD_HHMMSS），便于区分不同执行批次
+            now_str = datetime.now().strftime('%Y%m%d_%H%M%S')
+            self._run_dir_name = f"{self.device_serial}_{now_str}"
+            # 使用运行目录名构造对象根路径
             self._object_root = f"replay_tasks/{task_part}/{self._run_dir_name}".replace('//', '/')
             # 确保以 '/' 结尾，便于直接拼接相对文件名
             self._url_base = f"{self._scheme}://{self._host}/{self._bucket}/{self._object_root}/"
@@ -253,13 +260,109 @@ class StepTracker:
             self._host = 'localhost'
             task_part = f"task_{self.task_id}" if self.task_id else "session"
             self._device_key = str(self.device_serial)
-            try:
-                run_dir_name = os.path.basename(str(self.device_report_dir).rstrip('/')) if self.device_report_dir else None
-            except Exception:
-                run_dir_name = None
-            self._run_dir_name = run_dir_name or (self._device_key if str(self._device_key).startswith('device_') else f'device_{self._device_key}')
+            self.device_pk = None
+            # 异常回退：仍按 设备序列号_时间 的命名
+            now_str = datetime.now().strftime('%Y%m%d_%H%M%S')
+            self._run_dir_name = f"{self.device_serial}_{now_str}"
             self._object_root = f"replay_tasks/{task_part}/{self._run_dir_name}".replace('//', '/')
             self._url_base = f"http://localhost/{self._bucket}/{self._object_root}/"
+
+        # 缓存预计算的聚合总步数（来自全局），避免后续步骤事件出现分母波动
+        self._cached_total_steps: Optional[int] = GLOBAL_REPLAY_TOTAL_STEPS
+
+    def _compute_task_progress(self):
+        """简化后的进度统计：
+        - total_all: 强制使用预计算的固定总步数 (total_steps)
+        - completed_all: 聚合所有设备已完成(成功/失败)的步骤数
+        """
+        devices_found = {str(self.device_serial)}
+        completed_all = 0
+
+        # 优先使用 Redis 原子计数（更可靠，避免跨进程重复统计或遗漏）
+        if self.redis_client and self.task_id:
+            try:
+                completed_key = f"wfgame:replay:task:{self.task_id}:completed_total"
+                val = self.redis_client.get(completed_key)
+                if val:
+                    try:
+                        completed_all = int(val)
+                        total_source = "redis_counter"
+                    except Exception:
+                        completed_all = 0
+                else:
+                    # 回退到按设备计数（在某些版本中仍保留历史数据）
+                    pattern = f"wfgame:replay:task:{self.task_id}:device:*:steps"
+                    for key in self.redis_client.scan_iter(match=pattern):
+                        try:
+                            key_str = key.decode('utf-8') if isinstance(key, bytes) else str(key)
+                            parts = key_str.split(':')
+                            if len(parts) >= 2:
+                                devices_found.add(parts[-2])
+                            raw = self.redis_client.get(key)
+                            if not raw:
+                                continue
+                            val = raw.decode('utf-8') if isinstance(raw, bytes) else raw
+                            records = json.loads(val)
+                            for rec in records or []:
+                                for s in rec.get('steps', []) or []:
+                                    st = (s.get('result') or {}).get('status')
+                                    if st in ("success", "failed"):
+                                        completed_all += 1
+                        except Exception:
+                            continue
+            except Exception:
+                # Redis 失败时回退到仅计算本地
+                completed_all = 0
+
+        # 如果 Redis 没有数据或不可用，则回退到本地计算（至少包含当前设备）
+        if completed_all == 0:
+            try:
+                for rec in self.records:
+                    for s in rec.get('steps', []) or []:
+                        st = (s.get('result') or {}).get('status')
+                        if st in ("success", "failed"):
+                            completed_all += 1
+            except Exception:
+                pass
+
+        # 2. 计算总步数 (total_all) - 强制固定
+        # 优先从 Redis 读取固定配置 (这是多进程共享的唯一可靠来源)
+        if self.redis_client and self.task_id:
+             try:
+                 key = f"wfgame:replay:task:{self.task_id}:config:total_steps"
+                 val = self.redis_client.get(key)
+                 if val:
+                     self._cached_total_steps = int(val)
+             except Exception:
+                 pass
+
+        # 其次使用全局缓存的总步数 (单进程场景)
+        if not self._cached_total_steps and GLOBAL_REPLAY_TOTAL_STEPS:
+             self._cached_total_steps = GLOBAL_REPLAY_TOTAL_STEPS
+
+        total_all = self._cached_total_steps
+
+        # 如果没有缓存，尝试使用全局配置计算: 单设备步数 * 初始设备数
+        if not total_all or total_all <= 0:
+             single = GLOBAL_REPLAY_SINGLE_DEVICE_STEPS
+             dev_cnt = GLOBAL_INITIAL_DEVICE_COUNT
+             if single and single > 0 and dev_cnt:
+                 total_all = single * dev_cnt
+
+        # 如果仍然无法获取有效总步数（极少情况），回退到本地记录的步数（仅作为最后兜底）
+        if not total_all or total_all <= 0:
+             local_total = 0
+             try:
+                for rec in self.records:
+                    for s in rec.get('steps', []) or []:
+                        local_total += 1
+             except Exception:
+                 pass
+             total_all = local_total
+
+        percent = int(round((completed_all / total_all) * 100)) if total_all and total_all > 0 else 0
+        self._progress_devices = sorted(devices_found)
+        return completed_all, total_all, percent
 
     def _get_or_create_report_detail(self):
         """获取或创建与当前任务和设备关联的 ReportDetail 实例"""
@@ -287,11 +390,13 @@ class StepTracker:
                 return None
 
             # 查找或创建主报告
+            # 注意：Report.report_path 为必填字段（非 null），创建时必须提供占位值
             report, _ = Report.objects.all_teams().get_or_create(
                 task=task,
                 defaults={
                     'name': f"Task-{task.id} Report",
-                    # 移除对 start_time/end_time 的依赖，使用模型通用时间字段
+                    # 采用规范化的占位路径，避免必填字段导致创建失败
+                    'report_path': f"/apps/reports/tmp/replay/task_{task.id}/index.html",
                     'duration': 0,
                 }
             )
@@ -307,6 +412,13 @@ class StepTracker:
                 }
             )
             if created:
+                # 为前端快照稳定性，确保新建时 step_results 为数组结构
+                try:
+                    if not isinstance(getattr(detail, 'step_results', None), list):
+                        detail.step_results = []
+                        detail.save(update_fields=["step_results"])
+                except Exception:
+                    pass
                 print_realtime(f"✅ 为任务 {self.task_id} 设备 {self.device_serial} 创建了新的 ReportDetail")
 
             self.report_detail = detail
@@ -336,9 +448,18 @@ class StepTracker:
         if not self.redis_client:
             return
         try:
+            # 删除设备级快照
             key = self._redis_key()
             self.redis_client.delete(key)
-            print_realtime(f"🧹 已清理 Redis Key: {key}")
+            # 删除聚合计数（总完成步数）和设备完成计数
+            try:
+                completed_key = f"wfgame:replay:task:{self.task_id}:completed_total"
+                device_completed_key = f"wfgame:replay:task:{self.task_id}:device:{self.device_serial}:completed"
+                self.redis_client.delete(completed_key)
+                self.redis_client.delete(device_completed_key)
+            except Exception:
+                pass
+            print_realtime(f"🧹 已清理 Redis Keys: {key} (+ counters)")
         except Exception as e:
             track_error(f"⚠️ 清理 Redis 数据失败: {e}")
             track_error(f"⚠️ 清理 Redis 数据失败: {e}")
@@ -360,6 +481,92 @@ class StepTracker:
         except Exception as e:
             track_error(f"⚠️ Redis写入失败: {e}")
 
+    # --- Primary Device Helpers ---
+    def _primary_device_key(self):
+        try:
+            return f"wfgame:replay:task:{self.task_id}:primary_device"
+        except Exception:
+            return "wfgame:replay:task:unknown:primary_device"
+
+    def _get_primary_device(self) -> Optional[str]:
+        try:
+            if not self.redis_client:
+                return None
+            raw = self.redis_client.get(self._primary_device_key())
+            if not raw:
+                return None
+            return raw.decode('utf-8') if isinstance(raw, (bytes, bytearray)) else str(raw)
+        except Exception:
+            return None
+
+    def _ensure_primary_device(self):
+        """若尚未设置主设备，则以当前设备设为主设备 (首次执行脚本/步骤)。"""
+        try:
+            if not self.redis_client:
+                # 无 Redis 场景：直接视当前设备为主设备（仅一次打印）
+                if not getattr(self, '_primary_logged', False):
+                    print_realtime(f"🌟 [NO-REDIS] 默认主设备: {self.device_serial}")
+                    self._primary_logged = True
+                return
+            if self._get_primary_device():
+                return
+            # 设置主设备，TTL 可适当设置防止遗留 (6 小时)
+            self.redis_client.set(self._primary_device_key(), str(self.device_serial), ex=6 * 3600)
+            print_realtime(f"🌟 设定主设备: {self.device_serial}")
+        except Exception as e:
+            track_error(f"⚠️ 设置主设备失败: {e}")
+
+    def _is_primary_device(self) -> bool:
+        pd = self._get_primary_device()
+        is_primary = (pd is None) or (str(pd) == str(self.device_serial))
+        if not is_primary:
+            # 只在首次被判非主设备时输出一次，避免刷屏
+            if not hasattr(self, '_primary_warned'):
+                print_realtime(f"🔕 非主设备跳过事件推送: self={self.device_serial}, primary={pd}")
+                self._primary_warned = True
+        return is_primary
+
+    def _push_progress_event(self, *, script_id: int, completed_steps: int = None, total_steps: int = None):
+        """向 socket 房间推送进度事件（后端计算进度避免前端计算异常）"""
+        try:
+            # 确保主设备已初始化
+            self._ensure_primary_device()
+            # 仅主设备推送进度事件
+            if not self._is_primary_device():
+                return
+            client = _get_socket_client()
+            if not client:
+                print_realtime("⚠️ Socket 客户端不可用，跳过进度事件推送")
+                return
+            room = f"replay_task_{self.task_id}"
+
+            if not self.records:
+                return
+            rec = self.records[-1]
+            steps = rec.get("steps", [])
+            step_count = len(steps)
+            if completed_steps is None:
+                completed_steps = sum(1 for s in steps if (s.get('result') or {}).get('status') in ("success","failed"))
+            calculated_total_steps = self._cached_total_steps or (step_count * max(1, GLOBAL_INITIAL_DEVICE_COUNT or 1))
+            progress_percentage = round((completed_steps / calculated_total_steps) * 100, 2) if calculated_total_steps > 0 else 0
+            payload = {
+                "script": int(script_id) if script_id is not None else None,
+                "progress": progress_percentage,
+                "completed_steps": completed_steps,
+                "total_steps": calculated_total_steps,
+                "online_devices": GLOBAL_INITIAL_DEVICE_COUNT or 1,
+                "step_count": step_count,
+            }
+
+            # 推送进度事件
+            try:
+                client.emit(room=room, module='task', event='progress', data=payload)
+                print_realtime(f"📊 [Task-{self.task_id} Dev-{self.device_serial}] 推送进度: {progress_percentage}% ({completed_steps}/{calculated_total_steps}) 设备数:{GLOBAL_INITIAL_DEVICE_COUNT or 1}")
+            except Exception as _emit_progress_err:
+                track_error(f"⚠️ 进度事件推送失败: {_emit_progress_err}")
+        except Exception as e:
+            track_error(f"⚠️ 进度事件推送异常: {e}")
+
     def _push_step_event(self, *, script_id: int, step_index: int, status: str,
                          start_time: Optional[str] = None,
                          end_time: Optional[str] = None,
@@ -368,26 +575,35 @@ class StepTracker:
         """向 socket 房间推送单步事件（实时单步骤）。
 
         改动：附带该步骤的开始/结束时间与显示状态，并提供与快照结构一致的 result 嵌套。
-        仅“领先设备”推送，避免多设备竞争。
+        新规范：仅“主设备"(primary device) 推送步骤事件，其它设备不推此事件；主设备为第一个开始执行脚本的设备。
         """
         try:
-            if not self._am_i_leader():
+            # 确保主设备已初始化
+            self._ensure_primary_device()
+            # 仅主设备推送步骤事件
+            if not self._is_primary_device():
                 return
             client = _get_socket_client()
             if not client:
+                print_realtime("⚠️ Socket 客户端不可用，跳过步骤事件推送")
                 return
             room = f"replay_task_{self.task_id}"
-            total_steps = 0
             result_start = start_time
             result_end = end_time
             display_status = display
             _nested_status = nested_status
+
+            completed_global, total_global, percent_global = self._compute_task_progress()
+            if getattr(self, '_cached_total_steps', None) and self._cached_total_steps:
+                total_global = int(self._cached_total_steps)
+                percent_global = int(round((completed_global / total_global) * 100)) if total_global > 0 else percent_global
+
             if self.records:
                 try:
                     rec = self.records[-1]
-                    total_steps = int(rec.get("summary", {}).get("total") or len(rec.get("steps", [])) or 0)
                     sidx0 = max(0, int(step_index) - 1)
                     steps = rec.get("steps", [])
+
                     if 0 <= sidx0 < len(steps):
                         res = (steps[sidx0] or {}).get("result", {})
                         result_start = result_start or res.get("start_time")
@@ -396,26 +612,25 @@ class StepTracker:
                         _nested_status = _nested_status or res.get("status")
                 except Exception:
                     pass
+            # 最小化负载：仅保留脚本ID、步骤索引、状态、显示状态、开始/结束时间
             payload = {
                 "script": int(script_id) if script_id is not None else None,
                 "step_index": int(step_index),
+                "total_steps": total_global,
+                "progress": percent_global,
+                "completed_steps": completed_global,
                 "status": status,
-                "total_steps": total_steps,
-                "timestamp": int(time.time() * 1000),
                 "start_time": result_start,
                 "end_time": result_end,
                 "display_status": display_status,
-                "result": {
-                    "start_time": result_start,
-                    "end_time": result_end,
-                    "display_status": display_status,
-                    "status": _nested_status or status
-                }
+                # 调试字段: 预计算聚合与单设备步数（便于前端对比、排查跳变）
             }
-            print_realtime(f"[DEBUG] push_step_event step={step_index} status={status} start={result_start} end={result_end} display={display_status} script_id={script_id} total_steps={total_steps}")
-            resp = client.push_step(room=room, data=payload, event="replay_step")
-            if isinstance(resp, dict) and resp.get("code", 0) != 0:
-                track_error(f"⚠️ 单步事件推送失败: {resp}")
+            # 不再附带 Redis 调试字段，保持精简
+            # 使用统一 emit，事件名采用最新标准：step
+            try:
+                client.emit(room=room, module='task', event='step', data=payload)
+            except Exception as _emit_step_err:
+                track_error(f"⚠️ 单步事件推送失败: {_emit_step_err}")
         except Exception as e:
             track_error(f"⚠️ 单步事件推送异常: {e}")
 
@@ -489,6 +704,18 @@ class StepTracker:
             # 复制原始步骤定义
             new_step = step_def.copy()
             # 添加 result 字段
+            # 备注字段统一写入 result.remark，前端只需读取 result.remark；
+            # 若步骤本身无 remark，则退回脚本名称，再否则使用 "步骤X"。
+            raw_remark = (new_step.get('remark') or '').strip()
+            fallback_name = (meta.get('name') or '').strip()
+            if not raw_remark:
+                if fallback_name:
+                    raw_remark = fallback_name
+                else:
+                    raw_remark = f"步骤{i+1}"
+            # 确保快照中顶层也有 remark（静态字段），便于前端通过 snapshot 获取；不依赖 websocket
+            if not new_step.get('remark'):
+                new_step['remark'] = raw_remark
             new_step['result'] = {
                 "status": "pending",
                 "display_status": "等待中",
@@ -497,6 +724,7 @@ class StepTracker:
                 "local_pic_pth": "",
                 "oss_pic_pth": "",
                 "error_msg": "",
+                "remark": raw_remark,
             }
             # new_step['index'] = i + 1
             new_steps.append(new_step)
@@ -521,26 +749,23 @@ class StepTracker:
             }
         }
         self.records.append(record)
-        self._flush_to_redis()
-        # 初始化或更新全局任务进度（当新脚本开始时，total 总步数会增加）
+        # 补充：若初始化时未拿到全局总步数，且现在全局已计算，则同步缓存
+        if self._cached_total_steps is None and GLOBAL_REPLAY_TOTAL_STEPS is not None:
+            self._cached_total_steps = int(GLOBAL_REPLAY_TOTAL_STEPS)
+
+        # 确保总步数写入 Redis (供多进程共享)
         try:
-            client = _get_socket_client()
-            if client:
-                room = f"replay_task_{self.task_id}"
-                total_all = sum(len(r.get("steps", [])) for r in self.records)
-                completed_all = 0
-                for _rec in self.records:
-                    for _s in _rec.get("steps", []):
-                        if _s.get("result", {}).get("status") in ("success", "failed"):
-                            completed_all += 1
-                percent = int(round((completed_all / total_all) * 100)) if total_all > 0 else 0
-                prog_payload = {"current": completed_all, "total": total_all, "percent": percent}
-                _ = client.push_step(room=room, data=prog_payload, event="task_progress")
-                # 推送任务状态为 running
-                _ = client.push_step(room=room, data={"status": "running"}, event="task_status")
-        except Exception as _pe:
-            track_error(f"⚠️ 任务进度初始化推送异常: {_pe}")
-            track_error(f"⚠️ 任务进度初始化推送异常: {_pe}")
+            if self.redis_client and self.task_id and self._cached_total_steps:
+                key = f"wfgame:replay:task:{self.task_id}:config:total_steps"
+                # setnx 避免覆盖已有的配置
+                if self.redis_client.setnx(key, self._cached_total_steps):
+                    self.redis_client.expire(key, 7*24*3600)
+                    print_realtime(f"🔢 [Task-{self.task_id} Dev-{self.device_serial}] 初始化Redis总步数: {self._cached_total_steps}")
+        except Exception:
+            pass
+
+        self._flush_to_redis()
+        # 不推送初始化事件；由后续 step_started/step_finished 产生的 replay_step 驱动前端更新
 
     def step_started(self, step_index: int, **kwargs):
         if not self.records:
@@ -573,7 +798,7 @@ class StepTracker:
                 display=res.get('display_status'),
                 nested_status=res.get('status')
             )
-            print_realtime(f"[DEBUG] step_started idx={step_index} start_time={res.get('start_time')} device_run_dir={getattr(self,'_run_dir_name',None)} url_base={getattr(self,'_url_base',None)}")
+            # debug print removed
         except Exception:
             pass
 
@@ -584,6 +809,7 @@ class StepTracker:
         idx = max(0, min(int(step_index) - 1, len(rec["steps"]) - 1))
         st = rec["steps"][idx]
         res = st.get('result', {})
+        prev_status = (res or {}).get('status')
 
         # 写入结束时间为毫秒级时间戳
         end_ms = int(time.time() * 1000)
@@ -593,25 +819,32 @@ class StepTracker:
             res["start_time"] = end_ms
 
         # 语义调整：display_status 改为 “成功”/“失败” 与 status 对齐
-        res["status"] = "success" if success else "failed"
+        new_status = "success" if success else "failed"
+        res["status"] = new_status
         res["display_status"] = "成功" if success else "失败"
-        # 错误信息
+        # 错误信息：尽量使用传入的 error_message/message 或 ActionResult.details 中的 error
         if success:
             res["error_msg"] = ""
         else:
             raw_err = (error_message or "").strip() or (message or "").strip() or "执行失败"
+            # 若 kwargs 中含 details，则尝试更详细的错误
+            try:
+                details = kwargs.get('details') or {}
+                if isinstance(details, dict) and details.get('error'):
+                    raw_err = str(details.get('error'))
+            except Exception:
+                pass
             res["error_msg"] = raw_err[:500]
 
-        # 合并额外字段
-        res.update(kwargs)
+        # 合并 kwargs 中的额外信息（如 local_pic_pth）
+        if kwargs:
+            res.update(kwargs)
 
-        # 就地推导远端URL：仅替换前缀，不做即时上传（上传放到任务结束的批量逻辑）
+        # 规范化本地/远端路径：无论成败都尝试推导截图远端URL
         try:
-            # 规范化本地/远端路径：local_pic_pth 为 None/null/"None" 时视为无图，不生成 oss
             local_pic = res.get("local_pic_pth")
             if not local_pic or str(local_pic).strip().lower() in ("none", "null", ""):
                 res["local_pic_pth"] = ""
-                # 确保不遗留错误的占位远端地址
                 res["oss_pic_pth"] = ""
             elif not res.get("oss_pic_pth"):
                 rel = None
@@ -623,7 +856,6 @@ class StepTracker:
                 if not rel:
                     rel = os.path.basename(str(local_pic))
                 rel = rel.lstrip('./').lstrip('/')
-                # 注意：不要对完整 URL 做 .replace('//','/')，否则会把 http:// 变成 http:/
                 res['oss_pic_pth'] = f"{self._url_base}{rel}"
         except Exception as _e_url:
             track_error(f"⚠️ 远端URL推导失败: {_e_url}")
@@ -636,24 +868,98 @@ class StepTracker:
         else:
             rec["summary"]["failed"] = rec["summary"].get("failed", 0) + 1
 
-        self._flush_to_redis()
-        # 推送单步“完成/失败”事件
+        # 原子更新 Redis 进度
         try:
-            self._push_step_event(
-                script_id=rec.get("meta", {}).get("id"),
-                step_index=step_index,
-                status=("success" if success else "failed"),
-                start_time=res.get('start_time'),
-                end_time=res.get('end_time'),
-                display=res.get('display_status'),
-                nested_status=res.get('status')
-            )
-            # 仅打印原始时间，不做耗时计算，耗时交给前端
-            print_realtime(f"[DEBUG] step_finished idx={step_index} success={success} start={res.get('start_time')} end={res.get('end_time')} oss_pic={res.get('oss_pic_pth')} local_pic={res.get('local_pic_pth')}")
+            if self.redis_client and self.task_id:
+                completed_key = f"wfgame:replay:task:{self.task_id}:completed_total"
+                device_completed_key = f"wfgame:replay:task:{self.task_id}:device:{self.device_serial}:completed"
+                new_total = self.redis_client.incr(completed_key, amount=1)
+                new_dev_total = self.redis_client.incr(device_completed_key, amount=1)
+                # 延长过期时间
+                self.redis_client.expire(completed_key, 7*24*3600)
+                self.redis_client.expire(device_completed_key, 7*24*3600)
+                print_realtime(f"📈 [Task-{self.task_id} Dev-{self.device_serial}] Redis进度更新: Total={new_total}, DevTotal={new_dev_total}")
+        except Exception as e:
+            track_error(f"⚠️ Redis进度更新失败: {e}")
+
+        self._flush_to_redis()
+        # 推送单步“完成/失败”事件（仅主设备）
+        try:
+            if self._is_primary_device():
+                self._push_step_event(
+                    script_id=rec.get("meta", {}).get("id"),
+                    step_index=step_index,
+                    status=("success" if success else "failed"),
+                    start_time=res.get('start_time'),
+                    end_time=res.get('end_time'),
+                    display=res.get('display_status'),
+                    nested_status=res.get('status')
+                )
+                # 同步推送任务级进度（每步更新一次，减少前端延迟）
+                # 不再推送 progress；前端自行根据 step 汇总
+            # 推送设备截图事件（所有设备，只在有图时）
+            if (res.get('local_pic_pth') or res.get('oss_pic_pth')) and _get_socket_client():
+                # 新规范：不再推送 device_image；统一由 device_<pk> 房间 frame 事件承担
+                try:
+                    lp = res.get('local_pic_pth')
+                    b64 = None
+                    # 首选：直接读取本地图片
+                    if lp and isinstance(lp, str) and os.path.isfile(lp):
+                        with open(lp, 'rb') as f:
+                            b64 = base64.b64encode(f.read()).decode('utf-8')
+                    else:
+                        # 兜底：基于 oss_pic_pth 反推设备报告目录中的相对路径，尝试读取本地文件
+                        op = res.get('oss_pic_pth')
+                        if op and isinstance(op, str) and getattr(self, 'device_report_dir', None):
+                            try:
+                                url_base = getattr(self, '_url_base', '') or ''
+                                rel = None
+                                if url_base and op.startswith(url_base):
+                                    rel = op[len(url_base):]
+                                # 若无法从 URL 前缀截取，则尝试仅取文件名
+                                if not rel:
+                                    rel = os.path.basename(op)
+                                cand = os.path.join(str(self.device_report_dir), rel)
+                                if os.path.isfile(cand):
+                                    with open(cand, 'rb') as f:
+                                        b64 = base64.b64encode(f.read()).decode('utf-8')
+                            except Exception:
+                                b64 = None
+                    if b64:
+                        # 仅推送到设备主键ID对应的房间
+                        room_dev_pk = None
+                        try:
+                            if Device:
+                                # 通过设备序列号字段定位设备，拿到其主键ID
+                                dev_obj = Device.objects.filter(device_id=self.device_serial).only('id', 'device_id').first()
+                                if dev_obj:
+                                    # 前端房间命名使用 device_<primary_key>
+                                    room_dev_pk = f"device_{dev_obj.id}".strip()
+                        except Exception as _room_dev_err:
+                            track_error(f"⚠️ 查询设备ID用于房间名失败: {_room_dev_err}")
+                        # 推送：device_<pk> 房间；并兼容性推送 device_<serial>（便于前端尚未拿到pk时展示）
+                        client_tmp = _get_socket_client()
+                        if client_tmp:
+                            # 优先 pk 房间
+                            if room_dev_pk:
+                                try:
+                                    _ = client_tmp.emit(room=room_dev_pk, module='replay', event='frame', data=b64)
+                                except Exception as _push_err2:
+                                    track_error(f"⚠️ 推送 frame 到 {room_dev_pk} 失败: {_push_err2}")
+                            # 兼容性：同时推送到序列号房间 device_<serial>
+                            try:
+                                room_dev_serial = f"device_{str(self.device_serial).strip()}"
+                                _ = client_tmp.emit(room=room_dev_serial, module='replay', event='frame', data=b64)
+                            except Exception as _push_err3:
+                                # 降级失败不影响主流程
+                                pass
+                except Exception as _b64_err:
+                    track_error(f"⚠️ 设备截图 base64 推送失败: {_b64_err}")
+            # debug print removed
         except Exception:
             pass
 
-    def finish_script(self):
+    def finish_script(self, *, final: bool = True):
         if not self.records:
             return
         rec = self.records[-1] if self.records else {}
@@ -665,22 +971,15 @@ class StepTracker:
         # 脚本结束后，检查是否所有脚本步骤都已完成，若是则推送完成状态
         try:
             client = _get_socket_client()
-            if client:
-                room = f"replay_task_{self.task_id}"
-                total_all = sum(len(r.get("steps", [])) for r in self.records)
-                completed_all = 0
-                for _rec in self.records:
-                    for _s in _rec.get("steps", []):
-                        if _s.get("result", {}).get("status") in ("success", "failed"):
-                            completed_all += 1
-                percent = int(round((completed_all / total_all) * 100)) if total_all > 0 else 0
-                prog_payload = {"current": completed_all, "total": total_all, "percent": percent}
-                _ = client.push_step(room=room, data=prog_payload, event="task_progress")
-                if total_all > 0 and completed_all >= total_all:
-                    _ = client.push_step(room=room, data={"status": "finished"}, event="task_finished")
-                    _ = client.push_step(room=room, data={"status": "finished"}, event="task_status")
+            if client and self._is_primary_device():
+                print_realtime(f"🏁 [Task-{self.task_id} Dev-{self.device_serial}] 脚本结束，强制推送最终进度: {self._cached_total_steps}/{self._cached_total_steps}")
+                # 强制推送最终进度 (100%)
+                self._push_progress_event(
+                    script_id=rec.get("meta", {}).get("id"),
+                    completed_steps=self._cached_total_steps,
+                    total_steps=self._cached_total_steps
+                )
         except Exception as _pe:
-            track_error(f"⚠️ 任务完成状态推送异常: {_pe}")
             track_error(f"⚠️ 任务完成状态推送异常: {_pe}")
 
         # 将最终结果写入数据库
@@ -697,8 +996,38 @@ class StepTracker:
             return
 
         try:
-            # 更新 step_results
-            detail.step_results = self.records
+            # 合并已有记录：优先“按脚本覆盖”初始化骨架，避免同一脚本出现重复条目
+            try:
+                existing = detail.step_results if isinstance(detail.step_results, list) else []
+            except Exception:
+                existing = []
+
+            # 复制，避免就地修改引用
+            merged = list(existing)
+
+            def _get_meta_key(r: dict):
+                try:
+                    m = r.get('meta', {}) or {}
+                    return (m.get('id'), m.get('loop-index'))
+                except Exception:
+                    return (None, None)
+
+            # 将新产生的记录与现有记录进行“按 id 优先替换、按 loop-index 精准替换”的合并
+            for new_rec in (self.records or []):
+                nid, nloop = _get_meta_key(new_rec)
+                replace_at = None
+                # 1) 优先替换初始化骨架（loop-index 为空的同脚本）
+                for i, ex in enumerate(merged):
+                    eid, eloop = _get_meta_key(ex)
+                    if eid == nid and (eloop is None or eloop == nloop):
+                        replace_at = i
+                        break
+                if replace_at is not None:
+                    merged[replace_at] = new_rec
+                else:
+                    merged.append(new_rec)
+
+            detail.step_results = merged
 
             # 计算耗时：优先使用 summary.duration_ms，其次 fallback 为 updated_at - created_at
             summary = self.records[-1].get("summary", {}) if self.records else {}
@@ -1021,20 +1350,20 @@ print_realtime("🔧 应用全局shutil.copytree修补，防止静态资源复�
 _original_copytree = shutil.copytree
 
 def _patched_copytree(src, dst, symlinks=False, ignore=None, copy_function=shutil.copy2,
-                     ignore_dangling_symlinks=False, dirs_exist_ok=True):
+                      ignore_dangling_symlinks=False, dirs_exist_ok=True):
     """全局修补的copytree函数，自动处理目录已存在的情况"""
     try:
         return _original_copytree(src, dst, symlinks=symlinks, ignore=ignore,
-                                 copy_function=copy_function,
-                                 ignore_dangling_symlinks=ignore_dangling_symlinks,
-                                 dirs_exist_ok=True)
+                                  copy_function=copy_function,
+                                  ignore_dangling_symlinks=ignore_dangling_symlinks,
+                                  dirs_exist_ok=True)
     except TypeError:
         try:
             if os.path.exists(dst):
                 shutil.rmtree(dst)
             return _original_copytree(src, dst, symlinks=symlinks, ignore=ignore,
-                                     copy_function=copy_function,
-                                     ignore_dangling_symlinks=ignore_dangling_symlinks)
+                                      copy_function=copy_function,
+                                      ignore_dangling_symlinks=ignore_dangling_symlinks)
         except Exception as e:
             print_realtime(f"🔧 全局copytree修补失败，忽略错误继续执行: {src} -> {dst}, 错误: {e}")
             if os.path.exists(dst):
@@ -1075,7 +1404,6 @@ except Exception as e:
 
 # 默认路径
 DEFAULT_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DEFAULT_TESTCASE_DIR = os.path.join(DEFAULT_BASE_DIR, "testcase")
 
 # 全局锁
 REPORT_GENERATION_LOCK = Lock()
@@ -1084,7 +1412,7 @@ REPORT_GENERATION_LOCK = Lock()
 try:
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     from config_import import config_manager, ConfigManager
-except ImportError as e:
+except Exception as e:
     print_realtime(f"配置导入失败: {e}")
     config_manager = None
 
@@ -1280,7 +1608,7 @@ def normalize_script_path(path_input):
         # 如果是绝对路径，直接返回
         if os.path.isabs(path_input):
             return path_input
-          # 获取testcase目录
+        # 获取testcase目录
         if config_manager:
             try:
                 # 假设config_manager有get_testcase_dir或类似方法
@@ -1363,19 +1691,13 @@ def parse_script_arguments(args_list):
             current_max = None
         elif arg == '--loop-count':
             if i + 1 < len(args_list):
-                try:
-                    current_loop = max(1, int(args_list[i + 1]))
-                except ValueError:
-                    print_realtime(f"❌ 无效循环次数: {args_list[i + 1]}")
+                current_loop = max(1, int(args_list[i + 1]))
                 i += 1
             else:
                 print_realtime("❌ --loop-count 后缺少数值")
         elif arg == '--max-duration':
             if i + 1 < len(args_list):
-                try:
-                    current_max = int(args_list[i + 1])
-                except ValueError:
-                    print_realtime(f"❌ 无效最大时长: {args_list[i + 1]}")
+                current_max = int(args_list[i + 1])
                 i += 1
             else:
                 print_realtime("❌ --max-duration 后缺少数值")
@@ -1422,123 +1744,46 @@ def parse_script_arguments(args_list):
 
 
 def get_device_screenshot(device):
-    """获取设备截图的辅助函数 - 增强版"""
+    """获取设备截图的辅助函数 - 增强版 (整合)"""
+    # 1. 尝试 subprocess (最快)
+    try:
+        import subprocess
+        import io
+        from PIL import Image
+        result = subprocess.run(
+            f"adb -s {device.serial} exec-out screencap -p",
+            shell=True,
+            capture_output=True,
+            timeout=10
+        )
+        if result.returncode == 0 and result.stdout:
+            return Image.open(io.BytesIO(result.stdout))
+    except Exception as e:
+        print_realtime(f"⚠️ subprocess截图失败: {e}")
 
-    # 🔧 修复1: 多种截图方法，确保成功率
-    methods = [
-        ("subprocess_screencap", lambda: _screenshot_method_subprocess(device)),
-        ("airtest_snapshot", lambda: _screenshot_method_airtest(device)),
-        ("mock_screenshot", lambda: _screenshot_method_mock(device)),
-        # ("adb_shell_screencap", lambda: _screenshot_method_adb_shell(device)) # 此方法会报错
-
-    ]
-
-    for method_name, method_func in methods:
-        try:
-            print_realtime(f"🔍 尝试截图方法: {method_name}")
-            screenshot = method_func()
-            if screenshot is not None:
-                print_realtime(f"✅ 截图成功: {method_name}")
-                return screenshot
-        except Exception as e:
-            print_realtime(f"⚠️ 截图方法 {method_name} 失败: {e}")
-            continue
-
-    print_realtime("❌ 所有截图方法都失败，返回None")
-    return None
-
-def _screenshot_method_adb_shell(device):
-    """方法1: 使用device.shell"""
-    screencap = device.shell("screencap -p", encoding=None)
-
-    if not screencap or len(screencap) < 100:
-        raise Exception("截图数据为空或过小")
-
-    import io
-    from PIL import Image
-
-    # 处理可能的CRLF问题
-    if b'\r\n' in screencap:
-        screencap = screencap.replace(b'\r\n', b'\n')
-
-    screenshot_io = io.BytesIO(screencap)
-    screenshot_io.seek(0)
-
-    # 验证是否为PNG格式
-    magic = screenshot_io.read(8)
-    screenshot_io.seek(0)
-
-    if not magic.startswith(b'\x89PNG'):
-        raise Exception("不是有效的PNG格式")
-
-    screenshot = Image.open(screenshot_io)
-    screenshot.load()  # 强制加载图像数据
-    return screenshot
-
-def _screenshot_method_subprocess(device):
-    """方法2: 使用subprocess"""
-    import subprocess
-    import io
-    from PIL import Image
-
-    result = subprocess.run(
-        f"adb -s {device.serial} exec-out screencap -p",
-        shell=True,
-        capture_output=True,
-        timeout=10
-    )
-
-    if result.returncode != 0 or not result.stdout:
-        raise Exception(f"subprocess命令失败: {result.stderr}")
-
-    return Image.open(io.BytesIO(result.stdout))
-
-def _screenshot_method_airtest(device):
-    """方法3: 使用airtest"""
+    # 2. 尝试 Airtest (备用)
     try:
         from airtest.core.api import connect_device
         airtest_device = connect_device(f"Android:///{device.serial}")
         screenshot = airtest_device.snapshot()
-        if screenshot is None:
-            raise Exception("airtest返回None")
-        return screenshot
-    except ImportError:
-        raise Exception("airtest未安装")
+        if screenshot is not None:
+            return screenshot
+    except Exception as e:
+        print_realtime(f"⚠️ Airtest截图失败: {e}")
 
-def _screenshot_method_mock(device):
-    """方法4: 创建Mock截图用于测试"""
+    # 3. Mock (最后兜底)
     try:
         from PIL import Image
         import numpy as np
-
-        # 创建一个简单的测试图像 (1080x2400像素)
         width, height = 1080, 2400
-
-        # 创建渐变背景
         image_array = np.zeros((height, width, 3), dtype=np.uint8)
-
-        # 添加渐变效果
+        # 简单渐变
         for y in range(height):
-            color_value = int((y / height) * 255)
-            image_array[y, :] = [color_value, 50, 100]
-
-        # 添加一些几何图形模拟UI元素
-        # 顶部状态栏
-        image_array[0:100, :] = [30, 30, 30]
-
-        # 中间按钮区域
-        image_array[800:1000, 300:780] = [0, 150, 255]  # 蓝色按钮
-        image_array[1200:1400, 300:780] = [255, 100, 0]  # 橙色按钮
-
-        # 底部导航栏
-        image_array[2200:2400, :] = [50, 50, 50]
-
-        mock_image = Image.fromarray(image_array, 'RGB')
-        print_realtime("🎭 使用Mock截图进行测试")
-        return mock_image
-
-    except Exception as e:
-        raise Exception(f"Mock截图创建失败: {e}")
+            image_array[y, :] = [int((y / height) * 255), 50, 100]
+        print_realtime("🎭 使用Mock截图")
+        return Image.fromarray(image_array, 'RGB')
+    except Exception:
+        return None
 
 
 def get_device_name(device):
@@ -1601,7 +1846,7 @@ def check_device_status(device, device_name):
 
 
 def process_priority_based_script(device, steps, meta, device_report_dir, action_processor,
-                        screenshot_queue, click_queue, max_duration=None):
+                                  screenshot_queue, click_queue, max_duration=None):
     """处理基于优先级的动态脚本 - 修复后版本"""
     print_realtime("🎯 开始执行优先级模式脚本")
 
@@ -1614,11 +1859,11 @@ def process_priority_based_script(device, steps, meta, device_report_dir, action
 
     # 按优先级正确分类步骤
     ai_detection_steps = sorted([s for s in steps if s.get('action') == 'ai_detection_click'],
-                               key=lambda x: x.get('Priority', 999))
+                                key=lambda x: x.get('Priority', 999))
     swipe_steps = sorted([s for s in steps if s.get('action') == 'swipe'],
-                        key=lambda x: x.get('Priority', 999))
+                         key=lambda x: x.get('Priority', 999))
     fallback_steps = sorted([s for s in steps if s.get('action') == 'fallback_click'],
-                           key=lambda x: x.get('Priority', 999))
+                            key=lambda x: x.get('Priority', 999))
 
     print_realtime(f"📋 步骤分类: AI检测={len(ai_detection_steps)}, 滑动={len(swipe_steps)}, 备选点击={len(fallback_steps)}")
 
@@ -1875,12 +2120,16 @@ def process_sequential_script(device, steps, device_report_dir, action_processor
 
             # 通知 StepTracker 步骤失败
             if step_tracker:
+                lp = None
+                if result and hasattr(result, 'screenshot_path'):
+                    lp = result.screenshot_path
+
                 step_tracker.step_finished(
                     step_idx + 1,
                     success=False,
                     message=step_message,
                     error_message=error_message,
-                    local_pic_pth=getattr(result, 'screenshot_path', None)
+                    local_pic_pth=lp
                 )
             # 发生严重异常，中断后续所有步骤
             break
@@ -1919,7 +2168,7 @@ def process_sequential_script(device, steps, device_report_dir, action_processor
 
 
 def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, stop_event,
-                 device_name, log_dir, loop_count=1, cmd_account=None, cmd_password=None, task_id=None):
+                  device_name, log_dir, loop_count=1, cmd_account=None, cmd_password=None, task_id=None):
     """
     重构后的设备回放函数
     主要负责流程控制，具体的action处理委托给ActionProcessor
@@ -1932,28 +2181,23 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
     # log_dir: 方案3传入的共享工作目录，用于任务管理（.result.json, .log）
     # device_report_dir: 报告系统的独立设备目录，用于HTML报告和截图
 
-    device_report_dir = None
-    if REPORT_MANAGER:
-        try:
-            device_report_dir = REPORT_MANAGER.create_device_report_dir(device_name)
-            print_realtime(f"✅ 报告系统目录创建成功: {device_report_dir}")
-        except Exception as e:
-            print_realtime(f"⚠️ 报告系统目录创建失败: {e}")
-            device_report_dir = None
+    # 统一目录命名为: 序列号_时间（与远端一致: YYYYMMDD_HHMMSS）
+    # 确保 device_report_dir 已定义
+    if not locals().get('device_report_dir'):
+        # 如果未传入 device_report_dir，则基于 log_dir 和设备序列号生成
+        # 注意：这里需要确保 log_dir 是有效的
+        if not log_dir:
+             # 兜底：使用默认临时目录
+             log_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'reports', 'tmp', 'replay', f'task_{task_id}' if task_id else 'unknown_task')
 
-    # 如果报告系统失败，使用fallback目录结构
-    if not device_report_dir:
-        timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-        fallback_dir = os.path.join(DEVICE_REPORTS_DIR, f"{device_name}_{timestamp}")
-        os.makedirs(fallback_dir, exist_ok=True)
-        device_report_dir = Path(fallback_dir)
-        print_realtime(f"⚠️ 使用fallback报告目录: {device_report_dir}")
+        # 生成时间戳
+        run_ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+        serial_base = str(device.serial)
+        device_report_dir = os.path.join(log_dir, f"{serial_base}_{run_ts}")
+        os.makedirs(device_report_dir, exist_ok=True)
 
-    print_realtime(f"📁 方案3日志目录: {log_dir}")
-    print_realtime(f"📁 报告系统目录: {device_report_dir}")
-    # 设置Airtest日志目录为报告系统目录
     try:
-        set_logdir(str(device_report_dir))
+        serial_base = str(device.serial)
         print_realtime(f"✅ 设置Airtest日志目录: {device_report_dir}")
     except Exception as e:
         print_realtime(f"⚠️ 设置Airtest日志目录失败: {e}")
@@ -2074,7 +2318,24 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
     total_scripts_processed = 0  # 新增：记录成功处理的脚本数量
 
     # 初始化 StepTracker（使用固定Key前缀 twfgame）
+    # 确保 run_ts 存在
+    if not locals().get('run_ts'):
+        run_ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+
     tracker = StepTracker(task_id=int(task_id), device_serial=device.serial if hasattr(device, 'serial') else device_name, device_report_dir=str(device_report_dir)) if task_id is not None else None
+    # 对齐远端对象存储目录名与本地目录名，统一为 <serial>_<YYYYMMDD_HHMMSS>
+    if tracker is not None:
+        try:
+            # 重置运行目录名和URL前缀以与本地一致
+            tracker._run_dir_name = f"{serial_base}_{run_ts}"
+            task_part = f"task_{tracker.task_id}" if getattr(tracker, 'task_id', None) else "session"
+            tracker._object_root = f"replay_tasks/{task_part}/{tracker._run_dir_name}".replace('//', '/')
+            scheme = getattr(tracker, '_scheme', 'http')
+            host = getattr(tracker, '_host', 'localhost')
+            bucket = getattr(tracker, '_bucket', 'wfgame-ai')
+            tracker._url_base = f"{scheme}://{host}/{bucket}/{tracker._object_root}/"
+        except Exception:
+            pass
     # 主流程开始前先清一次历史 key，防止残留数据影响新回放
     if tracker:
         try:
@@ -2216,7 +2477,9 @@ def replay_device(device, scripts, screenshot_queue, action_queue, click_queue, 
         else:
             # 使用新的统一报告生成器
             print_realtime(f"📝 使用统一报告生成器生成设备报告")
-            success = REPORT_GENERATOR.generate_device_report(device_report_dir, scripts)
+            # 确保传入 Path 对象
+            from pathlib import Path
+            success = REPORT_GENERATOR.generate_device_report(Path(device_report_dir), scripts)
             if success:
                 # 获取报告URL
                 report_urls = REPORT_MANAGER.generate_report_urls(device_report_dir)
@@ -2655,28 +2918,61 @@ def main():
                     now_ts = timezone.now()
                     serial_list = list(device_serials) if device_serials else ([device_serial] if device_serial else [])
                     name_map: dict[str, str] = {}
+                    id_map: dict[str, int] = {}
                     try:
                         if Device and serial_list:
-                            qs = Device.objects.all_teams().filter(device_id__in=serial_list).values('device_id', 'name', 'brand', 'model')
+                            qs = Device.objects.filter(device_id__in=serial_list).values('id', 'device_id', 'name', 'brand', 'model')
                             for it in qs:
                                 disp = it.get('name') or (" ".join([x for x in [it.get('brand'), it.get('model')] if x]))
-                                name_map[str(it.get('device_id'))] = str(disp) if disp else ''
+                                sid_str = str(it.get('device_id'))
+                                name_map[sid_str] = str(disp) if disp else ''
+                                id_map[sid_str] = it.get('id')
                     except Exception:
                         pass
                     # 为每个设备生成独立消息并写入 ReportDetail
                     detailed_msgs = []
-                    if task_id and ReportDetail and serial_list:
+                    client = _get_socket_client()
+
+                    if serial_list:
                         for sid in serial_list:
                             disp = name_map.get(str(sid))
                             msg = f"未找到连接的设备: {sid}{'(' + disp + ')' if disp else ''}"
                             detailed_msgs.append(msg)
-                            try:
-                                # 兼容新结构：去掉 end_time/duration，使用 updated_at 自动更新时间
-                                ReportDetail.objects.all_teams().filter(report__task_id=task_id, device__device_id=sid).update(
-                                    error_message=msg,
-                                )
-                            except Exception:
-                                pass
+
+                            # 1. 更新 ReportDetail
+                            if task_id and ReportDetail:
+                                try:
+                                    ReportDetail.objects.all_teams().filter(report__task_id=task_id, device__device_id=sid).update(
+                                        error_message=msg,
+                                    )
+                                except Exception:
+                                    pass
+
+                            # 2. 推送 error 事件
+                            if client:
+                                try:
+                                    payload = {
+                                        "message": msg,
+                                        "task_id": int(task_id) if task_id else None,
+                                        "device": str(sid),
+                                        "reason": "device_not_connected"
+                                    }
+                                    # 推送到任务房间
+                                    if task_id:
+                                        room_t = f"replay_task_{task_id}"
+                                        client.emit(room=room_t, module="task", event="error", data=payload)
+
+                                    # 推送到设备房间 (device_<pk>)
+                                    dev_pk = id_map.get(str(sid))
+                                    if dev_pk:
+                                        room_d = f"device_{dev_pk}"
+                                        client.emit(room=room_d, module="device", event="error", data=payload)
+
+                                    # 广播错误，确保前端能收到
+                                    client.emit(room=None, module="device", event="error", data=payload)
+                                except Exception as e:
+                                    print_realtime(f"❌ 推送异常: {e}")
+
                     # 汇总错误消息用于上抛
                     error_msg = "; ".join(detailed_msgs) if detailed_msgs else "未找到连接的设备"
                     raise RuntimeError(error_msg)
@@ -2698,26 +2994,40 @@ def main():
                     offline_serials = [s for s in device_serials if s not in online_serials]
 
                     if offline_serials:
-                        # 富化显示：带上设备名称
-                        name_map: dict[str, str] = {}
+                        # 优化：一次性查询设备信息（含主键ID），用于错误展示与房间推送
+                        device_info_map = {}  # serial -> {id, name, brand, model, disp}
                         try:
                             if Device:
-                                qs = Device.objects.all_teams().filter(device_id__in=offline_serials).values('device_id', 'name', 'brand', 'model')
+                                qs = Device.objects.filter(device_id__in=offline_serials).values('id', 'device_id', 'name', 'brand', 'model')
                                 for it in qs:
+                                    sid = str(it.get('device_id'))
                                     disp = it.get('name') or (" ".join([x for x in [it.get('brand'), it.get('model')] if x]))
-                                    name_map[str(it.get('device_id'))] = str(disp) if disp else ''
+                                    device_info_map[sid] = {
+                                        'id': it.get('id'),
+                                        'disp': str(disp) if disp else ''
+                                    }
                         except Exception:
                             pass
-                        enriched = [f"{sid}{'(' + name_map.get(str(sid), '') + ')' if name_map.get(str(sid)) else ''}" for sid in offline_serials]
-                        error_msg = f"以下指定设备未找到: {', '.join(enriched)}"
-                        print_realtime(f"⚠️ {error_msg}")
-                        if task_id and ReportDetail:
-                            # 为离线的设备逐一更新错误信息
-                            from django.utils import timezone
-                            now_ts = timezone.now()
-                            for sid in offline_serials:
-                                disp = name_map.get(str(sid))
-                                msg = f"设备未连接: {sid}{'(' + disp + ')' if disp else ''}"
+
+                        # 构造富化错误信息
+                        enriched = []
+                        for sid in offline_serials:
+                            info = device_info_map.get(str(sid), {})
+                            disp = info.get('disp', '')
+                            enriched.append(f"{sid}{'(' + disp + ')' if disp else ''}")
+
+                        error_msg_str = f"以下指定设备未找到: {', '.join(enriched)}"
+                        print_realtime(f"⚠️ {error_msg_str}")
+
+                        # 批量更新数据库与推送事件
+                        client = _get_socket_client()
+                        for sid in offline_serials:
+                            info = device_info_map.get(str(sid), {})
+                            disp = info.get('disp', '')
+                            msg = f"设备未连接: {sid}{'(' + disp + ')' if disp else ''}"
+
+                            # 1. 更新 ReportDetail
+                            if task_id and ReportDetail:
                                 try:
                                     ReportDetail.objects.all_teams().filter(report__task_id=task_id, device__device_id=sid).update(
                                         error_message=msg,
@@ -2725,11 +3035,45 @@ def main():
                                 except Exception:
                                     pass
 
-                    target_devices = [d for d in devices if getattr(d, 'serial', None) in device_serials]
+                            # 2. 推送 error 事件
+                            if client:
+                                try:
+                                    payload = {
+                                        "message": msg,
+                                        "task_id": int(task_id) if task_id else None,
+                                        "device": str(sid),
+                                        "reason": "device_not_connected"
+                                    }
+                                    # 推送到任务房间
+                                    if task_id:
+                                        room_t = f"replay_task_{task_id}"
+                                        client.emit(room=room_t, module="task", event="error", data=payload)
 
-                    if not target_devices:
-                        # 如果过滤后没有可用的目标设备，则抛出异常
-                        raise RuntimeError("所有指定的设备均未找到或不在线")
+                                    # 推送到设备房间 (device_<pk>)
+                                    dev_pk = info.get('id')
+                                    if dev_pk:
+                                        room_d = f"device_{dev_pk}"
+                                        client.emit(room=room_d, module="device", event="error", data=payload)
+
+                                except Exception as e:
+                                    print_realtime(f"❌ 推送异常: {e}")
+
+                        # 🔧 简化模式：离线设备出现后只在初始化阶段调整全局分母（不再访问Redis）
+                        try:
+                            global GLOBAL_REPLAY_TOTAL_STEPS, GLOBAL_REPLAY_SINGLE_DEVICE_STEPS, GLOBAL_INITIAL_DEVICE_COUNT
+                            if GLOBAL_REPLAY_SINGLE_DEVICE_STEPS is not None:
+                                new_device_count = len([d for d in devices if getattr(d, 'serial', None) in device_serials])
+                                GLOBAL_INITIAL_DEVICE_COUNT = new_device_count
+                                GLOBAL_REPLAY_TOTAL_STEPS = GLOBAL_REPLAY_SINGLE_DEVICE_STEPS * max(1, new_device_count)
+                                print_realtime(f"🔄 已根据在线设备数更新总步数: {GLOBAL_REPLAY_TOTAL_STEPS} (单设备 {GLOBAL_REPLAY_SINGLE_DEVICE_STEPS} * 在线 {new_device_count})")
+                        except Exception as _adj_err:
+                            print_realtime(f"⚠️ 离线设备更新总步数失败: {_adj_err}")
+
+                        # 原有逻辑：这里并不直接中断整个任务，而是仅标记离线设备的错误；
+                        # 后续 target_devices 只会包含在线设备。
+
+                    # 仅对在线设备构建目标列表
+                    target_devices = [d for d in devices if getattr(d, 'serial', None) in device_serials]
                 else:  # 未指定设备，使用所有找到的设备
                     target_devices = devices
 
@@ -2745,11 +3089,51 @@ def main():
                 if isinstance(device_serials, list) and device_serials:
                     devices = [d for d in devices if d.serial in set(device_serials)]
 
+                # 🔧 预计算任务总步数（单次，回表，不再写入或读取Redis）
+                if task_id:
+                    try:
+                        DbScript = _get_db_script_model()
+                        total_script_steps = 0
+                        for script in scripts:
+                            script_id = script.get('script_id')
+                            loop_count = script.get('loop_count', 1)
+                            if not script_id or not DbScript:
+                                continue
+                            try:
+                                row = DbScript.objects.all_teams().filter(id=script_id).values('id', 'steps').first()
+                                steps_list = row.get('steps') if row else None
+                                step_len = len(steps_list) if isinstance(steps_list, list) else 0
+                                total_script_steps += step_len * loop_count
+                                print_realtime(f"🗄️ 脚本ID={script_id} loop={loop_count} steps_len={step_len}")
+                            except Exception as e:
+                                print_realtime(f"⚠️ 回表获取脚本 {script_id} 步骤失败: {e}")
+                        planned_device_count = len(target_devices)
+                        single_device_steps = total_script_steps
+                        global_total_steps = single_device_steps * planned_device_count if planned_device_count > 0 else single_device_steps
+                        print_realtime(f"📊 预计算总步数(聚合): {global_total_steps} = 单设备步数 {single_device_steps} * 设备数 {planned_device_count}")
+                        GLOBAL_REPLAY_TOTAL_STEPS = global_total_steps
+                        GLOBAL_REPLAY_SINGLE_DEVICE_STEPS = single_device_steps
+                        GLOBAL_INITIAL_DEVICE_COUNT = planned_device_count
+
+                        # 写入 Redis 以供多进程共享固定分母
+                        try:
+                            redis_client = getattr(settings.REDIS, 'client', None)
+                            if redis_client and task_id:
+                                key = f"wfgame:replay:task:{task_id}:config:total_steps"
+                                redis_client.set(key, str(global_total_steps), ex=86400)
+                                print_realtime(f"💾 已将固定总步数写入Redis: {key}={global_total_steps}")
+                        except Exception as _redis_err:
+                            print_realtime(f"⚠️ 写入Redis总步数失败: {_redis_err}")
+                    except Exception as e:
+                        print_realtime(f"⚠️ 预计算总步数失败: {e}")
+
                 if len(devices) > 1:
                     print_realtime(f"🔀 检测到多设备模式 ({len(devices)} 台设备)，使用多设备执行框架")
 
                     # 使用多设备执行框架
                     device_serials = [device.serial for device in devices]
+                    processed_device_names = []
+                    current_execution_device_dirs = []
                     try:
                         from multi_device_replayer import replay_scripts_on_devices
 
@@ -2758,7 +3142,8 @@ def main():
                             device_serials=device_serials,
                             scripts=scripts,
                             max_workers=min(len(devices), 4),  # 最大4个并发
-                            strategy="hybrid"
+                            strategy="hybrid",
+                            task_id=task_id
                         )
 
                         # 检查执行结果
@@ -2891,7 +3276,7 @@ def main():
                         # 🔧 关键修复：脚本执行失败也不影响整体状态
                         # 除非发生系统级异常，否则不设置exit_code = -1
                     except Exception as e:
-                        print_realtime(f"❌ 设备 {device_name} 处理异常: {e}")
+                        print_realtime(f"❌ 设备 {device_name}  处理异常: {e}")
                         # 🔧 关键修复：任何在设备回放期间的异常都应视为系统错误
                         system_error_occurred = True
                         exit_code = -1
@@ -2932,6 +3317,23 @@ def main():
                 error_msg = str(e)
                 print_realtime(f"❌ 设备列表获取失败: {error_msg}")
                 captured_errors.append(error_msg)
+
+                # 🔔 向前端推送全局错误事件（显示在步骤模块中）
+                try:
+                    client = _get_socket_client()
+                    if client and task_id:
+                        client.emit(
+                            room=f"replay_task_{task_id}",
+                            module="task",
+                            event="error",
+                            data={
+                                "message": error_msg,
+                                "task_id": task_id
+                            }
+                        )
+                except Exception:
+                    pass
+
                 # 更新所有相关设备的ReportDetail.error_message（移除已删除的 end_time 字段）
                 update_fields = {
                     'error_message': error_msg,
@@ -2957,6 +3359,23 @@ def main():
         error_msg = str(e)
         print_realtime(f"❌ 脚本回放过程出错: {error_msg}")
         captured_errors.append(error_msg)
+
+        # 🔔 向前端推送全局错误事件
+        try:
+            client = _get_socket_client()
+            if client and task_id:
+                client.emit(
+                    room=f"replay_task_{task_id}",
+                    module="task",
+                    event="error",
+                    data={
+                        "message": error_msg,
+                        "task_id": task_id
+                    }
+                )
+        except Exception:
+            pass
+
         # 根据状态分离原则，区分系统异常和业务逻辑异常
         if isinstance(e, (FileNotFoundError, ConnectionError, PermissionError, ImportError)):
             exit_code = -1  # 只有系统级异常才影响脚本执行状态
@@ -2966,7 +3385,8 @@ def main():
 
     finally:
         # 资源清理和结果写入
-        if log_dir and device_serial:
+        # 单设备与多设备均尝试写入结果文件，以便上层聚合读取
+        if log_dir and (device_serial or (locals().get('device_serials') and isinstance(device_serials, list) and len(device_serials) > 0)):
             try:
                 # 写入结果文件，包含完整的状态分离记录
 
@@ -2996,17 +3416,15 @@ def main():
                 # 构造结果数据
                 # 统一错误分类：系统错误用 error，业务/环境类用 business_error
                 # 统一错误处理：所有错误汇总到 error_msg（多个用分号分隔）
-                # 合并全局 ERROR_LOGS 与本地捕获异常
                 all_errors = []
                 all_errors.extend([e for e in ERROR_LOGS if e])
                 all_errors.extend([e for e in captured_errors if e])
                 if error_msg:
                     all_errors.append(error_msg)
                 unified_error_msg = "; ".join(all_errors) if all_errors else ""
-                result_data = {
+                base_result = {
                     "exit_code": 0 if script_execution_success else -1,
                     "report_url": report_url,
-                    "device": device_serial,
                     "timestamp": time.time(),
                     "execution_completed": execution_completed,
                     "script_execution_success": script_execution_success,
@@ -3015,7 +3433,15 @@ def main():
                     "message": "脚本执行完成" if script_execution_success else "脚本执行失败",
                     "error_msg": unified_error_msg or None,
                 }
-                write_result(log_dir, device_serial, result_data)
+                targets = []
+                if device_serial:
+                    targets = [device_serial]
+                elif isinstance(device_serials, list) and device_serials:
+                    targets = list(device_serials)
+                for ser in targets:
+                    rd = dict(base_result)
+                    rd["device"] = ser
+                    write_result(log_dir, ser, rd)
                 # 清理 ERROR_LOGS 以防后续子任务复用同进程污染（Celery复用worker时）
                 ERROR_LOGS.clear()
                 # 结束阶段的二次清理已在 finish_script 中执行；此处不重复调用避免引用未定义 tracker

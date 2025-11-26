@@ -496,7 +496,7 @@ const fetchModels = async () => {
 const setFormDefaults = async () => {
   await Promise.all([fetchRepositories(), fetchModels()]);
   if (repositories.value.length > 0 && !isEditMode.value) {
-    form.value.repo_id = repositories.value[1].id;
+    form.value.repo_id = repositories.value[0].id;
     fetchBranches();
   }
   if (ocrModels.value.length > 0 && !form.value.model_path) {

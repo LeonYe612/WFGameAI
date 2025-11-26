@@ -1,45 +1,60 @@
 <template>
-  <MainContent title="任务管理">
+  <MainContent title="任务管理" :scroll-mode="true">
     <template #header-extra>
-      <div class="w-full flex items-center justify-end space-x-4">
-        <!-- Auto-refresh switch stays before Refresh -->
-        <el-tooltip content="自动刷新" placement="top">
-          <div class="flex items-center">
-            <el-switch v-model="autoRefreshEnabled" />
-          </div>
-        </el-tooltip>
+      <div class="w-full flex items-center justify-between gap-4 flex-wrap">
+        <!-- Left: Filters inline -->
+        <div class="filters-left flex items-center gap-3 flex-wrap min-w-0">
+          <TasksFilters
+            v-model="filters"
+            :inline="true"
+            @filter-change="handleFilterChange"
+          />
+        </div>
 
-        <!-- Refresh button: icon-only, circular, subtle style -->
-        <el-button
-          :loading="loading"
-          @click="handleRefresh"
-          class="!border-gray-300 !text-gray-600 hover:!border-gray-400 hover:!text-gray-800"
-        >
-          <el-icon>
-            <Refresh />
-          </el-icon>
-          刷新
-        </el-button>
+        <!-- Right: actions -->
+        <div class="flex items-center gap-3">
+          <el-tooltip content="自动刷新" placement="top">
+            <div class="flex items-center">
+              <el-switch v-model="autoRefreshEnabled" />
+            </div>
+          </el-tooltip>
 
-        <!-- New Task: primary, rounded, with subtle shadow -->
-        <el-button type="primary" round @click="handleNewTask" class="shadow-sm hover:shadow-md">
-          <el-icon>
-            <Plus />
-          </el-icon>
-          新建任务
-        </el-button>
-        <CreateTaskDialog
-          v-model:visible="formDialogVisible"
-          @submit="handleSubmitTask"
-          :fill-values="fillValues"
-        />
+          <el-button
+            :loading="loading"
+            @click="handleRefresh"
+            class="!border-gray-300 !text-gray-600 hover:!border-gray-400 hover:!text-gray-800"
+          >
+            <el-icon>
+              <Refresh />
+            </el-icon>
+            刷新
+          </el-button>
+
+          <!-- New Task: primary rectangular button -->
+          <el-button
+            type="primary"
+            @click="handleNewTask"
+            class="shadow-sm hover:shadow-md"
+          >
+            <el-icon>
+              <Plus />
+            </el-icon>
+            新建任务
+          </el-button>
+
+          <CreateTaskDialog
+            v-model:visible="formDialogVisible"
+            @submit="handleSubmitTask"
+            :fill-values="fillValues"
+          />
+        </div>
       </div>
     </template>
-    <TasksFilters v-model="filters" @filter-change="handleFilterChange" />
     <TasksTable
       :data="taskList"
       :loading="loading"
       :pagination="pagination"
+      :restart-loading-map="restartLoadingMap"
       @action="onAction"
       @page-change="handlePageChange"
       @size-change="handleSizeChange"
@@ -55,6 +70,7 @@
 
 <script setup lang="ts">
 import MainContent from "@/layout/components/mainContent/index.vue";
+import { useNavigate } from "@/views/common/utils/navHook";
 import type { TaskFormData } from "@/views/tasks/utils/types";
 import { Plus, Refresh } from "@element-plus/icons-vue";
 import { onMounted, onUnmounted, ref, watch } from "vue";
@@ -89,7 +105,8 @@ const {
   handleSubmitTask,
   handleTaskAction,
   handleRefresh,
-  handleCreateTask
+  handleCreateTask,
+  restartLoadingMap
 } = useTasksPage();
 
 const route = useRoute();
@@ -105,6 +122,9 @@ const defaultForm: TaskFormData = {
 };
 
 const fillValues = ref<TaskFormData>({ ...defaultForm });
+
+// 导航钩子：使用专用的 navigateToReportList(report_id) 辅助函数
+const { navigateToReportList } = useNavigate();
 
 // 自动刷新逻辑
 const autoRefreshEnabled = ref(false);
@@ -176,6 +196,16 @@ const onAction = (action: string, task: any) => {
         : []
     };
     formDialogVisible.value = true;
+    return;
+  }
+  if (action === "report") {
+    const rid = Number(task?.report_id);
+    if (!isNaN(rid) && rid > 0) {
+      navigateToReportList(rid);
+    } else {
+      // 无报告ID：仍跳转到报告列表，不带参数
+      navigateToReportList();
+    }
     return;
   }
   // 其它动作按原逻辑处理
@@ -269,4 +299,7 @@ watch(
 
 <style scoped>
 /* 页面级别样式可以在这里定义 */
+.filters-left {
+  margin-left: 12px;
+}
 </style>

@@ -59,7 +59,7 @@ PARAM_VERSIONS = {
         "use_textline_orientation": False,  # 关键修复：禁用文本行方向分类
         "use_doc_orientation_classify": False,  # 新增：禁用文档方向分类
         "use_doc_unwarping": False,  # 新增：禁用文档去畸变
-        "text_rec_score_thresh": 0.0,  # 关键修复：降低识别阈值
+        "text_rec_score_thresh": 0.5,  # 关键修复：降低识别阈值
     },
     
     "balanced_v1": {
@@ -67,13 +67,13 @@ PARAM_VERSIONS = {
         "text_det_thresh": 0.3,
         "text_det_box_thresh": 0.6,
         "text_det_unclip_ratio": 1.5,
-        "text_det_limit_side_len": 736,
+        "text_det_limit_side_len": 960,
         "text_det_limit_type": "max",  # 修改：使用max边长类型
         "use_doc_preprocessor": False,  # 禁用文档预处理
         "use_textline_orientation": False,  # 禁用文本行方向分类
         "use_doc_orientation_classify": False,  # 禁用文档方向分类
         "use_doc_unwarping": False,  # 禁用文档去畸变
-        "text_rec_score_thresh": 0.0,  # 降低识别阈值
+        "text_rec_score_thresh": 0.5,  # 降低识别阈值
     }
 }
 

@@ -23,7 +23,7 @@ except ImportError:
     logging.getLogger('airtest.core.android.adb').setLevel(logging.WARNING)
 
 
-def device_worker(device_serial, scripts, shared_results):
+def device_worker(device_serial, scripts, shared_results, task_id=None):
     """
     设备工作进程 - 每台设备独立执行所有脚本
     🔧 已修复：集成统一报告管理系统，创建设备报告目录
@@ -78,22 +78,21 @@ def device_worker(device_serial, scripts, shared_results):
         timestamp = datetime.now().strftime("%H:%M:%S")
         print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} 开始处理")
 
-        # 🔧 新增：为设备创建报告目录
+        # 基于 task_id 的运行目录 ${server}/apps/reports/tmp/replay/task_<id>/<serial>_<ts>
         device_report_dir = None
-        if report_manager:
-            try:
-                # 清理设备名称作为目录名
-                clean_device_name = "".join(c for c in device_serial if c.isalnum() or c in ('-', '_', '.'))
-                if not clean_device_name:
-                    clean_device_name = f"device_{abs(hash(device_serial)) % 10000}"
-
-                device_report_dir = report_manager.create_device_report_dir(clean_device_name)
-                timestamp = datetime.now().strftime("%H:%M:%S")
-                print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} 报告目录创建: {device_report_dir}")
-
-            except Exception as e:
-                timestamp = datetime.now().strftime("%H:%M:%S")
-                print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} 报告目录创建失败: {e}")
+        try:
+            server_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+            from datetime import datetime as _dt
+            _run_ts = _dt.now().strftime('%Y%m%d_%H%M%S')
+            base_root = os.path.join(server_dir, 'apps', 'reports', 'tmp', 'replay', f"task_{int(task_id) if task_id is not None else 'session'}")
+            device_root = os.path.join(base_root, f"{device_serial}_{_run_ts}")
+            os.makedirs(device_root, exist_ok=True)
+            device_report_dir = device_root
+            timestamp = datetime.now().strftime("%H:%M:%S")
+            print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} 运行目录: {device_report_dir}")
+        except Exception as e:
+            timestamp = datetime.now().strftime("%H:%M:%S")
+            print(f"[进程 {os.getpid()}][{timestamp}] 设备 {device_serial} 运行目录初始化失败: {e}")
 
         # 获取设备连接
         device = None
@@ -252,6 +251,10 @@ def device_worker(device_serial, scripts, shared_results):
                     })
 
                 # 生成设备HTML报告
+                try:
+                    clean_device_name = os.path.basename(str(device_report_dir))
+                except Exception:
+                    clean_device_name = device_serial
                 html_report = report_generator.generate_device_html_report(
                     device_name=clean_device_name,
                     device_dir=device_report_dir
@@ -294,7 +297,7 @@ def device_worker(device_serial, scripts, shared_results):
         }
 
 
-def replay_scripts_on_devices(device_serials, scripts, max_workers=4, strategy="hybrid"):
+def replay_scripts_on_devices(device_serials, scripts, max_workers=4, strategy="hybrid", task_id=None):
     """
     多设备并发回放：所有设备依次执行同一批脚本
     🔧 新增：支持智能混合执行策略
@@ -315,7 +318,7 @@ def replay_scripts_on_devices(device_serials, scripts, max_workers=4, strategy="
             from optimized_hybrid_executor import replay_scripts_on_devices_hybrid
 
             print(f"🚀 使用智能混合执行策略: {strategy}")
-            return replay_scripts_on_devices_hybrid(device_serials, scripts, strategy)
+            return replay_scripts_on_devices_hybrid(device_serials, scripts, strategy, task_id=task_id)
 
         except ImportError as e:
             print(f"❌ 智能混合执行器导入失败，回退到传统模式: {e}")
@@ -344,7 +347,7 @@ def replay_scripts_on_devices(device_serials, scripts, max_workers=4, strategy="
         for i, device_serial in enumerate(device_serials):
             p = Process(
                 target=device_worker,
-                args=(device_serial, scripts, shared_results)
+                args=(device_serial, scripts, shared_results, task_id)
             )
             p.daemon = True
             processes.append(p)

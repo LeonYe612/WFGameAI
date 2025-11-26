@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { listDevices, getDevice, type DeviceItem } from "@/api/devices";
+import { getDevice, listDevices, type DeviceItem } from "@/api/devices";
 import { superRequest } from "@/utils/request";
-import {
-  computed,
-  defineProps,
-  onMounted,
-  onBeforeUnmount,
-  ref,
-  watch
-} from "vue";
 import { RefreshLeft } from "@element-plus/icons-vue";
+import {
+    computed,
+    defineProps,
+    onBeforeUnmount,
+    onMounted,
+    ref,
+    watch
+} from "vue";
 
 const props = withDefaults(
   defineProps<{
@@ -242,20 +242,41 @@ const displayName = computed(() => {
               stroke-linecap="round"
             />
           </svg>
-          设备已断开{{ props.errorMsg ? "：" + props.errorMsg : "" }}
-        </div>
-      </template>
-      <template v-else-if="props.imgBase64">
-        <div class="device-img-wrap">
-          <img
-            :src="imgSrc"
-            class="device-img"
-            :style="{ objectFit: props.fitMode }"
-          />
+          <div class="offline-text">
+            <div class="offline-title">📱 设备离线</div>
+            <div class="offline-desc">
+              {{ props.errorMsg || "设备连接已断开，请检查网络连接" }}
+            </div>
+            <div class="offline-status">
+              状态：离线
+            </div>
+          </div>
         </div>
       </template>
       <template v-else>
-        <div>设备信息展示区</div>
+        <div class="device-img-wrap">
+          <template v-if="props.imgBase64">
+            <img
+              :src="imgSrc"
+              class="device-img"
+              :style="{ objectFit: props.fitMode }"
+            />
+          </template>
+          <template v-else>
+            <div class="placeholder">等待画面...</div>
+          </template>
+          <!-- 错误消息浮层：仅在非断开状态且存在错误消息时显示 -->
+          <transition name="fade">
+            <div
+              v-if="!isDisconnected && props.errorMsg"
+              class="device-error-overlay"
+              :title="props.errorMsg"
+            >
+              <div class="err-icon">⚠</div>
+              <div class="err-text">{{ props.errorMsg }}</div>
+            </div>
+          </transition>
+        </div>
       </template>
     </div>
     <el-dialog v-model="showDetail" title="设备详情" width="420px">
@@ -439,6 +460,7 @@ const displayName = computed(() => {
   align-items: center;
   justify-content: center;
   background: #000; /* 黑色背景使画面在不同 aspect 下看起来一致 */
+  position: relative;
 }
 
 .device-img {
@@ -449,6 +471,47 @@ const displayName = computed(() => {
   box-shadow: 0 2px 8px rgba(80, 120, 255, 0.08);
 }
 
+.device-error-overlay {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  max-width: calc(100% - 16px);
+  background: rgba(255, 77, 79, 0.92);
+  color: #fff;
+  padding: 6px 10px 6px 8px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.3;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(2px);
+}
+.device-error-overlay .err-icon {
+  font-size: 14px;
+  line-height: 14px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.device-error-overlay .err-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  word-break: break-word;
+}
+
+.placeholder {
+  color: #94a3b8;
+  font-size: 0.9rem;
+  letter-spacing: 0.5px;
+}
+
+.fade-enter-active, .fade-leave-active { transition: opacity .18s; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+
 .device-status-error {
   color: #ff4d4f;
   font-weight: bold;
@@ -458,15 +521,53 @@ const displayName = computed(() => {
   flex-direction: column;
   align-items: center;
   gap: 8px;
+  padding: 20px;
+  background: linear-gradient(135deg, #fff5f5 0%, #ffeaea 100%);
+  border-radius: 12px;
+  margin: 16px;
+  border: 1px solid #ffcccc;
+  box-shadow: 0 2px 8px rgba(255, 77, 79, 0.1);
 }
 
 .disconnect-icon {
   width: 48px;
   height: 48px;
-  margin-bottom: 2px;
+  margin-bottom: 8px;
   display: block;
+  filter: drop-shadow(0 1px 3px rgba(255, 77, 79, 0.3));
 }
 
+.offline-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.offline-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #ff4d4f;
+  margin-bottom: 4px;
+}
+
+.offline-desc {
+  font-size: 0.9rem;
+  color: #666;
+  line-height: 1.4;
+  max-width: 200px;
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+.offline-status {
+  font-size: 0.85rem;
+  color: #999;
+  padding: 4px 8px;
+  background: #f5f5f5;
+  border-radius: 4px;
+  border: 1px solid #e0e0e0;
+}
 .kv {
   display: flex;
   align-items: center;

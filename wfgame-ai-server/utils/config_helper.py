@@ -41,7 +41,9 @@ class ConfigManager:
     """
     _instance = None
     _config = None
-    _config_path = os.path.join(Path.cwd().parent, "config.ini")
+    # 修复：使用当前文件所在目录向上查找项目根目录
+    # utils/config_helper.py -> wfgame-ai-server -> 项目根目录
+    _config_path = os.path.join(Path(__file__).resolve().parent.parent.parent, "config.ini")
 
     def __new__(cls):
         if cls._instance is None:
@@ -60,28 +62,40 @@ class ConfigManager:
             raise FileNotFoundError(f"无法找到 {self._config_path} 配置文件")
 
     def _find_config_file(self):
-        """查找配置文件"""
-        try:
-            # 优先使用环境变量中的配置路径
-            if "WFGAMEAI_CONFIG" in os.environ:
-                return os.environ["WFGAMEAI_CONFIG"]
-
-            # 根据 AI_ENV 选择配置文件
-            ai_env = os.environ.get("AI_ENV", "").strip().lower()
-            base_dir = Path.cwd().parent
-            if ai_env:
-                if ai_env == "prod":
-                    # 生产环境固定使用 config.ini
-                    return os.path.join(base_dir, "config.ini")
-                else:
-                    # 其它环境使用 config_{env}.ini（例如 dev -> config_dev.ini）
-                    return os.path.join(base_dir, f"config_{ai_env}.ini")
-
-            # 默认回退到 config.ini
-            return self._config_path
-        except Exception as e:
-            logger.error(f"查找配置文件时出错，使用默认 config.ini: {e}")
-            return self._config_path
+        """查找配置文件 - 优先使用环境变量WFGAMEAI_CONFIG指定的配置文件"""
+        # 优先检查 WFGAMEAI_CONFIG 环境变量
+        config_from_env = os.environ.get("WFGAMEAI_CONFIG", "").strip()
+        logger.warning(f"环境变量 WFGAMEAI_CONFIG = {config_from_env if config_from_env else '(未设置)'}")
+        logger.warning(f"环境变量 AI_ENV = {os.environ.get('AI_ENV', '(未设置)')}")
+        
+        # 项目根目录：utils/config_helper.py -> wfgame-ai-server -> 项目根目录
+        project_root = Path(__file__).resolve().parent.parent.parent
+        
+        # 如果设置了WFGAMEAI_CONFIG环境变量
+        if config_from_env:
+            # 检查是否为完整路径
+            if os.path.isfile(config_from_env):
+                logger.warning(f"使用环境变量指定的配置文件: {config_from_env}")
+                return config_from_env
+            
+            # 检查是否为相对于项目根目录的路径
+            full_path = os.path.join(project_root, config_from_env)
+            if os.path.isfile(full_path):
+                logger.warning(f"使用环境变量指定的配置文件: {full_path}")
+                return full_path
+                    
+        # 根据 AI_ENV 选择配置文件（仅支持 prod 和 dev）
+        ai_env = os.environ.get("AI_ENV", "").strip().lower()
+        
+        if ai_env == "dev":
+            config_file = "config_dev.ini"
+        else:
+            # prod 环境或未指定时，默认使用 config.ini
+            config_file = "config.ini"
+        
+        final_path = os.path.join(project_root, config_file)
+        logger.warning(f"根据 AI_ENV={ai_env if ai_env else '(未设置)'} 选择配置文件: {final_path}")
+        return final_path
 
     def get_path(self, key, create_if_missing=True):
         """
