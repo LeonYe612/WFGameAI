@@ -50,6 +50,12 @@ export function useSettingsManagement() {
     //   component: "PythonSettings"
     // },
     {
+      id: "ai-models",
+      label: "模型管理",
+      icon: "Cpu",
+      component: "AIModelSettings"
+    },
+    {
       id: "action-library",
       label: "动作库管理",
       icon: "Menu",

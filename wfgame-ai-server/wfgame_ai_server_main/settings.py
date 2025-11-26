@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     "apps.data_source",
     "apps.ocr",  # OCR模块
     "apps.notifications", # SSE 通知应用
+    "apps.ai_models", # AI模型管理应用
 ]
 
 MIDDLEWARE = [

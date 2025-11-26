@@ -2,14 +2,14 @@
   <div class="flex-full flex-col">
     <!-- 筛选器 -->
     <el-card class="filter-card">
-      <el-form :model="filterData" inline>
+      <el-form :model="filterData" inline class="compact-form">
         <el-form-item label="">
           <el-input
             v-model="filterData.keyword"
             placeholder="输入关键字查找"
             :prefix-icon="Search"
             clearable
-            style="width: 200px"
+            style="width: 160px"
             @change="handleSearch"
           />
         </el-form-item>
@@ -38,34 +38,24 @@
             </el-radio-button>
           </el-radio-group>
         </el-form-item>
+        <el-form-item label="最大置信度" style="margin-right: 24px">
+          <div style="width: 200px; padding: 0 10px">
+            <el-slider
+              v-model="confidenceRange"
+              range
+              :min="0"
+              :max="1"
+              :step="0.01"
+              :marks="sliderMarks"
+              @change="fetchResults"
+            />
+          </div>
+        </el-form-item>
         <el-form-item>
           <el-button :icon="Search" type="primary" @click="handleSearch" plain>
             搜索
           </el-button>
           <el-button :icon="RefreshLeft" @click="handleReset"> 重置 </el-button>
-        </el-form-item>
-        <el-form-item>
-          <el-dropdown @command="handleCommand">
-            <el-button type="primary" plain style="width: 140px">
-              当前页标注为
-              <el-icon>
-                <ArrowDown class="ml-1" />
-              </el-icon>
-            </el-button>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item
-                  v-for="item in sortedEnum(ocrResultTypeEnum, [
-                    ocrResultTypeEnum.ALL
-                  ])"
-                  :key="item.value"
-                  :command="item.value"
-                >
-                  {{ item.label }}
-                </el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
         </el-form-item>
       </el-form>
     </el-card>
@@ -117,6 +107,27 @@
 
       <!-- 分页栏 -->
       <div class="pagination-wrapper">
+        <el-dropdown @command="handleCommand">
+          <el-button type="warning" plain style="width: 140px">
+            当前页标注为
+            <el-icon>
+              <ArrowDown class="ml-1" />
+            </el-icon>
+          </el-button>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item
+                v-for="item in sortedEnum(ocrResultTypeEnum, [
+                  ocrResultTypeEnum.ALL
+                ])"
+                :key="item.value"
+                :command="item.value"
+              >
+                {{ item.label }}
+              </el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
         <el-pagination
           :current-page="pagination.currentPage"
           :page-size="pagination.pageSize"
@@ -158,6 +169,17 @@ const filterData = reactive<Partial<TaskGetDetailsParams>>({
   result_type: "",
   keyword: ""
 });
+const confidenceRange = ref([0, 1]);
+const sliderMarks = computed(() => {
+  const [min, max] = confidenceRange.value;
+  // 避免两个值太近导致重叠，这里简单处理，实际可能需要更复杂的逻辑
+  // 或者直接返回两个值，Element Plus 会处理位置
+  return {
+    [min]: min.toFixed(2),
+    [max]: max.toFixed(2)
+  };
+});
+
 const pagination = reactive({
   currentPage: 1,
   pageSize: 24,
@@ -199,7 +221,9 @@ const fetchResults = async () => {
       id: props.taskId,
       page: pagination.currentPage,
       page_size: pagination.pageSize,
-      ...filterData
+      ...filterData,
+      min_confidence: confidenceRange.value[0],
+      max_confidence: confidenceRange.value[1]
     };
     const res = await superRequest({
       apiFunc: ocrTaskApi.getDetails,
@@ -224,6 +248,7 @@ const handleReset = () => {
   filterData.has_match = null;
   filterData.result_type = "";
   filterData.keyword = "";
+  confidenceRange.value = [0, 1];
   handleSearch();
 };
 
@@ -266,8 +291,23 @@ watch(() => props.taskId, fetchResults, { immediate: true });
 
 <style lang="scss" scoped>
 .filter-card {
-  margin-bottom: 16px;
+  margin-bottom: 10px;
   flex-shrink: 0;
+
+  :deep(.el-card__body) {
+    padding: 10px 15px 20px 15px;
+  }
+}
+
+.compact-form {
+  .el-form-item {
+    margin-bottom: 8px;
+    margin-right: 12px;
+
+    &:last-child {
+      margin-right: 0;
+    }
+  }
 }
 
 .table-card {
@@ -289,7 +329,8 @@ watch(() => props.taskId, fetchResults, { immediate: true });
 .pagination-wrapper {
   padding-top: 16px;
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   flex-shrink: 0;
 }
 </style>

@@ -68,24 +68,31 @@ export const ocrSourceTypeEnum: Record<string, EnumValue> = {
 
 /** OCR 识别结果类型 */
 export const ocrResultTypeEnum: Record<string, EnumValue> = {
-  ALL: { label: "全部", value: "", order: 1, color: "#FFF" },
+  ALL: { label: "全部", value: "", order: 0, color: "#FFF" },
+  UNCHECK: {
+    label: "待校验",
+    value: 0,
+    order: 1,
+    type: "info",
+    color: "#d3d3d3ff"
+  },
   RIGHT: {
     label: "正确",
-    value: "1",
+    value: 1,
     order: 2,
     type: "success",
     color: "#90e9a6ff"
   }, // 更深的浅绿色
   WRONG: {
     label: "误检",
-    value: "2",
+    value: 2,
     order: 3,
     type: "danger",
     color: "#faa7a7ff"
   }, // 更深的浅红色
   MISSING: {
     label: "漏检",
-    value: "3",
+    value: 3,
     order: 4,
     type: "warning",
     color: "#ddbc04ff"
