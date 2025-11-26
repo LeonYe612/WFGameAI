@@ -31,11 +31,17 @@ export interface OcrTask extends CommonFields {
   git_branch?: string;
   git_repository_url?: string;
   status: string;
+  confidences?: number[];
+  max_confidence?: number;
   config: {
     languages: string[];
     target_dir: string;
     report_file: string;
     target_path: string;
+    enable_cache: boolean;
+    keyword_filter: any;
+    rec_score_thresh: number;
+    model_path: string;
   };
   start_time?: string;
   end_time?: string;
@@ -56,10 +62,14 @@ export interface OcrResult extends CommonFields {
   texts: string[];
   languages: Record<string, any>;
   has_match: boolean;
-  confidence: string;
+  confidences: number[];
   processing_time: string;
   result_type: string;
   pic_resolution: string;
+  max_confidence?: number;
+  corrected_texts?: string[]; // 人工校验后修改的文本
+  ground_truth_origin_id?: number; // 对应的真值结果ID
+  similarity_score?: number; // 与真值的相似度分数
 }
 
 // OCR 历史任务分页
@@ -77,6 +87,9 @@ export interface CreateGitTaskParams {
   branch: string;
   languages: string[];
   enable_cache: boolean;
+  keyword_filter: any;
+  rec_score_thresh: number;
+  model_path: string;
 }
 
 // 创建上传 OCR任务参数
@@ -89,6 +102,8 @@ export interface CreateUploadTaskParams {
 export interface TaskGetDetailsParams extends CommonQuery {
   has_match?: boolean | null;
   result_type?: string;
+  min_confidence?: number;
+  max_confidence?: number;
 }
 
 export interface TaskGetDetailResponse {
@@ -222,5 +237,14 @@ export const ocrResultApi = {
   update: (changes: any) =>
     http.request<ApiResult>("post", baseUrlApi("/ocr/results/"), {
       data: { ...changes, action: "update" }
+    }),
+  // 人工校验图片结果
+  verify: (data: {
+    id: number;
+    result_type: number;
+    corrected_texts?: string[];
+  }) =>
+    http.request<ApiResult>("post", baseUrlApi("/ocr/results/"), {
+      data: { ...data, action: "verify" }
     })
 };

@@ -60,7 +60,7 @@ class OCRResultSerializer(serializers.ModelSerializer):
             "texts",
             "languages",
             "has_match",
-            "confidence",
+            "max_confidence",
             "processing_time",
             "created_at",
             "result_type",
@@ -80,6 +80,8 @@ class OCRProcessGitSerializer(serializers.Serializer):
     token = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     enable_cache = serializers.BooleanField(required=False, default=True)
     keyword_filter = serializers.DictField(required=False, default=dict)
+    rec_score_thresh = serializers.FloatField(required=False, default=0.5)
+    model_path = serializers.CharField(required=True, allow_blank=False, allow_null=False)
 
     def validate(self, data):
         """验证处理参数"""

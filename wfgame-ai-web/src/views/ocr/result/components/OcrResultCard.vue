@@ -21,13 +21,19 @@
         </h3>
 
         <p class="info-item">
-          识别结果:
+          <span :title="`ID:${result.id}`">识别结果:</span>
           <span
-            class="text-orange-500"
+            class="text-primary"
             :title="getResultText(result)"
             @click="handleCopyText(getResultText(result))"
           >
             {{ getResultText(result) || "-" }}
+          </span>
+        </p>
+        <p class="info-item">
+          最大置信度:
+          <span>
+            {{ result.max_confidence || "-" }}
           </span>
         </p>
         <p class="info-item">
@@ -36,7 +42,7 @@
             {{ result.pic_resolution || "-" }}
           </span>
         </p>
-        <p class="info-item">
+        <p v-if="false" class="info-item">
           语言:
           <span>
             {{ result.languages || "-" }}
@@ -48,7 +54,7 @@
             {{ result.image_path || "-" }}
           </a>
         </p>
-        <p class="info-item" :title="result.image_path">
+        <p v-if="false" class="info-item" :title="result.image_path">
           哈希值:
           <span
             :title="result.image_hash"
@@ -87,6 +93,7 @@ import { ref, computed } from "vue";
 import { superRequest } from "@/utils/request";
 import { mediaUrl } from "@/api/utils";
 import { copyText } from "@/utils/utils";
+import { ElMessageBox } from "element-plus";
 
 type Emits = {
   (e: "view-image", result: OcrResult): void;
@@ -102,7 +109,7 @@ const props = defineProps<{
 const currentResultType = ref(props.result.result_type);
 
 const resultTypes = computed(() => {
-  return Object.values(ocrResultTypeEnum).filter(item => item.value !== "");
+  return Object.values(ocrResultTypeEnum).filter(item => item.value > 0);
 });
 
 const getCardColor = (_resultType: string) => {
@@ -136,24 +143,63 @@ const getImgName = (imagePath: string) => {
 };
 
 const handleResultTypeChange = async (newType: string) => {
-  try {
-    // 先发送 emit 事件给父组件
-    emit("update:result_type", newType);
+  const oldType = currentResultType.value;
+  if (newType === oldType) return;
 
-    // 然后调用 API 更新
-    await superRequest({
-      apiFunc: ocrResultApi.update,
-      apiParams: {
-        ids: { [props.result.id]: newType }
-      },
-      onSucceed: () => {
-        currentResultType.value = newType;
-      }
-    });
-  } catch (error) {
-    // API 调用失败时，发送原来的值给父组件（回滚）
-    emit("update:result_type", props.result.result_type);
+  let correctedTexts: string[] | undefined;
+
+  // 当更新为非正确时，必须传递 corrected_texts
+  if (
+    newType == ocrResultTypeEnum.WRONG.value ||
+    newType == ocrResultTypeEnum.MISSING.value
+  ) {
+    try {
+      const { value } = await ElMessageBox.prompt(
+        "请输入你看到的图片中正确的文本",
+        "🧐人工矫正",
+        {
+          confirmButtonText: "确定",
+          cancelButtonText: "取消",
+          inputValue: getResultText(props.result),
+          inputType: "textarea",
+          inputValidator: val => {
+            if (val === getResultText(props.result)) {
+              return "当前输入的文本与识别结果相同";
+            }
+            return true;
+          }
+        }
+      );
+      correctedTexts = [value];
+    } catch {
+      return;
+    }
   }
+
+  // 先发送 emit 事件给父组件
+  emit("update:result_type", newType);
+
+  const params: any = {
+    id: props.result.id,
+    result_type: newType
+  };
+
+  if (correctedTexts) {
+    params.corrected_texts = correctedTexts;
+  }
+
+  // 然后调用 API 更新
+  superRequest({
+    apiFunc: ocrResultApi.verify,
+    apiParams: params,
+    onSucceed: () => {
+      currentResultType.value = newType;
+    },
+    onFailed: () => {
+      // API 调用失败时，发送原来的值给父组件（回滚）
+      emit("update:result_type", oldType);
+    }
+  });
 };
 </script>
 

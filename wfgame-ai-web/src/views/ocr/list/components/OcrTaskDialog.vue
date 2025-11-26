@@ -115,11 +115,46 @@
           </el-radio-group>
         </div>
       </el-form-item>
-      
+
+      <el-form-item label="OCR模型" prop="model_path" v-if="false">
+        <el-select
+          v-model="form.model_path"
+          placeholder="请选择OCR模型"
+          style="width: 70%"
+        >
+          <el-option
+            v-for="model in ocrModels"
+            :key="model.id"
+            :label="model.name"
+            :value="model.path"
+          >
+            <div class="flex items-center justify-between">
+              <span>{{ model.name }}</span>
+              <span class="ml-5 text-gray-400 text-xs">
+                {{ model.path }}
+              </span>
+            </div>
+          </el-option>
+        </el-select>
+      </el-form-item>
+
+      <el-form-item label="识别阈值" prop="rec_score_thresh">
+        <div class="w-[70%]">
+          <el-slider
+            class="score-thresh-slider"
+            v-model="form.rec_score_thresh"
+            :min="0"
+            :max="1"
+            :step="0.01"
+            show-input
+          />
+        </div>
+      </el-form-item>
+
       <!-- 关键字过滤 -->
       <el-form-item label="关键字过滤">
         <div class="w-full space-y-3">
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-4">
             <el-switch
               v-model="form.keyword_filter.enabled"
               active-text="启用"
@@ -127,9 +162,11 @@
               inline-prompt
               class="scale-[1.2]"
             />
-            <span class="text-sm text-gray-500">仅保留包含指定关键字的图片</span>
+            <span class="text-sm text-gray-400"
+              >启用后：仅保留包含指定关键字的图片</span
+            >
           </div>
-          
+
           <template v-if="form.keyword_filter.enabled">
             <el-input
               v-model="form.keyword_filter.keywords"
@@ -138,52 +175,83 @@
               placeholder="输入关键字，多个用逗号分隔，例如：kess game, game center"
               clearable
             />
-            
+
             <div class="flex items-center gap-4 text-sm">
-              <el-checkbox v-model="form.keyword_filter.fuzzy_match" label="模糊匹配" />
-              <el-checkbox v-model="form.keyword_filter.ignore_case" label="忽略大小写" />
-              <el-checkbox v-model="form.keyword_filter.ignore_spaces" label="忽略空格" />
-              <el-checkbox v-model="form.keyword_filter.ignore_digits" label="忽略数字" />
+              <el-checkbox
+                v-model="form.keyword_filter.fuzzy_match"
+                label="模糊匹配"
+              />
+              <el-checkbox
+                v-model="form.keyword_filter.ignore_case"
+                label="忽略大小写"
+              />
+              <el-checkbox
+                v-model="form.keyword_filter.ignore_spaces"
+                label="忽略空格"
+              />
+              <el-checkbox
+                v-model="form.keyword_filter.ignore_digits"
+                label="忽略数字"
+              />
             </div>
-            
-            <div v-if="form.keyword_filter.fuzzy_match" class="flex items-center gap-3">
-              <span class="text-sm text-gray-600 whitespace-nowrap">相似度:</span>
+
+            <div
+              v-if="form.keyword_filter.fuzzy_match"
+              class="flex items-center gap-3"
+            >
+              <span class="text-sm text-gray-600 whitespace-nowrap"
+                >相似度:</span
+              >
               <el-slider
                 v-model="form.keyword_filter.fuzzy_similarity"
                 :min="0.5"
                 :max="1.0"
                 :step="0.05"
-                :format-tooltip="(val) => `${(val * 100).toFixed(0)}%`"
+                :format-tooltip="val => `${(val * 100).toFixed(0)}%`"
                 class="flex-1"
               />
-              <span class="text-sm text-gray-600 w-12">{{ (form.keyword_filter.fuzzy_similarity * 100).toFixed(0) }}%</span>
+              <span class="text-sm text-gray-600 w-12"
+                >{{
+                  (form.keyword_filter.fuzzy_similarity * 100).toFixed(0)
+                }}%</span
+              >
             </div>
-            
+
             <div class="flex items-center gap-3">
-              <span class="text-sm text-gray-600 whitespace-nowrap">置信度:</span>
+              <span class="text-sm text-gray-600 whitespace-nowrap"
+                >置信度:</span
+              >
               <el-slider
                 v-model="form.keyword_filter.min_confidence"
                 :min="0.5"
                 :max="1.0"
                 :step="0.05"
-                :format-tooltip="(val) => `${(val * 100).toFixed(0)}%`"
+                :format-tooltip="val => `${(val * 100).toFixed(0)}%`"
                 class="flex-1"
               />
-              <span class="text-sm text-gray-600 w-12">{{ (form.keyword_filter.min_confidence * 100).toFixed(0) }}%</span>
+              <span class="text-sm text-gray-600 w-12"
+                >{{
+                  (form.keyword_filter.min_confidence * 100).toFixed(0)
+                }}%</span
+              >
             </div>
           </template>
         </div>
       </el-form-item>
-      
-      <el-form-item label="启用缓存" prop="disable_cache">
-        <el-switch
-          title="启用后，系统会查询缓存跳过有历史识别记录的图片，加快处理速度"
-          v-model="form.disable_cache"
-          active-text="启用"
-          inactive-text="禁用"
-          inline-prompt
-          class="scale-[1.2] ml-1"
-        />
+
+      <el-form-item label="启用缓存" prop="enable_cache">
+        <div class="flex items-center gap-4">
+          <el-switch
+            v-model="form.enable_cache"
+            active-text="启用"
+            inactive-text="禁用"
+            inline-prompt
+            class="scale-[1.2]"
+          />
+          <span class="text-sm text-gray-400">
+            启用后：相同图片将跳过OCR识别,直接使用缓存结果
+          </span>
+        </div>
       </el-form-item>
     </el-form>
     <template #footer>
@@ -244,6 +312,7 @@ import {
   OcrTask
 } from "@/api/ocr";
 import type { CreateGitTaskParams } from "@/api/ocr";
+import { getAIModels, AIModel } from "@/api/settings";
 import { superRequest } from "@/utils/request";
 import { ocrLanguageEnum, ocrSourceTypeEnum, sortedEnum } from "@/utils/enums";
 import { message } from "@/utils/message";
@@ -279,18 +348,20 @@ const initialForm = {
   repo_id: "",
   branch: "",
   files: [] as File[],
-  language: "ch",  // 默认中文，单选
+  language: "ch", // 默认中文，单选
   enable_cache: true,
+  rec_score_thresh: 0.5,
+  model_path: "xxxx",
   // 关键字过滤配置
   keyword_filter: {
-    enabled: false,  // 是否启用关键字过滤
-    keywords: "",  // 关键字列表（逗号分隔）
-    fuzzy_match: true,  // 是否启用模糊匹配
-    fuzzy_similarity: 0.80,  // 模糊匹配相似度阈值
-    ignore_case: true,  // 忽略大小写
-    ignore_spaces: true,  // 忽略空格
-    ignore_digits: true,  // 忽略数字和符号
-    min_confidence: 0.80  // OCR置信度阈值
+    enabled: false, // 是否启用关键字过滤
+    keywords: "", // 关键字列表（逗号分隔）
+    fuzzy_match: true, // 是否启用模糊匹配
+    fuzzy_similarity: 0.8, // 模糊匹配相似度阈值
+    ignore_case: true, // 忽略大小写
+    ignore_spaces: true, // 忽略空格
+    ignore_digits: true, // 忽略数字和符号
+    min_confidence: 0.8 // OCR置信度阈值
   }
 };
 
@@ -349,12 +420,27 @@ const rules = ref<FormRules>({
       message: "请选择识别语言",
       trigger: "change"
     }
+  ],
+  rec_score_thresh: [
+    {
+      required: true,
+      message: "请选择识别阈值",
+      trigger: "change"
+    }
+  ],
+  model_path: [
+    {
+      required: true,
+      message: "请选择OCR模型",
+      trigger: "change"
+    }
   ]
 });
 
 const repositories = ref<OcrRepository[]>([]);
 const branches = ref<string[]>([]);
 const loadingBranches = ref(false);
+const ocrModels = ref<AIModel[]>([]);
 
 const resetForm = () => {
   // 使用深拷贝避免嵌套对象引用问题
@@ -397,11 +483,24 @@ const fetchBranches = async () => {
   }
 };
 
+const fetchModels = async () => {
+  await superRequest({
+    apiFunc: getAIModels,
+    apiParams: { type: "ocr", enable: true },
+    onSucceed: data => {
+      ocrModels.value = data;
+    }
+  });
+};
+
 const setFormDefaults = async () => {
-  await fetchRepositories();
+  await Promise.all([fetchRepositories(), fetchModels()]);
   if (repositories.value.length > 0 && !isEditMode.value) {
     form.value.repo_id = repositories.value[1].id;
     fetchBranches();
+  }
+  if (ocrModels.value.length > 0 && !form.value.model_path) {
+    form.value.model_path = ocrModels.value[0].path;
   }
   // 默认选择第一个分支,测试使用，后续需要删除
   form.value.languages = [ocrLanguageEnum.CH.value];
@@ -451,8 +550,10 @@ const submitForm = async () => {
         project_id: 1, // 后续通过 team_id 控制，暂时不需要传
         repo_id: Number(form.value.repo_id),
         branch: form.value.branch,
-        languages: [form.value.language],  // 将单选值转为数组
+        languages: [form.value.language], // 将单选值转为数组
         enable_cache: form.value.enable_cache,
+        rec_score_thresh: form.value.rec_score_thresh,
+        model_path: form.value.model_path,
         keyword_filter: form.value.keyword_filter
       };
       postData = gitData;
@@ -463,31 +564,36 @@ const submitForm = async () => {
         return;
       }
       const formData = new FormData();
-      
+
       // 从upload组件获取文件列表
       const uploadComponent = uploadRef.value;
       const uploadFiles = uploadComponent?.uploadFiles || form.value.files;
-      
+
       if (!uploadFiles || uploadFiles.length === 0) {
         message("请选择有效的文件", { type: "error" });
         return;
       }
-      
+
       // 后端只支持单文件上传，取第一个文件
       const fileItem = uploadFiles[0];
       const file = fileItem.raw || fileItem;
-      
+
       if (!file || !file.name) {
         message("无法获取文件对象", { type: "error" });
         return;
       }
-      
+
       formData.append("file", file);
       formData.append("project_id", "1");
       // languages作为JSON字符串发送，后端需要解析（将单选值转为数组）
       formData.append("languages", JSON.stringify([form.value.language]));
       // 关键字过滤配置作为JSON字符串发送
-      formData.append("keyword_filter", JSON.stringify(form.value.keyword_filter));
+      formData.append(
+        "keyword_filter",
+        JSON.stringify(form.value.keyword_filter)
+      );
+      formData.append("rec_score_thresh", String(form.value.rec_score_thresh));
+      formData.append("model_path", form.value.model_path);
       postData = formData;
       apiFunc = ocrTaskApi.createUploadTask;
     }
@@ -523,6 +629,12 @@ defineExpose({
 </script>
 
 <style scoped>
+.score-thresh-slider :deep(.el-slider__runway) {
+  background-color: var(--el-slider-main-bg-color) !important;
+}
+.score-thresh-slider :deep(.el-slider__bar) {
+  background-color: var(--el-slider-runway-bg-color) !important;
+}
 .form-container {
   padding: 0 20px;
 }

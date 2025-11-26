@@ -611,7 +611,8 @@ def process_ocr_task(task_id):
                 texts=item.get('texts', []),
                 languages=item.get('languages', {}),
                 has_match=item.get('has_match', False),
-                confidence=item.get('confidence', 0.0),
+                confidences=item.get('confidences', []),
+                max_confidence=item.get('max_confidence', 0.0),
                 processing_time=item.get('processing_time', 0),
                 pic_resolution=item.get('pic_resolution', ''),
                 team_id=task.team_id

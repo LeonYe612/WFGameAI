@@ -58,6 +58,9 @@ urlpatterns = [
 
     # OCR模块API
     path('api/ocr/', include('apps.ocr.urls')),
+
+    # AI Models API
+    path('api/ai-models/', include('apps.ai_models.urls')),
 ]
 
 # 添加静态文件目录

@@ -5,6 +5,7 @@ import SettingsMenu from "./components/settingsMenu.vue";
 import GeneralSettings from "./components/generalSettings.vue";
 import PythonSettings from "./components/pythonSettings.vue";
 import ActionSettings from "./components/actionSettings.vue";
+import AIModelSettings from "./components/aiModelSettings.vue";
 import PlaceholderSettings from "./components/placeholderSettings.vue";
 import { useSettingsManagement } from "./utils/hook";
 
@@ -105,6 +106,9 @@ const updateSystemSettings = (newSettings: any) => {
 
         <!-- 动作库管理 -->
         <ActionSettings v-else-if="activeMenu === 'action-library'" />
+
+        <!-- AI模型管理 -->
+        <AIModelSettings v-else-if="activeMenu === 'ai-models'" />
 
         <!-- 占位符 -->
         <PlaceholderSettings title="" icon="" v-else />

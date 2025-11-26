@@ -20,7 +20,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django.db.models import Q
 from utils.orm_helper import DecimalEncoder
-from .models import OCRProject, OCRGitRepository, OCRTask, OCRResult, OCRCacheHit
+from .models import OCRProject, OCRGitRepository, OCRTask, OCRResult, OCRCache
 from .serializers import (
     OCRProjectSerializer,
     OCRGitRepositorySerializer,
@@ -37,6 +37,7 @@ from .services.gitlab import create_gitlab_service, GitLabService, GitLabConfig
 from .tasks import process_ocr_task
 from .services.path_utils import PathUtils
 from apps.core.utils.response import api_response
+from django.db import transaction
 
 # 配置日志
 logger = logging.getLogger(__name__)
@@ -342,13 +343,15 @@ class OCRTaskAPIView(APIView):
         elif action == "get_details":
             task_id = request.data.get("id")
             has_math = request.data.get("has_match", None)
-            keyword = request.data.get("keyword", None)
+            keyword = request.data.get("keyword", "")
             result_type = request.data.get("result_type")
+            min_confidence = request.data.get("min_confidence", 0)
+            max_confidence = request.data.get("max_confidence", 1)
             try:
                 task = OCRTask.objects.get(id=task_id)
                 results = task.related_results
 
-                if result_type:
+                if str(result_type).isdigit():
                     results = results.filter(result_type=result_type)
 
                 if has_math is not None:
@@ -357,6 +360,12 @@ class OCRTaskAPIView(APIView):
                 if keyword != "":
                     regex = f"/[^/]*{keyword}[^/]*$"
                     results = results.filter(image_path__iregex=regex)
+
+                if min_confidence is not None and min_confidence != "":
+                    results = results.filter(max_confidence__gte=min_confidence)
+
+                if max_confidence is not None and max_confidence != "":
+                    results = results.filter(max_confidence__lte=max_confidence)
 
                 # 获取分页参数
                 page = int(request.data.get("page", 1))
@@ -579,26 +588,58 @@ class OCRResultAPIView(APIView):
             # 更新结果处理是否正确，result_type
             result_ids = request.data.get("ids", {})
             # 拼接更新结构体，包括ids， result_type
-            update_results = []
-            for id, result_type in result_ids.items():
-                try:
-                    result = OCRResult.objects.get(id=id)
-                    result.result_type = result_type
-                    update_results.append(result)
-                except OCRResult.DoesNotExist:
-                    continue
 
-            # 批量更新sql
-            if update_results:
+            update_results = []
+            with transaction.atomic():
+                for id, result_type in result_ids.items():
+                    try:
+                        result = OCRResult.objects.get(id=id)
+                        result.result_type = result_type
+                        update_results.append(result)
+                        OCRCache.set_ground_truth(result.image_hash, result.id)
+                    except OCRResult.DoesNotExist:
+                        continue
+
+                if not update_results:
+                    return api_response(
+                        code=status.HTTP_400_BAD_REQUEST,
+                        msg="没有有效的结果需要更新"
+                    )
+
+                # 批量更新sql
                 OCRResult.objects.bulk_update(update_results, ['result_type'])
+
+            return api_response(
+                msg="结果更新成功", data={"total": len(update_results)}
+            )
+
+        elif action == "verify":
+            # 人工校验逻辑
+            result_id = request.data.get("id")
+            result_type = request.data.get("result_type")
+            corrected_texts = request.data.get("corrected_texts")
+
+            item = OCRResult.objects.filter(id=result_id).first()
+            if not item:
                 return api_response(
-                    msg="结果更新成功", data={"total": len(update_results)}
+                    code=status.HTTP_404_NOT_FOUND,
+                    msg=f"OCR结果（id:{result_id}）不存在"
                 )
-            else:
-                return api_response(
-                    code=status.HTTP_400_BAD_REQUEST,
-                    msg="没有有效的结果需要更新"
-                )
+            # 如果标注为非正确，则必须传递纠正文本
+            if result_type > 1:
+                if not corrected_texts:
+                    return api_response(
+                        code=status.HTTP_400_BAD_REQUEST,
+                        msg="标注为非正确结果时，必须提供纠正后的文本"
+                    )
+
+            with transaction.atomic():
+                item.result_type = result_type
+                item.corrected_texts = corrected_texts
+                item.save()
+                # 更新缓存表真值库
+                OCRCache.set_ground_truth(item.image_hash, item.id)
+            return api_response()
 
         return api_response(
             code=status.HTTP_400_BAD_REQUEST,
@@ -771,6 +812,8 @@ class OCRProcessAPIView(APIView):
                 languages = serializer.validated_data.get("languages", ["ch"])
                 enable_cache = serializer.validated_data.get("enable_cache", True)
                 keyword_filter = serializer.validated_data.get("keyword_filter", {})
+                model_path = serializer.validated_data.get("model_path", "")
+                rec_score_thresh = serializer.validated_data.get("rec_score_thresh", 0.5)
 
                 try:
                     # 获取项目和仓库
@@ -794,6 +837,8 @@ class OCRProcessAPIView(APIView):
                                              )).get_repo_name(git_repo.url),
                             "enable_cache": enable_cache,
                             "keyword_filter": keyword_filter,  # 关键字过滤配置
+                            "model_path": model_path,
+                            "rec_score_thresh": rec_score_thresh,
                         },
                     )
 
