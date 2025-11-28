@@ -3,15 +3,12 @@
 启动 Celery Worker（支持环境隔离与可选自动重载）
 
 用法示例：
-    # 开发环境（使用config_dev.ini，自动重载）
-    python start_celery_worker.py --env dev --autoreload
+    # 开发环境（使用 config_dev.ini，对应队列 ai_queue，可选自动重载）
+    python start_celery_worker.py --env dev
     
-    # 线上环境（使用config.ini，不重载）
+    # 线上环境（使用 config.ini，对应队列 ai_queue_prod，默认禁用自动重载）
     python start_celery_worker.py --env prod
 
-配置文件映射：
-    - prod环境 -> config.ini
-    - dev环境 -> config_dev.ini
 
 说明:
 - 通过 --env 隔离队列名、worker 名称、pid/log 文件，避免不同环境互相影响
@@ -134,7 +131,9 @@ def main() -> int:
     env_suffix = f"_{env_name}"
 
     # 队列/worker 名称附加环境后缀，避免冲突
-    queue_name = f"{args.queue}{env_suffix}"
+    # queue_name = f"{args.queue}{env_suffix}"
+    # 按环境设置队列名称
+    queue_name = f"ai_queue{'_prod' if env_name == 'prod' else ''}"
     worker_name = f"{args.name}{env_suffix}"
 
     project_root = os.path.abspath(os.path.dirname(__file__))

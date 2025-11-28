@@ -9,6 +9,7 @@ import re
 import shutil
 import tempfile
 import uuid
+from copy import deepcopy
 from typing import List, Dict, Any, Tuple, Optional, Callable
 
 from .performance_config import get_performance_config, PARAM_VERSIONS
@@ -23,7 +24,12 @@ CHINESE_CHAR_PATTERN = re.compile(r"[\u4e00-\u9fff]")
 class TwoStageOCRService:
     """两阶段OCR检测服务"""
     
-    def __init__(self, performance_config_name: str = "balanced", enable_detailed_report: bool = False):
+    def __init__(
+        self,
+        performance_config_name: str = "balanced",
+        enable_detailed_report: bool = False,
+        rec_score_thresh: Optional[float] = None,
+    ):
         """初始化两阶段OCR服务"""
         self.perf_config = get_performance_config(performance_config_name)
         self.ocr_pool = OCRInstancePool()
@@ -31,6 +37,21 @@ class TwoStageOCRService:
         self.enable_detailed_report = enable_detailed_report
         self.temp_dir = None
         self.path_mapping = {}  # 原始路径 -> 临时路径的映射
+        self.stage_params_map = {
+            stage: deepcopy(params)
+            for stage, params in PARAM_VERSIONS.items()
+        }
+
+        if rec_score_thresh is not None:
+            try:
+                score_value = float(rec_score_thresh)
+            except (TypeError, ValueError) as err:
+                raise ValueError("识别阈值必须为数字") from err
+            if score_value < 0 or score_value > 1:
+                raise ValueError("识别阈值必须位于[0,1]")
+            for params in self.stage_params_map.values():
+                params["text_rec_score_thresh"] = score_value
+        self.rec_score_thresh = rec_score_thresh
     
     def contains_chinese(self, text: str) -> bool:
         """检查文本是否包含中文字符"""
@@ -63,8 +84,8 @@ class TwoStageOCRService:
         
         # 从配置中获取该阶段的识别阈值
         stage_threshold = 0.0
-        if stage in PARAM_VERSIONS:
-            stage_threshold = PARAM_VERSIONS[stage].get("text_rec_score_thresh", 0.0)
+        if stage in self.stage_params_map:
+            stage_threshold = self.stage_params_map[stage].get("text_rec_score_thresh", 0.0)
         
         # 根据语言和阈值判断是否命中
         has_match = False
@@ -172,7 +193,7 @@ class TwoStageOCRService:
         返回:
             (命中记录列表, 未命中记录列表, 处理失败的路径列表)
         """
-        stage_params = PARAM_VERSIONS[stage]
+        stage_params = self.stage_params_map[stage]
         
         # 预处理图片路径，处理中文路径问题
         prepared_images = self.prepare_images_for_ocr(input_images)
@@ -322,12 +343,12 @@ class TwoStageOCRService:
                 "stage1_baseline": {
                     "hits_count": len(stage1_hits),
                     "hits_records": stage1_hits,
-                    "version_params": PARAM_VERSIONS["baseline"]
+                    "version_params": self.stage_params_map["baseline"]
                 },
                 "stage2_balanced": {
                     "hits_count": len(stage2_hits),
                     "hits_records": stage2_hits,
-                    "version_params": PARAM_VERSIONS["balanced_v1"]
+                    "version_params": self.stage_params_map["balanced_v1"]
                 },
                 "final_statistics": {
                     "total_images": total_images,

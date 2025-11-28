@@ -105,7 +105,7 @@ def _filter_texts_by_languages(texts, target_languages):
     return filtered
 
 
-@shared_task(queue=f"ai_queue_{os.environ.get('AI_ENV', 'dev')}")
+@shared_task()
 def process_ocr_task(task_id):
     """调度并处理指定 OCR 任务。
 
@@ -175,6 +175,19 @@ def process_ocr_task(task_id):
         target_languages = task_config.get('target_languages', ['ch'])  # 默认检测中文（官方语言码）
         logger.info(f"任务配置: {task_config}")
         logger.info(f"目标语言: {target_languages}")
+
+        rec_score_raw = task_config.get('rec_score_thresh') # cong
+        if rec_score_raw is None:
+            rec_score_raw = task_config.get('rec score thresh', 0.5)
+        try:
+            rec_score_thresh = float(rec_score_raw)
+        except (TypeError, ValueError):
+            logger.error("任务配置识别阈值无效: %s", rec_score_raw)
+            raise ValueError("任务配置识别阈值无效")
+        if rec_score_thresh < 0 or rec_score_thresh > 1:
+            logger.error("任务识别阈值超出范围: %.4f", rec_score_thresh)
+            raise ValueError("任务识别阈值超出范围")
+        logger.info("任务使用识别阈值: %.2f", rec_score_thresh)
 
 
         # 从命令行指定的配置文件读取OCR多线程配置
@@ -359,7 +372,11 @@ def process_ocr_task(task_id):
         start_time = time.time()
         
         # 初始化两阶段OCR服务（默认不启用详细报告）
-        two_stage_service = TwoStageOCRService(performance_config_name, enable_detailed_report=False)
+        two_stage_service = TwoStageOCRService(
+            performance_config_name,
+            enable_detailed_report=False,
+            rec_score_thresh=rec_score_thresh
+        )
         
         # 准备输入图片列表
         if image_paths:

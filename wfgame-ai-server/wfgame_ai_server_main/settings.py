@@ -102,9 +102,15 @@ WSGI_APPLICATION = "wfgame_ai_server_main.wsgi.application"
 # 全局CONFIG单例对象
 CFG = ConfigManager()
 
+# 获取环境变量，默认值为空字符串（表示开发环境）
+env_value = (os.environ.get("AI_ENV", "") or "").strip()
+# 开发环境: env_value 为空字符串或 "dev" -> 使用空字符串
+# 线上环境: env_value 为 "prod" -> 使用 "_prod"
+ENV_NAME_SUFFIX = "_prod" if env_value.lower() == "prod" else ""
+
 # 根据环境标识（由 AI_ENV 或启动脚本注入）
-ENV_NAME = (os.environ.get("AI_ENV", "dev") or "dev").strip()
-print(f"[Django Settings] ENV_NAME = {ENV_NAME}, AI_ENV环境变量 = {os.environ.get('AI_ENV', '(未设置)')}")
+ENV_NAME = (env_value or "dev").strip()
+# print(f"[Django Settings] ENV_NAME = {ENV_NAME}, AI_ENV环境变量 = {os.environ.get('AI_ENV', '(未设置)')}")
 
 DATABASES = {
     "default": {
@@ -312,8 +318,8 @@ except Exception as e:
     CELERY_REDIS_CFG = get_redis_conn("celery")
 
 # 任务默认队列名带环境后缀，确保与 worker -Q 一致
-CELERY_TASK_DEFAULT_QUEUE = f"ai_queue_{ENV_NAME}"
-print(f"[Django Settings] Celery默认队列名 = {CELERY_TASK_DEFAULT_QUEUE}")
+CELERY_TASK_DEFAULT_QUEUE = f"ai_queue{ENV_NAME_SUFFIX}"
+# print(f"[Django Settings] Celery默认队列名 = {CELERY_TASK_DEFAULT_QUEUE}")
 
  # === Celery 同步执行模式（Eager）按配置文件启用 ===
  # 按环境读取 [celery_dev] 或 [celery_prod] 中的 task_always_eager / task_eager_propogates

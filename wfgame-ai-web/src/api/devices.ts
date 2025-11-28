@@ -126,10 +126,6 @@ export const getDeviceLogs = (params: any) => {
     });
 };
 
-// 检查USB连接
-export const checkUsbConnection = () => {
-    return http.request<ApiResult>("post", baseUrlApi("/devices/usb-check/"));
-};
 
 // USB连接检查
 export const checkUsbConnection = () => {

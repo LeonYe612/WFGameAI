@@ -132,7 +132,7 @@
           :current-page="pagination.currentPage"
           :page-size="pagination.pageSize"
           :total="pagination.total"
-          :page-sizes="[24, 36, 48, 60]"
+          :page-sizes="[30, 60, 100, 200]"
           layout="total, sizes, prev, pager, next, jumper"
           @size-change="handleSizeChange"
           @current-change="handlePageChange"
@@ -182,7 +182,7 @@ const sliderMarks = computed(() => {
 
 const pagination = reactive({
   currentPage: 1,
-  pageSize: 24,
+  pageSize: 30,
   total: 0
 });
 

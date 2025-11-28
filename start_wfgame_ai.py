@@ -12,7 +12,8 @@ Version: 1.0
 
 """
 python 环境：
-conda activate py39_yolov10
+# conda activate py39_yolov10
+conda activate py310_paddlex_gpu
 
 使用
 python start_wfgame_ai.py --config config.ini → 线上环境绑定 8000
@@ -263,7 +264,7 @@ def start_usb_monitor(config_path: str = None):
         env_vars['WFGAMEAI_CONFIG'] = config_path
         if "config_dev.ini" in config_path:
             env_vars['AI_ENV'] = 'dev'
-        print_colored(f"使用配置文件: {config_path}", 'cyan')
+        # print_colored(f"使用配置文件: {config_path}", 'cyan')
 
     command = [sys.executable, monitor_script]
     process = run_command(command, cwd=get_project_root(), name="USB监控", env_vars=env_vars)
@@ -292,7 +293,7 @@ def start_socketio_server(config_path: str = None):
         env_vars['WFGAMEAI_CONFIG'] = config_path
         if "config_dev.ini" in config_path:
             env_vars['AI_ENV'] = 'dev'
-        print_colored(f"使用配置文件: {config_path}", 'cyan')
+        # print_colored(f"使用配置文件: {config_path}", 'cyan')
 
     command = [sys.executable, socketio_script]
     process = run_command(command, cwd=get_project_root(), name="Socket.IO", env_vars=env_vars)

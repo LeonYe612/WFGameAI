@@ -57,7 +57,7 @@ class ConfigManager:
         self._config_path = self._find_config_file()
         if self._config_path and os.path.exists(self._config_path):
             self._config.read(self._config_path, encoding='utf-8')
-            logger.warning(f"ConfigManager 已加载配置文件: {self._config_path}")
+            # logger.warning(f"ConfigManager 已加载配置文件: {self._config_path}")
         else:
             raise FileNotFoundError(f"无法找到 {self._config_path} 配置文件")
 
@@ -65,8 +65,8 @@ class ConfigManager:
         """查找配置文件 - 优先使用环境变量WFGAMEAI_CONFIG指定的配置文件"""
         # 优先检查 WFGAMEAI_CONFIG 环境变量
         config_from_env = os.environ.get("WFGAMEAI_CONFIG", "").strip()
-        logger.warning(f"环境变量 WFGAMEAI_CONFIG = {config_from_env if config_from_env else '(未设置)'}")
-        logger.warning(f"环境变量 AI_ENV = {os.environ.get('AI_ENV', '(未设置)')}")
+        #logger.warning(f"环境变量 WFGAMEAI_CONFIG = {config_from_env if config_from_env else '(未设置)'}")
+        # logger.warning(f"环境变量 AI_ENV = {os.environ.get('AI_ENV', '(未设置)')}")
         
         # 项目根目录：utils/config_helper.py -> wfgame-ai-server -> 项目根目录
         project_root = Path(__file__).resolve().parent.parent.parent
@@ -75,13 +75,13 @@ class ConfigManager:
         if config_from_env:
             # 检查是否为完整路径
             if os.path.isfile(config_from_env):
-                logger.warning(f"使用环境变量指定的配置文件: {config_from_env}")
+                # logger.warning(f"使用环境变量指定的配置文件: {config_from_env}")
                 return config_from_env
             
             # 检查是否为相对于项目根目录的路径
             full_path = os.path.join(project_root, config_from_env)
             if os.path.isfile(full_path):
-                logger.warning(f"使用环境变量指定的配置文件: {full_path}")
+                # logger.warning(f"使用环境变量指定的配置文件: {full_path}")
                 return full_path
                     
         # 根据 AI_ENV 选择配置文件（仅支持 prod 和 dev）
@@ -94,7 +94,7 @@ class ConfigManager:
             config_file = "config.ini"
         
         final_path = os.path.join(project_root, config_file)
-        logger.warning(f"根据 AI_ENV={ai_env if ai_env else '(未设置)'} 选择配置文件: {final_path}")
+        # logger.warning(f"根据 AI_ENV={ai_env if ai_env else '(未设置)'} 选择配置文件: {final_path}")
         return final_path
 
     def get_path(self, key, create_if_missing=True):
@@ -118,7 +118,7 @@ class ConfigManager:
 
             return path
         except (configparser.NoSectionError, configparser.NoOptionError) as e:
-            logger.error(f"配置文件中找不到路径: {key}, 错误: {e}")
+            # logger.error(f"配置文件中找不到路径: {key}, 错误: {e}")
             return None
 
     def get(self, section, key, fallback=None):

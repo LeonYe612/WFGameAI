@@ -23,7 +23,7 @@ def notify_ocr_task_progress(update_vals: dict, debounce: bool = False, delay: i
         return notify_ocr_task_progress_immediately(update_vals)
 
 
-@shared_task(queue="ai_queue")
+@shared_task()
 def notify_ocr_task_progress_immediately(update_vals: dict):
     """
     发送 OCR任务 进度通知

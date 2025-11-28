@@ -179,7 +179,7 @@ def _read_device_result_payload(task_id: int, device_serial: str) -> Optional[Di
         return None
 
 
-@shared_task(queue='ai_queue')
+@shared_task()
 def replay_task(task_id: int):
     """
     回放任务的异步执行函数

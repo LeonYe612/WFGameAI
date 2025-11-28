@@ -123,7 +123,7 @@ class AppLifecycleManager:
         # 执行启动命令
         try:
             cmd = f"adb -s {device_id} shell am start -n {component}"
-            logger.info(f"执行命令: {cmd}")
+            # logger.info(f"执行命令: {cmd}")
             result = subprocess.run(
                 cmd.split(),
                 capture_output=True,
@@ -206,7 +206,7 @@ class AppLifecycleManager:
                 return True
 
             cmd = f"adb -s {device_id} shell am force-stop {package_name}"
-            logger.info(f"执行命令: {cmd}")
+            # logger.info(f"执行命令: {cmd}")
             result = subprocess.run(
                 cmd.split(),
                 capture_output=True,

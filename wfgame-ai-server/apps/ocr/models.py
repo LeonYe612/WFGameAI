@@ -27,7 +27,6 @@ class OCRProject(models.Model):
     name = models.CharField(max_length=100, verbose_name="项目名称")
     description = models.TextField(blank=True, null=True, verbose_name="项目描述")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
-    updated_at = models.DateTimeField(auto_now=True, verbose_name="更新时间")
 
     def __str__(self):
         return self.name
@@ -336,7 +335,7 @@ class OCRCache(models.Model):
                 )
 
         if update_caches:
-            OCRCache.objects.bulk_update(update_caches, fields=["result_id", "updated_at"])
+            OCRCache.objects.bulk_update(update_caches, fields=["result_id"])
 
         if create_caches:
             OCRCache.objects.bulk_create(create_caches, ignore_conflicts=True)
@@ -352,7 +351,6 @@ class OCRCache(models.Model):
             defaults={
                 "result_id": result_id,
                 "is_verified": True,
-                "updated_at": datetime.datetime.now()
             }
         )
 
