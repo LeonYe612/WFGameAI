@@ -2,6 +2,21 @@ from typing import List, Optional
 import os, sys, time, json, traceback, base64
 from datetime import datetime, timezone
 
+
+# 定义实时输出函数，确保日志立即显示
+def print_realtime(message):
+    """打印消息并立即刷新输出缓冲区，确保实时显示"""
+    print(message)
+    sys.stdout.flush()
+
+# 导入YOLO和模型加载功能
+try:
+    from ultralytics import YOLO
+    print_realtime("✅ 成功导入ultralytics YOLO")
+except ImportError as e:
+    track_error(f"⚠️ 导入ultralytics失败: {e}")
+    YOLO = None
+    
 try:
     # 初始化 Django 环境以便使用 settings 与 ORM
     if 'DJANGO_SETTINGS_MODULE' not in os.environ:
@@ -34,6 +49,8 @@ ERROR_LOGS: List[str] = []  # 全局执行过程错误收集（非步骤级）
 GLOBAL_REPLAY_TOTAL_STEPS: Optional[int] = None
 GLOBAL_REPLAY_SINGLE_DEVICE_STEPS: Optional[int] = None
 GLOBAL_INITIAL_DEVICE_COUNT: Optional[int] = None
+
+
 def _get_socket_client():
     global _SOCKET_CLIENT
     if _SOCKET_CLIENT is not None:
@@ -1312,11 +1329,7 @@ def load_script_content(script_cfg):
 
     raise ValueError("不支持的脚本配置，缺少 path 或 script_id")
 
-# 定义实时输出函数，确保日志立即显示
-def print_realtime(message):
-    """打印消息并立即刷新输出缓冲区，确保实时显示"""
-    print(message)
-    sys.stdout.flush()
+
 
 
 # 导入新的统一报告管理系统
@@ -1419,14 +1432,7 @@ except Exception as e:
 # 全局YOLO模型变量
 model = None
 
-# 导入YOLO和模型加载功能
-try:
-    from ultralytics import YOLO
-    print_realtime("✅ 成功导入ultralytics YOLO")
-except ImportError as e:
-    track_error(f"⚠️ 导入ultralytics失败: {e}")
-    track_error(f"⚠️ 导入ultralytics失败: {e}")
-    YOLO = None
+
 
 # 导入load_yolo_model函数
 try:

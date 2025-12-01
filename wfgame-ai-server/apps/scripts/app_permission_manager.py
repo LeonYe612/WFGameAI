@@ -1086,7 +1086,9 @@ class AppPermissionManager:
 
         except Exception as e:
             logger.debug(f"检查元素存在性异常: {e}")
-            return True  # 无法确认，假设仍存在    def _clear_ui_cache(self, device_serial: str = None):
+            return True  # 无法确认，假设仍存在    
+    
+    def _clear_ui_cache(self, device_serial: str = None):
         """清理UI缓存"""
         if device_serial:
             cache_key = f"ui_dump_{device_serial}"

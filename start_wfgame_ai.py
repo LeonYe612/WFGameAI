@@ -16,8 +16,11 @@ python 环境：
 conda activate py310_paddlex_gpu
 
 使用
-python start_wfgame_ai.py --config config.ini → 线上环境绑定 8000
-python start_wfgame_ai.py --config config_dev.ini → 开发环境绑定 9000
+ → 线上环境绑定 8000
+python start_wfgame_ai.py --config config.ini
+
+ → 开发环境绑定 9000
+python start_wfgame_ai.py --config config_dev.ini
 """
 import os
 import sys
@@ -231,7 +234,7 @@ def start_backend(config_path: str = None, port: int = 8000):
         if config_basename == 'config.ini':
             env_vars['AI_ENV'] = 'prod'
             print_colored(f"环境: prod", 'cyan')
-        elif config_basename == 'config_dev.ini':
+        else:
             env_vars['AI_ENV'] = 'dev'
             print_colored(f"环境: dev", 'cyan')
     

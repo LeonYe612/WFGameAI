@@ -2,6 +2,7 @@ import { http } from "@/utils/http";
 import { CommonQuery } from "./types";
 import { baseUrlApi, ApiResult } from "./utils";
 import { CommonFields } from "./types";
+import type { AxiosRequestConfig } from "axios";
 
 // OCR 项目类型
 export interface OcrProject {
@@ -160,6 +161,8 @@ export const ocrRepositoryApi = {
 };
 
 // OCR 任务相关接口
+const OCR_DOWNLOAD_DEFAULT_TIMEOUT = 60 * 1000;
+
 export const ocrTaskApi = {
   // deprecated
   list: (project_id?: string) =>
@@ -207,16 +210,26 @@ export const ocrTaskApi = {
     http.request<ApiResult>("post", baseUrlApi("/ocr/history/"), {
       data: { ...params, action: "list" }
     }),
-  download: (task_id: string) =>
-    http.request(
+  download: (task_id: string, config?: AxiosRequestConfig) => {
+    const payload = {
+      ...(config?.data as Record<string, unknown> | undefined),
+      task_id,
+      action: "download"
+    };
+    const requestConfig: AxiosRequestConfig = {
+      ...config,
+      timeout: config?.timeout ?? OCR_DOWNLOAD_DEFAULT_TIMEOUT,
+      data: payload,
+      responseType: "blob"
+    };
+
+    return http.request(
       "post",
       baseUrlApi("/ocr/history/"),
-      {
-        data: { task_id, action: "download" },
-        responseType: "blob"
-      },
+      requestConfig,
       { getResponse: true }
-    )
+    );
+  }
 };
 
 // OCR 结果相关接口

@@ -90,7 +90,7 @@ export const useOcr = () => {
   // [Download] 下载任务结果
   const downloadTask = async (taskId: string) => {
     try {
-      const response: any = await ocrTaskApi.download(taskId);
+      const response: any = await ocrTaskApi.download(taskId, { timeout: 60000 });
       // 创建一个下载链接
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");

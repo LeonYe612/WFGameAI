@@ -27,7 +27,7 @@ from paddlex import create_pipeline
 from paddleocr import PaddleOCR
 import shutil
 from apps.notifications.tasks import notify_ocr_task_progress
-import paddle
+# import paddle
 
 import warnings
 warnings.filterwarnings("ignore", message="iCCP: known incorrect sRGB profile")
@@ -211,7 +211,7 @@ class OCRInstancePool:
         device_name = f"gpu:{0}" if GPU_ENABLED else "cpu"
         
         # 确保GPU环境
-        self._ensure_gpu_environment()
+        # self._ensure_gpu_environment()
         
         try:
             # 尝试启用HPI加速（如果可用）
