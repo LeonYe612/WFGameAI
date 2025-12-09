@@ -632,18 +632,19 @@ class OCRTaskAPIView(APIView):
 
         elif action == "export_offline_html":
             task_id = request.data.get("task_id")
+            filter_data = request.data.get("filter_data", {})
+            
             if not task_id:
                 return api_response(code=status.HTTP_400_BAD_REQUEST, msg="缺少task_id参数")
             
-            # 检查文件是否已存在（可选优化）
+            # 生成带时间戳的文件名，避免缓存问题
+            from datetime import datetime
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             report_dir = PathUtils.get_ocr_reports_dir()
-            file_name = f"ocr_report_{task_id}_offline.html"
-            file_path = os.path.join(report_dir, file_name)
-            if os.path.exists(file_path):
-                return api_response(data={"url": f"ocr/reports/{file_name}"})
-
+            file_name = f"ocr_report_{task_id}_{timestamp}_offline.html"
+            
             # 触发异步任务
-            export_offline_html_task.delay(task_id)
+            export_offline_html_task.delay(task_id, filter_data, file_name)
             
             # 返回预期的下载地址
             return api_response(data={
@@ -797,7 +798,7 @@ class OCRResultAPIView(APIView):
                     msg=f"OCR结果（id:{result_id}）不存在"
                 )
             # 如果标注为非正确，则必须传递纠正文本
-            if result_type > 1:
+            if result_type == OCRResult.WRONG:
                 if not corrected_texts:
                     return api_response(
                         code=status.HTTP_400_BAD_REQUEST,
@@ -805,7 +806,9 @@ class OCRResultAPIView(APIView):
                     )
 
             item.verify(task_id, result_type, corrected_texts)
-            return api_response()
+            return api_response(data={
+                "updater_name": request._user.chinese_name if hasattr(request, "_user") else "未知",
+            })
 
         elif action == "batch_verify_right":
             # 批量标注为正确结果
