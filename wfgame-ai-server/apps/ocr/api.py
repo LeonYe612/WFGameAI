@@ -1014,6 +1014,11 @@ class OCRProcessAPIView(APIView):
                     # 获取项目和仓库
                     # project = OCRProject.objects.get(id=project_id)
                     git_repo = OCRGitRepository.objects.get(id=repo_id)
+                    repo_name = GitLabService(
+                                GitLabConfig(repo_url=git_repo.url,
+                                             access_token=git_repo.token,
+                                             )).get_repo_name(git_repo.url)
+                    target_path = f"{repo_name}_{branch}"
                     # 创建OCR任务
                     task = OCRTask.objects.create(
                         # project=project,
@@ -1026,10 +1031,7 @@ class OCRProcessAPIView(APIView):
                             "target_languages": languages,  # 统一使用target_languages字段
                             "target_dir": PathUtils.get_ocr_repos_dir(),
                             # 项目代码所在目录，与 target_dir 相对路径
-                            "target_path": GitLabService(
-                                GitLabConfig(repo_url=git_repo.url,
-                                             access_token=git_repo.token,
-                                             )).get_repo_name(git_repo.url),
+                            "target_path": target_path,
                             "enable_cache": enable_cache,
                             "keyword_filter": keyword_filter,  # 关键字过滤配置
                             "model_path": model_path,
