@@ -283,9 +283,9 @@ export const ocrTaskApi = {
     http.request<ApiResult>("post", baseUrlApi("/ocr/tasks/"), {
       data: { task_id, action: "unbind_trans_repo" }
     }),
-  exportOfflineHtml: (task_id: string) =>
+  exportOfflineHtml: (data: { task_id: string; filter_data?: any }) =>
     http.request<ApiResult>("post", baseUrlApi("/ocr/tasks/"), {
-      data: { task_id, action: "export_offline_html" }
+      data: { ...data, action: "export_offline_html" }
     })
 };
 

@@ -6,7 +6,7 @@
         <!-- 左侧：高频筛选（匹配状态、翻译状态） -->
         <div class="filter-groups-left">
           <div class="filter-group-item">
-            <span class="label-text">匹配状态：</span>
+            <span class="label-text">文本匹配：</span>
             <el-radio-group
               v-model="filterData.has_match"
               @change="fetchResults"
@@ -543,7 +543,7 @@ const handleExportOfflineReport = async () => {
   try {
     const res = await superRequest({
       apiFunc: ocrTaskApi.exportOfflineHtml,
-      apiParams: props.taskId
+      apiParams: { task_id: props.taskId, filter_data: filterData }
     });
 
     if (res && res.data && res.data.url) {
